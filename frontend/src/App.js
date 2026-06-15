@@ -21,6 +21,7 @@ import FeePayment from "@/pages/public/FeePayment";
 import Contact from "@/pages/public/Contact";
 import TermsPrivacy from "@/pages/public/TermsPrivacy";
 import KheloPatna from "@/pages/public/KheloPatna";
+import MapsReview from "@/pages/public/MapsReview";
 
 const AdminLayout = lazy(() => import("@/components/admin/AdminLayout"));
 const AdminLogin = lazy(() => import("@/pages/admin/AuthPages").then(module => ({ default: module.AdminLogin })));
@@ -68,6 +69,7 @@ const AdminStaffUsers = lazy(() => import("@/pages/admin/staff/AdminStaffUsers")
 // WhatsAppMarketing and FeeReminders
 const WhatsAppMarketing = lazy(() => import("@/pages/admin/WhatsAppMarketing"));
 const FeeReminders = lazy(() => import("@/pages/admin/FeeReminders"));
+const AdminMapsReview = lazy(() => import("@/pages/admin/special/AdminMapsReview"));
 
 function AdminLoading() {
   return (
@@ -112,6 +114,7 @@ function App() {
               <Route path="/terms" element={<TermsPrivacy />} />
               <Route path="/privacy" element={<TermsPrivacy />} />
               <Route path="/khelo-patna" element={<KheloPatna />} />
+              <Route path="/review" element={<MapsReview />} />
               <Route path="*" element={<NotFound />} />
             </Route>
 
@@ -156,6 +159,7 @@ function App() {
               <Route path="khelo-patna-gallery" element={<AdminKheloPatna />} />
               <Route path="holiday-homework" element={<AdminHolidayHomework />} />
               <Route path="staff-users" element={<AdminStaffUsers />} />
+              <Route path="maps-review" element={<AdminMapsReview />} />
             </Route>
           </Routes>
         </BrowserRouter>

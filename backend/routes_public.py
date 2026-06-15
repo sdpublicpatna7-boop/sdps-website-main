@@ -913,3 +913,110 @@ async def sal_chat(request: Request, payload: SalChatPayload):
     except Exception as e:
         logger.error(f"[Sal] Unexpected error: {e}", exc_info=True)
         return {"text": fallback}
+
+
+@public_router.post("/generate-maps-review")
+async def generate_maps_review(payload: dict = Body(...)):
+    rating = payload.get("rating")
+    if rating not in [1, 2, 3, 4, 5]:
+        raise HTTPException(400, "Rating must be an integer between 1 and 5.")
+
+    # Fallback pre-generated unique reviews if Groq is not set up
+    fallbacks = {
+        5: [
+            "Excellent school with dedicated teachers and great focus on overall child development. Highly recommended!",
+            "S.D. Public School Patna provides a very supportive and motivating environment for students. Great academic standard.",
+            "Highly satisfied with the faculty and the quality of education here. The discipline and moral values taught are top-notch.",
+            "Best school in the area with a nice campus, excellent teaching staff, and a strong focus on both studies and sports."
+        ],
+        4: [
+            "Good school with supportive faculty. Academic focus is very strong, although extracurriculars could be expanded.",
+            "Very good environment for children. Teachers are cooperative and they guide students well in their studies.",
+            "Satisfied with the teaching and discipline. A solid choice for parents looking for high quality schooling in Patna."
+        ],
+        3: [
+            "Average experience. The school has a good curriculum, but sports and other facilities can be improved.",
+            "Decent education and discipline. Need more focus on practical learning and student activities.",
+            "It's a good school academically, but communications and co-curricular programs have room for growth."
+        ],
+        2: [
+            "The academic side is okay, but transport and administration communication need a lot of improvement.",
+            "Discipline is maintained, but more attention should be given to individual student problems and extracurriculars."
+        ],
+        1: [
+            "Disappointed with the administration support and facilities. Needs major improvements in parent communication.",
+            "Needs significant changes in teacher coordination and student facilities. Not satisfied with the current management."
+        ]
+    }
+
+    import random
+    if not GROQ_API_KEY:
+        logger.warning("[MapsReview] GROQ_API_KEY is not set — using local fallback")
+        return {"text": random.choice(fallbacks.get(rating, fallbacks[5]))}
+
+    # Prompt Groq for a unique review text
+    styles = [
+        "a parent of a student studying at S.D. Public School, Patna",
+        "an alumnus of S.D. Public School",
+        "a high school student from SDPS Patna",
+        "a parent who is highly pleased with the academic standards",
+        "a local resident sharing feedback about the school's discipline"
+    ]
+    selected_style = random.choice(styles)
+
+    prompt = (
+        f"Write a natural, conversational, and unique Google Maps review for 'S.D. Public School, Patna' (SDPS Patna).\n"
+        f"The review rating is {rating} out of 5 stars.\n"
+        f"Write the review from the perspective of: {selected_style}.\n"
+        f"Tone guidelines based on rating:\n"
+        f"- 5 stars: Enthusiastic, highlighting the excellent academic records, cooperative teachers, great discipline, or personal child growth.\n"
+        f"- 4 stars: Very positive, praising the teachers and curriculum but keeping it simple and balanced.\n"
+        f"- 3 stars: Neutral/average, highlighting some good teachers but suggesting improvements in areas like sports or co-curriculars.\n"
+        f"- 2 stars: Critical, noting specific areas that need work (like school-parent communication or transport) in a polite but honest manner.\n"
+        f"- 1 star: Disappointed, addressing specific concerns constructively.\n\n"
+        f"CRITICAL RULES:\n"
+        f"1. Keep it very short and sweet: exactly 1 to 2 sentences.\n"
+        f"2. Write in a completely natural, conversational voice. Do NOT use buzzwords or repetitive structures.\n"
+        f"3. Do NOT include any quotation marks, title headings, intro/outro text (like 'Here is the review:'). Output ONLY the review text itself.\n"
+        f"4. Do NOT use the exact same phrasing. Make it organic and fresh."
+    )
+
+    body = {
+        "model": GROQ_MODEL,
+        "messages": [
+            {"role": "system", "content": "You are a helpful assistant writing natural and unique school reviews. You only output the raw review text without quotes or preamble."},
+            {"role": "user", "content": prompt}
+        ],
+        "max_tokens": 150,
+        "temperature": 0.95,  # High temperature to ensure variety
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as c:
+            r = await c.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                json=body,
+                headers={
+                    "Authorization": f"Bearer {GROQ_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+            )
+
+        if r.status_code >= 300:
+            logger.warning(f"[MapsReview] Groq error {r.status_code}: {r.text[:300]}")
+            return {"text": random.choice(fallbacks.get(rating, fallbacks[5]))}
+
+        data = r.json()
+        reply = data.get("choices", [])[0].get("message", {}).get("content", "").strip()
+        # Clean up any surrounding quotes if the model added them
+        if reply.startswith('"') and reply.endswith('"'):
+            reply = reply[1:-1].strip()
+        if reply.startswith("'") and reply.endswith("'"):
+            reply = reply[1:-1].strip()
+        
+        return {"text": reply}
+
+    except Exception as e:
+        logger.error(f"[MapsReview] Exception generating review: {e}")
+        return {"text": random.choice(fallbacks.get(rating, fallbacks[5]))}
+

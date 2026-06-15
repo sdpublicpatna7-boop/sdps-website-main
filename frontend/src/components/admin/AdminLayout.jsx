@@ -6,7 +6,7 @@ import {
   GraduationCap, Award, FileText, CreditCard, Settings, LogOut,
   MessageSquare, Megaphone, ScrollText, FilePlus, Home, Hotel,
   BookOpen, Shield, EyeOff, ClipboardList, BookMarked, UserCog,
-  Menu, X
+  Menu, X, Star
 } from "lucide-react";
 import { useAuth } from "../../lib/auth";
 import { startPinger } from "../../lib/pinger";
@@ -55,6 +55,8 @@ const SUPERADMIN_NAV = [
   { to: "/admin/legal-pages", label: "Terms & Privacy", icon: Shield },
   { to: "/admin/site-settings", label: "Site Settings", icon: Settings },
   { to: "/admin/integration-keys", label: "Integration Keys", icon: Settings },
+  { section: "Google Review" },
+  { to: "/admin/maps-review", label: "Google Review QR", icon: Star },
   { section: "User Management" },
   { to: "/admin/staff-users", label: "Staff & Admin Users", icon: UserCog },
 ];
