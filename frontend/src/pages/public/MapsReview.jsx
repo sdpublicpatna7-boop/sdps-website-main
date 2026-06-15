@@ -20,8 +20,8 @@ export function MapsReview() {
 
     try {
       const res = await api.post("/generate-maps-review", { rating: selectedRating });
-      if (res && res.text) {
-        setReviewText(res.text);
+      if (res && res.data && res.data.text) {
+        setReviewText(res.data.text);
       } else {
         toast.error("Failed to generate review. Please try again.");
       }
