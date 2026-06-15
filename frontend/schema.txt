@@ -1,0 +1,27 @@
+frontend@10.17.0 /Users/aarav/Downloads/sdps_v10/frontend
+├─┬ eslint-webpack-plugin@3.2.0
+│ ├── schema-utils@3.3.0 deduped
+│ └─┬ webpack@5.107.2
+│   └── schema-utils@3.3.0 deduped
+├─┬ react-scripts@5.0.1
+│ ├─┬ @pmmmwh/react-refresh-webpack-plugin@0.5.17
+│ │ └── schema-utils@3.3.0 deduped
+│ ├─┬ babel-loader@8.4.1
+│ │ └── schema-utils@3.3.0 deduped
+│ ├─┬ css-minimizer-webpack-plugin@3.4.1
+│ │ └── schema-utils@3.3.0 deduped
+│ ├─┬ file-loader@6.2.0
+│ │ └── schema-utils@3.3.0 deduped
+│ ├─┬ mini-css-extract-plugin@2.10.2
+│ │ └── schema-utils@3.3.0 deduped
+│ ├─┬ react-dev-utils@12.0.1
+│ │ └─┬ fork-ts-checker-webpack-plugin@6.5.3
+│ │   └── schema-utils@3.3.0 deduped
+│ ├─┬ terser-webpack-plugin@5.6.1
+│ │ └── schema-utils@3.3.0 deduped
+│ └─┬ webpack-dev-server@4.15.2
+│   ├── schema-utils@3.3.0 deduped
+│   └─┬ webpack-dev-middleware@5.3.4
+│     └── schema-utils@3.3.0 deduped
+└── schema-utils@3.3.0 overridden
+

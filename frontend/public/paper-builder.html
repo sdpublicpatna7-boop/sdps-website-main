@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Question Paper Builder — S.D. Public School</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Montserrat',sans-serif;background:#0f172a;min-height:100vh}
+.app{display:flex;height:100vh;overflow:hidden}
+
+/* ── SIDEBAR ── */
+.sidebar{width:370px;min-width:340px;background:#1a1f2e;color:#e8eaf0;overflow-y:auto;display:flex;flex-direction:column;flex-shrink:0;border-right:1px solid #2d3348}
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-thumb{background:#3a4160;border-radius:2px}
+
+/* ── PREVIEW ── */
+.preview-pane{flex:1;overflow-y:auto;background:#1e293b;padding:24px;display:flex;flex-direction:column;align-items:center}
+.preview-pane::-webkit-scrollbar{width:6px}
+.preview-pane::-webkit-scrollbar-thumb{background:#475569;border-radius:3px}
+
+/* ── SIDEBAR ELEMENTS ── */
+.sb-header{padding:14px 18px;background:#0f172a;border-bottom:1px solid #2d3348;display:flex;align-items:center;justify-content:space-between}
+.sb-header h1{font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#60a5fa}
+.sb-header a{font-size:10px;color:#94a3b8;text-decoration:none}
+.sb-header a:hover{color:#60a5fa}
+.sb-section{padding:12px 16px;border-bottom:1px solid #1f2537}
+.sb-section h2{font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#60a5fa;margin-bottom:9px}
+.field{margin-bottom:9px}
+.field label{display:block;font-size:9.5px;font-weight:600;color:#9ca3af;margin-bottom:3px;text-transform:uppercase;letter-spacing:.06em}
+.field input,.field select,.field textarea{width:100%;background:#0f172a;border:1px solid #2d3348;border-radius:6px;color:#e8eaf0;font-family:'Montserrat',sans-serif;font-size:11.5px;padding:6px 9px;outline:none;transition:border .15s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#60a5fa}
+.field select option{background:#111827}
+.field textarea{resize:vertical;min-height:50px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.q-section{background:#0f172a;border-radius:8px;padding:11px;margin-bottom:9px;border:1px solid #2d3348}
+.q-section-head{display:flex;align-items:center;gap:7px;margin-bottom:9px}
+.q-section-head select,.q-section-head input{flex:1;background:#1a1f2e;border:1px solid #3a4160;border-radius:5px;color:#e8eaf0;font-family:'Montserrat',sans-serif;font-size:11px;padding:5px 7px;outline:none}
+.q-num{font-size:11px;font-weight:700;color:#60a5fa;white-space:nowrap}
+.btn-del{background:#7f1d1d;border:none;color:#fca5a5;border-radius:4px;padding:4px 7px;font-size:10px;cursor:pointer;font-family:'Montserrat',sans-serif}
+.btn-del:hover{background:#991b1b}
+.btn-sm{background:#1e3a5f;border:none;color:#93c5fd;border-radius:5px;padding:5px 9px;font-size:10px;cursor:pointer;font-family:'Montserrat',sans-serif;font-weight:600;white-space:nowrap}
+.btn-sm:hover{background:#1e40af}
+.btn-add-sec{width:100%;background:#0f172a;border:1px dashed #3a4160;color:#60a5fa;border-radius:7px;padding:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Montserrat',sans-serif;letter-spacing:.03em}
+.btn-add-sec:hover{background:#1e293b;border-color:#60a5fa}
+.opt-label{font-size:10px;font-weight:700;color:#f59e0b;min-width:16px}
+.actions{padding:12px 16px;display:flex;flex-direction:column;gap:7px;border-top:1px solid #1f2537;background:#111827}
+.btn-pdf,.btn-booklet{width:100%;padding:10px;border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.04em}
+.btn-pdf{background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff}
+.btn-pdf:hover{background:linear-gradient(135deg,#1e40af,#1d4ed8)}
+.btn-booklet{background:linear-gradient(135deg,#7c3aed,#8b5cf6);color:#fff}
+.btn-booklet:hover{background:linear-gradient(135deg,#6d28d9,#7c3aed)}
+.preview-label{font-size:10px;color:#64748b;margin-bottom:14px;font-family:'Montserrat',sans-serif;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+
+/* ── A4 PAPER ── */
+.a4{width:794px;min-height:1123px;background:#fff;padding:42px 52px 52px;font-family:'Montserrat',sans-serif;font-size:12px;line-height:1.65;color:#111;box-shadow:0 8px 60px rgba(0,0,0,.5);position:relative}
+.a4-header{border-top:3px solid #000;border-bottom:3px solid #000;padding:6px 0;margin-bottom:4px;text-align:center}
+.a4-school{font-size:15px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.a4-exam{font-size:12.5px;font-weight:700;margin-top:2px;letter-spacing:.03em}
+.a4-meta-row{display:flex;justify-content:space-between;align-items:flex-start;margin:8px 0 4px;font-size:12px;font-weight:500}
+.a4-student-row{display:flex;justify-content:space-between;font-size:11.5px;font-weight:500;margin:6px 0 2px;gap:16px}
+.a4-compulsory{font-weight:700;text-align:center;font-size:12px;margin:8px 0;border-top:1.5px solid #000;border-bottom:1.5px solid #000;padding:3px 0}
+hr.a4-divider{border:none;border-top:1px solid #bbb;margin:10px 0}
+.a4-passage-title{font-weight:700;font-size:12px;margin:10px 0 4px}
+.a4-passage{font-size:12px;line-height:1.7;margin-bottom:10px;text-align:justify}
+.a4-q-block{margin-bottom:14px}
+.a4-q-head{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;font-size:12px;margin-bottom:4px}
+.a4-q-marks{font-weight:600;font-size:11px}
+.a4-sub{display:flex;gap:8px;margin-bottom:5px;font-size:12px}
+.a4-sub-no{font-weight:600;min-width:20px}
+.a4-mcq-opts{display:flex;flex-wrap:wrap;gap:4px 24px;margin:3px 0 3px 28px;font-size:12px}
+.a4-mcq-opt{min-width:120px}
+.blank-line{display:inline-block;border-bottom:1.2px solid #000;min-width:80px;vertical-align:bottom}
+.a4-img-placeholder{border:1.5px dashed #888;background:#f9f9f9;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#888;margin:8px 0}
+.a4-ans-lines{margin:4px 0 4px 28px}
+.a4-ans-line{border-bottom:1px solid #aaa;margin-bottom:6px;height:18px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ══════════════ SIDEBAR ══════════════ -->
+<div class="sidebar">
+  <div class="sb-header">
+    <h1>📄 Paper Builder</h1>
+    <a href="/admin/exam-papers">← Back to Admin</a>
+  </div>
+
+  <div class="sb-section">
+    <h2>Exam Header</h2>
+    <div class="field">
+      <label>Exam Type</label>
+      <select id="examType" onchange="render()">
+        <option>F.A.-I</option><option>F.A.-II</option>
+        <option selected>S.A.-I</option><option>S.A.-II</option>
+      </select>
+    </div>
+    <div class="field"><label>Session</label><input id="session" value="2025-26" oninput="render()"/></div>
+    <div class="row2">
+      <div class="field">
+        <label>Class</label>
+        <select id="classVal" onchange="render()">
+          <option>I</option><option>II</option><option>III</option><option>IV</option>
+          <option>V</option><option>VI</option><option>VII</option><option>VIII</option>
+          <option>IX</option><option>X</option><option>XI</option><option>XII</option>
+        </select>
+      </div>
+      <div class="field"><label>Section</label><input id="section" value="A" oninput="render()"/></div>
+    </div>
+    <div class="field"><label>Subject</label><input id="subject" value="English" oninput="render()"/></div>
+    <div class="row2">
+      <div class="field"><label>Full Marks</label><input id="fullMarks" value="60" oninput="render()"/></div>
+      <div class="field"><label>Time</label><input id="time" value="2 Hours" oninput="render()"/></div>
+    </div>
+    <div class="field"><label>Compulsory Note</label><input id="compulsory" value="ALL QUESTIONS ARE COMPULSORY" oninput="render()"/></div>
+  </div>
+
+  <div class="sb-section">
+    <h2>Reading Passage (optional)</h2>
+    <div class="field"><label>Passage Title</label><input id="passageTitle" placeholder="e.g. A Yummy Cake" oninput="render()"/></div>
+    <div class="field"><label>Passage Text</label><textarea id="passageText" rows="4" placeholder="Paste passage text..." oninput="render()"></textarea></div>
+  </div>
+
+  <div class="sb-section" id="qSections">
+    <h2>Question Sections</h2>
+    <div id="sectionsContainer"></div>
+    <button class="btn-add-sec" onclick="addSection()">+ Add Question Block</button>
+  </div>
+
+  <div class="actions">
+    <button class="btn-pdf" onclick="savePDF()">⬇ Save as A4 PDF</button>
+    <button class="btn-booklet" onclick="saveBooklet()">📖 Save as Booklet PDF</button>
+  </div>
+</div>
+
+<!-- ══════════════ PREVIEW ══════════════ -->
+<div class="preview-pane">
+  <div class="preview-label">Live Preview — A4 (210 × 297 mm)</div>
+  <div id="a4paper" class="a4"></div>
+</div>
+
+</div>
+<script>
+let sections=[];let secCount=0;
+const ROMAN=['i','ii','iii','iv','v','vi','vii','viii','ix','x','xi','xii','xiii','xiv','xv'];
+const TYPE_LABELS={
+  MCQ:'Multiple Choice (MCQ)',FIB:'Fill in the Blanks',TrueFalse:'True / False',
+  Assertion:'Assertion & Reason',Short:'Short Answer',Long:'Long Answer / Essay',
+  Grammar:'Grammar Exercise',Poem:'Poem / Creative Writing',
+  Map:'Map / Picture Marking',Puzzle:'Word Puzzle / Rearrange',Comprehension:'Comprehension'
+};
+window.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('passageTitle').value='A Yummy Cake';
+  document.getElementById('passageText').value="Haroon is fond of cakes. One day, he felt hungry thinking about a fresh vanilla cake coming out of the oven. He rushed to his mother and asked her to bake a cake for him. His mother asked Haroon to help her bake a cake. Haroon was excited. Both of them went to the kitchen and spent that morning baking a cake. Haroon helped his mother by passing the things needed to bake a cake. His mother smiled and thanked him. They made a yummy cake. Haroon was happy.";
+  addSection('MCQ','Answer the following questions by choosing the correct options:-','10');
+  addSection('FIB','Fill in the blanks (Choose the correct word from the brackets):-','1×6=6');
+  addSection('TrueFalse','Write "T" for True and "F" for False:-','5×1=5');
+  addSection('Short','Answer these questions:-','5×2=10');
+  addSection('Grammar','Underline the conjunction in the given sentences:-','4×1=4');
+  render();
+});
+function addSection(type,instruction,marks){
+  secCount++;const id=secCount;
+  sections.push({id,type:type||'MCQ',instruction:instruction||'',marks:marks||'',qItems:[]});
+  renderSidebar();render();
+}
+function removeSection(id){sections=sections.filter(s=>s.id!==id);renderSidebar();render();}
+function updateSection(id,field,val){const s=sections.find(s=>s.id===id);if(s){s[field]=val;if(field==='type')renderSidebar();render();}}
+function addQuestion(secId){
+  const s=sections.find(s=>s.id===secId);if(!s)return;
+  s.qItems.push({id:Date.now(),text:'',marks:1,options:['','',''],subqs:[],imageH:0});
+  renderSidebar();render();
+}
+function removeQuestion(secId,qId){const s=sections.find(s=>s.id===secId);if(s)s.qItems=s.qItems.filter(q=>q.id!==qId);renderSidebar();render();}
+function updateQ(secId,qId,field,val){const s=sections.find(s=>s.id===secId);if(!s)return;const q=s.qItems.find(q=>q.id===qId);if(q){q[field]=val;render();}}
+function updateOpt(secId,qId,idx,val){const s=sections.find(s=>s.id===secId);if(!s)return;const q=s.qItems.find(q=>q.id===qId);if(q){q.options[idx]=val;render();}}
+function addOption(secId,qId){const s=sections.find(s=>s.id===secId);if(!s)return;const q=s.qItems.find(q=>q.id===qId);if(q){q.options.push('');renderSidebar();render();}}
+function addSubQ(secId,qId){const s=sections.find(s=>s.id===secId);if(!s)return;const q=s.qItems.find(q=>q.id===qId);if(q){q.subqs.push('');renderSidebar();render();}}
+function updateSubQ(secId,qId,idx,val){const s=sections.find(s=>s.id===secId);if(!s)return;const q=s.qItems.find(q=>q.id===qId);if(q){q.subqs[idx]=val;render();}}
+
+function renderSidebar(){
+  document.getElementById('sectionsContainer').innerHTML=sections.map((s,si)=>`
+  <div class="q-section">
+    <div class="q-section-head">
+      <span class="q-num">Q${si+1}</span>
+      <select onchange="updateSection(${s.id},'type',this.value)">
+        ${Object.entries(TYPE_LABELS).map(([k,v])=>`<option value="${k}"${s.type===k?' selected':''}>${v}</option>`).join('')}
+      </select>
+      <button class="btn-del" onclick="removeSection(${s.id})">✕</button>
+    </div>
+    <div class="field"><label>Instruction / Heading</label>
+      <textarea rows="2" oninput="updateSection(${s.id},'instruction',this.value)">${s.instruction}</textarea>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Marks</label><input value="${s.marks}" oninput="updateSection(${s.id},'marks',this.value)"/></div>
+      <div class="field"><label>Sub-questions</label><button class="btn-sm" style="margin-top:2px;width:100%" onclick="addQuestion(${s.id})">+ Add</button></div>
+    </div>
+    ${s.qItems.map((q,qi)=>renderQField(s,q,qi)).join('')}
+  </div>`).join('');
+}
+
+function renderQField(s,q,qi){
+  const isOpts=['MCQ','Assertion'].includes(s.type);
+  const hasSub=['Comprehension','Long','Short','Grammar','Poem'].includes(s.type);
+  const hasImage=s.type==='Map';
+  return `
+  <div style="background:#0f172a;border-radius:6px;padding:8px;margin-bottom:6px;border:1px solid #2d3348">
+    <div style="display:flex;gap:5px;align-items:flex-start;margin-bottom:5px">
+      <span style="font-size:10px;color:#f59e0b;font-weight:700;padding-top:7px;min-width:20px">${ROMAN[qi]}.</span>
+      <textarea style="flex:1;background:#1a1f2e;border:1px solid #3a4160;border-radius:4px;color:#e8eaf0;font-family:'Montserrat',sans-serif;font-size:11px;padding:5px;resize:vertical;min-height:34px" oninput="updateQ(${s.id},${q.id},'text',this.value)" placeholder="Question text...">${q.text}</textarea>
+      <input type="number" style="width:44px;background:#1a1f2e;border:1px solid #3a4160;border-radius:4px;color:#e8eaf0;font-family:'Montserrat',sans-serif;font-size:11px;padding:5px;text-align:center" value="${q.marks}" oninput="updateQ(${s.id},${q.id},'marks',this.value)" title="Marks"/>
+      <button class="btn-del" onclick="removeQuestion(${s.id},${q.id})">✕</button>
+    </div>
+    ${isOpts?`<div style="padding-left:24px">${q.options.map((o,oi)=>`
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+        <span class="opt-label">${String.fromCharCode(97+oi)}.</span>
+        <input style="flex:1;background:#1a1f2e;border:1px solid #3a4160;border-radius:4px;color:#e8eaf0;font-family:'Montserrat',sans-serif;font-size:11px;padding:4px 7px;outline:none" value="${o}" oninput="updateOpt(${s.id},${q.id},${oi},this.value)" placeholder="Option ${oi+1}"/>
+      </div>`).join('')}
+      <button class="btn-sm" style="margin-top:3px" onclick="addOption(${s.id},${q.id})">+ Option</button>
+    </div>`:''}
+    ${hasImage?`<div class="field" style="margin-top:6px"><label>Image area height (px, 0=none)</label><input type="number" value="${q.imageH||160}" oninput="updateQ(${s.id},${q.id},'imageH',parseInt(this.value)||0)"/></div>`:''}
+    ${hasSub?`<div style="padding-left:24px;margin-top:5px">
+      ${q.subqs.map((sq,sqi)=>`<div style="display:flex;gap:5px;margin-bottom:4px">
+        <span style="font-size:10px;color:#9ca3af;padding-top:6px">${String.fromCharCode(97+sqi)}.</span>
+        <input style="flex:1;background:#1a1f2e;border:1px solid #3a4160;border-radius:4px;color:#e8eaf0;font-family:'Montserrat',sans-serif;font-size:11px;padding:4px 7px;outline:none" value="${sq}" oninput="updateSubQ(${s.id},${q.id},${sqi},this.value)" placeholder="Sub-question..."/>
+      </div>`).join('')}
+      <button class="btn-sm" onclick="addSubQ(${s.id},${q.id})">+ Sub-question</button>
+    </div>`:''}
+  </div>`;
+}
+
+function render(){
+  const examType=document.getElementById('examType').value;
+  const session=document.getElementById('session').value;
+  const cls=document.getElementById('classVal').value;
+  const sec=document.getElementById('section').value;
+  const subject=document.getElementById('subject').value;
+  const fm=document.getElementById('fullMarks').value;
+  const time=document.getElementById('time').value;
+  const comp=document.getElementById('compulsory').value;
+  const pTitle=document.getElementById('passageTitle').value;
+  const pText=document.getElementById('passageText').value;
+
+  let html=`
+  <div class="a4-header">
+    <div class="a4-school">S.D. Public School</div>
+    <div class="a4-exam">${examType} EXAMINATION &nbsp;&nbsp; ${session}</div>
+  </div>
+  <div class="a4-meta-row">
+    <div>
+      <div><strong>STD – ${cls}${sec?'&nbsp;&nbsp;&nbsp;SEC – '+sec:''}</strong></div>
+      <div><strong>SUBJECT – ${subject}</strong></div>
+    </div>
+    <div style="text-align:right">
+      <div><strong>F.M. – ${fm} MARKS</strong></div>
+      <div><strong>TIME – ${time}</strong></div>
+    </div>
+  </div>
+  <div class="a4-student-row">
+    <span><strong>NAME OF STUDENT :</strong>&nbsp; ……………………………………………………</span>
+    <span style="white-space:nowrap"><strong>ROLL NO :</strong>&nbsp; ………………</span>
+  </div>`;
+  if(comp) html+=`<div class="a4-compulsory">★ &nbsp;${comp}&nbsp; ★</div>`;
+  if(pTitle||pText){
+    html+=`<hr class="a4-divider"/><div class="a4-passage-title">Read the passage carefully –</div>`;
+    if(pTitle) html+=`<div class="a4-passage-title" style="font-weight:800;font-size:13px;text-align:center;margin:4px 0 8px">${pTitle}</div>`;
+    if(pText) html+=`<div class="a4-passage">${pText}</div>`;
+  }
+  if(sections.length) html+=`<hr class="a4-divider"/>`;
+  sections.forEach((s,si)=>{html+=renderSection(s,si);});
+  document.getElementById('a4paper').innerHTML=html;
+}
+
+function renderSection(s,si){
+  let html=`<div class="a4-q-block">
+    <div class="a4-q-head">
+      <span>Q${si+1}. ${s.instruction||TYPE_LABELS[s.type]||''}</span>
+      ${s.marks?`<span class="a4-q-marks">(${s.marks})</span>`:''}
+    </div>`;
+  if(s.qItems.length===0){
+    if(['Short','Long','Poem','Grammar','Comprehension'].includes(s.type))
+      html+=`<div class="a4-ans-lines">${'<div class="a4-ans-line"></div>'.repeat(s.type==='Long'||s.type==='Poem'?6:3)}</div>`;
+    else if(s.type==='Map')
+      html+=`<div class="a4-img-placeholder" style="height:180px">[ Map / Picture — Mark as instructed ]</div>`;
+  } else {
+    s.qItems.forEach((q,qi)=>{html+=renderQuestion(s,q,qi);});
+  }
+  return html+'</div>';
+}
+
+function renderQuestion(s,q,qi){
+  const t=s.type;
+  let html=`<div class="a4-sub"><span class="a4-sub-no">${ROMAN[qi]}.</span><div style="flex:1">`;
+  if(t==='MCQ'){
+    html+=`<div>${q.text||'…………………………………………………………'}</div>`;
+    const opts=q.options&&q.options.filter(o=>o).length?q.options:['……………','……………','……………'];
+    html+=`<div class="a4-mcq-opts">${opts.map((o,oi)=>o?`<div class="a4-mcq-opt">${String.fromCharCode(97+oi)}. ${o}</div>`:'').join('')}</div>`;
+  } else if(t==='FIB'){
+    html+=`<div>${(q.text||'…………………………').replace(/_{3,}/g,'<span class="blank-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>')}</div>`;
+  } else if(t==='TrueFalse'){
+    html+=`<div>${q.text||'…………………………………………………'}</div>`;
+    html+=`<div style="margin:3px 0 3px 0;display:flex;gap:18px;font-size:12px"><label><input type="checkbox" disabled/> True</label><label><input type="checkbox" disabled/> False</label></div>`;
+  } else if(t==='Assertion'){
+    html+=`<div><strong>Assertion (A):</strong> ${q.text||'…………………'}</div>`;
+    if(q.options&&q.options[0]) html+=`<div style="margin-top:3px"><strong>Reason (R):</strong> ${q.options[0]}</div>`;
+    const aopts=['Both A and R are true and R is correct explanation','Both A and R are true but R is NOT correct explanation','A is true but R is false','A is false but R is true'];
+    html+=`<div class="a4-mcq-opts" style="margin-top:5px">${aopts.map((o,i)=>`<div style="width:48%;font-size:11px">${String.fromCharCode(97+i)}. ${o}</div>`).join('')}</div>`;
+  } else if(t==='Map'){
+    html+=`<div>${q.text||'Mark the following on the given map.'}</div>`;
+    html+=`<div class="a4-img-placeholder" style="height:${q.imageH||160}px">[ Map / Picture ]</div>`;
+  } else if(t==='Puzzle'){
+    html+=`<div>${q.text||'…………………'} &nbsp;&nbsp;&nbsp; _____________</div>`;
+  } else {
+    html+=`<div>${q.text||'…………………………………………………………'}</div>`;
+    if(q.subqs&&q.subqs.length) html+=`<div style="margin-top:4px">${q.subqs.map((sq,sqi)=>`<div style="margin-left:16px;margin-bottom:3px">${String.fromCharCode(97+sqi)}. ${sq||'…………………………………'}</div>`).join('')}</div>`;
+    html+=`<div class="a4-ans-lines">${'<div class="a4-ans-line"></div>'.repeat(t==='Long'||t==='Poem'?6:t==='Short'?3:2)}</div>`;
+  }
+  if(q.marks&&parseInt(q.marks)>0) html+=`<div style="text-align:right;font-size:10px;color:#555;margin-top:2px">[${q.marks}]</div>`;
+  return html+'</div></div>';
+}
+
+const PRINT_STYLES=`
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Montserrat',sans-serif;background:#fff}
+@page{size:A4;margin:0}
+.a4{width:210mm;min-height:297mm;padding:18mm 20mm 20mm;font-family:'Montserrat',sans-serif;font-size:11.5pt;line-height:1.65;color:#000}
+.a4-header{border-top:2.5pt solid #000;border-bottom:2.5pt solid #000;padding:5pt 0;margin-bottom:4pt;text-align:center}
+.a4-school{font-size:14pt;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.a4-exam{font-size:12pt;font-weight:700;margin-top:2pt}
+.a4-meta-row{display:flex;justify-content:space-between;margin:7pt 0 4pt;font-size:11.5pt;font-weight:500}
+.a4-student-row{display:flex;justify-content:space-between;font-size:11pt;font-weight:500;margin:5pt 0 2pt}
+.a4-compulsory{font-weight:700;text-align:center;font-size:11.5pt;margin:7pt 0;border-top:1.2pt solid #000;border-bottom:1.2pt solid #000;padding:3pt 0}
+hr.a4-divider{border:none;border-top:.8pt solid #bbb;margin:8pt 0}
+.a4-passage-title{font-weight:700;font-size:11.5pt;margin:8pt 0 3pt}
+.a4-passage{font-size:11.5pt;line-height:1.7;margin-bottom:8pt;text-align:justify}
+.a4-q-block{margin-bottom:12pt}
+.a4-q-head{display:flex;justify-content:space-between;font-weight:700;font-size:11.5pt;margin-bottom:3pt}
+.a4-q-marks{font-weight:600;font-size:10.5pt}
+.a4-sub{display:flex;gap:6pt;margin-bottom:4pt;font-size:11.5pt}
+.a4-sub-no{font-weight:600;min-width:18pt}
+.a4-mcq-opts{display:flex;flex-wrap:wrap;gap:3pt 20pt;margin:2pt 0 2pt 24pt;font-size:11.5pt}
+.a4-mcq-opt{min-width:100pt}
+.a4-img-placeholder{border:1.2pt dashed #888;background:#f9f9f9;display:flex;align-items:center;justify-content:center;font-size:10pt;color:#888;margin:6pt 0}
+.a4-ans-lines{margin:3pt 0 3pt 24pt}
+.a4-ans-line{border-bottom:.8pt solid #aaa;margin-bottom:5pt;height:16pt}
+.blank-line{display:inline-block;border-bottom:.8pt solid #000;min-width:60pt;vertical-align:bottom}`;
+
+function savePDF(){
+  const paper=document.getElementById('a4paper').cloneNode(true);
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>${PRINT_STYLES}</style></head><body>
+  <div class="a4">${paper.innerHTML}</div>
+  <script>window.onload=()=>{window.print();}<\/script></body></html>`);
+  win.document.close();
+}
+
+function saveBooklet(){
+  const paper=document.getElementById('a4paper').cloneNode(true);
+  const examType=document.getElementById('examType').value;
+  const session=document.getElementById('session').value;
+  const cls=document.getElementById('classVal').value;
+  const sec=document.getElementById('section').value;
+  const subject=document.getElementById('subject').value;
+  const fm=document.getElementById('fullMarks').value;
+  const time=document.getElementById('time').value;
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Montserrat',sans-serif;background:#fff}
+  @page{size:A4 landscape;margin:0}
+  .wrap{display:flex;width:297mm;height:210mm}
+  .cover{width:148.5mm;height:210mm;border-right:1.5pt dashed #bbb;padding:12mm 10mm;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-family:'Montserrat',sans-serif}
+  .content{width:148.5mm;height:210mm;overflow:hidden;padding:8mm 9mm;font-family:'Montserrat',sans-serif}
+  .cs{font-size:16pt;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5pt}
+  .ce{font-size:11pt;font-weight:700;margin-bottom:18pt}
+  .csubj{font-size:13pt;font-weight:800;color:#1d4ed8;border:2pt solid #1d4ed8;padding:5pt 18pt;border-radius:4pt}
+  .cmeta{margin-top:18pt;font-size:9.5pt;font-weight:600;line-height:2.2}
+  .cstu{margin-top:24pt;font-size:9.5pt;font-weight:600;line-height:2.6;text-align:left;border-top:1pt solid #ddd;padding-top:9pt}
+  .inner{transform:scale(0.64);transform-origin:top left;width:156.25%;font-family:'Montserrat',sans-serif;font-size:12px}
+  ${PRINT_STYLES.replace(/.a4\{[^}]+\}/,'.inner .a4inner{}')}
+  </style></head><body>
+  <div class="wrap">
+    <div class="cover">
+      <div class="cs">S.D. Public School</div>
+      <div class="ce">${examType} EXAMINATION — ${session}</div>
+      <div class="csubj">${subject}</div>
+      <div class="cmeta">Class : ${cls} &nbsp;|&nbsp; Sec : ${sec}<br/>Full Marks : ${fm}<br/>Time : ${time}</div>
+      <div class="cstu">Name : ……………………………………………………<br/>Roll No : ………………<br/>Date : ………………</div>
+    </div>
+    <div class="content"><div class="inner">${paper.innerHTML}</div></div>
+  </div>
+  <script>window.onload=()=>{window.print();}<\/script></body></html>`);
+  win.document.close();
+}
+
+renderSidebar();render();
+</script>
+</body>
+</html>

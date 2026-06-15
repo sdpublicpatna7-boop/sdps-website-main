@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Incharge — QP Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#f8fafc;color:#334155;min-height:100vh;display:flex;flex-direction:column}
+.main{flex:1;padding:32px;overflow-y:auto;max-width:1400px;width:100%;margin:0 auto}
+.page-title{font-family:'Outfit',sans-serif;font-size:24px;font-weight:800;color:#0f172a;letter-spacing:-.5px}
+.page-sub{font-size:13px;color:#64748b;margin-top:4px;margin-bottom:24px}
+.card{background:#ffffff;border-radius:20px;border:1px solid #f1f5f9;padding:24px;margin-bottom:24px;box-shadow:0 10px 30px rgba(0,0,0,0.015)}
+.card-title{font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;color:#1e293b;margin-bottom:16px}
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:16px;margin-bottom:24px}
+.stat{background:#ffffff;border:1px solid #f1f5f9;border-radius:18px;padding:20px;text-align:center;box-shadow:0 8px 25px rgba(0,0,0,0.01);transition:transform 0.2s, box-shadow 0.2s}
+.stat:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(0,0,0,0.03)}
+.stat .num{font-family:'Outfit',sans-serif;font-size:32px;font-weight:800;color:#0e3b91;letter-spacing:-1px}
+.stat .lbl{font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-top:6px}
+select,input,textarea{background:#ffffff;border:1.5px solid #e2e8f0;border-radius:12px;color:#1e293b;font-family:'Inter',sans-serif;font-size:13.5px;padding:10px 14px;outline:none;transition:border-color .15s, box-shadow .15s}
+select:focus,input:focus,textarea:focus{border-color:#0e3b91;box-shadow:0 0 0 3.5px rgba(14,59,145,.08)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f8fafc;padding:12px 16px;text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:#64748b;font-weight:700;border-bottom:1.5px solid #e2e8f0}
+td{padding:12px 16px;border-bottom:1px solid #f1f5f9;color:#334155;vertical-align:middle}
+tr:hover td{background:#f8fafc}
+.btn{padding:9px 18px;border:none;border-radius:12px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:600;cursor:pointer;transition:all .2s ease}
+.btn-green{background:#10b981;color:#fff}.btn-green:hover{background:#059669;transform:translateY(-1px);box-shadow:0 4px 12px rgba(16,185,129,0.15)}
+.btn-red{background:#ef4444;color:#fff}.btn-red:hover{background:#dc2626;transform:translateY(-1px);box-shadow:0 4px 12px rgba(239,68,68,0.15)}
+.btn-ghost{background:#f1f5f9;color:#475569}.btn-ghost:hover{background:#e2e8f0;color:#1e293b}
+.btn-sm{padding:6px 12px;font-size:11.5px;border-radius:8px}
+.prog-wrap{background:#f1f5f9;border-radius:6px;height:8px;overflow:hidden;margin-top:6px}
+.prog-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,#0e3b91,#2563eb);transition:width .5s}
+.modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.15);z-index:100;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:24px;padding:32px;width:100%;max-width:480px;box-shadow:0 25px 60px rgba(15,23,42,.1);border:1px solid #f1f5f9}
+.modal h3{font-family:'Outfit',sans-serif;font-size:19px;font-weight:800;margin-bottom:16px;color:#0f172a}
+.filter-bar{background:#ffffff;border:1px solid #f1f5f9;border-radius:18px;padding:16px 24px;margin-bottom:24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 8px 25px rgba(0,0,0,0.01)}
+/* ── MOBILE RESPONSIVE ── */
+@media (max-width: 768px){
+  .main{padding:16px}
+  .filter-bar{padding:12px 16px}
+  .filter-bar select{min-width:0!important;flex:1}
+  table{display:block;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}
+  .modal{padding:20px}
+}
+</style>
+</head>
+<body>
+<div id="nav"></div>
+<div class="main">
+  <div class="filter-bar">
+    <span style="font-size:12px;font-weight:700;color:#6b7280">Archive:</span>
+    <select id="archiveFilter" onchange="loadProgress()" style="min-width:200px"></select>
+    <button onclick="loadProgress()" style="background:#eff6ff;border:none;color:#0e3b91;border-radius:8px;padding:7px 16px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer">↻ Refresh</button>
+    <div id="myClassesBadge" style="font-size:11px;color:#6b7280;margin-left:auto"></div>
+  </div>
+
+  <div class="stat-row" id="statsRow"></div>
+
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div class="card-title" style="margin:0" id="tableTitle">Question Paper Progress</div>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Class</th><th>Subject</th><th>Teacher</th><th>Status</th><th>Submitted</th><th id="reviewColHead"></th>
+      </tr></thead>
+      <tbody id="progressTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal">
+  <div class="modal" style="max-width:760px">
+    <h3>Review Paper</h3>
+    <div id="modalInfo" style="font-size:13px;color:#6b7280;margin-bottom:14px;padding:10px 14px;background:#f9fafb;border-radius:10px"></div>
+    <div id="reviewPaper" style="max-height:48vh;overflow-y:auto;border:1px solid #eef2f7;border-radius:12px;padding:14px;margin-bottom:14px;background:#fcfcfd;font-size:13px;line-height:1.6">Loading paper…</div>
+    <div style="margin-bottom:14px">
+      <label style="font-size:11px;font-weight:700;color:#6b7280;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Comments / Reason</label>
+      <textarea id="reviewReason" rows="3" style="width:100%;resize:vertical" placeholder="Enter comments or rejection reason..."></textarea>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-green" onclick="doReview('approve')">✓ Approve</button>
+      <button class="btn btn-red" onclick="doReview('reject')">✕ Reject to Teacher</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="./config.js"></script>
+<script src="./qp-common.js"></script>
+<script>
+let currentUser=null, canReview=false, reviewTarget=null, allRows=[];
+
+window.addEventListener('DOMContentLoaded',async()=>{
+  const u=getUser();
+  if(!u||u.role!=='incharge'){location.href='/qp-portal/index.html';return;}
+  currentUser=u; canReview=u.can_review||false;
+  document.getElementById('nav').innerHTML=navBar('incharge','Progress Dashboard');
+  if(u.incharge_classes?.length){
+    document.getElementById('myClassesBadge').textContent='My classes: '+u.incharge_classes.join(', ');
+  }
+  if(canReview) document.getElementById('reviewColHead').textContent='Review';
+
+  const archives=await apiFetch('/archives')||[];
+  const sel=document.getElementById('archiveFilter');
+  sel.innerHTML='<option value="">All Archives</option>'+archives.map(a=>`<option value="${a.id}">${a.session_name} — ${a.exam_type}</option>`).join('');
+  await loadProgress();
+});
+
+async function loadProgress(){
+  const archiveId=document.getElementById('archiveFilter').value;
+  let rows=[];
+  if(archiveId){
+    rows=await apiFetch(`/progress/${archiveId}`)||[];
+  } else {
+    rows=await apiFetch('/assignments')||[];
+  }
+  allRows=rows;
+
+  const total=rows.length,
+    submitted=rows.filter(r=>['submitted','incharge_approved'].includes(r.status)).length,
+    approved=rows.filter(r=>['approved','printing'].includes(r.status)).length,
+    draft=rows.filter(r=>r.status==='draft').length;
+
+  document.getElementById('statsRow').innerHTML=[
+    ['📋',total,'Total'],['✏️',draft,'In Progress'],['📤',submitted,'Submitted'],['✅',approved,'Approved']
+  ].map(([i,v,l])=>`<div class="stat"><div style="font-size:20px;margin-bottom:6px">${i}</div><div class="num">${v}</div><div class="lbl">${l}</div></div>`).join('');
+
+  const selText=document.getElementById('archiveFilter').options[document.getElementById('archiveFilter').selectedIndex]?.text||'All Archives';
+  document.getElementById('tableTitle').textContent=`Progress — ${selText}`;
+
+  document.getElementById('progressTable').innerHTML=rows.length?rows.map(r=>`
+    <tr>
+      <td style="font-weight:600">${r.class_name}</td>
+      <td>${r.subject}</td>
+      <td style="color:#6b7280">${r.teacher_name}</td>
+      <td>${statusBadge(r.status)}</td>
+      <td style="font-size:11px;color:#9ca3af">${r.submitted_at?r.submitted_at.split('T')[0]:'—'}</td>
+      <td>${canReview&&r.status==='submitted'
+        ?`<button class="btn btn-sm btn-green" onclick='openReview(${JSON.stringify(r)})'>Review</button>`
+        :'—'}</td>
+    </tr>`).join('')
+  :'<tr><td colspan="6" style="text-align:center;color:#9ca3af;padding:24px">No papers found for your assigned classes</td></tr>';
+}
+
+async function openReview(row){
+  reviewTarget=row;
+  document.getElementById('modalInfo').innerHTML=`<strong>${esc(row.class_name)} — ${esc(row.subject)}</strong><br/><span style="color:#9ca3af">Teacher: ${esc(row.teacher_name)}</span>`;
+  document.getElementById('reviewReason').value='';
+  document.getElementById('reviewPaper').innerHTML='Loading paper…';
+  document.getElementById('modal').classList.add('open');
+  try{
+    const paper=await apiFetch(`/papers/${row.id}`);
+    document.getElementById('reviewPaper').innerHTML=renderReviewPaper(paper);
+  }catch(e){
+    document.getElementById('reviewPaper').innerHTML='<div style="color:#dc2626">Could not load the paper: '+esc(e.message||'error')+'</div>';
+  }
+}
+
+function renderReviewPaper(p){
+  if(!p || !Array.isArray(p.sections) || !p.sections.length){
+    return '<div style="color:#9ca3af">No question content to preview'+(p&&p.pdf_url?' (a PDF was attached instead).':'.')+'</div>';
+  }
+  let h='';
+  h+=`<div style="font-size:11px;color:#9ca3af;margin-bottom:8px">Duration: ${esc(p.duration||'—')} · Total Marks: ${esc(String(p.total_marks||'—'))}</div>`;
+  if(p.passage_title||p.passage_text){
+    h+=`<div style="margin-bottom:10px;padding:8px;background:#f1f5f9;border-radius:8px"><div style="font-weight:700">${esc(p.passage_title||'Passage')}</div><div style="white-space:pre-wrap;color:#374151">${esc(p.passage_text||'')}</div></div>`;
+  }
+  p.sections.forEach(s=>{
+    h+=`<div style="margin:12px 0 6px;font-weight:700;color:#0e3b91">${esc(s.section_label||'')} ${esc(s.section_title||'')}${s.total_marks?` <span style="color:#9ca3af;font-weight:600">(${esc(String(s.total_marks))} marks)</span>`:''}</div>`;
+    if(s.instructions) h+=`<div style="font-size:11px;color:#9ca3af;margin-bottom:6px">${esc(s.instructions)}</div>`;
+    (s.questions||[]).forEach((q,i)=>{
+      h+=`<div style="margin-bottom:8px"><span style="font-weight:600">${esc(String(q.q_no||(i+1)))}.</span> ${esc(q.question||'')}${q.marks?` <span style="color:#9ca3af">[${esc(String(q.marks))}]</span>`:''}`;
+      const opts=(q.options||[]).filter(Boolean);
+      if(opts.length){
+        h+=`<div style="margin:3px 0 0 16px;color:#374151">${opts.map((o,j)=>`(${String.fromCharCode(97+j)}) ${esc(o)}`).join(' &nbsp; ')}</div>`;
+      }
+      (q.sub_questions||[]).forEach((sq,k)=>{
+        const txt = typeof sq==='string' ? sq : (sq&&sq.text)||'';
+        if(txt) h+=`<div style="margin:2px 0 0 16px;color:#374151">(${String.fromCharCode(105+k)}) ${esc(txt)}</div>`;
+      });
+      if(q.image_url){
+        const src=q.image_url.startsWith('http')?q.image_url:`${API}${q.image_url}`;
+        h+=`<div style="margin-top:4px"><img src="${esc(src)}" style="max-height:130px;border:1px solid #eee;border-radius:6px"/></div>`;
+      }
+      h+='</div>';
+    });
+  });
+  return h;
+}
+
+async function doReview(action){
+  if(!reviewTarget)return;
+  const reason=document.getElementById('reviewReason').value;
+  if(action==='reject'&&!reason){toast('Please enter a rejection reason','error');return;}
+  try{
+    await apiFetch(`/assignments/${reviewTarget.id}/incharge-review`,{method:'POST',body:JSON.stringify({action,reason})});
+    toast(action==='approve'?'Approved and sent to admin':'Rejected — teacher notified');
+    closeModal();await loadProgress();
+  }catch(e){toast(e.message,'error');}
+}
+
+function closeModal(){document.getElementById('modal').classList.remove('open');reviewTarget=null;}
+document.getElementById('modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
+</script>
+</body>
+</html>

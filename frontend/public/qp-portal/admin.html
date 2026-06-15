@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>QP Admin — S.D. Public School</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#f8fafc;color:#334155;min-height:100vh;display:flex;flex-direction:column}
+.layout{display:flex;flex:1;overflow:hidden;height:calc(100vh - 57px)}
+/* Sidebar */
+.sidebar{width:240px;background:#ffffff;border-right:1px solid #f1f5f9;overflow-y:auto;display:flex;flex-direction:column;flex-shrink:0;box-shadow:0 8px 30px rgba(0,0,0,0.005)}
+.sidebar::-webkit-scrollbar{width:0}
+.sb-brand{padding:20px;border-bottom:1px solid #f8fafc;display:flex;align-items:center}
+.sb-brand span{font-family:'Outfit',sans-serif;font-size:12px;font-weight:800;color:#0e3b91;text-transform:uppercase;letter-spacing:.1em}
+.nav-sec{padding:18px 20px 8px;font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#94a3b8}
+.nav-item{padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:10px;color:#64748b;border-radius:10px;margin:2px 12px;transition:.2s ease}
+.nav-item:hover{background:#f8fafc;color:#1e293b}
+.nav-item.active{background:rgba(248,125,14,0.1);color:#f87d0e;font-weight:700}
+.nav-item .icon{font-size:15px;width:20px;text-align:center}
+/* Main */
+.main{flex:1;overflow-y:auto;padding:32px;max-width:1400px;width:100%;margin:0 auto}
+.page-title{font-family:'Outfit',sans-serif;font-size:24px;font-weight:800;color:#0f172a;letter-spacing:-.5px}
+.page-sub{font-size:13px;color:#64748b;margin-top:4px}
+/* Cards */
+.card{background:#ffffff;border-radius:20px;border:1px solid #f1f5f9;padding:24px;margin-bottom:24px;box-shadow:0 10px 30px rgba(0,0,0,0.015)}
+.card-title{font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;color:#1e293b;margin-bottom:16px}
+/* Stats */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.stat{background:#ffffff;border:1px solid #f1f5f9;border-radius:18px;padding:20px;text-align:center;box-shadow:0 8px 25px rgba(0,0,0,0.01);transition:transform 0.2s, box-shadow 0.2s}
+.stat:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(0,0,0,0.03)}
+.stat .num{font-family:'Outfit',sans-serif;font-size:32px;font-weight:800;color:#0e3b91;letter-spacing:-1px}
+.stat .lbl{font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-top:6px}
+/* Progress bar */
+.prog-wrap{background:#f1f5f9;border-radius:6px;height:8px;overflow:hidden;margin-top:8px}
+.prog-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,#0e3b91,#2563eb);transition:width .5s}
+/* Inputs */
+input,select,textarea{background:#ffffff;border:1.5px solid #e2e8f0;border-radius:12px;color:#1e293b;font-family:'Inter',sans-serif;font-size:13.5px;padding:10px 14px;outline:none;transition:border-color .15s, box-shadow .15s;width:100%}
+input:focus,select:focus,textarea:focus{border-color:#0e3b91;box-shadow:0 0 0 3.5px rgba(14,59,145,.08)}
+select option{background:#ffffff}
+label.lbl{display:block;font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em}
+.field{margin-bottom:14px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+/* Buttons */
+.btn{padding:9px 18px;border:none;border-radius:12px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:600;cursor:pointer;transition:all .2s ease;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn-primary{background:#0e3b91;color:#fff}.btn-primary:hover{background:#1d4ed8;transform:translateY(-1px);box-shadow:0 4px 12px rgba(14,59,145,0.15)}
+.btn-green{background:#10b981;color:#fff}.btn-green:hover{background:#059669;transform:translateY(-1px);box-shadow:0 4px 12px rgba(16,185,129,0.15)}
+.btn-red{background:#ef4444;color:#fff}.btn-red:hover{background:#dc2626;transform:translateY(-1px);box-shadow:0 4px 12px rgba(239,68,68,0.15)}
+.btn-orange{background:#f87d0e;color:#fff}.btn-orange:hover{background:#ffa94d;transform:translateY(-1px);box-shadow:0 4px 12px rgba(248,125,14,0.15)}
+.btn-purple{background:#7c3aed;color:#fff}.btn-purple:hover{background:#6d28d9;transform:translateY(-1px);box-shadow:0 4px 12px rgba(124,58,237,0.15)}
+.btn-ghost{background:#f1f5f9;color:#475569}.btn-ghost:hover{background:#e2e8f0;color:#1e293b}
+.btn-sm{padding:6px 12px;font-size:11.5px;border-radius:8px}
+/* Table */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f8fafc;padding:12px 16px;text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:#64748b;font-weight:700;border-bottom:1.5px solid #e2e8f0}
+td{padding:12px 16px;border-bottom:1px solid #f1f5f9;color:#334155;vertical-align:middle}
+tr:hover td{background:#f8fafc}
+/* Toggle */
+.toggle{position:relative;display:inline-block;width:40px;height:22px}
+.toggle input{opacity:0;width:0;height:0}
+.slider{position:absolute;cursor:pointer;inset:0;background:#cbd5e1;border-radius:22px;transition:.2s}
+.slider:before{position:absolute;content:"";height:16px;width:16px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.toggle input:checked+.slider{background:#10b981}
+.toggle input:checked+.slider:before{transform:translateX(18px)}
+/* Modal */
+.modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.15);z-index:100;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:24px;padding:32px;width:100%;max-width:540px;max-height:90vh;overflow-y:auto;box-shadow:0 25px 60px rgba(15,23,42,.1);border:1px solid #f1f5f9}
+.modal h3{font-family:'Outfit',sans-serif;font-size:19px;font-weight:800;margin-bottom:20px;color:#0f172a}
+/* Question viewer */
+.qview{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:18px;margin-bottom:12px}
+.qview-no{font-family:'Outfit',sans-serif;font-size:11px;font-weight:800;color:#0e3b91;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.qview-q{font-size:13.5px;color:#1e293b;line-height:1.6}
+.qview-opts{margin-top:10px;display:flex;flex-wrap:wrap;gap:4px 18px}
+.qview-opt{font-size:12.5px;color:#334155}
+/* Pane */
+.pane{display:none}.pane.active{display:block}
+/* ── MOBILE RESPONSIVE ── */
+@media (max-width: 860px){
+  .layout{flex-direction:column;height:auto;overflow:visible}
+  .sidebar{width:100%;flex-direction:row;align-items:center;overflow-x:auto;overflow-y:hidden;border-right:none;border-bottom:1px solid #f1f5f9}
+  .sidebar .sb-brand{display:none}
+  .sidebar nav{display:flex;flex-wrap:nowrap;padding:6px 8px!important}
+  .nav-sec{display:none}
+  .nav-item{margin:2px 4px;white-space:nowrap}
+  .main{padding:16px;height:auto;overflow:visible}
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+  .row2,.row3{grid-template-columns:1fr}
+  .modal{padding:20px;max-height:88vh}
+  table{display:block;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}
+  select{width:100%!important;max-width:100%}
+  .main [style*="display:flex"]{flex-wrap:wrap}
+}
+</style>
+</head>
+<body>
+<div id="nav"></div>
+<div class="layout">
+  <div class="sidebar">
+    <div class="sb-brand"><span>QP Portal</span></div>
+    <nav style="padding:8px 0;flex:1">
+      <div class="nav-sec">Overview</div>
+      <div class="nav-item active" onclick="showPane('dashboard',this)"><span class="icon">📊</span>Dashboard</div>
+      <div class="nav-sec">Archives</div>
+      <div class="nav-item" onclick="showPane('sessions',this)"><span class="icon">📁</span>Sessions</div>
+      <div class="nav-item" onclick="showPane('archives',this)"><span class="icon">🗃️</span>Exam Archives</div>
+      <div class="nav-item" onclick="showPane('assignments',this)"><span class="icon">📋</span>Assignments</div>
+      <div class="nav-sec">Review</div>
+      <div class="nav-item" onclick="showPane('review',this)"><span class="icon">✅</span>Review Papers</div>
+      <div class="nav-item" onclick="showPane('viewquestions',this)"><span class="icon">👁</span>View Questions</div>
+      <div class="nav-sec">People</div>
+      <div class="nav-item" onclick="showPane('users',this)"><span class="icon">👥</span>User Management</div>
+      <div class="nav-item" onclick="showPane('onboard',this)"><span class="icon">📨</span>Onboard Teacher</div>
+      <div class="nav-sec">Monitoring</div>
+      <div class="nav-item" onclick="showPane('activity',this)"><span class="icon">🟢</span>User Activity</div>
+    </nav>
+  </div>
+  <div class="main">
+    <!-- Dashboard -->
+    <div class="pane active" id="pane-dashboard">
+      <div class="page-title">Dashboard</div>
+      <div class="page-sub" id="dashGreeting">Welcome back</div>
+      <div class="stat-grid" id="statsGrid" style="margin-top:20px"></div>
+      <div class="card"><div class="card-title">Progress by Archive</div><div id="dashProgress"></div></div>
+    </div>
+    <!-- Sessions -->
+    <div class="pane" id="pane-sessions">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div><div class="page-title">Sessions</div><div class="page-sub">Academic year folders</div></div>
+        <button class="btn btn-primary" onclick="openNewSession()">+ New Session</button>
+      </div>
+      <div class="card">
+        <table><thead><tr><th>Session</th><th>Status</th><th>Created</th></tr></thead>
+        <tbody id="sessionsTable"></tbody></table>
+      </div>
+    </div>
+    <!-- Archives -->
+    <div class="pane" id="pane-archives">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div><div class="page-title">Exam Archives</div><div class="page-sub">F.A.-I, F.A.-II, S.A.-I, etc.</div></div>
+        <button class="btn btn-primary" onclick="openNewArchive()">+ New Archive</button>
+      </div>
+      <div class="card">
+        <table><thead><tr><th>Session</th><th>Exam</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="archivesTable"></tbody></table>
+      </div>
+    </div>
+    <!-- Assignments -->
+    <div class="pane" id="pane-assignments">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+        <div><div class="page-title">Assignments</div><div class="page-sub">Assign teachers to papers</div></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="filterArchive" onchange="loadAssignments()" style="width:220px;font-size:12px">
+            <option value="">All Archives</option>
+          </select>
+          <button class="btn btn-primary" onclick="openNewAssignment()">+ Assign</button>
+        </div>
+      </div>
+      <div class="card">
+        <table><thead><tr><th>Archive</th><th>Class</th><th>Subject</th><th>Teacher</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="assignmentsTable"></tbody></table>
+      </div>
+    </div>
+    <!-- Review -->
+    <div class="pane" id="pane-review">
+      <div class="page-title" style="margin-bottom:6px">Review Papers</div>
+      <div class="page-sub" style="margin-bottom:20px">Approve, reject, or send to printing</div>
+      <div class="card">
+        <table><thead><tr><th>Archive</th><th>Class</th><th>Subject</th><th>Teacher</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="reviewTable"></tbody></table>
+      </div>
+    </div>
+    <!-- View Questions -->
+    <div class="pane" id="pane-viewquestions">
+      <div class="page-title" style="margin-bottom:6px">View Questions</div>
+      <div class="page-sub" style="margin-bottom:20px">Read question content prepared by teachers</div>
+      <div class="card" style="padding:16px 20px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <select id="vqArchive" onchange="loadVQAssignments()" style="width:200px;font-size:12px">
+            <option value="">Select Archive...</option>
+          </select>
+          <select id="vqAssignment" onchange="loadVQPaper()" style="width:220px;font-size:12px">
+            <option value="">Select Class — Subject...</option>
+          </select>
+        </div>
+      </div>
+      <div id="vqContent"></div>
+    </div>
+    <!-- Users -->
+    <div class="pane" id="pane-users">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div><div class="page-title">User Management</div><div class="page-sub">Teachers, Incharges, Printing Heads</div></div>
+        <button class="btn btn-primary" onclick="openNewUser()">+ Add User</button>
+      </div>
+      <div class="card">
+        <table><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Active</th><th>Actions</th></tr></thead>
+        <tbody id="usersTable"></tbody></table>
+      </div>
+    </div>
+    <!-- Onboard Teacher (Tabbed) -->
+    <div class="pane" id="pane-onboard">
+      <div class="page-title" style="margin-bottom:4px">Onboard Teachers</div>
+      <div class="page-sub" style="margin-bottom:18px">Manually add a teacher with multiple class/subject assignments, or upload an Excel sheet to onboard in bulk.</div>
+
+      <!-- Tab strip -->
+      <div style="display:flex;gap:0;border-bottom:2px solid #e5e7eb;margin-bottom:20px">
+        <button id="tabManual" onclick="switchObTab('manual')" style="padding:9px 22px;font-size:12.5px;font-weight:600;background:none;border:none;border-bottom:2.5px solid #0e3b91;margin-bottom:-2px;cursor:pointer;color:#0e3b91;border-radius:0">✏️ Manual</button>
+        <button id="tabBulk"   onclick="switchObTab('bulk')"   style="padding:9px 22px;font-size:12.5px;font-weight:600;background:none;border:none;border-bottom:2.5px solid transparent;margin-bottom:-2px;cursor:pointer;color:#6b7280;border-radius:0">📊 Bulk Excel</button>
+      </div>
+
+      <!-- ══ MANUAL TAB ══ -->
+      <div id="obPaneManual">
+        <div class="card">
+          <div class="card-title" style="margin-bottom:12px">👤 Teacher Info</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div class="field"><label class="lbl">Username <span style="color:#dc2626">*</span></label>
+              <input type="text" id="obUsername" placeholder="e.g. SDPSE01" autocapitalize="none"/></div>
+            <div class="field"><label class="lbl">Full Name <span style="color:#dc2626">*</span></label>
+              <input type="text" id="obName" placeholder="e.g. Renu Tiwary"/></div>
+            <div class="field"><label class="lbl">Phone (WhatsApp) <span style="color:#dc2626">*</span></label>
+              <input type="tel" id="obPhone" placeholder="e.g. 9955190262"/></div>
+            <div class="field"><label class="lbl">Email (optional)</label>
+              <input type="email" id="obEmail" placeholder="teacher@sdpublic.org"/></div>
+            <div class="field" style="grid-column:1/3"><label class="lbl">Role</label>
+              <select id="obRole">
+                <option value="teacher">Teacher</option>
+                <option value="incharge">Incharge</option>
+                <option value="printing_head">Printing Head</option>
+              </select></div>
+          </div>
+          <div class="field" style="margin-top:4px"><label class="lbl">Exam Archive <span style="color:#dc2626">*</span></label>
+            <select id="onboardArchive"><option value="">Select archive…</option></select></div>
+
+          <!-- Dynamic class/subject rows -->
+          <div style="margin-top:18px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em">Class &amp; Subject Assignments <span style="color:#dc2626">*</span></span>
+              <button class="btn btn-ghost btn-sm" onclick="obAddRow()">+ Add Row</button>
+            </div>
+            <div id="obRows"></div>
+          </div>
+
+          <div style="font-size:11px;color:#6b7280;margin:14px 0;line-height:1.6;background:#f8faff;border-left:3px solid #0e3b91;padding:8px 10px;border-radius:0 8px 8px 0">
+            The teacher signs in with their <strong>username</strong>. On first login they’ll receive a WhatsApp one-time code to set their password. Add multiple rows to assign more than one class/subject.
+          </div>
+          <button class="btn btn-green" onclick="doOnboard()" id="onboardBtn">📨 Create, Assign &amp; Invite</button>
+          <div id="onboardResult" style="margin-top:16px;font-size:12px"></div>
+        </div>
+      </div>
+
+      <!-- ══ BULK TAB ══ -->
+      <div id="obPaneBulk" style="display:none">
+        <div class="card">
+          <div class="card-title">📥 Download Template</div>
+          <p style="font-size:12.5px;color:#6b7280;margin-bottom:12px;line-height:1.6">
+            Download the sample Excel file. Each row is one class-subject pair. A teacher teaching multiple classes/subjects gets one row per pair (same username repeated).
+          </p>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-ghost" onclick="downloadBulkTemplate()">⬇️ Download Template (.xlsx)</button>
+            <span style="font-size:11px;color:#9ca3af">Columns: username · name · phone · email · role · class_name · subject</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">📤 Upload &amp; Preview</div>
+          <div class="field"><label class="lbl">Exam Archive <span style="color:#dc2626">*</span></label>
+            <select id="bulkArchive"><option value="">Select archive…</option></select></div>
+          <div class="field" style="margin-top:10px">
+            <label class="lbl">Excel File (.xlsx) <span style="color:#dc2626">*</span></label>
+            <input type="file" id="bulkFile" accept=".xlsx,.xls" onchange="parseBulkFile(this)" style="padding:7px;cursor:pointer"/>
+          </div>
+          <div id="bulkPreview" style="margin-top:14px"></div>
+          <div id="bulkActions" style="display:none;margin-top:14px">
+            <button class="btn btn-green" onclick="doBulkOnboard()" id="bulkBtn">🚀 Onboard All Rows</button>
+          </div>
+          <div id="bulkResult" style="margin-top:16px;font-size:12px"></div>
+        </div>
+      </div>
+    </div>
+                <!-- User Activity -->
+    <div class="pane" id="pane-activity">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+        <div><div class="page-title">User Activity</div><div class="page-sub">Who signed in, when, from where and on which device</div></div>
+        <button class="btn btn-ghost" onclick="loadActivity()">↻ Refresh</button>
+      </div>
+      <div class="stat-row" id="activityStats" style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:18px"></div>
+      <div class="card">
+        <table><thead><tr><th>Status</th><th>User</th><th>Role</th><th>Signed in</th><th>Last seen</th><th>IP</th><th>Device</th></tr></thead>
+        <tbody id="activityTable"></tbody></table>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Modal -->
+<div class="modal-bg" id="modal"><div class="modal" id="modalBody"></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="./config.js"></script>
+<script src="./qp-common.js"></script>
+<script>
+let sessions=[],archives=[],users=[],assignments=[];
+
+window.addEventListener('DOMContentLoaded',async()=>{
+  const u=getUser();
+  if(!u||u.role!=='qp_admin'){location.href='/qp-portal/index.html';return;}
+  document.getElementById('nav').innerHTML=navBar('qp_admin','Admin Dashboard');
+  document.getElementById('dashGreeting').textContent='Welcome back, '+u.name;
+  await Promise.all([loadSessions(),loadArchives(),loadUsers(),loadAssignments()]);
+  loadDashboard();
+});
+
+function showPane(id,el){
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('pane-'+id).classList.add('active');
+  if(el)el.classList.add('active');
+  if(id==='review')loadReview();
+  if(id==='assignments')loadAssignments();
+  if(id==='users')loadUsers();
+  if(id==='viewquestions')initVQ();
+  if(id==='onboard')fillOnboardArchives();
+  if(id==='activity')loadActivity();
+}
+
+async function loadSessions(){
+  sessions=await apiFetch('/sessions')||[];
+  const tb=document.getElementById('sessionsTable');
+  if(!tb)return;
+  tb.innerHTML=sessions.map(s=>`<tr>
+    <td style="font-weight:700">${esc(s.name)}</td>
+    <td><span style="color:${s.is_active?'#059669':'#6b7280'};font-weight:600;font-size:11px">${s.is_active?'● Active':'○ Inactive'}</span></td>
+    <td style="color:#9ca3af;font-size:11px">${esc((s.created_at||'').split('T')[0])}</td>
+  </tr>`).join('');
+}
+
+async function loadArchives(){
+  archives=await apiFetch('/archives')||[];
+  const tb=document.getElementById('archivesTable');
+  if(tb)tb.innerHTML=archives.map(a=>`<tr>
+    <td style="color:#6b7280;font-size:11px">${esc(a.session_name)}</td>
+    <td style="font-weight:700;color:#0e3b91">${esc(a.exam_type)}</td>
+    <td><span style="color:${a.is_open?'#059669':'#dc2626'};font-weight:600;font-size:11px">${a.is_open?'● Open':'● Locked'}</span></td>
+    <td><div style="display:flex;gap:6px">
+      <button class="btn btn-sm ${a.is_open?'btn-orange':'btn-green'}" onclick="toggleArchive('${esc(a.id)}',${!a.is_open})">${a.is_open?'Lock':'Open'}</button>
+      <button class="btn btn-sm btn-purple" onclick="promoteTeams('${esc(a.id)}')">↑ Promote</button>
+      <button class="btn btn-sm btn-red" onclick="deleteArchive('${esc(a.id)}')">✕</button>
+    </div></td>
+  </tr>`).join('');
+
+  // Populate all archive selects
+  const selects=[document.getElementById('filterArchive'),document.getElementById('vqArchive')];
+  selects.forEach(sel=>{
+    if(!sel)return;
+    const old=sel.value;
+    const firstOpt=sel.id==='vqArchive'?'<option value="">Select Archive...</option>':'<option value="">All Archives</option>';
+    sel.innerHTML=firstOpt+archives.map(a=>`<option value="${esc(a.id)}">${esc(a.session_name)} — ${esc(a.exam_type)}</option>`).join('');
+    if(old)sel.value=old;
+  });
+}
+
+async function loadUsers(){
+  users=await apiFetch('/users')||[];
+  const tb=document.getElementById('usersTable');
+  if(!tb)return;
+  const roleColors={qp_admin:'#dc2626',teacher:'#2563eb',incharge:'#7c3aed',printing_head:'#059669'};
+  tb.innerHTML=users.map(u=>`<tr>
+    <td style="font-weight:600">${esc(u.name)}</td>
+    <td style="color:#6b7280">${esc(u.username||u.email||'—')}</td>
+    <td><span style="background:${roleColors[u.role]||'#6b7280'}15;color:${roleColors[u.role]||'#6b7280'};font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px">${esc(u.role)}</span></td>
+    <td><label class="toggle"><input type="checkbox" ${u.is_active?'checked':''} onchange="toggleUser('${esc(u.id)}',this.checked)"/><span class="slider"></span></label></td>
+    <td><div style="display:flex;gap:5px">
+      <button class="btn btn-sm btn-ghost" onclick="editUser('${esc(u.id)}')">Edit</button>
+      <button class="btn btn-sm btn-ghost" onclick="openSubstituteAssignment2('${esc(u.id)}')">Substitute</button>
+      <button class="btn btn-sm btn-red" onclick="deleteUser('${esc(u.id)}')">✕</button>
+    </div></td>
+  </tr>`).join('');
+}
+
+async function loadAssignments(){
+  assignments=await apiFetch('/assignments')||[];
+  const archiveFilter=document.getElementById('filterArchive')?.value||'';
+  const filtered=archiveFilter?assignments.filter(a=>a.archive_id===archiveFilter):assignments;
+  const tb=document.getElementById('assignmentsTable');
+  if(!tb)return;
+  tb.innerHTML=filtered.length?filtered.map(a=>`<tr>
+    <td style="font-size:11px;color:#6b7280">${esc(a.session_name)} · ${esc(a.exam_type)}</td>
+    <td style="font-weight:600">${esc(a.class_name)}</td>
+    <td>${esc(a.subject)}</td>
+    <td style="color:#6b7280">${esc(a.teacher_name)}</td>
+    <td>${statusBadge(a.status)}</td>
+    <td><div style="display:flex;gap:5px">
+      <button class="btn btn-sm btn-purple" onclick="openSubstituteAssignment('${esc(a.id)}')">↔ Sub</button>
+      <button class="btn btn-sm btn-red" onclick="deleteAssignment('${esc(a.id)}')">✕</button>
+    </div></td>
+  </tr>`).join('')
+  :'<tr><td colspan="6" style="text-align:center;color:#9ca3af;padding:24px">No assignments found</td></tr>';
+}
+
+async function loadReview(){
+  const all=await apiFetch('/assignments')||[];
+  const pending=all.filter(a=>['submitted','incharge_approved'].includes(a.status));
+  const tb=document.getElementById('reviewTable');
+  if(!tb)return;
+  tb.innerHTML=pending.length?pending.map(a=>`<tr>
+    <td style="font-size:11px;color:#6b7280">${esc(a.session_name)} · ${esc(a.exam_type)}</td>
+    <td style="font-weight:600">${esc(a.class_name)}</td>
+    <td>${esc(a.subject)}</td>
+    <td style="color:#6b7280">${esc(a.teacher_name)}</td>
+    <td>${statusBadge(a.status)}</td>
+    <td><div style="display:flex;gap:5px;flex-wrap:wrap">
+      <button class="btn btn-sm btn-green" onclick="adminApprove('${esc(a.id)}')">✓ Approve</button>
+      <button class="btn btn-sm btn-red" onclick="adminReject('${esc(a.id)}')">✕ Reject</button>
+      <button class="btn btn-sm btn-primary" onclick="adminSendPrint('${esc(a.id)}')">🖨 Print</button>
+      <button class="btn btn-sm btn-ghost" onclick="viewPaperInModal('${esc(a.id)}','${esc(a.class_name)}','${esc(a.subject)}')">👁 View</button>
+    </div></td>
+  </tr>`).join('')
+  :'<tr><td colspan="6" style="text-align:center;color:#9ca3af;padding:24px">No papers pending review</td></tr>';
+}
+
+function loadDashboard(){
+  const total=assignments.length,draft=assignments.filter(a=>a.status==='draft').length,
+    submitted=assignments.filter(a=>['submitted','incharge_approved'].includes(a.status)).length,
+    approved=assignments.filter(a=>['approved','printing'].includes(a.status)).length;
+  document.getElementById('statsGrid').innerHTML=[
+    ['📋',total,'Total Assignments'],['✏️',draft,'In Progress'],['📤',submitted,'Submitted'],['✅',approved,'Approved']
+  ].map(([i,v,l])=>`<div class="stat"><div style="font-size:22px;margin-bottom:6px">${i}</div><div class="num">${v}</div><div class="lbl">${l}</div></div>`).join('');
+
+  const byArchive={};
+  assignments.forEach(a=>{
+    const k=a.session_name+'||'+a.exam_type;
+    if(!byArchive[k])byArchive[k]={name:`${a.session_name} — ${a.exam_type}`,total:0,done:0};
+    byArchive[k].total++;
+    if(['approved','printing'].includes(a.status))byArchive[k].done++;
+  });
+  document.getElementById('dashProgress').innerHTML=Object.values(byArchive).map(b=>{
+    const pct=b.total?Math.round(b.done/b.total*100):0;
+    return `<div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
+        <span style="font-weight:600;color:#1f2937">${b.name}</span>
+        <span style="color:#6b7280">${b.done}/${b.total} · ${pct}%</span>
+      </div>
+      <div class="prog-wrap"><div class="prog-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('')||'<p style="color:#9ca3af;font-size:13px">No assignments yet.</p>';
+}
+
+// ── View Questions (admin can read content) ──────────────────────────────
+const ROMAN=['i','ii','iii','iv','v','vi','vii','viii','ix','x','xi','xii'];
+const QT={MCQ:'Multiple Choice',FIB:'Fill in Blanks',TrueFalse:'True/False',Assertion:'Assertion & Reason',Short:'Short Answer',Long:'Long Answer',Grammar:'Grammar',Poem:'Poem',Map:'Map',Puzzle:'Puzzle',Comprehension:'Comprehension'};
+
+function initVQ(){
+  const sel=document.getElementById('vqArchive');
+  if(sel&&!sel.innerHTML.includes('<option value="') ){
+    sel.innerHTML='<option value="">Select Archive...</option>'+archives.map(a=>`<option value="${a.id}">${a.session_name} — ${a.exam_type}</option>`).join('');
+  }
+}
+
+async function loadVQAssignments(){
+  const archiveId=document.getElementById('vqArchive').value;
+  const asel=document.getElementById('vqAssignment');
+  document.getElementById('vqContent').innerHTML='';
+  asel.innerHTML='<option value="">Select Class — Subject...</option>';
+  if(!archiveId)return;
+  const list=assignments.filter(a=>a.archive_id===archiveId);
+  asel.innerHTML='<option value="">Select Class — Subject...</option>'+list.map(a=>`<option value="${a.id}">${a.class_name} — ${a.subject} (${a.teacher_name}) [${a.status}]</option>`).join('');
+}
+
+async function loadVQPaper(){
+  const assignmentId=document.getElementById('vqAssignment').value;
+  const container=document.getElementById('vqContent');
+  if(!assignmentId){container.innerHTML='';return;}
+  container.innerHTML='<div style="padding:20px;text-align:center;color:#9ca3af;font-size:13px">Loading paper...</div>';
+  try{
+    const paper=await apiFetch(`/papers/${assignmentId}`);
+    if(!paper||!Object.keys(paper).length){
+      container.innerHTML='<div class="card" style="text-align:center;color:#9ca3af;padding:32px"><div style="font-size:32px;margin-bottom:8px">📄</div><div>No paper content yet. Teacher has not started writing.</div></div>';
+      return;
+    }
+    const a=assignments.find(x=>x.id===assignmentId)||{};
+    let html=`<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:16px">
+        <div>
+          <div style="font-size:16px;font-weight:700;color:#0e3b91">${a.class_name} — ${a.subject}</div>
+          <div style="font-size:12px;color:#6b7280;margin-top:2px">${a.exam_type} · ${a.session_name} · Teacher: ${a.teacher_name}</div>
+        </div>
+        ${statusBadge(a.status)}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;background:#f9fafb;border-radius:10px;padding:12px">
+        <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:700">Duration</div><div style="font-size:13px;font-weight:600;margin-top:2px">${paper.duration||'—'}</div></div>
+        <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:700">Total Marks</div><div style="font-size:13px;font-weight:600;margin-top:2px">${paper.total_marks||'—'}</div></div>
+        <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:700">Sections</div><div style="font-size:13px;font-weight:600;margin-top:2px">${(paper.sections||[]).length}</div></div>
+        <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:700">Questions</div><div style="font-size:13px;font-weight:600;margin-top:2px">${(paper.sections||[]).reduce((t,s)=>t+(s.questions||[]).length,0)}</div></div>
+      </div>`;
+
+    if(paper.passage_title||paper.passage_text){
+      html+=`<div style="background:#eff6ff;border-left:3px solid #0e3b91;padding:12px 14px;border-radius:0 8px 8px 0;margin-bottom:14px">
+        ${paper.passage_title?`<div style="font-weight:700;font-size:13px;margin-bottom:4px">${paper.passage_title}</div>`:''}
+        ${paper.passage_text?`<div style="font-size:12px;color:#374151;line-height:1.6">${paper.passage_text}</div>`:''}
+      </div>`;
+    }
+
+    (paper.sections||[]).forEach((s,si)=>{
+      html+=`<div style="margin-bottom:18px">
+        <div style="display:flex;justify-content:space-between;align-items:center;background:#f9fafb;border-radius:10px;padding:10px 14px;margin-bottom:8px">
+          <div style="font-weight:700;font-size:13px;color:#0e3b91">Q${si+1}. ${s.instructions||QT[s.question_type]||''}</div>
+          ${s.total_marks?`<span style="font-size:11px;font-weight:700;background:#eff6ff;color:#0e3b91;padding:2px 8px;border-radius:8px">${s.total_marks} marks</span>`:''}
+        </div>`;
+      (s.questions||[]).forEach((q,qi)=>{
+        html+=`<div class="qview">
+          <div class="qview-no">Q${si+1} ${ROMAN[qi]}. ${q.marks?`[${q.marks} mark${q.marks>1?'s':''}]`:''}</div>
+          <div class="qview-q">${q.question||'<em style="color:#9ca3af">No question text</em>'}</div>`;
+        if((q.options||[]).filter(o=>o).length){
+          html+=`<div class="qview-opts">${q.options.map((o,i)=>o?`<div class="qview-opt"><strong>${String.fromCharCode(97+i)}.</strong> ${o}</div>`:'').join('')}</div>`;
+        }
+        if((q.sub_questions||[]).length){
+          html+=`<div style="margin-top:8px;padding-left:12px;border-left:2px solid #e5e7eb">${q.sub_questions.map((sq,i)=>`<div style="font-size:12px;color:#374151;margin-bottom:3px"><strong>${String.fromCharCode(97+i)}.</strong> ${sq.text||sq}</div>`).join('')}</div>`;
+        }
+        if(q.image_url||q.image_data){
+          html+=`<div style="margin-top:8px"><img src="${q.image_data||API+q.image_url}" style="max-height:100px;object-fit:contain;border-radius:6px;border:1px solid #e5e7eb"/></div>`;
+        }
+        html+=`</div>`;
+      });
+      html+='</div>';
+    });
+
+    html+=`<div style="display:flex;gap:8px;margin-top:6px">
+      <button class="btn btn-green" onclick="adminApprove('${a.id}')">✓ Approve</button>
+      <button class="btn btn-red" onclick="adminReject('${a.id}')">✕ Reject</button>
+      <button class="btn btn-primary" onclick="adminSendPrint('${a.id}')">🖨 Send to Print</button>
+    </div></div>`;
+
+    container.innerHTML=html;
+  }catch(e){
+    container.innerHTML=`<div class="card" style="color:#dc2626;font-size:13px">${e.message}</div>`;
+  }
+}
+
+async function viewPaperInModal(assignmentId,cls,subj){
+  document.getElementById('vqArchive').value='';
+  document.getElementById('vqAssignment').innerHTML=`<option value="${assignmentId}">${cls} — ${subj}</option>`;
+  document.getElementById('vqAssignment').value=assignmentId;
+  showPane('viewquestions',document.querySelector('.nav-item:nth-child(8)'));
+  await loadVQPaper();
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────
+async function toggleUser(uid,active){
+  await apiFetch(`/users/${uid}`,{method:'PUT',body:JSON.stringify({is_active:active})});
+  toast(active?'User enabled':'User disabled');
+}
+async function deleteUser(uid){
+  if(!confirm('Delete this user?'))return;
+  await apiFetch(`/users/${uid}`,{method:'DELETE'});
+  toast('Deleted','warn');await loadUsers();
+}
+async function toggleArchive(id,open){
+  await apiFetch(`/archives/${id}`,{method:'PUT',body:JSON.stringify({is_open:open})});
+  toast(open?'Archive opened':'Archive locked');await loadArchives();
+}
+async function deleteArchive(id){
+  if(!confirm('Delete this archive?'))return;
+  await apiFetch(`/archives/${id}`,{method:'DELETE'});
+  toast('Deleted','warn');await loadArchives();await loadAssignments();
+}
+async function deleteAssignment(id){
+  if(!confirm('Remove this assignment?'))return;
+  await apiFetch(`/assignments/${id}`,{method:'DELETE'});
+  toast('Removed','warn');await loadAssignments();
+}
+async function adminApprove(id){
+  if(!confirm('Approve this paper?'))return;
+  await apiFetch(`/assignments/${id}/admin-action`,{method:'POST',body:JSON.stringify({action:'approve'})});
+  toast('Paper approved ✓');loadReview();
+}
+async function adminReject(id){
+  const reason=prompt('Rejection reason (shown to teacher):');
+  if(reason===null)return;
+  const toDraft=confirm('Send back to Draft? OK=Draft, Cancel=Submitted');
+  await apiFetch(`/assignments/${id}/admin-action`,{method:'POST',body:JSON.stringify({action:'reject',reason,reject_to:toDraft?'draft':'submitted'})});
+  toast('Rejected','warn');loadReview();
+}
+async function adminSendPrint(id){
+  if(!confirm('Send to Printing Head?'))return;
+  await apiFetch(`/assignments/${id}/admin-action`,{method:'POST',body:JSON.stringify({action:'send_to_print'})});
+  toast('Sent to print 🖨');loadReview();
+}
+
+// ── Modals ─────────────────────────────────────────────────────────────────
+function openNewSession(){
+  showModal(`<h3>Create New Session</h3>
+    <div class="field"><label class="lbl">Session Name</label><input id="mSN" placeholder="e.g. 2026-27"/></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn btn-green" onclick="createSession()">Create</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    </div>`);
+}
+async function createSession(){
+  const name=document.getElementById('mSN').value.trim();
+  if(!name){toast('Enter session name','error');return;}
+  try{await apiFetch('/sessions',{method:'POST',body:JSON.stringify({name})});
+    toast('Session created');closeModal();await loadSessions();
+  }catch(e){toast(e.message,'error');}
+}
+
+function openNewArchive(){
+  showModal(`<h3>Create Exam Archive</h3>
+    <div class="field"><label class="lbl">Session</label>
+      <select id="mAS">${sessions.map(s=>`<option value="${s.name}">${s.name}</option>`).join('')}</select></div>
+    <div class="field"><label class="lbl">Exam Type</label>
+      <select id="mAE">${EXAM_TYPES.map(e=>`<option>${e}</option>`).join('')}</select></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn btn-green" onclick="createArchive()">Create</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    </div>`);
+}
+async function createArchive(){
+  try{
+    await apiFetch('/archives',{method:'POST',body:JSON.stringify({
+      session_name:document.getElementById('mAS').value,
+      exam_type:document.getElementById('mAE').value
+    })});
+    toast('Archive created');closeModal();await loadArchives();
+  }catch(e){toast(e.message,'error');}
+}
+
+function promoteTeams(fromId){
+  const others=archives.filter(a=>a.id!==fromId);
+  showModal(`<h3>Promote Teacher Team</h3>
+    <p style="font-size:12px;color:#6b7280;margin-bottom:14px">Copy all teacher assignments from this archive to another.</p>
+    <div class="field"><label class="lbl">Promote TO Archive</label>
+      <select id="mPT">${others.map(a=>`<option value="${a.id}">${a.session_name} — ${a.exam_type}</option>`).join('')}</select></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn btn-purple" onclick="doPromote('${fromId}')">↑ Promote</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    </div>`);
+}
+async function doPromote(fromId){
+  const toId=document.getElementById('mPT').value;
+  try{
+    const r=await apiFetch('/archives/promote-assignments',{method:'POST',body:JSON.stringify({from_archive_id:fromId,to_archive_id:toId})});
+    toast(`Promoted ${r.promoted} assignments`);closeModal();await loadAssignments();
+  }catch(e){toast(e.message,'error');}
+}
+
+function openNewAssignment(){
+  const teachers=users.filter(u=>u.role==='teacher'&&u.is_active);
+  showModal(`<h3>Assign Paper Work</h3>
+    <div class="field"><label class="lbl">Exam Archive</label>
+      <select id="mAA">${archives.filter(a=>a.is_open).map(a=>`<option value="${a.id}">${a.session_name} — ${a.exam_type}</option>`).join('')}</select></div>
+    <div class="row2">
+      <div class="field"><label class="lbl">Class</label>
+        <select id="mAC">${CLASSES.map(c=>`<option>${c}</option>`).join('')}</select></div>
+      <div class="field"><label class="lbl">Subject</label>
+        <select id="mASub">${SUBJECTS.map(s=>`<option>${s}</option>`).join('')}</select></div>
+    </div>
+    <div class="field"><label class="lbl">Teacher</label>
+      <select id="mAT">${teachers.map(t=>`<option value="${t.id}">${t.name} (${t.username||t.email})</option>`).join('')}</select></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn btn-green" onclick="createAssignment()">Assign</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    </div>`);
+}
+async function createAssignment(){
+  try{
+    await apiFetch('/assignments',{method:'POST',body:JSON.stringify({
+      archive_id:document.getElementById('mAA').value,
+      class_name:document.getElementById('mAC').value,
+      subject:document.getElementById('mASub').value,
+      teacher_id:document.getElementById('mAT').value,
+    })});
+    toast('Assignment created');closeModal();await loadAssignments();
+  }catch(e){toast(e.message,'error');}
+}
+
+function openNewUser(uid){
+  const ex=uid?users.find(u=>u.id===uid):null;
+  showModal(`<h3>${ex?'Edit':'Add'} User</h3>
+    <div class="row2">
+      <div class="field"><label class="lbl">Username${!ex?' <span style="color:#dc2626">*</span>':''}</label><input id="mUUsername" value="${ex?.username||''}" placeholder="e.g. SDPSE01" autocapitalize="none" ${ex?'readonly style="background:#f3f4f6;color:#6b7280"':''}/></div>
+      <div class="field"><label class="lbl">Full Name</label><input id="mUN" value="${ex?.name||''}"/></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label class="lbl">Phone (WhatsApp)</label><input id="mUPhone" type="tel" value="${ex?.phone||''}" placeholder="e.g. 9955190262"/></div>
+      <div class="field"><label class="lbl">Email (optional)</label><input id="mUE" type="email" value="${ex?.email||''}"/></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label class="lbl">${ex?'New Password':'Password'}</label><input id="mUP" type="password" placeholder="${ex?'Leave blank to keep':'Leave blank = set via WhatsApp OTP on first login'}"/></div>
+      <div class="field"><label class="lbl">Role</label>
+        <select id="mUR" onchange="toggleInchargeFields()">
+          ${['teacher','incharge','printing_head','qp_admin'].map(r=>`<option value="${r}"${ex?.role===r?' selected':''}>${r.replace('_',' ')}</option>`).join('')}
+        </select></div>
+    </div>
+    <div id="inchargeF" style="${ex?.role==='incharge'?'':'display:none'}">
+      <label class="lbl" style="margin-bottom:8px">Incharge Classes</label>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+        ${CLASSES.map(c=>`<label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer">
+          <input type="checkbox" value="${c}" ${(ex?.incharge_classes||[]).includes(c)?'checked':''}/> ${c}
+        </label>`).join('')}
+      </div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+        <input type="checkbox" id="mCanR" ${ex?.can_review?'checked':''}/> Can review question content
+      </label>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn btn-green" onclick="saveUser('${uid||''}')">${ex?'Update':'Create'}</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    </div>`);
+}
+function editUser(uid){openNewUser(uid);}
+function toggleInchargeFields(){
+  const v=document.getElementById('mUR').value;
+  document.getElementById('inchargeF').style.display=v==='incharge'?'block':'none';
+}
+async function saveUser(uid){
+  const role=document.getElementById('mUR').value;
+  const pw=document.getElementById('mUP').value;
+  const username=(document.getElementById('mUUsername').value||'').trim();
+  if(!uid&&!username){toast('Username required','error');return;}
+  const payload={
+    name:document.getElementById('mUN').value.trim(),
+    username,
+    phone:(document.getElementById('mUPhone').value||'').trim(),
+    email:(document.getElementById('mUE').value||'').trim().toLowerCase(),
+    role
+  };
+  if(pw)payload.password=pw;
+  if(role==='incharge'){
+    payload.incharge_classes=[...document.querySelectorAll('#inchargeF input[type=checkbox][value]')].filter(c=>c.checked).map(c=>c.value);
+    payload.can_review=document.getElementById('mCanR').checked;
+  }
+  try{
+    if(uid)await apiFetch(`/users/${uid}`,{method:'PUT',body:JSON.stringify(payload)});
+    else await apiFetch('/users',{method:'POST',body:JSON.stringify(payload)});
+    toast(uid?'Updated':'Created');closeModal();await loadUsers();
+  }catch(e){toast(e.message,'error');}
+}
+
+function openSubstituteAssignment(assignmentId){
+  const teachers=users.filter(u=>u.role==='teacher'&&u.is_active);
+  showModal(`<h3>↔ Substitute Teacher</h3>
+    <p style="font-size:12px;color:#6b7280;margin-bottom:14px">Reassign this paper. Status resets to Draft.</p>
+    <div class="field"><label class="lbl">New Teacher</label>
+      <select id="mST">${teachers.map(t=>`<option value="${t.id}">${t.name}</option>`).join('')}</select></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn btn-orange" onclick="doSubstitute('${assignmentId}')">Substitute</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    </div>`);
+}
+function openSubstituteAssignment2(uid){}
+async function doSubstitute(id){
+  try{
+    await apiFetch(`/assignments/${id}/substitute`,{method:'POST',body:JSON.stringify({teacher_id:document.getElementById('mST').value})});
+    toast('Substituted');closeModal();await loadAssignments();
+  }catch(e){toast(e.message,'error');}
+}
+
+// ── Onboard Tab Switcher ────────────────────────────────────────────────────
+function switchObTab(tab){
+  const isManual=(tab==='manual');
+  document.getElementById('obPaneManual').style.display=isManual?'block':'none';
+  document.getElementById('obPaneBulk').style.display=isManual?'none':'block';
+  document.getElementById('tabManual').style.cssText=
+    'padding:9px 22px;font-size:12.5px;font-weight:600;background:none;border:none;border-bottom:2.5px solid '+(isManual?'#0e3b91':'transparent')+';margin-bottom:-2px;cursor:pointer;color:'+(isManual?'#0e3b91':'#6b7280')+';border-radius:0';
+  document.getElementById('tabBulk').style.cssText=
+    'padding:9px 22px;font-size:12.5px;font-weight:600;background:none;border:none;border-bottom:2.5px solid '+(!isManual?'#0e3b91':'transparent')+';margin-bottom:-2px;cursor:pointer;color:'+(!isManual?'#0e3b91':'#6b7280')+';border-radius:0';
+}
+
+// ── Manual: dynamic class/subject rows ─────────────────────────────────────
+let obRowCount=0;
+function obAddRow(){
+  obRowCount++;
+  const id=obRowCount;
+  const div=document.createElement('div');
+  div.id='obRow-'+id;
+  div.style.cssText='display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:center';
+  div.innerHTML=`
+    <select style="font-size:12.5px;padding:8px 10px" id="obC${id}">
+      <option value="">Select Class...</option>
+      ${CLASSES.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}
+    </select>
+    <select style="font-size:12.5px;padding:8px 10px" id="obS${id}">
+      <option value="">Select Subject...</option>
+      ${SUBJECTS.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('')}
+    </select>
+    <button class="btn btn-ghost btn-sm" style="padding:6px 10px" onclick="obRemoveRow(${id})" title="Remove row">✕</button>`;
+  document.getElementById('obRows').appendChild(div);
+}
+function obRemoveRow(id){
+  const el=document.getElementById('obRow-'+id);
+  if(el)el.remove();
+}
+function obGetRows(){
+  const rows=[];
+  document.querySelectorAll('#obRows>div').forEach(div=>{
+    const selects=div.querySelectorAll('select');
+    if (selects.length >= 2) {
+      const cls=(selects[0].value||'').trim();
+      const sub=(selects[1].value||'').trim();
+      if(cls&&sub)rows.push({class_name:cls,subject:sub});
+    }
+  });
+  return rows;
+}
+
+function fillOnboardArchives(){
+  const archiveOpts='<option value="">Select archive…</option>'+
+    archives.map(a=>`<option value="${esc(a.id)}">${esc(a.session_name)} — ${esc(a.exam_type)}${a.is_open?'':' (closed)'}</option>`).join('');
+  const s1=document.getElementById('onboardArchive');
+  const s2=document.getElementById('bulkArchive');
+  if(s1)s1.innerHTML=archiveOpts;
+  if(s2)s2.innerHTML=archiveOpts;
+  // Ensure at least one row exists
+  if(document.getElementById('obRows')&&document.getElementById('obRows').children.length===0)obAddRow();
+}
+
+async function doOnboard(){
+  const username=(document.getElementById('obUsername').value||'').trim();
+  const name=(document.getElementById('obName').value||'').trim();
+  const phone=(document.getElementById('obPhone').value||'').trim();
+  const email=(document.getElementById('obEmail').value||'').trim();
+  const role=document.getElementById('obRole').value;
+  const archive_id=document.getElementById('onboardArchive').value;
+  const classSubjectRows=obGetRows();
+  if(!username||!name||!phone||!archive_id){
+    toast('Please fill in all required fields (*)','error');return;
+  }
+  if(classSubjectRows.length===0){
+    toast('Add at least one Class/Subject row','error');return;
+  }
+  // Check for duplicate assignments
+  const seen = new Set();
+  for (const r of classSubjectRows) {
+    const key = `${r.class_name}|||${r.subject}`;
+    if (seen.has(key)) {
+      toast(`Duplicate assignment: ${r.class_name} - ${r.subject}`, 'error');
+      return;
+    }
+    seen.add(key);
+  }
+  const btn=document.getElementById('onboardBtn');const t=btn.textContent;btn.disabled=true;btn.textContent='Processing…';
+  try{
+    // Use bulk endpoint even for single teacher (it handles multi-row correctly)
+    const rows=classSubjectRows.map(({class_name,subject})=>({username,name,phone,email,role,class_name,subject}));
+    const r=await apiFetch('/staff/bulk-onboard',{method:'POST',body:JSON.stringify({archive_id,rows})});
+    if(!r)return;
+    const s=r.summary;
+    document.getElementById('onboardResult').innerHTML=`
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px">
+        <div style="color:#059669;font-weight:700">✓ Teacher processed: ${esc(name)} (${esc(username)})</div>
+        <div style="color:#0e3b91;font-weight:600;margin-top:4px">${s.assignments_created} assignment(s) created${s.assignments_skipped?' | '+s.assignments_skipped+' skipped (already exist)':''}</div>
+        <div style="color:#16a34a;font-weight:600;margin-top:4px">WhatsApp invite: ${(r.whatsapp_results||[]).some(w=>w.sent)?'sent ✅':'not sent (check WhatsApp config)'}</div>
+        ${(r.created_users||[]).length===0?'<div style="font-size:11px;color:#9ca3af;margin-top:4px">User already existed — only new assignments were added.</div>':''}
+      </div>`;
+    toast('Teacher onboarded');
+    ['obUsername','obName','obPhone','obEmail'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('onboardArchive').value='';
+    document.getElementById('obRows').innerHTML='';obRowCount=0;obAddRow();
+    await Promise.all([loadUsers(),loadAssignments()]);
+  }catch(e){toast('Onboarding failed: '+e.message,'error');}
+  finally{btn.disabled=false;btn.textContent=t;}
+}
+
+// ── Bulk Excel upload ───────────────────────────────────────────────────────
+let bulkRows=[];
+async function downloadBulkTemplate(){
+  const token=localStorage.getItem('qp_token')||'';
+  const resp=await fetch('/api/qp/staff/bulk-template',{headers:token?{Authorization:'Bearer '+token}:{}});
+  if(!resp.ok){toast('Download failed','error');return;}
+  const blob=await resp.blob();
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='bulk_onboard_template.xlsx';a.click();
+  URL.revokeObjectURL(url);
+}
+async function parseBulkFile(input){
+  const file=input.files[0];if(!file)return;
+  document.getElementById('bulkPreview').innerHTML='<div style="color:#6b7280;font-size:12px">Reading file…</div>';
+  document.getElementById('bulkActions').style.display='none';
+  document.getElementById('bulkResult').innerHTML='';
+  bulkRows=[];
+  try{
+    const buf=await file.arrayBuffer();
+    // Use SheetJS (xlsx) loaded from CDN if available, else show instructions
+    if(typeof XLSX==='undefined'){
+      document.getElementById('bulkPreview').innerHTML='<div style="color:#dc2626;font-size:12px">SheetJS (XLSX) library not loaded. Include it in qp-common.js or this page.</div>';
+      return;
+    }
+    const wb=XLSX.read(buf,{type:'array'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const data=XLSX.utils.sheet_to_json(ws,{defval:''});
+    if(!data.length){document.getElementById('bulkPreview').innerHTML='<div style="color:#dc2626;font-size:12px">File is empty or no data rows found.</div>';return;}
+    bulkRows=data.map(r=>({
+      username:String(r.username||'').trim(),
+      name:String(r.name||'').trim(),
+      phone:String(r.phone||'').trim(),
+      email:String(r.email||'').trim(),
+      role:String(r.role||'teacher').trim().toLowerCase()||'teacher',
+      class_name:String(r.class_name||'').trim(),
+      subject:String(r.subject||'').trim(),
+    }));
+    // Preview table
+    let html='<div style="overflow-x:auto"><table style="font-size:11.5px;min-width:600px"><thead><tr>'+
+      ['#','Username','Name','Phone','Role','Class','Subject'].map(h=>`<th>${h}</th>`).join('')+'</tr></thead><tbody>';
+    bulkRows.forEach((r,i)=>{
+      const ok=r.username&&r.name&&r.phone&&r.class_name&&r.subject;
+      html+=`<tr style="${ok?'':'background:#fff7ed'}">
+        <td style="color:#9ca3af">${i+1}</td>
+        <td style="font-weight:600">${esc(r.username)}</td>
+        <td>${esc(r.name)}</td>
+        <td>${esc(r.phone)}</td>
+        <td>${esc(r.role)}</td>
+        <td>${esc(r.class_name)}</td>
+        <td>${esc(r.subject)}</td>
+      </tr>`;
+    });
+    html+='</tbody></table></div>';
+    html+=`<div style="margin-top:10px;font-size:11px;color:#6b7280">${bulkRows.length} row(s) found. Rows highlighted in orange are missing required fields and will be rejected by the server.</div>`;
+    document.getElementById('bulkPreview').innerHTML=html;
+    document.getElementById('bulkActions').style.display='block';
+  }catch(err){
+    document.getElementById('bulkPreview').innerHTML=`<div style="color:#dc2626;font-size:12px">Failed to parse file: ${esc(err.message)}</div>`;
+  }
+}
+async function doBulkOnboard(){
+  const archive_id=document.getElementById('bulkArchive').value;
+  if(!archive_id){toast('Select an exam archive first','error');return;}
+  if(!bulkRows.length){toast('No rows to upload','error');return;}
+  const btn=document.getElementById('bulkBtn');const t=btn.textContent;btn.disabled=true;btn.textContent='Uploading…';
+  document.getElementById('bulkResult').innerHTML='';
+  try{
+    const r=await apiFetch('/staff/bulk-onboard',{method:'POST',body:JSON.stringify({archive_id,rows:bulkRows})});
+    if(!r)return;
+    const s=r.summary;
+    const waSent=(r.whatsapp_results||[]).filter(w=>w.sent).length;
+    document.getElementById('bulkResult').innerHTML=`
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px">
+        <div style="color:#059669;font-weight:700;font-size:13px">✓ Bulk onboard complete</div>
+        <div style="margin-top:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+          <div style="background:#fff;border:1px solid #d1fae5;border-radius:8px;padding:10px;text-align:center">
+            <div style="font-size:22px;font-weight:800;color:#059669">${s.users_created}</div>
+            <div style="font-size:10px;color:#9ca3af;font-weight:700;text-transform:uppercase;margin-top:2px">Users Created</div>
+          </div>
+          <div style="background:#fff;border:1px solid #dbeafe;border-radius:8px;padding:10px;text-align:center">
+            <div style="font-size:22px;font-weight:800;color:#0e3b91">${s.assignments_created}</div>
+            <div style="font-size:10px;color:#9ca3af;font-weight:700;text-transform:uppercase;margin-top:2px">Assignments Created</div>
+          </div>
+          <div style="background:#fff;border:1px solid #fef3c7;border-radius:8px;padding:10px;text-align:center">
+            <div style="font-size:22px;font-weight:800;color:#d97706">${s.assignments_skipped}</div>
+            <div style="font-size:10px;color:#9ca3af;font-weight:700;text-transform:uppercase;margin-top:2px">Skipped</div>
+          </div>
+        </div>
+        <div style="margin-top:10px;font-size:11.5px;color:#16a34a;font-weight:600">WhatsApp invites sent: ${waSent} / ${(r.whatsapp_results||[]).length}</div>
+        ${r.skipped_assignments&&r.skipped_assignments.length?
+          '<div style="margin-top:8px;font-size:11px;color:#9ca3af">Skipped: '+r.skipped_assignments.map(a=>esc(a.class_name)+'/'+esc(a.subject)).join(', ')+'</div>':'' }
+      </div>`;
+    toast('Bulk onboard complete');
+    document.getElementById('bulkFile').value='';
+    document.getElementById('bulkPreview').innerHTML='';
+    document.getElementById('bulkActions').style.display='none';
+    bulkRows=[];
+    await Promise.all([loadUsers(),loadAssignments()]);
+  }catch(e){
+    // FastAPI may embed an object inside the error message as JSON
+    let detail='';
+    try{const d=JSON.parse(e.message);if(d.errors)detail=d.errors.slice(0,5).join('; ');}catch(_){}
+    toast('Bulk onboard failed: '+(detail||e.message),'error');
+  }
+  finally{btn.disabled=false;btn.textContent=t;}
+}
+
+// ── User Activity ───────────────────────────────────────────────────────────
+async function loadActivity(){
+  const items=await apiFetch('/activity')||[];
+  const online=items.filter(i=>i.online).length;
+  document.getElementById('activityStats').innerHTML=`
+    <div class="stat"><div class="num">${online}</div><div class="lbl">Currently Online</div></div>
+    <div class="stat"><div class="num">${items.length}</div><div class="lbl">Login Records</div></div>`;
+  const fmt=(s)=>{ if(!s)return '—'; try{return new Date(s).toLocaleString();}catch{return esc(s);} };
+  document.getElementById('activityTable').innerHTML = items.length ? items.map(i=>`<tr>
+    <td>${i.online
+      ? '<span style="color:#059669;font-weight:700;font-size:11px">● Online</span>'
+      : '<span style="color:#9ca3af;font-weight:600;font-size:11px">○ Offline</span>'}</td>
+    <td style="font-weight:600">${esc(i.user_name||'—')}<div style="font-size:10px;color:#9ca3af">${esc(i.login_id||'')}</div></td>
+    <td><span style="font-size:11px;font-weight:600;color:#6b7280">${esc(i.role||'')}</span></td>
+    <td style="font-size:11px;color:#6b7280">${fmt(i.logged_in_at)}</td>
+    <td style="font-size:11px;color:#6b7280">${fmt(i.last_seen_at)}</td>
+    <td style="font-size:11px;color:#6b7280">${esc(i.ip||'—')}</td>
+    <td style="font-size:11px;color:#6b7280">${esc(i.device||'—')}</td>
+  </tr>`).join('') : '<tr><td colspan="7" style="text-align:center;color:#9ca3af;padding:24px">No activity yet.</td></tr>';
+}
+
+function showModal(html){document.getElementById('modalBody').innerHTML=html;document.getElementById('modal').classList.add('open');}
+function closeModal(){document.getElementById('modal').classList.remove('open');}
+document.getElementById('modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
+</script>
+</body>
+</html>

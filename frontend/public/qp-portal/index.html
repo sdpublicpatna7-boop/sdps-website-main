@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>QP Portal — S.D. Public School</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:#090d16;overflow-x:hidden;position:relative}
+body::before{content:'';position:fixed;inset:0;background:linear-gradient(135deg,#090d16 0%,#0c1630 50%,#090d16 100%);z-index:-2}
+.orb {position:absolute;border-radius:50%;filter:blur(90px);z-index:-1;pointer-events:none}
+.orb-1 {top:-100px;right:-100px;width:350px;height:350px;background:rgba(199,161,91,0.07)}
+.orb-2 {bottom:-100px;left:-100px;width:300px;height:300px;background:rgba(248,125,14,0.05)}
+.card{background:rgba(255,255,255,0.03);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.08);border-radius:28px;padding:40px;width:100%;max-width:400px;box-shadow:0 30px 60px rgba(0,0,0,0.3)}
+.logo{text-align:center;margin-bottom:32px}
+.logo-wrap{display:inline-flex;align-items:center;justify-content:center;width:80px;height:80px;background:rgba(255,255,255,0.04);border:1px solid rgba(199,161,91,0.25);border-radius:22px;margin-bottom:18px;box-shadow:0 0 20px rgba(199,161,91,0.15)}
+.logo-wrap img{width:60px;height:60px;object-fit:contain}
+.logo h1{font-size:24px;font-weight:800;color:#fff;letter-spacing:-.5px;font-family:'Outfit',sans-serif}
+.logo p{font-size:12px;color:#c7a15b;margin-top:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em}
+.badge{display:inline-flex;align-items:center;gap:5px;background:rgba(248,125,14,0.12);color:#ffa94d;font-size:9px;font-weight:700;padding:5px 12px;border-radius:20px;margin-top:12px;letter-spacing:.06em;text-transform:uppercase;border:1px solid rgba(248,125,14,0.2)}
+.divider{height:1px;background:rgba(255,255,255,0.08);margin:24px 0}
+.field{margin-bottom:18px}
+.field label{display:block;font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em}
+.field input{width:100%;padding:12px 16px;border:1px solid rgba(255,255,255,0.1);border-radius:12px;font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:.2s;color:#fff;background:rgba(255,255,255,0.03)}
+.field input:focus{border-color:#ffa94d;background:rgba(255,255,255,0.06);box-shadow:0 0 0 3px rgba(248,125,14,0.12)}
+.btn{width:100%;padding:13px;background:linear-gradient(135deg,#f87d0e,#c7a15b);color:#090d16;border:none;border-radius:12px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.02em;transition:.2s;box-shadow:0 4px 15px rgba(248,125,14,0.15)}
+.btn:hover{opacity:1;transform:translateY(-1px);box-shadow:0 6px 20px rgba(248,125,14,0.25);background:linear-gradient(135deg,#ffa94d,#e2c792)}
+.btn:active{transform:translateY(0)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+.err{background:rgba(239,68,68,0.08);color:#fca5a5;font-size:12px;padding:12px 14px;border-radius:12px;margin-bottom:16px;font-weight:600;display:none;border:1px solid rgba(239,68,68,0.2)}
+.ok{background:rgba(16,185,129,0.08);color:#6ee7b7;font-size:12px;padding:12px 14px;border-radius:12px;margin-bottom:16px;font-weight:600;display:none;border:1px solid rgba(16,185,129,0.2)}
+.footer{text-align:center;font-size:11px;color:#64748b;margin-top:24px}
+.step{display:none}.step.active{display:block}
+.linkbtn{display:block;width:100%;text-align:center;background:none;border:none;color:#94a3b8;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;padding:12px 0 0;transition:color 0.2s}
+.linkbtn:hover{color:#fff}
+.hint{font-size:11px;color:#94a3b8;margin:-4px 0 12px;line-height:1.6;background:rgba(255,255,255,0.02);border-left:3px solid #f87d0e;padding:10px 12px;border-radius:0 8px 8px 0;border-top:1px solid rgba(255,255,255,0.04);border-right:1px solid rgba(255,255,255,0.04);border-bottom:1px solid rgba(255,255,255,0.04)}
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="card">
+  <div class="logo">
+    <div class="logo-wrap">
+      <img src="https://sdpublic.org/assets/img/logo.png" alt="SDPS" onerror="this.onerror=null;this.src='/logo512.png'"/>
+    </div>
+    <h1>S.D. Public School</h1>
+    <p>Question Paper Portal</p>
+    <span class="badge">🔒 Authorized Users Only</span>
+  </div>
+
+  <div class="err" id="err"></div>
+  <div class="ok" id="ok"></div>
+
+  <!-- STEP 1: Enter Username -->
+  <div class="step active" id="stUsername">
+    <div class="field">
+      <label>Username</label>
+      <input type="text" id="iUsername" placeholder="e.g. SDPSE01" autocomplete="username" autocapitalize="none"/>
+    </div>
+    <button class="btn" id="btnUsername" onclick="checkUsername()">Continue</button>
+  </div>
+
+  <!-- STEP 2: Password Sign-In (Returning User) -->
+  <div class="step" id="stPassword">
+    <h3 style="font-size:14px; font-weight:600; color:#c7a15b; margin-bottom:18px; font-family:'Outfit',sans-serif;" id="lblWelcomeBack">Welcome back!</h3>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="iPassword" placeholder="••••••••" autocomplete="current-password"/>
+    </div>
+    <button class="btn" id="btnLogin" onclick="doLogin()">Sign In to Portal</button>
+    <button class="linkbtn" onclick="goBack()">← Change Username</button>
+  </div>
+
+  <!-- STEP 3: Setup Password (First Login) -->
+  <div class="step" id="stSetPw">
+    <h3 style="font-size:14px; font-weight:600; color:#ffa94d; margin-bottom:8px; font-family:'Outfit',sans-serif;" id="lblWelcomeFirst">Welcome!</h3>
+    <p class="hint" style="margin-bottom:18px;">This is your first login. Enter the verification code sent to your registered WhatsApp and choose a password.</p>
+    <div class="field">
+      <label>WhatsApp Code</label>
+      <input type="text" inputmode="numeric" id="iSetOtp" placeholder="6-digit code" autocomplete="one-time-code"/>
+    </div>
+    <div class="field">
+      <label>Choose Password</label>
+      <input type="password" id="iNewPw" placeholder="Min 8 chars · 1 uppercase · 1 digit"/>
+    </div>
+    <button class="btn" id="btnSetPw" onclick="doSetPassword()">Set Password & Sign In</button>
+    <button class="linkbtn" onclick="resendOtp()">Resend code</button>
+    <button class="linkbtn" onclick="goBack()">← Use a different username</button>
+  </div>
+
+  <div class="footer">For access issues, contact the QP Administrator</div>
+</div>
+<script src="./config.js"></script>
+<script>
+const _isLocalDev = /localhost:(3000|3001)|127\.0\.0\.1:(3000|3001)/.test(window.location.origin);
+function _loginBases(){
+  if (_isLocalDev) return ['http://localhost:8000'];
+  return (window.QP_CONFIG && Array.isArray(window.QP_CONFIG.apiBases) && window.QP_CONFIG.apiBases.length)
+    ? window.QP_CONFIG.apiBases.slice()
+    : ['https://sdps-website-main.onrender.com'];
+}
+const ROLE_MAP={qp_admin:'admin.html',teacher:'teacher.html',incharge:'incharge.html',printing_head:'printing.html'};
+let activeUsername = '';
+
+function showErr(m){const e=document.getElementById('err');document.getElementById('ok').style.display='none';e.textContent=m;e.style.display=m?'block':'none';}
+function showOk(m){const o=document.getElementById('ok');document.getElementById('err').style.display='none';o.textContent=m;o.style.display=m?'block':'none';}
+function clearMsg(){showErr('');showOk('');}
+
+function showStep(id){
+  ['stUsername','stPassword','stSetPw'].forEach(s=>document.getElementById(s).classList.toggle('active',s===id));
+  clearMsg();
+}
+
+function goBack(){
+  showStep('stUsername');
+  document.getElementById('iPassword').value = '';
+  document.getElementById('iSetOtp').value = '';
+  document.getElementById('iNewPw').value = '';
+}
+
+async function apiPost(path, body){
+  const bases=_loginBases();
+  for(let i=0;i<bases.length;i++){
+    let r;
+    try{
+      r=await fetch(`${bases[i]}/api/qp${path}`,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    }catch(e){ if(i<bases.length-1) continue; throw new Error('__net__'); }
+    sessionStorage.setItem('qp_api_base', bases[i]);
+    const d=await r.json().catch(()=>({}));
+    return {ok:r.ok,status:r.status,data:d};
+  }
+  throw new Error('__net__');
+}
+
+function finishLogin(d){
+  localStorage.setItem('qp_token',d.access_token);
+  localStorage.setItem('qp_user',JSON.stringify(d.user));
+  const dest=ROLE_MAP[d.user.role];
+  if(dest) location.href='/qp-portal/'+dest; else showErr('Unknown role: '+d.user.role);
+}
+function withBtn(id,fn){ const b=document.getElementById(id); const t=b.textContent; b.disabled=true;b.textContent='Please wait…';
+  return Promise.resolve().then(fn).catch(e=>{ if(e&&e.message==='__net__') showErr('Cannot connect to server. Make sure the backend is running.'); else showErr('Something went wrong. Try again.'); }).finally(()=>{b.disabled=false;b.textContent=t;}); }
+
+// ── Check Username State ──
+function checkUsername(){ return withBtn('btnUsername', async()=>{
+  clearMsg();
+  const username=document.getElementById('iUsername').value.trim();
+  if(!username){showErr('Please enter your username.');return;}
+  const {ok,data}=await apiPost('/check-user',{username});
+  if(!ok){showErr(data.detail||'No user account found for this username.');return;}
+  
+  activeUsername = username;
+  if(data.first_login){
+    document.getElementById('lblWelcomeFirst').textContent = `Welcome, ${data.name || 'User'}!`;
+    showStep('stSetPw');
+    showOk(data.message || 'OTP sent to your WhatsApp.');
+  } else {
+    document.getElementById('lblWelcomeBack').textContent = `Welcome back, ${data.name || 'User'}!`;
+    showStep('stPassword');
+  }
+}); }
+
+// ── Main login (username + password) ──
+function doLogin(){ return withBtn('btnLogin', async()=>{
+  clearMsg();
+  const password=document.getElementById('iPassword').value;
+  if(!password){showErr('Please enter your password.');return;}
+  const {ok,data}=await apiPost('/login',{username:activeUsername,password});
+  if(!ok){showErr(data.detail||'Invalid password');return;}
+  finishLogin(data);
+}); }
+
+// ── First login: verify OTP + set password ──
+function doSetPassword(){ return withBtn('btnSetPw', async()=>{
+  clearMsg();
+  const otp=document.getElementById('iSetOtp').value.trim();
+  const new_password=document.getElementById('iNewPw').value;
+  if(!otp||!new_password){showErr('Enter the code and a new password.');return;}
+  const {ok,data}=await apiPost('/staff/set-password',{username:activeUsername,otp,new_password});
+  if(!ok){showErr(data.detail||'Could not set password.');return;}
+  finishLogin(data);
+}); }
+
+function resendOtp(){ clearMsg(); apiPost('/staff/resend-otp',{username:activeUsername})
+  .then(({ok,data})=>{ if(ok) showOk(data.message||'A new code was sent.'); else showErr(data.detail||'Could not resend.'); })
+  .catch(()=>showErr('Cannot connect to server.')); }
+
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter') return;
+  if(document.getElementById('stUsername').classList.contains('active')) checkUsername();
+  else if(document.getElementById('stPassword').classList.contains('active')) doLogin();
+  else if(document.getElementById('stSetPw').classList.contains('active')) doSetPassword();
+});
+
+// Auto-redirect if already signed in.
+try{
+  const u=JSON.parse(localStorage.getItem('qp_user')||'{}');
+  if(u&&u.role&&ROLE_MAP[u.role]) location.href='/qp-portal/'+ROLE_MAP[u.role];
+}catch(e){}
+</script>
+</body>
+</html>

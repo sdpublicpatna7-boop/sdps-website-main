@@ -1,0 +1,123 @@
+{
+  "project_name": "S.D. Public School Next-Gen Website & Admin Panel",
+  "persona_mode": "E1 Anti-AI Designer",
+  "theme": "LIGHT",
+  "archetype": "Archetype 6 (Vibrant Play) blended with Archetype 1 (Organic & Earthy) for legacy/trust, and Archetype 4 (Swiss/Authority) for Admin",
+  "colors": {
+    "brand": {
+      "primary": "#0E3B91",
+      "secondary": "#F87D0E",
+      "gold": "#C7A15B",
+      "pink_lotus": "#E88FC5"
+    },
+    "backgrounds": {
+      "default": "#FAFAFA",
+      "paper": "#FFFFFF",
+      "muted": "#F1F5F9",
+      "glass": "rgba(255, 255, 255, 0.7)",
+      "admin_bg": "#F8FAFC"
+    },
+    "text": {
+      "heading": "#0A0F24",
+      "body": "#334155",
+      "muted": "#64748B",
+      "on_primary": "#FFFFFF"
+    },
+    "gradients": {
+      "hero_overlay": "linear-gradient(135deg, rgba(14,59,145,0.08) 0%, rgba(248,125,14,0.05) 100%)",
+      "premium_gold": "linear-gradient(to right, #C7A15B, #E2C792)",
+      "preschool_fun": "linear-gradient(135deg, rgba(232,143,197,0.15) 0%, rgba(248,125,14,0.1) 100%)"
+    }
+  },
+  "typography": {
+    "fonts": {
+      "headings": "Outfit, sans-serif",
+      "legacy_brand": "Cormorant Garamond, serif",
+      "body": "DM Sans, sans-serif",
+      "preschool": "Fredoka, sans-serif"
+    },
+    "rules": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tighter font-medium text-[#0A0F24]",
+      "h2": "text-3xl sm:text-4xl tracking-tight font-medium text-[#0A0F24]",
+      "h1_legacy": "font-legacy_brand text-5xl sm:text-6xl lg:text-7xl text-primary leading-none",
+      "preschool_heading": "font-preschool text-5xl sm:text-6xl text-[#E88FC5] drop-shadow-sm",
+      "overline": "uppercase tracking-[0.2em] text-xs sm:text-sm text-secondary font-bold"
+    }
+  },
+  "layout_spacing": {
+    "philosophy": "Generous Spacing (p-12 to p-24). Avoid center-aligning everything; embrace asymmetry. Use Optical Alignment.",
+    "bento_grid": "grid-cols-1 md:grid-cols-12 gap-8 (Mode A: The Tetris Grid)",
+    "admin_grid": "grid-cols-1 lg:grid-cols-4 gap-6 dense-packing (Mode B: Control Room Grid)",
+    "surface_styles": {
+      "header": "Crystal Glass (backdrop-blur-xl bg-white/70 border-b border-black/5 saturate-150)",
+      "news_card": "Tracing Beam variant (animated subtle border glow on hover) with sharp 1px borders",
+      "preschool_card": "Neumorphic soft lift with solid rounded corners (rounded-3xl) and colorful borders",
+      "admin_card": "Grid Borders (flat, 1px subtle border border-slate-200, no shadow unless hovered)"
+    }
+  },
+  "media": {
+    "hero_abstract_gradient": "https://static.prod-images.emergentagent.com/jobs/70d98f22-5566-4042-b6a0-fff8d580b2ef/images/398a87c530292457b66e128b98ff49b9c42a8df71e0baf4a804ef57c0fe443d1.png",
+    "preschool_playful_bg": "https://static.prod-images.emergentagent.com/jobs/70d98f22-5566-4042-b6a0-fff8d580b2ef/images/fed6d8e20794e4db3177cf4fe4d230a28cf18667ef6b4b1d674c204fd68b1d10.png",
+    "students_campus": "https://images.unsplash.com/photo-1770102412124-3d01ecc81c81?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NDh8MHwxfHNlYXJjaHwxfHxpbmRpYW4lMjBzY2hvb2wlMjBjaGlsZHJlbiUyMGhhcHB5JTIwY2FtcHVzfGVufDB8fHx8MTc3ODM0OTI3MXww&ixlib=rb-4.1.0&q=85",
+    "modern_building": "https://images.unsplash.com/photo-1758611228434-7b5b697abd0a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NjZ8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBzY2hvb2wlMjBidWlsZGluZyUyMGV4dGVyaW9yfGVufDB8fHx8MTc3ODM0OTI3MXww&ixlib=rb-4.1.0&q=85"
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-[#0E3B91] text-white hover:bg-blue-900 rounded-full px-8 py-3 transition-all active:scale-95 shadow-sm",
+      "secondary": "bg-[#F87D0E] text-white hover:bg-orange-600 rounded-full px-8 py-3 transition-all shadow-sm",
+      "gold_premium": "bg-gradient-to-r from-[#C7A15B] to-[#E2C792] text-white rounded-full px-8 py-3 shadow-lg hover:shadow-xl",
+      "glass": "backdrop-blur-md bg-white/20 border border-white/40 text-[#0A0F24] hover:bg-white/40 rounded-full px-6 py-2"
+    },
+    "navigation": "Floating glass pill at the top containing main links. Quick access bar (ERP, Fee, Admission) sitting above the main nav.",
+    "galleries": "Bento-style dynamic aspect ratios (col-span-4 vs col-span-8). Use Framer Motion for scroll-triggered enter-animations. Server-side image compression logic to be built in backend.",
+    "testing": "All interactive elements MUST have data-testid attributes (e.g., data-testid='fee-payment-btn', data-testid='admin-login-submit')."
+  },
+  "sections_breakdown": {
+    "public_website": [
+      {
+        "name": "Hero Video & Welcome Popup",
+        "design": "Asymmetric overlay. 60% left column for text (Cormorant Garamond H1), 40% right for media/abstract gradient. Use `media.hero_abstract_gradient`. Do NOT use a heavy black overlay; keep it light and airy. Incorporate admin-controlled welcome pop-up on mount."
+      },
+      {
+        "name": "Stats Counter",
+        "design": "Generous spacing. Large typography (text-6xl+) for '30+', '75+', '50000+', '5000+'. Use brand primary color."
+      },
+      {
+        "name": "Pre-School Section",
+        "design": "Playful area. Background: `media.preschool_playful_bg`. Font: Fredoka. Use framer-motion for bouncy entrance animations (type: 'spring', bounce: 0.5). High saturation button accents (Pink Lotus)."
+      },
+      {
+        "name": "Academic Calendar & News",
+        "design": "Bento Grid (Tetris Mode). News cards with hover Tracing Beam effect. Admin-uploaded excel calendar rendered beautifully via Shadcn table/list components."
+      },
+      {
+        "name": "Student Council & Alumni",
+        "design": "Neumorphic profile cards. Gold accents (#C7A15B) for Captain/Leadership roles. Alumni page includes payment integrated membership form and a hidden/unhidden registry (admin synced)."
+      },
+      {
+        "name": "Admissions, Career, TC",
+        "design": "Clean, multi-step Shadcn forms. Clear input borders (border-primary/20 focus:border-primary). TC Download needs Name+DOB+Admission No. validation."
+      }
+    ],
+    "admin_panel": [
+      {
+        "name": "Dashboard Shell",
+        "design": "Archetype 4 (Swiss/Authority). Sidebar navigation with very dark Royal Blue (#082052) background, white text. Main content area off-white (#F8FAFC). Minimalist aesthetic."
+      },
+      {
+        "name": "Modules",
+        "design": "Dense DataTables (Shadcn) for Admissions, TC uploads, News, Calendar Excel upload, and dynamic form builder for Admission Questions. Reset password via email service logic."
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Install necessary dependencies: framer-motion, @phosphor-icons/react, lucide-react, react-fast-marquee.",
+    "Configure tailwind.config.js with the custom colors (primary, secondary, gold, pink_lotus) and custom fonts (Outfit, Cormorant Garamond, DM Sans, Fredoka).",
+    "Build the public routes strictly following the Light Theme + Gradients visual style.",
+    "Build the /admin routes utilizing Shadcn components heavily for grids, forms, and tables (Control Room Layout).",
+    "Implement the 'playful' effects on the pre-school section using framer-motion.",
+    "Use the provided media URLs from the media object. DO NOT USE PLACEHOLDER TEXT for images.",
+    "Ensure all buttons, inputs, and links have 'data-testid' attributes.",
+    "Integrate Shadcn primitives correctly, stripping away standard Vercel looks for the public marketing pages, but utilizing them efficiently in the admin dashboard."
+  ]
+}

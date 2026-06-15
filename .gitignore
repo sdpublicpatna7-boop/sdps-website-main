@@ -1,0 +1,40 @@
+# Environment / secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Backend uploads (user-generated content)
+backend/uploads/
+
+# Node / frontend
+node_modules/
+frontend/build/
+build/
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# WhatsApp (Baileys) session state — contains login credentials
+auth_state/
+whatsapp-service/auth_state/
+
+# Coverage / test artifacts
+.coverage
+coverage/
+htmlcov/
+test_result.md
+test_reports/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
