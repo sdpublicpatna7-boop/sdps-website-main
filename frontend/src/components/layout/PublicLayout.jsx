@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import api from "../../lib/api";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
@@ -9,6 +9,10 @@ import SalAssistant from "./SalAssistant";
 export default function PublicLayout() {
   const [settings, setSettings] = useState(null);
   const [popup, setPopup] = useState(null);
+  const { pathname } = useLocation();
+
+  // Hide distracting overlays on the review page
+  const isReviewPage = pathname === "/review";
 
   useEffect(() => {
     api.get("/site-settings").then((r) => setSettings(r.data)).catch(() => {});
@@ -23,8 +27,8 @@ export default function PublicLayout() {
         <Outlet context={{ settings }} />
       </main>
       <Footer settings={settings} />
-      <WelcomePopup popup={popup} />
-      <SalAssistant />
+      {!isReviewPage && <WelcomePopup popup={popup} />}
+      {!isReviewPage && <SalAssistant />}
     </div>
   );
 }
