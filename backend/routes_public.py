@@ -923,36 +923,98 @@ async def generate_maps_review(payload: dict = Body(...)):
 
     import random
 
-    # ── Always generate a 5-star positive review regardless of input rating ──
-    effective_rating = 5
+    # ── Always generate a 5-star positive review ─────────────────────────────
+    effective_rating = random.choices([5, 4], weights=[85, 15])[0]  # Mostly 5, occasionally 4
 
-    # Fallback pool (used when Groq key is missing or all retries fail)
-    fallbacks = [
-        "Excellent school with dedicated teachers and great focus on overall child development. Highly recommended!",
-        "S.D. Public School Patna provides a very supportive and motivating environment for students. Great academic standard.",
-        "Highly satisfied with the faculty and the quality of education here. The discipline and moral values taught are top-notch.",
-        "Best school in the area with a nice campus, excellent teaching staff, and a strong focus on both studies and sports.",
-        "My child has grown so much since joining SDPS — the teachers genuinely care about each student's progress.",
-        "Amazing school with a perfect balance of academics, sports, and extracurriculars. Very happy with our decision.",
-        "The teaching staff at SDPS Patna is incredibly supportive and always goes the extra mile for students.",
-        "One of the finest schools in Patna with excellent infrastructure and a strong value-based education system.",
-        "We've seen remarkable improvement in our child's confidence and academics since enrolling at S.D. Public School.",
-        "Great school with a warm and welcoming atmosphere. The teachers make learning fun and engaging for kids.",
-        "SDPS has been a wonderful experience for our family — the school truly nurtures every child's potential.",
-        "Exceptional faculty and a well-rounded curriculum that prepares students for real-world challenges. Love this school!",
-        "The discipline, moral values, and academic rigor at S.D. Public School are simply outstanding.",
-        "Very impressed with how the school handles both academics and character building. Couldn't ask for more.",
-        "Our experience with SDPS Patna has been nothing short of excellent. The staff is caring and professional.",
+    # ── SCHOOL PROFILE ───────────────────────────────────────────────────────
+    SCHOOL_PROFILE = (
+        "S.D. Public School, Patna-7 is a CBSE Curriculum Based School established in 1994, "
+        "offering education from Pre-School to Class VIII."
+    )
+
+    KEY_FEATURES = [
+        "SDPS Curious Minds Pre-School", "Experienced & Caring Teachers", "Smart Class Learning",
+        "Computer Education", "English Communication Development", "Value-Based Education",
+        "Safe & Secure Environment", "Individual Attention", "Well-Disciplined Campus",
+        "Music & Dance Classes", "Art & Craft Activities", "Cultural Programs",
+        "Lit Fest Activities", "Summer Camps", "Pool Parties",
+        "Educational Excursions & Zoo Visits", "Annual Functions", "Sports Activities",
+        "Dedicated Turf Play Area", "Cricket & Football Training", "Artificial Turf Ground",
+        "Physical Fitness Activities", "Personality Development", "Hostel Facilities",
+        "Academic Excellence", "Parent-School Communication", "Student-Centric Learning",
     ]
 
-    # ── Helper: check uniqueness against MongoDB ─────────────────────────────
+    # ── RANDOMIZATION POOLS ──────────────────────────────────────────────────
+    REVIEWER_TYPES = [
+        "Preschool Parent", "Parent of Class I-V", "Parent of Class VI-VIII",
+        "Hostel Parent", "Current Student", "Former Student",
+        "Guardian", "Grandparent", "New Admission Parent", "Long-Term Parent",
+    ]
+
+    EMOTIONS = [
+        "Happy", "Proud", "Satisfied", "Thankful", "Delighted",
+        "Impressed", "Grateful", "Excited", "Confident", "Relieved",
+    ]
+
+    FOCUS_AREAS = [
+        "Teachers", "Academics", "Discipline", "Safety", "Communication",
+        "Preschool", "Sports", "Turf Play Area", "Cricket Training", "Football Training",
+        "Summer Camp", "Pool Party", "Hostel", "English Speaking", "Computer Education",
+        "Cultural Activities", "Personality Development", "Lit Fest", "School Environment",
+        "Child Confidence", "Academic Improvement", "Social Development", "Art & Craft", "Music & Dance",
+    ]
+
+    STUDENT_IMPROVEMENTS = [
+        "Better Communication Skills", "Increased Confidence", "Better Reading Skills",
+        "Improved Discipline", "Leadership Development", "Better Academic Performance",
+        "More Social Interaction", "Improved Creativity", "Sports Development",
+        "Public Speaking Skills", "Teamwork Skills",
+    ]
+
+    WRITING_STYLES = [
+        "Short Parent Review", "Emotional Parent Review", "Detailed Experience",
+        "Conversational", "Story-Based", "Professional",
+        "Student Perspective", "Hostel Parent Perspective",
+    ]
+
+    LENGTHS = [
+        "20-40 words (very short and punchy)",
+        "40-80 words (medium length, natural)",
+        "80-150 words (detailed experience)",
+    ]
+
+    POSITIVE_KEYWORDS = [
+        "excellent", "supportive", "caring", "disciplined", "engaging", "inspiring",
+        "motivating", "nurturing", "professional", "dedicated", "encouraging", "friendly",
+        "knowledgeable", "trustworthy", "outstanding", "wonderful", "remarkable",
+        "impressive", "balanced", "innovative", "child-friendly",
+    ]
+
+    # ── Fallback pool ────────────────────────────────────────────────────────
+    fallbacks = [
+        "My daughter loves going to school every day since we enrolled her at SDPS. The teachers are so caring and the turf ground is her favourite part of the week!",
+        "Been with SDPS for 4 years now. My son's confidence and English speaking skills have improved so much. The sports turf is a great addition.",
+        "Best decision enrolling my child here. The discipline, smart classes, and individual attention — everything is on point.",
+        "The Curious Minds preschool program is wonderful. My 3-year-old actually looks forward to school. Very impressed with the teaching approach.",
+        "SDPS Patna has helped my child grow in ways I never expected. From academics to the annual function performances — they nurture every talent.",
+        "Love the balanced approach here — studies, sports on the turf, art, music, everything. My kids are thriving at this school.",
+        "As a hostel parent, I was nervous initially but the staff takes such good care. My son calls every day saying he's happy. That means everything.",
+        "The Lit Fest and cultural programs at SDPS are amazing. My daughter participated in debates and her public speaking skills improved tremendously.",
+        "Great school with a genuine focus on each child. The PTMs are actually useful and teachers give honest, helpful feedback about progress.",
+        "SDPS is where my child learned to be independent and confident. The summer camps and pool parties are such fun additions to the school experience.",
+        "The cricket and football training on the artificial turf is fantastic. My son plays every games period and has developed a real passion for sports.",
+        "Safe, secure, and welcoming environment. The teachers know every child by name and that personal touch makes all the difference.",
+        "My child's reading skills and creativity have improved so much since joining SDPS. The art and craft sessions are a highlight every week.",
+        "Enrolled my child in nursery and now she's in Class III — we've never looked back. The school feels like a second home for our family.",
+        "The computer education and smart class learning at SDPS give students a real edge. Very happy with the modern teaching methods here.",
+    ]
+
+    # ── Uniqueness helpers ───────────────────────────────────────────────────
     async def _is_used(text: str) -> bool:
-        """Return True if this exact review text was already served."""
         existing = await db.maps_reviews_used.find_one({"text": text})
         return existing is not None
 
     async def _mark_used(text: str):
-        """Store the review so it is never repeated."""
         await db.maps_reviews_used.insert_one({
             "text": text,
             "created_at": datetime.now(timezone.utc).isoformat(),
@@ -966,99 +1028,79 @@ async def generate_maps_review(payload: dict = Body(...)):
             if not await _is_used(fb):
                 await _mark_used(fb)
                 return {"text": fb}
-        # All fallbacks exhausted — return a random one anyway
         return {"text": random.choice(fallbacks)}
 
-    # ── Groq AI path — retry up to 5 times to get a unique review ────────────
-    styles = [
-        "a parent of a Class III student at S.D. Public School, Patna",
-        "a proud alumnus of SDPS who graduated in 2018",
-        "a parent of two children studying in Class V and Class VIII",
-        "a mother who recently enrolled her child in nursery",
-        "a father impressed by the annual sports day event",
-        "a parent attending a parent-teacher meeting for the first time",
-        "a Class X student preparing for board exams",
-        "a grandparent who visited the school during an annual function",
-        "a neighbour who has watched the school grow over the years",
-        "a parent comparing SDPS with other schools in Patna",
-    ]
-
+    # ── Build randomized prompt ──────────────────────────────────────────────
     MAX_RETRIES = 5
 
     for attempt in range(MAX_RETRIES):
-        selected_style = random.choice(styles)
-
-        # Pick random elements to force completely different outputs each time
-        openings = [
-            "Start the review with the school name.",
-            "Start with a personal experience or memory.",
-            "Start by mentioning your child or children.",
-            "Start with an emotional statement about how you feel.",
-            "Start by comparing with your expectations before joining.",
-            "Start with a specific detail like a teacher, event, or facility.",
-            "Start with a short punchy statement like 'Love this school.' or 'Best decision we made.'",
-            "Start by mentioning how many years you've been associated with the school.",
-            "Start with something about the morning assembly or daily routine.",
-            "Start by talking about the sports turf or games period.",
-            "Start with a recommendation to other parents.",
-            "Start with gratitude or thanks.",
-        ]
-
-        topics = [
-            "the professional sports turf where kids play during games period",
-            "how cooperative and helpful the teachers are",
-            "the discipline and value-based education",
-            "your child's academic improvement since joining",
-            "the annual sports day or annual function",
-            "the morning assembly and daily school routine",
-            "the PTM experience and teacher-parent communication",
-            "the smart classrooms and modern teaching methods",
-            "the overall campus environment and infrastructure",
-            "the school's focus on both studies and sports equally",
-            "the library and reading culture at the school",
-            "how the school helped your child become more confident",
-            "the safe and secure school transport system",
-            "the school uniform and well-maintained campus",
-        ]
-
-        structures = [
-            "Write exactly ONE sentence only.",
-            "Write exactly TWO short sentences.",
-            "Write TWO sentences — first one short, second one longer.",
-            "Write THREE very short sentences.",
-            "Write ONE long detailed sentence.",
-            "Write TWO sentences — the second one should be a recommendation.",
-        ]
-
-        selected_opening = random.choice(openings)
-        selected_topic = random.choice(topics)
-        selected_structure = random.choice(structures)
+        reviewer_type = random.choice(REVIEWER_TYPES)
+        emotion = random.choice(EMOTIONS)
+        focus_count = random.randint(1, 4)
+        focus_areas = random.sample(FOCUS_AREAS, focus_count)
+        improvement = random.choice(STUDENT_IMPROVEMENTS)
+        writing_style = random.choice(WRITING_STYLES)
+        length = random.choice(LENGTHS)
+        keywords_sample = random.sample(POSITIVE_KEYWORDS, random.randint(2, 5))
 
         prompt = (
-            f"Write a Google Maps review for 'S.D. Public School, Patna' (SDPS Patna). "
-            f"Rating: {effective_rating}/5 stars. Perspective: {selected_style}.\n\n"
-            f"FOCUS ON: {selected_topic}.\n"
-            f"OPENING INSTRUCTION: {selected_opening}\n"
-            f"LENGTH: {selected_structure}\n\n"
-            f"The school has a professional sports turf where children regularly go to play during their games period "
-            f"(included in school sports fee). You may mention it naturally if relevant.\n\n"
-            f"RULES:\n"
-            f"- Sound like a real person typing on their phone. Casual, genuine, not formal.\n"
-            f"- NEVER start with 'S.D. Public School' more than once per batch. Vary your first word every time.\n"
-            f"- NEVER end with 'Highly recommended' or 'Highly recommend'. Find different ways to close.\n"
-            f"- Do NOT use these overused phrases: 'holistic development', 'nurturing environment', 'highly recommended', 'top-notch'.\n"
-            f"- Output ONLY the review text. No quotes, no headings, no preamble.\n"
+            f"SCHOOL: {SCHOOL_PROFILE}\n\n"
+            f"Write a Google Maps review for S.D. Public School, Patna (SDPS Patna).\n"
+            f"Rating: {effective_rating} out of 5 stars.\n\n"
+            f"REVIEWER TYPE: {reviewer_type}\n"
+            f"EMOTION: {emotion}\n"
+            f"WRITING STYLE: {writing_style}\n"
+            f"LENGTH: {length}\n"
+            f"FOCUS AREAS: {', '.join(focus_areas)}\n"
+            f"STUDENT IMPROVEMENT TO MENTION: {improvement}\n"
+            f"USE SOME OF THESE WORDS NATURALLY: {', '.join(keywords_sample)}\n\n"
+            f"SCHOOL HIGHLIGHTS YOU MAY REFERENCE:\n"
+            f"- Artificial turf ground where children play during games period (included in sports fee)\n"
+            f"- Cricket & football training on the turf\n"
+            f"- SDPS Curious Minds Pre-School program\n"
+            f"- Smart class learning with computer education\n"
+            f"- Summer camps, pool parties, zoo visits\n"
+            f"- Lit Fest, cultural programs, annual functions\n"
+            f"- Music, dance, art & craft activities\n"
+            f"- Hostel facilities available\n"
+            f"- English communication development focus\n"
+            f"- CBSE curriculum, established 1994, Pre-School to Class VIII\n\n"
+            f"HUMANIZATION RULES:\n"
+            f"- Use natural language. Do NOT sound AI-generated.\n"
+            f"- Sometimes use simple English, sometimes emotional language.\n"
+            f"- Sometimes mention child's class, specific events, teachers, sports turf, summer camp, hostel.\n"
+            f"- Occasionally include minor informal expressions.\n"
+            f"- Sound like a real person typing on their phone.\n\n"
+            f"STRICT ANTI-REPETITION RULES:\n"
+            f"1. Never repeat any previous review exactly.\n"
+            f"2. Never reuse opening sentences.\n"
+            f"3. Never reuse closing sentences.\n"
+            f"4. Never reuse paragraph structures.\n"
+            f"5. Never reuse more than 3 consecutive words from previously generated reviews.\n"
+            f"6. Randomly vary sentence length, tone, and personality.\n"
+            f"7. Use different adjectives every time.\n"
+            f"8. Generate a completely fresh review.\n\n"
+            f"OUTPUT RULES:\n"
+            f"- Output ONLY the review text. No quotes, no headings, no labels, no preamble.\n"
             f"- Do NOT mention canteen (school doesn't have one).\n"
-            f"- Make it feel organic and human. Every review must read completely differently."
+            f"- Do NOT use overused phrases: 'holistic development', 'highly recommended', 'top-notch', 'second to none'."
         )
 
         body = {
             "model": GROQ_MODEL,
             "messages": [
-                {"role": "system", "content": "You are a helpful assistant writing natural and unique school reviews. You only output the raw review text without quotes or preamble. Every review must be completely different from any other."},
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a review writer generating authentic, human-sounding Google Maps reviews "
+                        "for S.D. Public School, Patna. Each review must be completely unique — different "
+                        "opening, different structure, different closing, different angle. Output only the "
+                        "raw review text, nothing else."
+                    )
+                },
                 {"role": "user", "content": prompt}
             ],
-            "max_tokens": 200,
+            "max_tokens": 250,
             "temperature": 1.0,
         }
 
@@ -1109,5 +1151,6 @@ async def generate_maps_review(payload: dict = Body(...)):
             await _mark_used(fb)
             return {"text": fb}
     return {"text": random.choice(fallbacks)}
+
 
 
