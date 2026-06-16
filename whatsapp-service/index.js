@@ -14,6 +14,8 @@
  * WhatsApp ban risk, and support {name} personalisation in the message.
  */
 const express = require("express");
+const fs = require("fs");
+const path = require("path");
 const qrcode = require("qrcode");
 const pino = require("pino");
 const { Boom } = require("@hapi/boom");
@@ -157,17 +159,43 @@ app.get("/status", (req, res) => {
 
 app.post("/disconnect", async (req, res) => {
   try {
+    // 1. Try graceful logout first
     if (sock) {
-      try { await sock.logout(); } catch (e) { /* ignore */ }
+      try {
+        await sock.logout();
+      } catch (e) {
+        console.log("sock.logout() error (ignored):", e.message);
+      }
+      // Close the WebSocket so no reconnection events fire
+      try {
+        sock.end(undefined);
+      } catch (e) { /* ignore */ }
     }
-  } finally {
+
+    // 2. Reset in-memory state
     isConnected = false;
     meUser = null;
     currentQR = null;
     sock = null;
-    // Recreate a socket so a fresh QR appears.
+    starting = false;
+
+    // 3. Delete auth state so a fresh QR is generated
+    const authDir = path.resolve(AUTH_DIR);
+    if (fs.existsSync(authDir)) {
+      fs.rmSync(authDir, { recursive: true, force: true });
+      console.log("Auth state cleared:", authDir);
+    }
+
+    // 4. Small delay to let Baileys fully clean up
+    await sleep(1000);
+
+    // 5. Start fresh socket — will produce a new QR
     await startSock();
+
     res.json({ status: "disconnected" });
+  } catch (e) {
+    console.error("Disconnect error:", e.message);
+    res.status(500).json({ error: e.message });
   }
 });
 
