@@ -993,15 +993,17 @@ async def generate_maps_review(payload: dict = Body(...)):
             f"The review rating is {effective_rating} out of 5 stars.\n"
             f"Write the review from the perspective of: {selected_style}.\n"
             f"The review should be enthusiastic and positive, highlighting things like excellent academic records, "
-            f"cooperative teachers, great discipline, personal child growth, sports, moral values, or campus facilities.\n\n"
+            f"cooperative teachers, great discipline, personal child growth, sports, moral values, or campus facilities.\n"
+            f"A KEY HIGHLIGHT of the school is its professional sports turf where children regularly go to play during "
+            f"their games period — this is covered under the school sports fee. Mention the turf in some reviews.\n\n"
             f"CRITICAL RULES:\n"
             f"1. Keep it very short and sweet: exactly 1 to 3 sentences.\n"
             f"2. Write in a completely natural, conversational voice — as if a real person typed it on their phone.\n"
             f"3. Do NOT include any quotation marks, title headings, intro/outro text. Output ONLY the review text.\n"
             f"4. Every single review MUST be completely unique — different wording, different structure, different angle.\n"
             f"5. Vary sentence length and style. Sometimes use exclamation marks, sometimes don't.\n"
-            f"6. Randomly mention specific things: a teacher's helpfulness, a school event, playground, library, "
-            f"morning assembly, PTM experience, annual function, transport, uniform, canteen, smart classes, etc."
+            f"6. Randomly mention specific things: a teacher's helpfulness, a school event, the sports turf, playground, library, "
+            f"morning assembly, PTM experience, annual function, transport, uniform, smart classes, etc. Do NOT mention canteen."
         )
 
         body = {
