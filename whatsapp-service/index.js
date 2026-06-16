@@ -164,60 +164,59 @@ app.get("/status", (req, res) => {
 });
 
 app.post("/disconnect", async (req, res) => {
+  console.log("[Disconnect] ===== DISCONNECT REQUESTED =====");
+  disconnecting = true;
+
+  // 1. Capture and nullify the old socket immediately
+  const oldSock = sock;
+  sock = null;
+  isConnected = false;
+  meUser = null;
+  currentQR = null;
+  starting = false;
+
+  // 2. Kill the old socket — do NOT call sock.logout(), it hangs and races
+  if (oldSock) {
+    // Strip all listeners so nothing can fire
+    try { oldSock.ev.removeAllListeners(); } catch (e) { /* ok */ }
+
+    // Force close the underlying websocket
+    try { oldSock.ws.close(); } catch (e) { /* ok */ }
+    try { oldSock.end(undefined); } catch (e) { /* ok */ }
+    console.log("[Disconnect] Old socket killed.");
+  } else {
+    console.log("[Disconnect] No active socket to kill.");
+  }
+
+  // 3. Delete auth state — try both path.resolve and __dirname-relative
+  const paths = [
+    path.resolve(AUTH_DIR),
+    path.join(__dirname, "auth_state"),
+  ];
+  for (const p of paths) {
+    try {
+      if (fs.existsSync(p)) {
+        fs.rmSync(p, { recursive: true, force: true });
+        console.log("[Disconnect] Deleted auth state:", p);
+      }
+    } catch (e) {
+      console.log("[Disconnect] Could not delete", p, e.message);
+    }
+  }
+
+  // 4. Wait for Baileys internals to fully settle
+  await sleep(3000);
+
+  // 5. Start a fresh socket — will create new auth state + show QR
+  disconnecting = false;
   try {
-    disconnecting = true;
-    console.log("[Disconnect] Starting WhatsApp disconnect...");
-
-    // 1. Force-close the socket (do NOT use sock.logout — it fires async
-    //    connection.close events that race with our cleanup)
-    const oldSock = sock;
-    sock = null;
-    isConnected = false;
-    meUser = null;
-    currentQR = null;
-    starting = false;
-
-    if (oldSock) {
-      try {
-        // Remove all event listeners to prevent interference
-        oldSock.ev.removeAllListeners("connection.update");
-        oldSock.ev.removeAllListeners("creds.update");
-      } catch (e) { console.log("[Disconnect] removeListeners:", e.message); }
-
-      try {
-        // Try to logout from WhatsApp servers
-        await oldSock.logout();
-      } catch (e) { console.log("[Disconnect] logout:", e.message); }
-
-      try {
-        oldSock.end(undefined);
-      } catch (e) { /* ignore */ }
-
-      try {
-        if (oldSock.ws) oldSock.ws.close();
-      } catch (e) { /* ignore */ }
-    }
-
-    // 2. Delete auth state so a fresh QR is generated
-    const authDir = path.resolve(AUTH_DIR);
-    if (fs.existsSync(authDir)) {
-      fs.rmSync(authDir, { recursive: true, force: true });
-      console.log("[Disconnect] Auth state cleared:", authDir);
-    }
-
-    // 3. Wait for everything to settle
-    await sleep(2000);
-
-    // 4. Start fresh socket — will produce a new QR
-    disconnecting = false;
     await startSock();
-
-    console.log("[Disconnect] Complete. Fresh socket started.");
-    res.json({ status: "disconnected" });
+    console.log("[Disconnect] ===== FRESH SOCKET STARTED =====");
+    console.log("[Disconnect] isConnected:", isConnected, "| QR exists:", !!currentQR);
+    res.json({ status: "disconnected", qr: currentQR });
   } catch (e) {
-    disconnecting = false;
-    console.error("[Disconnect] Error:", e.message);
-    res.status(500).json({ error: e.message });
+    console.error("[Disconnect] startSock failed:", e.message);
+    res.status(500).json({ error: "Failed to restart: " + e.message });
   }
 });
 
