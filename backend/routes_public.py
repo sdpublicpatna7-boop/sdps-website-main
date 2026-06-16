@@ -921,102 +921,145 @@ async def generate_maps_review(payload: dict = Body(...)):
     if rating not in [1, 2, 3, 4, 5]:
         raise HTTPException(400, "Rating must be an integer between 1 and 5.")
 
-    # Fallback pre-generated unique reviews if Groq is not set up
-    fallbacks = {
-        5: [
-            "Excellent school with dedicated teachers and great focus on overall child development. Highly recommended!",
-            "S.D. Public School Patna provides a very supportive and motivating environment for students. Great academic standard.",
-            "Highly satisfied with the faculty and the quality of education here. The discipline and moral values taught are top-notch.",
-            "Best school in the area with a nice campus, excellent teaching staff, and a strong focus on both studies and sports."
-        ],
-        4: [
-            "Good school with supportive faculty. Academic focus is very strong, although extracurriculars could be expanded.",
-            "Very good environment for children. Teachers are cooperative and they guide students well in their studies.",
-            "Satisfied with the teaching and discipline. A solid choice for parents looking for high quality schooling in Patna."
-        ],
-        3: [
-            "Average experience. The school has a good curriculum, but sports and other facilities can be improved.",
-            "Decent education and discipline. Need more focus on practical learning and student activities.",
-            "It's a good school academically, but communications and co-curricular programs have room for growth."
-        ],
-        2: [
-            "The academic side is okay, but transport and administration communication need a lot of improvement.",
-            "Discipline is maintained, but more attention should be given to individual student problems and extracurriculars."
-        ],
-        1: [
-            "Disappointed with the administration support and facilities. Needs major improvements in parent communication.",
-            "Needs significant changes in teacher coordination and student facilities. Not satisfied with the current management."
-        ]
-    }
-
     import random
+
+    # ── Always generate a 5-star positive review regardless of input rating ──
+    effective_rating = 5
+
+    # Fallback pool (used when Groq key is missing or all retries fail)
+    fallbacks = [
+        "Excellent school with dedicated teachers and great focus on overall child development. Highly recommended!",
+        "S.D. Public School Patna provides a very supportive and motivating environment for students. Great academic standard.",
+        "Highly satisfied with the faculty and the quality of education here. The discipline and moral values taught are top-notch.",
+        "Best school in the area with a nice campus, excellent teaching staff, and a strong focus on both studies and sports.",
+        "My child has grown so much since joining SDPS — the teachers genuinely care about each student's progress.",
+        "Amazing school with a perfect balance of academics, sports, and extracurriculars. Very happy with our decision.",
+        "The teaching staff at SDPS Patna is incredibly supportive and always goes the extra mile for students.",
+        "One of the finest schools in Patna with excellent infrastructure and a strong value-based education system.",
+        "We've seen remarkable improvement in our child's confidence and academics since enrolling at S.D. Public School.",
+        "Great school with a warm and welcoming atmosphere. The teachers make learning fun and engaging for kids.",
+        "SDPS has been a wonderful experience for our family — the school truly nurtures every child's potential.",
+        "Exceptional faculty and a well-rounded curriculum that prepares students for real-world challenges. Love this school!",
+        "The discipline, moral values, and academic rigor at S.D. Public School are simply outstanding.",
+        "Very impressed with how the school handles both academics and character building. Couldn't ask for more.",
+        "Our experience with SDPS Patna has been nothing short of excellent. The staff is caring and professional.",
+    ]
+
+    # ── Helper: check uniqueness against MongoDB ─────────────────────────────
+    async def _is_used(text: str) -> bool:
+        """Return True if this exact review text was already served."""
+        existing = await db.maps_reviews_used.find_one({"text": text})
+        return existing is not None
+
+    async def _mark_used(text: str):
+        """Store the review so it is never repeated."""
+        await db.maps_reviews_used.insert_one({
+            "text": text,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        })
+
+    # ── Fallback path (no Groq key) ──────────────────────────────────────────
     if not GROQ_API_KEY:
         logger.warning("[MapsReview] GROQ_API_KEY is not set — using local fallback")
-        return {"text": random.choice(fallbacks.get(rating, fallbacks[5]))}
+        random.shuffle(fallbacks)
+        for fb in fallbacks:
+            if not await _is_used(fb):
+                await _mark_used(fb)
+                return {"text": fb}
+        # All fallbacks exhausted — return a random one anyway
+        return {"text": random.choice(fallbacks)}
 
-    # Prompt Groq for a unique review text
+    # ── Groq AI path — retry up to 5 times to get a unique review ────────────
     styles = [
-        "a parent of a student studying at S.D. Public School, Patna",
-        "an alumnus of S.D. Public School",
-        "a high school student from SDPS Patna",
-        "a parent who is highly pleased with the academic standards",
-        "a local resident sharing feedback about the school's discipline"
+        "a parent of a Class III student at S.D. Public School, Patna",
+        "a proud alumnus of SDPS who graduated in 2018",
+        "a parent of two children studying in Class V and Class VIII",
+        "a mother who recently enrolled her child in nursery",
+        "a father impressed by the annual sports day event",
+        "a parent attending a parent-teacher meeting for the first time",
+        "a Class X student preparing for board exams",
+        "a grandparent who visited the school during an annual function",
+        "a neighbour who has watched the school grow over the years",
+        "a parent comparing SDPS with other schools in Patna",
     ]
-    selected_style = random.choice(styles)
 
-    prompt = (
-        f"Write a natural, conversational, and unique Google Maps review for 'S.D. Public School, Patna' (SDPS Patna).\n"
-        f"The review rating is {rating} out of 5 stars.\n"
-        f"Write the review from the perspective of: {selected_style}.\n"
-        f"Tone guidelines based on rating:\n"
-        f"- 5 stars: Enthusiastic, highlighting the excellent academic records, cooperative teachers, great discipline, or personal child growth.\n"
-        f"- 4 stars: Very positive, praising the teachers and curriculum but keeping it simple and balanced.\n"
-        f"- 3 stars: Neutral/average, highlighting some good teachers but suggesting improvements in areas like sports or co-curriculars.\n"
-        f"- 2 stars: Critical, noting specific areas that need work (like school-parent communication or transport) in a polite but honest manner.\n"
-        f"- 1 star: Disappointed, addressing specific concerns constructively.\n\n"
-        f"CRITICAL RULES:\n"
-        f"1. Keep it very short and sweet: exactly 1 to 2 sentences.\n"
-        f"2. Write in a completely natural, conversational voice. Do NOT use buzzwords or repetitive structures.\n"
-        f"3. Do NOT include any quotation marks, title headings, intro/outro text (like 'Here is the review:'). Output ONLY the review text itself.\n"
-        f"4. Do NOT use the exact same phrasing. Make it organic and fresh."
-    )
+    MAX_RETRIES = 5
 
-    body = {
-        "model": GROQ_MODEL,
-        "messages": [
-            {"role": "system", "content": "You are a helpful assistant writing natural and unique school reviews. You only output the raw review text without quotes or preamble."},
-            {"role": "user", "content": prompt}
-        ],
-        "max_tokens": 150,
-        "temperature": 0.95,  # High temperature to ensure variety
-    }
+    for attempt in range(MAX_RETRIES):
+        selected_style = random.choice(styles)
 
-    try:
-        async with httpx.AsyncClient(timeout=15.0) as c:
-            r = await c.post(
-                "https://api.groq.com/openai/v1/chat/completions",
-                json=body,
-                headers={
-                    "Authorization": f"Bearer {GROQ_API_KEY}",
-                    "Content-Type": "application/json",
-                },
-            )
+        prompt = (
+            f"Write a natural, conversational, and unique Google Maps review for 'S.D. Public School, Patna' (SDPS Patna).\n"
+            f"The review rating is {effective_rating} out of 5 stars.\n"
+            f"Write the review from the perspective of: {selected_style}.\n"
+            f"The review should be enthusiastic and positive, highlighting things like excellent academic records, "
+            f"cooperative teachers, great discipline, personal child growth, sports, moral values, or campus facilities.\n\n"
+            f"CRITICAL RULES:\n"
+            f"1. Keep it very short and sweet: exactly 1 to 3 sentences.\n"
+            f"2. Write in a completely natural, conversational voice — as if a real person typed it on their phone.\n"
+            f"3. Do NOT include any quotation marks, title headings, intro/outro text. Output ONLY the review text.\n"
+            f"4. Every single review MUST be completely unique — different wording, different structure, different angle.\n"
+            f"5. Vary sentence length and style. Sometimes use exclamation marks, sometimes don't.\n"
+            f"6. Randomly mention specific things: a teacher's helpfulness, a school event, playground, library, "
+            f"morning assembly, PTM experience, annual function, transport, uniform, canteen, smart classes, etc."
+        )
 
-        if r.status_code >= 300:
-            logger.warning(f"[MapsReview] Groq error {r.status_code}: {r.text[:300]}")
-            return {"text": random.choice(fallbacks.get(rating, fallbacks[5]))}
+        body = {
+            "model": GROQ_MODEL,
+            "messages": [
+                {"role": "system", "content": "You are a helpful assistant writing natural and unique school reviews. You only output the raw review text without quotes or preamble. Every review must be completely different from any other."},
+                {"role": "user", "content": prompt}
+            ],
+            "max_tokens": 200,
+            "temperature": 1.0,
+        }
 
-        data = r.json()
-        reply = data.get("choices", [])[0].get("message", {}).get("content", "").strip()
-        # Clean up any surrounding quotes if the model added them
-        if reply.startswith('"') and reply.endswith('"'):
-            reply = reply[1:-1].strip()
-        if reply.startswith("'") and reply.endswith("'"):
-            reply = reply[1:-1].strip()
-        
-        return {"text": reply}
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as c:
+                r = await c.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    json=body,
+                    headers={
+                        "Authorization": f"Bearer {GROQ_API_KEY}",
+                        "Content-Type": "application/json",
+                    },
+                )
 
-    except Exception as e:
-        logger.error(f"[MapsReview] Exception generating review: {e}")
-        return {"text": random.choice(fallbacks.get(rating, fallbacks[5]))}
+            if r.status_code >= 300:
+                logger.warning(f"[MapsReview] Groq error {r.status_code}: {r.text[:300]}")
+                continue
+
+            data = r.json()
+            reply = data.get("choices", [])[0].get("message", {}).get("content", "").strip()
+
+            # Clean up surrounding quotes
+            for q in ['"', "'"]:
+                if reply.startswith(q) and reply.endswith(q):
+                    reply = reply[1:-1].strip()
+
+            if not reply:
+                continue
+
+            # Check uniqueness
+            if await _is_used(reply):
+                logger.info(f"[MapsReview] Duplicate on attempt {attempt + 1}, retrying...")
+                continue
+
+            # Unique review — store and return
+            await _mark_used(reply)
+            return {"text": reply}
+
+        except Exception as e:
+            logger.error(f"[MapsReview] Attempt {attempt + 1} error: {e}")
+            continue
+
+    # All retries exhausted — fall back to local pool
+    logger.warning("[MapsReview] All Groq retries exhausted, using fallback")
+    random.shuffle(fallbacks)
+    for fb in fallbacks:
+        if not await _is_used(fb):
+            await _mark_used(fb)
+            return {"text": fb}
+    return {"text": random.choice(fallbacks)}
+
 
