@@ -47,6 +47,7 @@ let starting = false;
 
 let bulkProgress = { total: 0, sent: 0, failed: 0, running: false, errors: [] };
 let stopRequested = false;
+let disconnecting = false;  // Flag to prevent close handler from interfering during disconnect
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -98,6 +99,11 @@ async function startSock() {
       if (connection === "close") {
         isConnected = false;
         meUser = null;
+        // If we're in the middle of a manual disconnect, don't interfere
+        if (disconnecting) {
+          console.log("WhatsApp close event during disconnect — skipping auto-reconnect.");
+          return;
+        }
         const statusCode = new Boom(lastDisconnect?.error)?.output?.statusCode;
         const loggedOut = statusCode === DisconnectReason.loggedOut;
         console.log("WhatsApp connection closed. loggedOut=", loggedOut, "code=", statusCode);
@@ -159,42 +165,58 @@ app.get("/status", (req, res) => {
 
 app.post("/disconnect", async (req, res) => {
   try {
-    // 1. Try graceful logout first
-    if (sock) {
-      try {
-        await sock.logout();
-      } catch (e) {
-        console.log("sock.logout() error (ignored):", e.message);
-      }
-      // Close the WebSocket so no reconnection events fire
-      try {
-        sock.end(undefined);
-      } catch (e) { /* ignore */ }
-    }
+    disconnecting = true;
+    console.log("[Disconnect] Starting WhatsApp disconnect...");
 
-    // 2. Reset in-memory state
+    // 1. Force-close the socket (do NOT use sock.logout — it fires async
+    //    connection.close events that race with our cleanup)
+    const oldSock = sock;
+    sock = null;
     isConnected = false;
     meUser = null;
     currentQR = null;
-    sock = null;
     starting = false;
 
-    // 3. Delete auth state so a fresh QR is generated
+    if (oldSock) {
+      try {
+        // Remove all event listeners to prevent interference
+        oldSock.ev.removeAllListeners("connection.update");
+        oldSock.ev.removeAllListeners("creds.update");
+      } catch (e) { console.log("[Disconnect] removeListeners:", e.message); }
+
+      try {
+        // Try to logout from WhatsApp servers
+        await oldSock.logout();
+      } catch (e) { console.log("[Disconnect] logout:", e.message); }
+
+      try {
+        oldSock.end(undefined);
+      } catch (e) { /* ignore */ }
+
+      try {
+        if (oldSock.ws) oldSock.ws.close();
+      } catch (e) { /* ignore */ }
+    }
+
+    // 2. Delete auth state so a fresh QR is generated
     const authDir = path.resolve(AUTH_DIR);
     if (fs.existsSync(authDir)) {
       fs.rmSync(authDir, { recursive: true, force: true });
-      console.log("Auth state cleared:", authDir);
+      console.log("[Disconnect] Auth state cleared:", authDir);
     }
 
-    // 4. Small delay to let Baileys fully clean up
-    await sleep(1000);
+    // 3. Wait for everything to settle
+    await sleep(2000);
 
-    // 5. Start fresh socket — will produce a new QR
+    // 4. Start fresh socket — will produce a new QR
+    disconnecting = false;
     await startSock();
 
+    console.log("[Disconnect] Complete. Fresh socket started.");
     res.json({ status: "disconnected" });
   } catch (e) {
-    console.error("Disconnect error:", e.message);
+    disconnecting = false;
+    console.error("[Disconnect] Error:", e.message);
     res.status(500).json({ error: e.message });
   }
 });
