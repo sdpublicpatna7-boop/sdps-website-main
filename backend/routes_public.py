@@ -988,22 +988,68 @@ async def generate_maps_review(payload: dict = Body(...)):
     for attempt in range(MAX_RETRIES):
         selected_style = random.choice(styles)
 
+        # Pick random elements to force completely different outputs each time
+        openings = [
+            "Start the review with the school name.",
+            "Start with a personal experience or memory.",
+            "Start by mentioning your child or children.",
+            "Start with an emotional statement about how you feel.",
+            "Start by comparing with your expectations before joining.",
+            "Start with a specific detail like a teacher, event, or facility.",
+            "Start with a short punchy statement like 'Love this school.' or 'Best decision we made.'",
+            "Start by mentioning how many years you've been associated with the school.",
+            "Start with something about the morning assembly or daily routine.",
+            "Start by talking about the sports turf or games period.",
+            "Start with a recommendation to other parents.",
+            "Start with gratitude or thanks.",
+        ]
+
+        topics = [
+            "the professional sports turf where kids play during games period",
+            "how cooperative and helpful the teachers are",
+            "the discipline and value-based education",
+            "your child's academic improvement since joining",
+            "the annual sports day or annual function",
+            "the morning assembly and daily school routine",
+            "the PTM experience and teacher-parent communication",
+            "the smart classrooms and modern teaching methods",
+            "the overall campus environment and infrastructure",
+            "the school's focus on both studies and sports equally",
+            "the library and reading culture at the school",
+            "how the school helped your child become more confident",
+            "the safe and secure school transport system",
+            "the school uniform and well-maintained campus",
+        ]
+
+        structures = [
+            "Write exactly ONE sentence only.",
+            "Write exactly TWO short sentences.",
+            "Write TWO sentences — first one short, second one longer.",
+            "Write THREE very short sentences.",
+            "Write ONE long detailed sentence.",
+            "Write TWO sentences — the second one should be a recommendation.",
+        ]
+
+        selected_opening = random.choice(openings)
+        selected_topic = random.choice(topics)
+        selected_structure = random.choice(structures)
+
         prompt = (
-            f"Write a natural, conversational, and unique Google Maps review for 'S.D. Public School, Patna' (SDPS Patna).\n"
-            f"The review rating is {effective_rating} out of 5 stars.\n"
-            f"Write the review from the perspective of: {selected_style}.\n"
-            f"The review should be enthusiastic and positive, highlighting things like excellent academic records, "
-            f"cooperative teachers, great discipline, personal child growth, sports, moral values, or campus facilities.\n"
-            f"A KEY HIGHLIGHT of the school is its professional sports turf where children regularly go to play during "
-            f"their games period — this is covered under the school sports fee. Mention the turf in some reviews.\n\n"
-            f"CRITICAL RULES:\n"
-            f"1. Keep it very short and sweet: exactly 1 to 3 sentences.\n"
-            f"2. Write in a completely natural, conversational voice — as if a real person typed it on their phone.\n"
-            f"3. Do NOT include any quotation marks, title headings, intro/outro text. Output ONLY the review text.\n"
-            f"4. Every single review MUST be completely unique — different wording, different structure, different angle.\n"
-            f"5. Vary sentence length and style. Sometimes use exclamation marks, sometimes don't.\n"
-            f"6. Randomly mention specific things: a teacher's helpfulness, a school event, the sports turf, playground, library, "
-            f"morning assembly, PTM experience, annual function, transport, uniform, smart classes, etc. Do NOT mention canteen."
+            f"Write a Google Maps review for 'S.D. Public School, Patna' (SDPS Patna). "
+            f"Rating: {effective_rating}/5 stars. Perspective: {selected_style}.\n\n"
+            f"FOCUS ON: {selected_topic}.\n"
+            f"OPENING INSTRUCTION: {selected_opening}\n"
+            f"LENGTH: {selected_structure}\n\n"
+            f"The school has a professional sports turf where children regularly go to play during their games period "
+            f"(included in school sports fee). You may mention it naturally if relevant.\n\n"
+            f"RULES:\n"
+            f"- Sound like a real person typing on their phone. Casual, genuine, not formal.\n"
+            f"- NEVER start with 'S.D. Public School' more than once per batch. Vary your first word every time.\n"
+            f"- NEVER end with 'Highly recommended' or 'Highly recommend'. Find different ways to close.\n"
+            f"- Do NOT use these overused phrases: 'holistic development', 'nurturing environment', 'highly recommended', 'top-notch'.\n"
+            f"- Output ONLY the review text. No quotes, no headings, no preamble.\n"
+            f"- Do NOT mention canteen (school doesn't have one).\n"
+            f"- Make it feel organic and human. Every review must read completely differently."
         )
 
         body = {
