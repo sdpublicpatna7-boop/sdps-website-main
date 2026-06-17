@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import DOMPurify from "dompurify";
 import { Shield, FileText, Lock, Scale, CreditCard, Mail, Phone, BookOpen, Clock, HeartHandshake } from "lucide-react";
@@ -91,11 +91,11 @@ const cardVariants = {
 };
 
 export default function TermsPrivacy() {
-  const { page } = useParams(); // "terms" or "privacy"
+  const location = useLocation();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const pageId = page === "privacy" ? "privacy" : "terms";
+  const pageId = location.pathname.includes("privacy") ? "privacy" : "terms";
 
   useEffect(() => {
     setLoading(true);
