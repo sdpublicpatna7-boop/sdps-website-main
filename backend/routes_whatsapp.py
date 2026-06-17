@@ -309,7 +309,7 @@ async def wa_status(admin: TokenData = Depends(get_superadmin)):
 async def wa_disconnect(admin: TokenData = Depends(get_superadmin)):
     """Log out from WhatsApp and reset the session (a new QR will be generated)."""
     try:
-        return await _wa_post("/disconnect")
+        return await _wa_post("/disconnect", json={"confirm": True})
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))
 
