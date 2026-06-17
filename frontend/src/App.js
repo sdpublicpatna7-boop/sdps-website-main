@@ -59,7 +59,6 @@ const AdminCareerApps = lazy(() => import("@/pages/admin/special/AdminCareerApps
 const AdminAlumniMembers = lazy(() => import("@/pages/admin/special/AdminAlumniMembers"));
 const AdminContactMessages = lazy(() => import("@/pages/admin/special/AdminContactMessages"));
 const AdminIntegrationKeys = lazy(() => import("@/pages/admin/special/AdminIntegrationKeys"));
-const AdminLegalPages = lazy(() => import("@/pages/admin/special/AdminLegalPages"));
 const AdminKheloPatna = lazy(() => import("@/pages/admin/special/AdminKheloPatna"));
 
 // StaffModules
@@ -154,7 +153,6 @@ function App() {
               <Route path="whatsapp-marketing" element={<WhatsAppMarketing />} />
               <Route path="fee-reminders" element={<FeeReminders />} />
               <Route path="site-settings" element={<AdminSiteSettings />} />
-              <Route path="legal-pages" element={<AdminLegalPages />} />
               <Route path="integration-keys" element={<AdminIntegrationKeys />} />
               <Route path="khelo-patna-gallery" element={<AdminKheloPatna />} />
               <Route path="holiday-homework" element={<AdminHolidayHomework />} />
