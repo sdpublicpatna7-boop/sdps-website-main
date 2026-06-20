@@ -362,6 +362,7 @@ export default function BirthdayGreetings() {
                       <th className="px-3 py-1.5">Name</th>
                       <th className="px-3 py-1.5">Phone</th>
                       <th className="px-3 py-1.5">DOB</th>
+                      <th className="px-3 py-1.5 text-right">Adm No</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -370,6 +371,7 @@ export default function BirthdayGreetings() {
                         <td className="px-3 py-1.5 text-slate-700">{r.name}</td>
                         <td className="px-3 py-1.5 text-slate-500">{r.phone}</td>
                         <td className="px-3 py-1.5 text-slate-700">{r.dob}</td>
+                        <td className="px-3 py-1.5 text-right text-slate-500 font-mono">{r.admission_no || "—"}</td>
                       </tr>
                     ))}
                   </tbody>

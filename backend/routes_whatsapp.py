@@ -638,23 +638,30 @@ def _generate_birthday_card(name: Optional[str] = None) -> bytes:
         b = int(color_start[2] + (color_end[2] - color_start[2]) * factor)
         draw.line([(0, y), (width, y)], fill=(r, g, b, 255))
         
-    # 2) Glassmorphic Container
-    draw.rounded_rectangle(
+    # 2) Semi-transparent Inner Container (Alpha composited so text is fully readable)
+    overlay = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    overlay_draw = ImageDraw.Draw(overlay)
+    
+    # Draw dark premium card with 85% opacity (deep navy color matching school archetype)
+    overlay_draw.rounded_rectangle(
         [(50, 50), (750, 750)],
         radius=24,
-        fill=(255, 255, 255, 35),
-        outline=(255, 255, 255, 70),
+        fill=(10, 15, 36, 215),       # #0A0F24 with 215 alpha
+        outline=(199, 161, 91, 255),  # #C7A15B solid gold outline
         width=3
     )
     
-    # 3) Gold border accent
-    draw.rounded_rectangle(
+    # Draw inner gold accent line
+    overlay_draw.rounded_rectangle(
         [(65, 65), (735, 735)],
         radius=16,
         fill=None,
-        outline="#C7A15B",
-        width=2
+        outline=(199, 161, 91, 255),  # #C7A15B solid gold
+        width=1
     )
+    
+    img = Image.alpha_composite(img, overlay)
+    draw = ImageDraw.Draw(img)
 
     # 4) Draw Confetti
     confetti_points = [
