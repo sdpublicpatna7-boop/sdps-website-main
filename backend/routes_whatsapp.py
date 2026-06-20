@@ -505,14 +505,21 @@ def _parse_dob_val(val: str) -> Optional[date]:
     return None
 
 
-def _parse_birthday_rows(content: bytes, target_date: Optional[date] = None):
+def _parse_birthday_rows(content: bytes, target_date: Optional[date] = None, filename: str = ""):
     """
-    Parse a student Excel list, match DOB column, and filter for today's birthdays.
+    Parse a student CSV or Excel list, match DOB column, and filter for today's birthdays.
     """
     try:
-        df = pd.read_excel(io.BytesIO(content), dtype=str)
+        if filename.lower().endswith('.csv'):
+            try:
+                text = content.decode("utf-8-sig")
+            except UnicodeDecodeError:
+                text = content.decode("latin-1")
+            df = pd.read_csv(io.StringIO(text), dtype=str)
+        else:
+            df = pd.read_excel(io.BytesIO(content), dtype=str)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Could not read Excel file: {e}")
+        raise HTTPException(status_code=400, detail=f"Could not read student file: {e}")
 
     if df.empty:
         return [], 0
@@ -521,19 +528,30 @@ def _parse_birthday_rows(content: bytes, target_date: Optional[date] = None):
 
     def find_col(*candidates):
         for col_i, h in enumerate(headers):
+            h_norm = h.replace("_", " ").strip()
             for cand in candidates:
-                if cand in h:
+                cand_norm = cand.replace("_", " ").strip()
+                if h_norm == cand_norm:
+                    return col_i
+        for col_i, h in enumerate(headers):
+            h_norm = h.replace("_", " ").strip()
+            for cand in candidates:
+                cand_norm = cand.replace("_", " ").strip()
+                if cand_norm in h_norm:
+                    if cand_norm == "name" and ("father" in h_norm or "mother" in h_norm or "guardian" in h_norm):
+                        continue
                     return col_i
         return None
 
-    name_col = find_col("student name", "child name", "first name", "name")
-    contact_col = find_col("contact", "mobile", "phone", "whatsapp", "number")
-    dob_col = find_col("dob", "birth", "date of birth", "birthday", "birthdate")
+    name_col = find_col("name", "student name", "child name", "first name")
+    contact_col = find_col("contact no", "contact_no", "contact", "mobile", "phone", "whatsapp", "number")
+    dob_col = find_col("date of birth", "date_of_birth", "dob", "birth", "birthday", "birthdate")
+    admn_col = find_col("admn no", "admn_no", "admission no", "admission_no", "admn", "admission", "adm no", "admno")
 
     if name_col is None or contact_col is None or dob_col is None:
         raise HTTPException(
             status_code=400,
-            detail="Sheet must contain Name, Contact No, and Date of Birth (DOB) columns.",
+            detail="File must contain Name, Contact No, and Date of Birth (DOB) columns.",
         )
 
     if not target_date:
@@ -573,7 +591,8 @@ def _parse_birthday_rows(content: bytes, target_date: Optional[date] = None):
             recipients.append({
                 "phone": phone,
                 "name": name,
-                "dob": parsed_dob.strftime("%Y-%m-%d")
+                "dob": parsed_dob.strftime("%Y-%m-%d"),
+                "admission_no": cell(admn_col) if admn_col is not None else ""
             })
         else:
             # Not birthday on target date
@@ -682,7 +701,7 @@ def _generate_birthday_card(name: Optional[str] = None) -> bytes:
 
     # 5) School Header
     draw_center_text("S.D. PUBLIC SCHOOL", 110, 34, "#FFFFFF", is_bold=True)
-    draw_center_text("Patna-7 | Regd No. 230140020211229220415", 155, 14, "#E2E8F0")
+    draw_center_text("Patna-7", 155, 14, "#E2E8F0")
     
     draw.line([(320, 195), (480, 195)], fill="#C7A15B", width=2)
     
@@ -723,9 +742,11 @@ async def wa_birthday_campaign_preview(
     Parse a student Excel list, find today's birthdays, and return
     a recipient preview plus a base64 preview of the generated greeting card.
     """
+    if not file.filename.lower().endswith(('.csv', '.xlsx', '.xls')):
+        raise HTTPException(status_code=400, detail="Only CSV (.csv) or Excel (.xlsx, .xls) files are allowed.")
     raw = await file.read()
     if len(raw) > 5 * 1024 * 1024:
-        raise HTTPException(status_code=413, detail="Excel file must be ≤ 5MB")
+        raise HTTPException(status_code=413, detail="File must be ≤ 5MB")
 
     parsed_date = None
     if target_date:
@@ -734,7 +755,7 @@ async def wa_birthday_campaign_preview(
         except ValueError:
             raise HTTPException(status_code=400, detail="target_date must be in YYYY-MM-DD format")
 
-    recipients, skipped = _parse_birthday_rows(raw, parsed_date)
+    recipients, skipped = _parse_birthday_rows(raw, parsed_date, file.filename)
 
     # Use first student name for preview card, default to "Dear Student"
     sample_name = recipients[0]["name"] if recipients else "Dear Student"
@@ -763,9 +784,11 @@ async def wa_birthday_campaign_send(
     """
     Parse student Excel list, find birthdays, generate card, and launch bulk campaign.
     """
+    if not file.filename.lower().endswith(('.csv', '.xlsx', '.xls')):
+        raise HTTPException(status_code=400, detail="Only CSV (.csv) or Excel (.xlsx, .xls) files are allowed.")
     raw = await file.read()
     if len(raw) > 5 * 1024 * 1024:
-        raise HTTPException(status_code=413, detail="Excel file must be ≤ 5MB")
+        raise HTTPException(status_code=413, detail="File must be ≤ 5MB")
 
     parsed_date = None
     if target_date:
@@ -774,7 +797,7 @@ async def wa_birthday_campaign_send(
         except ValueError:
             raise HTTPException(status_code=400, detail="target_date must be in YYYY-MM-DD format")
 
-    recipients, skipped = _parse_birthday_rows(raw, parsed_date)
+    recipients, skipped = _parse_birthday_rows(raw, parsed_date, file.filename)
     if not recipients:
         raise HTTPException(
             status_code=400,
@@ -789,28 +812,26 @@ async def wa_birthday_campaign_send(
     if dry_run:
         return {"recipients_count": len(recipients), "skipped_count": skipped, "sample": sample}
 
-    # Generate generic SDPS card for bulk send campaign
-    card_bytes = _generate_birthday_card(None)
-    card_b64 = base64.b64encode(card_bytes).decode("utf-8")
-
     tmpl = message_template.strip() if (message_template and message_template.strip()) else "Dear {name}, S.D. Public School wishes you a very Happy Birthday! 🎂🎉"
     
     contacts = []
     for r in recipients:
         msg = tmpl.replace("{name}", r["name"])
+        c_card_bytes = _generate_birthday_card(r["name"])
+        c_card_b64 = base64.b64encode(c_card_bytes).decode("utf-8")
         contacts.append({
             "phone": r["phone"],
             "name": r["name"],
-            "message": msg
+            "message": msg,
+            "mediaBase64": c_card_b64,
+            "mediaMime": "image/jpeg",
+            "mediaType": "image"
         })
 
     payload = {
         "contacts": contacts,
         "message": "",
-        "delayMs": WA_BULK_DELAY_MS,
-        "mediaBase64": card_b64,
-        "mediaMime": "image/jpeg",
-        "mediaType": "image"
+        "delayMs": WA_BULK_DELAY_MS
     }
 
     try:
@@ -827,14 +848,21 @@ async def wa_birthday_campaign_send(
 
 # ── Database Roster and Auto-Scheduler Actions ──
 
-def _parse_all_students(content: bytes):
+def _parse_all_students(content: bytes, filename: str = ""):
     """
-    Parse a student Excel list and return all valid students.
+    Parse a student CSV or Excel list and return all valid students with all 9 fields.
     """
     try:
-        df = pd.read_excel(io.BytesIO(content), dtype=str)
+        if filename.lower().endswith('.csv'):
+            try:
+                text = content.decode("utf-8-sig")
+            except UnicodeDecodeError:
+                text = content.decode("latin-1")
+            df = pd.read_csv(io.StringIO(text), dtype=str)
+        else:
+            df = pd.read_excel(io.BytesIO(content), dtype=str)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Could not read Excel file: {e}")
+        raise HTTPException(status_code=400, detail=f"Could not read student file: {e}")
 
     if df.empty:
         return [], 0
@@ -843,20 +871,35 @@ def _parse_all_students(content: bytes):
 
     def find_col(*candidates):
         for col_i, h in enumerate(headers):
+            h_norm = h.replace("_", " ").strip()
             for cand in candidates:
-                if cand in h:
+                cand_norm = cand.replace("_", " ").strip()
+                if h_norm == cand_norm:
+                    return col_i
+        for col_i, h in enumerate(headers):
+            h_norm = h.replace("_", " ").strip()
+            for cand in candidates:
+                cand_norm = cand.replace("_", " ").strip()
+                if cand_norm in h_norm:
+                    if cand_norm == "name" and ("father" in h_norm or "mother" in h_norm or "guardian" in h_norm):
+                        continue
                     return col_i
         return None
 
-    name_col = find_col("student name", "child name", "first name", "name")
-    contact_col = find_col("contact", "mobile", "phone", "whatsapp", "number")
-    dob_col = find_col("dob", "birth", "date of birth", "birthday", "birthdate")
-    admn_col = find_col("admn", "admission", "adm no", "admno", "admission number")
+    name_col = find_col("name", "student name", "child name", "first name")
+    father_col = find_col("father name", "father_name", "father", "guardian")
+    mother_col = find_col("mother name", "mother_name", "mother")
+    contact_col = find_col("contact no", "contact_no", "contact", "mobile", "phone", "whatsapp", "number")
+    admn_col = find_col("admn no", "admn_no", "admission no", "admission_no", "admn", "admission", "adm no", "admno")
+    dob_col = find_col("date of birth", "date_of_birth", "dob", "birth", "birthday", "birthdate")
+    perm_addr_col = find_col("permanent address", "permanent_address", "perm address", "permanent")
+    curr_addr_col = find_col("current address", "current_address", "curr address", "current")
+    biometric_col = find_col("biometric")
 
     if name_col is None or contact_col is None or dob_col is None:
         raise HTTPException(
             status_code=400,
-            detail="Sheet must contain Name, Contact No, and Date of Birth (DOB) columns.",
+            detail="File must contain Name, Contact No, and Date of Birth (DOB) columns.",
         )
 
     students = []
@@ -888,12 +931,25 @@ def _parse_all_students(content: bytes):
             continue
 
         admn = cell(admn_col)
+        father = cell(father_col)
+        mother = cell(mother_col)
+        perm_addr = cell(perm_addr_col)
+        curr_addr = cell(curr_addr_col)
+        biometric = cell(biometric_col)
 
         students.append({
             "name": name,
+            "father_name": father,
+            "mother_name": mother,
             "phone": phone,
+            "contact_no": phone,
+            "admission_no": admn,
+            "admn_no": admn,
             "dob": parsed_dob.strftime("%Y-%m-%d"),
-            "admission_no": admn
+            "date_of_birth": parsed_dob.strftime("%Y-%m-%d"),
+            "permanent_address": perm_addr,
+            "current_address": curr_addr,
+            "biometric": biometric
         })
 
     return students, skipped
@@ -912,11 +968,13 @@ async def wa_birthday_campaign_import(
     - overwrite: drops the birthday_students collection and saves fresh records.
     - append: updates or adds new records.
     """
+    if not file.filename.lower().endswith(('.csv', '.xlsx', '.xls')):
+        raise HTTPException(status_code=400, detail="Only CSV (.csv) or Excel (.xlsx, .xls) files are allowed.")
     raw = await file.read()
     if len(raw) > 5 * 1024 * 1024:
-        raise HTTPException(status_code=413, detail="Excel file must be ≤ 5MB")
+        raise HTTPException(status_code=413, detail="File must be ≤ 5MB")
 
-    students, skipped = _parse_all_students(raw)
+    students, skipped = _parse_all_students(raw, file.filename)
     if not students:
         raise HTTPException(status_code=400, detail="No valid students found in the sheet.")
 
@@ -1010,27 +1068,26 @@ async def wa_birthday_campaign_send_saved(
             detail="No students have birthdays today in the database.",
         )
 
-    card_bytes = _generate_birthday_card(None)
-    card_b64 = base64.b64encode(card_bytes).decode("utf-8")
-
     tmpl = message_template.strip() if (message_template and message_template.strip()) else "Dear {name}, S.D. Public School wishes you a very Happy Birthday! May your year ahead be filled with joy and success. 🎂🎉"
     
     contacts = []
     for r in recipients:
         msg = tmpl.replace("{name}", r["name"])
+        c_card_bytes = _generate_birthday_card(r["name"])
+        c_card_b64 = base64.b64encode(c_card_bytes).decode("utf-8")
         contacts.append({
             "phone": r["phone"],
             "name": r["name"],
-            "message": msg
+            "message": msg,
+            "mediaBase64": c_card_b64,
+            "mediaMime": "image/jpeg",
+            "mediaType": "image"
         })
 
     payload = {
         "contacts": contacts,
         "message": "",
-        "delayMs": WA_BULK_DELAY_MS,
-        "mediaBase64": card_b64,
-        "mediaMime": "image/jpeg",
-        "mediaType": "image"
+        "delayMs": WA_BULK_DELAY_MS
     }
 
     try:
@@ -1042,6 +1099,124 @@ async def wa_birthday_campaign_send_saved(
         }
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))
+
+
+from bson import ObjectId
+import math
+
+class StudentUpdateModel(BaseModel):
+    name: str
+    father_name: Optional[str] = ""
+    mother_name: Optional[str] = ""
+    phone: str
+    admission_no: Optional[str] = ""
+    dob: str  # YYYY-MM-DD
+    permanent_address: Optional[str] = ""
+    current_address: Optional[str] = ""
+    biometric: Optional[str] = ""
+
+def serialize_student(doc):
+    if not doc:
+        return None
+    d = dict(doc)
+    if "_id" in d:
+        d["id"] = str(d["_id"])
+        del d["_id"]
+    return d
+
+@wa_router.get("/birthday-campaign/students")
+async def wa_list_birthday_students(
+    search: str = "",
+    page: int = 1,
+    limit: int = 20,
+    admin: TokenData = Depends(get_superadmin)
+):
+    query = {}
+    if search:
+        search_escaped = re.escape(search.strip())
+        query["$or"] = [
+            {"name": {"$regex": search_escaped, "$options": "i"}},
+            {"admission_no": {"$regex": search_escaped, "$options": "i"}},
+            {"phone": {"$regex": search_escaped, "$options": "i"}}
+        ]
+    
+    total = await db.birthday_students.count_documents(query)
+    pages = math.ceil(total / limit) if total > 0 else 1
+    skip_val = (page - 1) * limit
+    cursor = db.birthday_students.find(query).skip(skip_val).limit(limit)
+    students_list = await cursor.to_list(limit)
+    
+    serialized = [serialize_student(s) for s in students_list]
+    
+    return {
+        "students": serialized,
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "pages": pages
+    }
+
+@wa_router.post("/birthday-campaign/students")
+async def wa_create_birthday_student(
+    payload: StudentUpdateModel,
+    admin: TokenData = Depends(get_superadmin)
+):
+    if not re.match(r"^\d{4}-\d{2}-\d{2}$", payload.dob):
+        raise HTTPException(status_code=400, detail="Date of Birth must be in YYYY-MM-DD format")
+        
+    student_dict = payload.model_dump()
+    student_dict["contact_no"] = payload.phone
+    student_dict["admn_no"] = payload.admission_no
+    student_dict["date_of_birth"] = payload.dob
+    
+    res = await db.birthday_students.insert_one(student_dict)
+    created = await db.birthday_students.find_one({"_id": res.inserted_id})
+    return serialize_student(created)
+
+@wa_router.put("/birthday-campaign/students/{student_id}")
+async def wa_update_birthday_student(
+    student_id: str,
+    payload: StudentUpdateModel,
+    admin: TokenData = Depends(get_superadmin)
+):
+    try:
+        obj_id = ObjectId(student_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid student ID format")
+        
+    if not re.match(r"^\d{4}-\d{2}-\d{2}$", payload.dob):
+        raise HTTPException(status_code=400, detail="Date of Birth must be in YYYY-MM-DD format")
+        
+    student_dict = payload.model_dump()
+    student_dict["contact_no"] = payload.phone
+    student_dict["admn_no"] = payload.admission_no
+    student_dict["date_of_birth"] = payload.dob
+    
+    res = await db.birthday_students.update_one(
+        {"_id": obj_id},
+        {"$set": student_dict}
+    )
+    
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Student not found")
+        
+    return {"success": True}
+
+@wa_router.delete("/birthday-campaign/students/{student_id}")
+async def wa_delete_birthday_student(
+    student_id: str,
+    admin: TokenData = Depends(get_superadmin)
+):
+    try:
+        obj_id = ObjectId(student_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid student ID format")
+        
+    res = await db.birthday_students.delete_one({"_id": obj_id})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Student not found")
+        
+    return {"success": True}
 
 
 async def run_daily_birthday_campaign_loop():
@@ -1073,26 +1248,25 @@ async def run_daily_birthday_campaign_loop():
                     if recipients:
                         logger.info(f"[Birthday Scheduler] Found {len(recipients)} matching birthday(s)")
                         
-                        card_bytes = _generate_birthday_card(None)
-                        card_b64 = base64.b64encode(card_bytes).decode("utf-8")
-                        
                         tmpl = "Dear {name}, S.D. Public School wishes you a very Happy Birthday! May your year ahead be filled with joy and success. 🎂🎉"
                         contacts = []
                         for r in recipients:
                             msg = tmpl.replace("{name}", r["name"])
+                            c_card_bytes = _generate_birthday_card(r["name"])
+                            c_card_b64 = base64.b64encode(c_card_bytes).decode("utf-8")
                             contacts.append({
                                 "phone": r["phone"],
                                 "name": r["name"],
-                                "message": msg
+                                "message": msg,
+                                "mediaBase64": c_card_b64,
+                                "mediaMime": "image/jpeg",
+                                "mediaType": "image"
                             })
                             
                         payload = {
                             "contacts": contacts,
                             "message": "",
-                            "delayMs": WA_BULK_DELAY_MS,
-                            "mediaBase64": card_b64,
-                            "mediaMime": "image/jpeg",
-                            "mediaType": "image"
+                            "delayMs": WA_BULK_DELAY_MS
                         }
                         
                         try:

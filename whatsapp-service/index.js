@@ -264,12 +264,19 @@ app.post("/send-bulk", async (req, res) => {
       const personalised = c.message
         ? c.message
         : (message || "").replace(/\{name\}/g, c.name || "");
+      
+      const contactMedia = (c.mediaBase64) ? {
+        mediaBase64: c.mediaBase64,
+        mediaMime: c.mediaMime || "image/jpeg",
+        mediaType: c.mediaType || "image"
+      } : media;
+
       if (!jid) {
         bulkProgress.failed++;
         bulkProgress.errors.push(`${c.phone}: invalid number`);
       } else {
         try {
-          await sendMessage(jid, personalised, media);
+          await sendMessage(jid, personalised, contactMedia);
           bulkProgress.sent++;
         } catch (e) {
           bulkProgress.failed++;
