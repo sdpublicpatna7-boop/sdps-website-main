@@ -14,6 +14,7 @@ import logging
 import re
 import httpx
 import pandas as pd
+import asyncio
 from typing import Optional, List
 from datetime import datetime, timezone, timedelta, date
 from PIL import Image, ImageDraw, ImageFont
@@ -58,6 +59,11 @@ DEFAULT_FEE_MSG = (
 )
 
 wa_router = APIRouter(prefix="/api/whatsapp", tags=["whatsapp"])
+db = None
+
+def init_db(database):
+    global db
+    db = database
 
 _WA_HEADERS = {"X-WA-Secret": WA_API_SECRET}
 
@@ -810,3 +816,301 @@ async def wa_birthday_campaign_send(
         }
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))
+
+
+# ── Database Roster and Auto-Scheduler Actions ──
+
+def _parse_all_students(content: bytes):
+    """
+    Parse a student Excel list and return all valid students.
+    """
+    try:
+        df = pd.read_excel(io.BytesIO(content), dtype=str)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Could not read Excel file: {e}")
+
+    if df.empty:
+        return [], 0
+
+    headers = [str(c).strip().lower() for c in df.columns]
+
+    def find_col(*candidates):
+        for col_i, h in enumerate(headers):
+            for cand in candidates:
+                if cand in h:
+                    return col_i
+        return None
+
+    name_col = find_col("student name", "child name", "first name", "name")
+    contact_col = find_col("contact", "mobile", "phone", "whatsapp", "number")
+    dob_col = find_col("dob", "birth", "date of birth", "birthday", "birthdate")
+    admn_col = find_col("admn", "admission", "adm no", "admno", "admission number")
+
+    if name_col is None or contact_col is None or dob_col is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Sheet must contain Name, Contact No, and Date of Birth (DOB) columns.",
+        )
+
+    students = []
+    skipped = 0
+
+    for idx in range(len(df)):
+        row = df.iloc[idx].tolist()
+
+        def cell(ci):
+            if ci is None or ci >= len(row):
+                return ""
+            v = row[ci]
+            return "" if pd.isna(v) or v is None else str(v).strip()
+
+        name = cell(name_col)
+        if not name or name.lower() in ("total", "grand total", "nan"):
+            skipped += 1
+            continue
+
+        phone = _digits_only(cell(contact_col))
+        if len(phone) < 10:
+            skipped += 1
+            continue
+
+        raw_dob = cell(dob_col)
+        parsed_dob = _parse_dob_val(raw_dob)
+        if not parsed_dob:
+            skipped += 1
+            continue
+
+        admn = cell(admn_col)
+
+        students.append({
+            "name": name,
+            "phone": phone,
+            "dob": parsed_dob.strftime("%Y-%m-%d"),
+            "admission_no": admn
+        })
+
+    return students, skipped
+
+
+@wa_router.post("/birthday-campaign/import")
+@limiter.limit("3/minute")
+async def wa_birthday_campaign_import(
+    request: Request,
+    file: UploadFile = File(...),
+    mode: str = Form("overwrite"), # "overwrite" or "append"
+    admin: TokenData = Depends(get_superadmin),
+):
+    """
+    Import student roster from Excel to MongoDB.
+    - overwrite: drops the birthday_students collection and saves fresh records.
+    - append: updates or adds new records.
+    """
+    raw = await file.read()
+    if len(raw) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Excel file must be ≤ 5MB")
+
+    students, skipped = _parse_all_students(raw)
+    if not students:
+        raise HTTPException(status_code=400, detail="No valid students found in the sheet.")
+
+    if mode == "overwrite":
+        await db.birthday_students.delete_many({})
+        await db.birthday_students.insert_many(students)
+    else:
+        # Append mode
+        for s in students:
+            await db.birthday_students.update_one(
+                {"phone": s["phone"], "name": s["name"]},
+                {"$set": s},
+                upsert=True
+            )
+
+    return {
+        "success": True,
+        "imported_count": len(students),
+        "skipped_count": skipped,
+        "mode": mode
+    }
+
+
+@wa_router.get("/birthday-campaign/info")
+async def wa_birthday_campaign_info(admin: TokenData = Depends(get_superadmin)):
+    """
+    Get current database statistics (total students, latest admission number,
+    list of today's birthdays, last run time of the auto-campaign scheduler).
+    """
+    total_students = await db.birthday_students.count_documents({})
+
+    latest_admn = "None"
+    cursor = db.birthday_students.find({"admission_no": {"$exists": True, "$ne": ""}}, {"admission_no": 1, "_id": 0})
+    admission_nos = [doc["admission_no"] for doc in await cursor.to_list(100000)]
+    if admission_nos:
+        max_num = -1
+        max_val = ""
+        for val in admission_nos:
+            digits = re.findall(r"\d+", val)
+            if digits:
+                num = int("".join(digits))
+                if num > max_num:
+                    max_num = num
+                    max_val = val
+            else:
+                if max_num == -1 and val > max_val:
+                    max_val = val
+        if max_val:
+            latest_admn = max_val
+
+    ist = timezone(timedelta(hours=5, minutes=30))
+    today = datetime.now(ist).date()
+    today_str = today.strftime("%Y-%m-%d")
+    
+    month_day_suffix = today.strftime("-%m-%d")
+    cursor = db.birthday_students.find({"dob": {"$regex": f"{month_day_suffix}$"}}, {"_id": 0})
+    birthdays_today = await cursor.to_list(10000)
+
+    sched_doc = await db.birthday_settings.find_one({"id": "birthday-scheduler"})
+    last_run = sched_doc.get("last_run", "Never") if sched_doc else "Never"
+
+    return {
+        "total_students": total_students,
+        "latest_admission_no": latest_admn,
+        "birthdays_today": birthdays_today,
+        "last_scheduler_run": last_run,
+        "target_date": today_str
+    }
+
+
+@wa_router.post("/birthday-campaign/send-saved")
+@limiter.limit("5/minute")
+async def wa_birthday_campaign_send_saved(
+    request: Request,
+    message_template: str = Form(""),
+    admin: TokenData = Depends(get_superadmin),
+):
+    """
+    Launch a birthday campaign for today's birthdays stored in MongoDB.
+    """
+    ist = timezone(timedelta(hours=5, minutes=30))
+    today = datetime.now(ist).date()
+    
+    month_day_suffix = today.strftime("-%m-%d")
+    cursor = db.birthday_students.find({"dob": {"$regex": f"{month_day_suffix}$"}}, {"_id": 0})
+    recipients = await cursor.to_list(10000)
+
+    if not recipients:
+        raise HTTPException(
+            status_code=400,
+            detail="No students have birthdays today in the database.",
+        )
+
+    card_bytes = _generate_birthday_card(None)
+    card_b64 = base64.b64encode(card_bytes).decode("utf-8")
+
+    tmpl = message_template.strip() if (message_template and message_template.strip()) else "Dear {name}, S.D. Public School wishes you a very Happy Birthday! May your year ahead be filled with joy and success. 🎂🎉"
+    
+    contacts = []
+    for r in recipients:
+        msg = tmpl.replace("{name}", r["name"])
+        contacts.append({
+            "phone": r["phone"],
+            "name": r["name"],
+            "message": msg
+        })
+
+    payload = {
+        "contacts": contacts,
+        "message": "",
+        "delayMs": WA_BULK_DELAY_MS,
+        "mediaBase64": card_b64,
+        "mediaMime": "image/jpeg",
+        "mediaType": "image"
+    }
+
+    try:
+        result = await _wa_post("/send-bulk", json=payload)
+        return {
+            "recipients_count": len(recipients),
+            "sample": [{"name": r["name"], "phone": r["phone"]} for r in recipients[:10]],
+            **result
+        }
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+async def run_daily_birthday_campaign_loop():
+    """
+    Background loop that wakes up periodically, checks if it is past 6:00 AM in IST,
+    and runs the daily birthday WhatsApp campaign for matching students.
+    """
+    logger.info("[Birthday Scheduler] Loop started")
+    await asyncio.sleep(30)
+    
+    ist = timezone(timedelta(hours=5, minutes=30))
+    
+    while True:
+        try:
+            now = datetime.now(ist)
+            if now.hour >= 6:
+                today_str = now.strftime("%Y-%m-%d")
+                
+                sched_doc = await db.birthday_settings.find_one({"id": "birthday-scheduler"})
+                last_run = sched_doc.get("last_run") if sched_doc else None
+                
+                if last_run != today_str:
+                    logger.info(f"[Birthday Scheduler] Running campaign for date: {today_str}")
+                    
+                    month_day_suffix = now.strftime("-%m-%d")
+                    cursor = db.birthday_students.find({"dob": {"$regex": f"{month_day_suffix}$"}}, {"_id": 0})
+                    recipients = await cursor.to_list(10000)
+                    
+                    if recipients:
+                        logger.info(f"[Birthday Scheduler] Found {len(recipients)} matching birthday(s)")
+                        
+                        card_bytes = _generate_birthday_card(None)
+                        card_b64 = base64.b64encode(card_bytes).decode("utf-8")
+                        
+                        tmpl = "Dear {name}, S.D. Public School wishes you a very Happy Birthday! May your year ahead be filled with joy and success. 🎂🎉"
+                        contacts = []
+                        for r in recipients:
+                            msg = tmpl.replace("{name}", r["name"])
+                            contacts.append({
+                                "phone": r["phone"],
+                                "name": r["name"],
+                                "message": msg
+                            })
+                            
+                        payload = {
+                            "contacts": contacts,
+                            "message": "",
+                            "delayMs": WA_BULK_DELAY_MS,
+                            "mediaBase64": card_b64,
+                            "mediaMime": "image/jpeg",
+                            "mediaType": "image"
+                        }
+                        
+                        try:
+                            async with httpx.AsyncClient(timeout=30.0) as client:
+                                r = await client.post(
+                                    f"{WA_SERVICE_URL}/send-bulk",
+                                    headers={"X-WA-Secret": WA_API_SECRET},
+                                    json=payload
+                                )
+                            if r.status_code < 300:
+                                logger.info(f"[Birthday Scheduler] Campaign started successfully: {r.text}")
+                            else:
+                                logger.warning(f"[Birthday Scheduler] Node service returned {r.status_code}: {r.text}")
+                        except Exception as e:
+                            logger.error(f"[Birthday Scheduler] Error sending campaign: {e}")
+                    else:
+                        logger.info("[Birthday Scheduler] No matching birthdays today")
+                        
+                    await db.birthday_settings.update_one(
+                        {"id": "birthday-scheduler"},
+                        {"$set": {"last_run": today_str}},
+                        upsert=True
+                    )
+            
+        except Exception as e:
+            logger.error(f"[Birthday Scheduler] Loop exception: {e}")
+            
+        await asyncio.sleep(600)
