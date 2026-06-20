@@ -6,7 +6,7 @@ import {
   GraduationCap, Award, FileText, CreditCard, Settings, LogOut,
   MessageSquare, Megaphone, ScrollText, FilePlus, Home, Hotel,
   BookOpen, Shield, EyeOff, ClipboardList, BookMarked, UserCog,
-  Menu, X, Star
+  Menu, X, Star, Cake
 } from "lucide-react";
 import { useAuth } from "../../lib/auth";
 import { startPinger } from "../../lib/pinger";
@@ -52,6 +52,7 @@ const SUPERADMIN_NAV = [
   { to: "/admin/contact-messages", label: "Contact Messages", icon: MessageSquare },
   { to: "/admin/whatsapp-marketing", label: "WhatsApp Marketing", icon: Megaphone },
   { to: "/admin/fee-reminders", label: "Fee Reminders", icon: CreditCard },
+  { to: "/admin/birthday-greetings", label: "Birthday Greetings", icon: Cake },
   { to: "/admin/site-settings", label: "Site Settings", icon: Settings },
   { to: "/admin/integration-keys", label: "Integration Keys", icon: Settings },
   { section: "Google Review" },

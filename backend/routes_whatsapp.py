@@ -15,6 +15,8 @@ import re
 import httpx
 import pandas as pd
 from typing import Optional, List
+from datetime import datetime, timezone, timedelta, date
+from PIL import Image, ImageDraw, ImageFont
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request
 from pydantic import BaseModel
@@ -468,5 +470,343 @@ async def wa_stop_bulk(admin: TokenData = Depends(get_superadmin)):
     """Request the Node service to stop an in-progress campaign."""
     try:
         return await _wa_post("/stop-bulk")
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+# ── Birthday Greetings (Excel upload + dynamic card generation) ──────────────
+
+def _parse_dob_val(val: str) -> Optional[date]:
+    if not val:
+        return None
+    val = val.strip().lower()
+    if val in ("nan", "nat", "-", ""):
+        return None
+    # Try parsing different common date formats
+    for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y", "%Y/%m/%d", "%d-%m-%Y", "%d.%m.%Y"):
+        try:
+            date_part = val.split()[0]
+            return datetime.strptime(date_part, fmt).date()
+        except ValueError:
+            continue
+    # Try pandas generic conversion
+    try:
+        ts = pd.to_datetime(val, errors="coerce")
+        if pd.notna(ts):
+            return ts.date()
+    except Exception:
+        pass
+    return None
+
+
+def _parse_birthday_rows(content: bytes, target_date: Optional[date] = None):
+    """
+    Parse a student Excel list, match DOB column, and filter for today's birthdays.
+    """
+    try:
+        df = pd.read_excel(io.BytesIO(content), dtype=str)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Could not read Excel file: {e}")
+
+    if df.empty:
+        return [], 0
+
+    headers = [str(c).strip().lower() for c in df.columns]
+
+    def find_col(*candidates):
+        for col_i, h in enumerate(headers):
+            for cand in candidates:
+                if cand in h:
+                    return col_i
+        return None
+
+    name_col = find_col("student name", "child name", "first name", "name")
+    contact_col = find_col("contact", "mobile", "phone", "whatsapp", "number")
+    dob_col = find_col("dob", "birth", "date of birth", "birthday", "birthdate")
+
+    if name_col is None or contact_col is None or dob_col is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Sheet must contain Name, Contact No, and Date of Birth (DOB) columns.",
+        )
+
+    if not target_date:
+        ist = timezone(timedelta(hours=5, minutes=30))
+        target_date = datetime.now(ist).date()
+
+    recipients = []
+    skipped = 0
+
+    for idx in range(len(df)):
+        row = df.iloc[idx].tolist()
+
+        def cell(ci):
+            if ci is None or ci >= len(row):
+                return ""
+            v = row[ci]
+            return "" if pd.isna(v) or v is None else str(v).strip()
+
+        name = cell(name_col)
+        if not name or name.lower() in ("total", "grand total", "nan"):
+            skipped += 1
+            continue
+
+        phone = _digits_only(cell(contact_col))
+        if len(phone) < 10:
+            skipped += 1
+            continue
+
+        raw_dob = cell(dob_col)
+        parsed_dob = _parse_dob_val(raw_dob)
+        if not parsed_dob:
+            skipped += 1
+            continue
+
+        # Check if birthday matches month & day
+        if parsed_dob.month == target_date.month and parsed_dob.day == target_date.day:
+            recipients.append({
+                "phone": phone,
+                "name": name,
+                "dob": parsed_dob.strftime("%Y-%m-%d")
+            })
+        else:
+            # Not birthday on target date
+            pass
+
+    return recipients, skipped
+
+
+def _get_font(size: int, bold: bool = False):
+    font_names = [
+        "arial.ttf",
+        "Arial.ttf",
+        "DejaVuSans.ttf",
+        "LiberationSans-Regular.ttf",
+        "Helvetica.ttf"
+    ]
+    if bold:
+        font_names = [
+            "arialbd.ttf",
+            "Arial Bold.ttf",
+            "DejaVuSans-Bold.ttf",
+            "LiberationSans-Bold.ttf",
+            "Helvetica-Bold.ttf"
+        ] + font_names
+        
+    for name in font_names:
+        try:
+            return ImageFont.truetype(name, size)
+        except IOError:
+            continue
+            
+    common_paths = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        "/System/Library/Fonts/Cache/Arial.ttf",
+        "/Library/Fonts/Arial.ttf"
+    ]
+    for path in common_paths:
+        if os.path.exists(path):
+            try:
+                return ImageFont.truetype(path, size)
+            except IOError:
+                continue
+                
+    return ImageFont.load_default()
+
+
+def _generate_birthday_card(name: Optional[str] = None) -> bytes:
+    width, height = 800, 800
+    img = Image.new("RGBA", (width, height), (255, 255, 255, 0))
+    draw = ImageDraw.Draw(img)
+    
+    # 1) Background: Draw diagonal gradient from Royal Blue (#0E3B91) to Vibrant Orange (#F87D0E)
+    color_start = (14, 59, 145, 255)  # #0E3B91
+    color_end = (248, 125, 14, 255)   # #F87D0E
+    for y in range(height):
+        factor = y / height
+        r = int(color_start[0] + (color_end[0] - color_start[0]) * factor)
+        g = int(color_start[1] + (color_end[1] - color_start[1]) * factor)
+        b = int(color_start[2] + (color_end[2] - color_start[2]) * factor)
+        draw.line([(0, y), (width, y)], fill=(r, g, b, 255))
+        
+    # 2) Glassmorphic Container
+    draw.rounded_rectangle(
+        [(50, 50), (750, 750)],
+        radius=24,
+        fill=(255, 255, 255, 35),
+        outline=(255, 255, 255, 70),
+        width=3
+    )
+    
+    # 3) Gold border accent
+    draw.rounded_rectangle(
+        [(65, 65), (735, 735)],
+        radius=16,
+        fill=None,
+        outline="#C7A15B",
+        width=2
+    )
+
+    # 4) Draw Confetti
+    confetti_points = [
+        (100, 150, 10, "#C7A15B"), (120, 280, 8, "#FFFFFF"), (200, 120, 12, "#F87D0E"),
+        (650, 140, 9, "#FFFFFF"), (700, 220, 11, "#C7A15B"), (680, 320, 7, "#F87D0E"),
+        (150, 650, 11, "#FFFFFF"), (110, 520, 8, "#C7A15B"), (220, 680, 10, "#F87D0E"),
+        (620, 660, 12, "#C7A15B"), (690, 580, 9, "#FFFFFF"), (670, 480, 7, "#F87D0E")
+    ]
+    for x, y, r, color in confetti_points:
+        draw.ellipse([(x - r, y - r), (x + r, y + r)], fill=color)
+
+    def draw_center_text(text, y_pos, font_size, fill_color, is_bold=False):
+        font = _get_font(font_size, is_bold)
+        bbox = draw.textbbox((0, 0), text, font=font)
+        tw = bbox[2] - bbox[0]
+        x = (width - tw) // 2
+        draw.text((x, y_pos), text, font=font, fill=fill_color)
+
+    # 5) School Header
+    draw_center_text("S.D. PUBLIC SCHOOL", 110, 34, "#FFFFFF", is_bold=True)
+    draw_center_text("Patna-7 | Regd No. 230140020211229220415", 155, 14, "#E2E8F0")
+    
+    draw.line([(320, 195), (480, 195)], fill="#C7A15B", width=2)
+    
+    # 6) Greeting Headline
+    draw_center_text("HAPPY BIRTHDAY!", 250, 52, "#C7A15B", is_bold=True)
+    
+    # 7) Student Name
+    if name:
+        draw_center_text(name, 350, 42, "#FFFFFF", is_bold=True)
+        msg_y = 470
+    else:
+        draw_center_text("Wishing You A", 340, 36, "#FFFFFF", is_bold=True)
+        draw_center_text("Fantastic Day!", 400, 36, "#FFFFFF", is_bold=True)
+        msg_y = 510
+        
+    # 8) Birthday Wish
+    draw_center_text("Wishing you a wonderful year ahead filled with", msg_y, 18, "#E2E8F0")
+    draw_center_text("happiness, academic success, and endless learning.", msg_y + 30, 18, "#E2E8F0")
+    
+    # 9) Footer Signature
+    draw_center_text("From all of us at the SDPS Family", 630, 16, "#FFFFFF")
+    
+    final_img = img.convert("RGB")
+    buffer = io.BytesIO()
+    final_img.save(buffer, format="JPEG", quality=85)
+    return buffer.getvalue()
+
+
+@wa_router.post("/birthday-campaign/preview")
+@limiter.limit("5/minute")
+async def wa_birthday_campaign_preview(
+    request: Request,
+    file: UploadFile = File(...),
+    target_date: Optional[str] = Form(None),
+    admin: TokenData = Depends(get_superadmin),
+):
+    """
+    Parse a student Excel list, find today's birthdays, and return
+    a recipient preview plus a base64 preview of the generated greeting card.
+    """
+    raw = await file.read()
+    if len(raw) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Excel file must be ≤ 5MB")
+
+    parsed_date = None
+    if target_date:
+        try:
+            parsed_date = datetime.strptime(target_date, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="target_date must be in YYYY-MM-DD format")
+
+    recipients, skipped = _parse_birthday_rows(raw, parsed_date)
+
+    # Use first student name for preview card, default to "Dear Student"
+    sample_name = recipients[0]["name"] if recipients else "Dear Student"
+    card_bytes = _generate_birthday_card(sample_name)
+    card_b64 = base64.b64encode(card_bytes).decode("utf-8")
+    card_preview_url = f"data:image/jpeg;base64,{card_b64}"
+
+    return {
+        "recipients_count": len(recipients),
+        "skipped_count": skipped,
+        "recipients": recipients,
+        "card_preview_url": card_preview_url,
+    }
+
+
+@wa_router.post("/birthday-campaign/send")
+@limiter.limit("5/minute")
+async def wa_birthday_campaign_send(
+    request: Request,
+    file: UploadFile = File(...),
+    message_template: str = Form(""),
+    target_date: Optional[str] = Form(None),
+    dry_run: bool = Form(False),
+    admin: TokenData = Depends(get_superadmin),
+):
+    """
+    Parse student Excel list, find birthdays, generate card, and launch bulk campaign.
+    """
+    raw = await file.read()
+    if len(raw) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Excel file must be ≤ 5MB")
+
+    parsed_date = None
+    if target_date:
+        try:
+            parsed_date = datetime.strptime(target_date, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="target_date must be in YYYY-MM-DD format")
+
+    recipients, skipped = _parse_birthday_rows(raw, parsed_date)
+    if not recipients:
+        raise HTTPException(
+            status_code=400,
+            detail="No students matched birthdays for the selected date.",
+        )
+
+    sample = [
+        {"name": r["name"], "phone": r["phone"], "dob": r["dob"]}
+        for r in recipients[:10]
+    ]
+
+    if dry_run:
+        return {"recipients_count": len(recipients), "skipped_count": skipped, "sample": sample}
+
+    # Generate generic SDPS card for bulk send campaign
+    card_bytes = _generate_birthday_card(None)
+    card_b64 = base64.b64encode(card_bytes).decode("utf-8")
+
+    tmpl = message_template.strip() if (message_template and message_template.strip()) else "Dear {name}, S.D. Public School wishes you a very Happy Birthday! 🎂🎉"
+    
+    contacts = []
+    for r in recipients:
+        msg = tmpl.replace("{name}", r["name"])
+        contacts.append({
+            "phone": r["phone"],
+            "name": r["name"],
+            "message": msg
+        })
+
+    payload = {
+        "contacts": contacts,
+        "message": "",
+        "delayMs": WA_BULK_DELAY_MS,
+        "mediaBase64": card_b64,
+        "mediaMime": "image/jpeg",
+        "mediaType": "image"
+    }
+
+    try:
+        result = await _wa_post("/send-bulk", json=payload)
+        return {
+            "recipients_count": len(recipients),
+            "skipped_count": skipped,
+            "sample": sample,
+            **result
+        }
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))

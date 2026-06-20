@@ -65,9 +65,10 @@ const AdminKheloPatna = lazy(() => import("@/pages/admin/special/AdminKheloPatna
 const AdminHolidayHomework = lazy(() => import("@/pages/admin/staff/AdminHolidayHomework"));
 const AdminStaffUsers = lazy(() => import("@/pages/admin/staff/AdminStaffUsers"));
 
-// WhatsAppMarketing and FeeReminders
+// WhatsAppMarketing, FeeReminders and BirthdayGreetings
 const WhatsAppMarketing = lazy(() => import("@/pages/admin/WhatsAppMarketing"));
 const FeeReminders = lazy(() => import("@/pages/admin/FeeReminders"));
+const BirthdayGreetings = lazy(() => import("@/pages/admin/BirthdayGreetings"));
 const AdminMapsReview = lazy(() => import("@/pages/admin/special/AdminMapsReview"));
 
 function AdminLoading() {
@@ -152,6 +153,7 @@ function App() {
               <Route path="contact-messages" element={<AdminContactMessages />} />
               <Route path="whatsapp-marketing" element={<WhatsAppMarketing />} />
               <Route path="fee-reminders" element={<FeeReminders />} />
+              <Route path="birthday-greetings" element={<BirthdayGreetings />} />
               <Route path="site-settings" element={<AdminSiteSettings />} />
               <Route path="integration-keys" element={<AdminIntegrationKeys />} />
               <Route path="khelo-patna-gallery" element={<AdminKheloPatna />} />
