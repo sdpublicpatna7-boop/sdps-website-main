@@ -28,8 +28,8 @@ export function AdminThumbnailGenerator() {
   const [customBgUrl, setCustomBgUrl] = useState("");
   const [presetStyle, setPresetStyle] = useState("indigo"); // indigo | violet | forest | slate | electric | custom
   
-  const [title1Color, setTitle1Color] = useState("#6C2BD9");
-  const [title2Color, setTitle2Color] = useState("#FF8A3D");
+  const [title1Color, setTitle1Color] = useState("#6A11CB");
+  const [title2Color, setTitle2Color] = useState("#FF8C42");
   const [fontFamily, setFontFamily] = useState("Outfit");
   const [cardStyle, setCardStyle] = useState("none"); // none | dark | light
 
@@ -141,11 +141,11 @@ export function AdminThumbnailGenerator() {
     if (presetStyle === "custom") return;
 
     const presets = {
-      indigo: { t1: "#6C2BD9", t2: "#FF8A3D", font: "Outfit", card: "none" },
-      violet: { t1: "#5e17eb", t2: "#ec4899", font: "Poppins", card: "none" },
-      forest: { t1: "#0f5132", t2: "#d97706", font: "Montserrat", card: "none" },
-      slate: { t1: "#1e293b", t2: "#ef4444", font: "Impact", card: "none" },
-      electric: { t1: "#1e40af", t2: "#d946ef", font: "Inter", card: "none" }
+      indigo: { t1: "#6A11CB", t2: "#FF8C42", font: "Outfit", card: "none" },
+      violet: { t1: "#5E17EB", t2: "#EC4899", font: "Poppins", card: "none" },
+      forest: { t1: "#0F5132", t2: "#D97706", font: "Montserrat", card: "none" },
+      slate: { t1: "#1E293B", t2: "#EF4444", font: "Impact", card: "none" },
+      electric: { t1: "#1E40AF", t2: "#D946EF", font: "Inter", card: "none" }
     };
 
     if (bgTemplate === "navy") {
@@ -285,6 +285,218 @@ export function AdminThumbnailGenerator() {
       ctx.drawImage(logoImage, 1720, 40, 140, 140);
       ctx.restore();
     }
+  };
+
+  // Helper functions for Photoshop-style gradient, stroke, and glow effects
+  const hexToRgb = (hex) => {
+    let cleanHex = hex.replace("#", "");
+    if (cleanHex.length === 3) {
+      cleanHex = cleanHex.split("").map(c => c + c).join("");
+    }
+    const r = parseInt(cleanHex.slice(0, 2), 16) || 0;
+    const g = parseInt(cleanHex.slice(2, 4), 16) || 0;
+    const b = parseInt(cleanHex.slice(4, 6), 16) || 0;
+    return { r, g, b };
+  };
+
+  const rgbToHex = (r, g, b) => {
+    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  };
+
+  const interpolateColor = (color1, color2, factor) => {
+    try {
+      const c1 = hexToRgb(color1);
+      const c2 = hexToRgb(color2);
+      const r = Math.round(c1.r + factor * (c2.r - c1.r));
+      const g = Math.round(c1.g + factor * (c2.g - c1.g));
+      const b = Math.round(c1.b + factor * (c2.b - c1.b));
+      return rgbToHex(r, g, b);
+    } catch (e) {
+      return color1;
+    }
+  };
+
+  const createStyledTextCanvas = (text, fontSize, fontFamily, isTitle1) => {
+    // 1. Setup offscreen measurement context
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    ctx.font = `bold ${fontSize}px ${fontFamily}, Inter, sans-serif`;
+    const textMetrics = ctx.measureText(text);
+    const textWidth = Math.ceil(textMetrics.width);
+    
+    // Scale parameters based on font size (130px is baseline)
+    const scale = fontSize / 130;
+    const strokeSize = Math.max(1, Math.round(2 * scale));
+    const glowSize = Math.max(2, Math.round(18 * scale));
+    const shadowSize = Math.max(4, Math.round(20 * scale));
+    const shadowDist = Math.max(2, Math.round(8 * scale));
+    
+    // Add generous padding so blur/glow doesn't clip
+    const padding = Math.ceil(Math.max(glowSize, shadowSize) * 2 + 10);
+    const offCanvas = document.createElement("canvas");
+    offCanvas.width = textWidth + padding * 2;
+    offCanvas.height = fontSize * 2 + padding * 2;
+    
+    const oCtx = offCanvas.getContext("2d");
+    oCtx.font = ctx.font;
+    oCtx.textBaseline = "top";
+    
+    const tx = padding;
+    const ty = padding;
+    
+    // Determine gradient stops
+    let stops = [];
+    if (presetStyle === "custom" || bgTemplate === "navy") {
+      const colorStart = isTitle1 ? title1Color : title2Color;
+      const colorEnd = isTitle1 ? title2Color : title1Color;
+      const colorMid = interpolateColor(colorStart, colorEnd, 0.45);
+      stops = [
+        { offset: 0, color: colorStart },
+        { offset: 0.45, color: colorMid },
+        { offset: 1, color: colorEnd }
+      ];
+    } else {
+      const themeStops = {
+        indigo: ["#6A11CB", "#D72638", "#FF8C42"],
+        violet: ["#5E17EB", "#A22CE6", "#EC4899"],
+        forest: ["#0F5132", "#72943B", "#D97706"],
+        slate: ["#1E293B", "#7F363F", "#EF4444"],
+        electric: ["#1E40AF", "#7743CE", "#D946EF"]
+      };
+      
+      const activeStops = themeStops[presetStyle] || themeStops.indigo;
+      stops = [
+        { offset: 0, color: activeStops[0] },
+        { offset: 0.45, color: activeStops[1] },
+        { offset: 1, color: activeStops[2] }
+      ];
+    }
+    
+    // 2. Draw Gradient Overlay (Blend Mode: Normal, Opacity: 90%)
+    oCtx.save();
+    const cx = tx + textWidth / 2;
+    const cy = ty + fontSize / 2;
+    const L = Math.max(textWidth, fontSize) * 1.5;
+    const angleRad = (64 * Math.PI) / 180;
+    const dx = Math.cos(angleRad);
+    const dy = -Math.sin(angleRad);
+    
+    const x0 = cx - (dx * L) / 2;
+    const y0 = cy - (dy * L) / 2;
+    const x1 = cx + (dx * L) / 2;
+    const y1 = cy + (dy * L) / 2;
+    
+    const grad = oCtx.createLinearGradient(x0, y0, x1, y1);
+    stops.forEach(s => grad.addColorStop(s.offset, s.color));
+    
+    oCtx.fillStyle = grad;
+    oCtx.globalAlpha = 0.90; // Opacity 90%
+    oCtx.fillText(text, tx, ty);
+    oCtx.restore();
+    
+    // 3. Inside Stroke (Size: 2px, Position: Inside, Blend Mode: Soft Light, Opacity: 20%, Color: #FFFFFF)
+    oCtx.save();
+    const strokeCanvas = document.createElement("canvas");
+    strokeCanvas.width = offCanvas.width;
+    strokeCanvas.height = offCanvas.height;
+    const sCtx = strokeCanvas.getContext("2d");
+    sCtx.font = oCtx.font;
+    sCtx.textBaseline = "top";
+    sCtx.strokeStyle = "#FFFFFF";
+    sCtx.lineWidth = strokeSize * 2; // 2px inside (centered 4px stroke)
+    sCtx.strokeText(text, tx, ty);
+    
+    // Clip the stroke to only exist inside the text shape
+    sCtx.globalCompositeOperation = "destination-in";
+    sCtx.fillStyle = "#000000";
+    sCtx.fillText(text, tx, ty);
+    
+    // Draw onto offscreen canvas with soft-light and 20% opacity
+    oCtx.save();
+    oCtx.globalCompositeOperation = "soft-light";
+    oCtx.globalAlpha = 0.20;
+    oCtx.drawImage(strokeCanvas, 0, 0);
+    oCtx.restore();
+    oCtx.restore();
+    
+    // 4. Inner Glow (Blend Mode: Screen, Opacity: 15%, Color: #FFFFFF, Size: 18px)
+    oCtx.save();
+    // Create inverse mask
+    const inverseMaskCanvas = document.createElement("canvas");
+    inverseMaskCanvas.width = offCanvas.width;
+    inverseMaskCanvas.height = offCanvas.height;
+    const imCtx = inverseMaskCanvas.getContext("2d");
+    imCtx.fillStyle = "#FFFFFF";
+    imCtx.fillRect(0, 0, inverseMaskCanvas.width, inverseMaskCanvas.height);
+    imCtx.globalCompositeOperation = "destination-out";
+    imCtx.font = oCtx.font;
+    imCtx.textBaseline = "top";
+    imCtx.fillText(text, tx, ty);
+    
+    // Create glow canvas
+    const glowCanvas = document.createElement("canvas");
+    glowCanvas.width = offCanvas.width;
+    glowCanvas.height = offCanvas.height;
+    const gCtx = glowCanvas.getContext("2d");
+    gCtx.shadowColor = "#FFFFFF";
+    gCtx.shadowBlur = glowSize;
+    gCtx.shadowOffsetX = 0;
+    gCtx.shadowOffsetY = 0;
+    gCtx.drawImage(inverseMaskCanvas, 0, 0);
+    
+    // Clip the glow to only exist inside the text shape
+    gCtx.globalCompositeOperation = "destination-in";
+    gCtx.font = oCtx.font;
+    gCtx.textBaseline = "top";
+    gCtx.fillStyle = "#000000";
+    gCtx.fillText(text, tx, ty);
+    
+    // Draw onto offscreen canvas with screen blend mode and 15% opacity
+    oCtx.save();
+    oCtx.globalCompositeOperation = "screen";
+    oCtx.globalAlpha = 0.15;
+    oCtx.drawImage(glowCanvas, 0, 0);
+    oCtx.restore();
+    oCtx.restore();
+    
+    return {
+      canvas: offCanvas,
+      padding: padding,
+      width: textWidth,
+      shadowSize: shadowSize,
+      shadowDist: shadowDist
+    };
+  };
+
+  const drawStyledTextWrapped = (ctx, text, x, y, fontSize, fontFamily, lineHeight, maxWidth, isTitle1) => {
+    ctx.save();
+    ctx.font = `bold ${fontSize}px ${fontFamily}, Inter, sans-serif`;
+    const lines = getLines(ctx, text, maxWidth);
+    
+    for (let i = 0; i < lines.length; i++) {
+      const lineText = lines[i];
+      if (!lineText) continue;
+      
+      const lineY = y + (i * lineHeight);
+      const styledInfo = createStyledTextCanvas(lineText, fontSize, fontFamily, isTitle1);
+      
+      // Draw drop shadow first (Blend Mode: Multiply, Opacity: 25%, OffsetY: 8px, Blur: 20px)
+      ctx.save();
+      ctx.shadowColor = "rgba(0, 0, 0, 0.25)";
+      ctx.shadowBlur = styledInfo.shadowSize;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = styledInfo.shadowDist + 10000;
+      ctx.globalCompositeOperation = "multiply";
+      
+      // Draw far offscreen to project only the shadow
+      ctx.drawImage(styledInfo.canvas, x - styledInfo.padding, lineY - styledInfo.padding - 10000);
+      ctx.restore();
+      
+      // Draw the styled text block itself
+      ctx.drawImage(styledInfo.canvas, x - styledInfo.padding, lineY - styledInfo.padding);
+    }
+    
+    ctx.restore();
   };
 
   // Draw the stitched canvas
@@ -429,33 +641,23 @@ export function AdminThumbnailGenerator() {
     }
     
     // 7. Render Title 1 & Title 2 texts
-    ctx.save();
-    ctx.shadowColor = "rgba(0, 0, 0, 0.25)";
-    ctx.shadowBlur = 12;
-    ctx.shadowOffsetX = 3;
-    ctx.shadowOffsetY = 3;
-    
     const textX = (cardStyle !== "none" ? 135 : 90) + textNudgeX;
     const textY = (cardStyle !== "none" ? 345 : 300) + textNudgeY;
     const maxWidth = cardStyle !== "none" ? 810 : 980;
     
-    // Apply styling colors
-    ctx.fillStyle = title1Color;
-    ctx.font = `bold ${title1Size}px ${fontFamily}, Inter, sans-serif`;
-    ctx.textBaseline = "top";
-    wrapText(ctx, title1.toUpperCase(), textX, textY, title1Size * 1.25, maxWidth);
+    // Apply professional Photoshop styling to Title 1
+    drawStyledTextWrapped(ctx, title1.toUpperCase(), textX, textY, title1Size, fontFamily, title1Size * 1.25, maxWidth, true);
     
-    // Title 2: Sub-heading (rendered only if present)
+    // Title 2: Sub-heading (rendered only if present, styled using same Photoshop style at 42px)
     if (title2 && title2.trim()) {
+      ctx.save();
+      ctx.font = `bold ${title1Size}px ${fontFamily}, Inter, sans-serif`;
       const lines = getLines(ctx, title1.toUpperCase(), maxWidth);
       const title1Height = lines.length * title1Size * 1.25;
+      ctx.restore();
       
-      ctx.fillStyle = title2Color;
-      ctx.font = `600 42px ${fontFamily}, Inter, sans-serif`;
-      ctx.fillText(title2.trim(), textX, textY + title1Height + 50);
+      drawStyledTextWrapped(ctx, title2.trim(), textX, textY + title1Height + 50, 42, fontFamily, 42 * 1.25, maxWidth, false);
     }
-    
-    ctx.restore();
   };
 
   // Re-draw canvas whenever variables modify or images load
@@ -476,8 +678,8 @@ export function AdminThumbnailGenerator() {
     setTextNudgeX(0);
     setTextNudgeY(0);
     setTitle1Size(130);
-    setTitle1Color("#6C2BD9");
-    setTitle2Color("#FF8A3D");
+    setTitle1Color("#6A11CB");
+    setTitle2Color("#FF8C42");
     setPresetStyle("indigo");
     toast.success("Nudging coordinates reset!");
   };
