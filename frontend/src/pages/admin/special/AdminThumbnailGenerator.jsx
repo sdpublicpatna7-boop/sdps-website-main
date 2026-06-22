@@ -67,10 +67,15 @@ export function AdminThumbnailGenerator() {
         api.get("/admin/educators"),
         api.get("/admin/generated-thumbnails")
       ]);
-      setEducators(edRes.data);
+      const sortedEducators = (edRes.data || []).sort((a, b) => {
+        const nameA = a.name || "";
+        const nameB = b.name || "";
+        return nameA.localeCompare(nameB, undefined, { sensitivity: "base" });
+      });
+      setEducators(sortedEducators);
       setHistory(histRes.data);
-      if (edRes.data.length > 0) {
-        setSelectedTeacherId(edRes.data[0].id);
+      if (sortedEducators.length > 0) {
+        setSelectedTeacherId(sortedEducators[0].id);
       }
     } catch (err) {
       toast.error("Failed to load data");
