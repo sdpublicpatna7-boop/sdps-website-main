@@ -30,17 +30,17 @@ class BaseDoc(BaseModel):
 
 # ---- Admin ----
 class AdminLogin(BaseModel):
-    email: EmailStr
+    email: str
     password: str
     # No strength check on login — just authenticate against stored hash
 
 
 class AdminPasswordReset(BaseModel):
-    email: EmailStr
+    email: str
 
 
 class AdminPasswordResetConfirm(BaseModel):
-    email: EmailStr
+    email: str
     code: str
     new_password: str
 

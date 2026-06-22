@@ -40,7 +40,7 @@ export function AdminLogin() {
           <form onSubmit={submit} className="space-y-5" data-testid="admin-login-form">
             <div className="relative">
               <Mail className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input required type="email" placeholder="Admin Email" className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/[0.04] border border-white/10 text-white placeholder-slate-400 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange outline-none transition-all" value={email} onChange={e => setEmail(e.target.value)} data-testid="admin-login-email" />
+              <input required type="text" placeholder="Admin Email or Username" className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/[0.04] border border-white/10 text-white placeholder-slate-400 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange outline-none transition-all" value={email} onChange={e => setEmail(e.target.value)} data-testid="admin-login-email" />
             </div>
             <div className="relative">
               <Lock className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -103,7 +103,7 @@ export function AdminForgotPassword() {
           <h1 className="font-headline font-bold text-3xl text-center text-white mb-6 tracking-tight">Reset Password</h1>
           {step === 1 ? (
             <form onSubmit={sendOtp} className="space-y-5">
-              <input required type="email" placeholder="Admin Email" className="w-full px-4 py-3 rounded-xl bg-white/[0.04] border border-white/10 text-white placeholder-slate-400 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange outline-none transition-all" value={email} onChange={e => setEmail(e.target.value)} data-testid="forgot-email" />
+              <input required type="text" placeholder="Admin Email or Username" className="w-full px-4 py-3 rounded-xl bg-white/[0.04] border border-white/10 text-white placeholder-slate-400 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange outline-none transition-all" value={email} onChange={e => setEmail(e.target.value)} data-testid="forgot-email" />
               <button disabled={loading} className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-orange to-brand-gold hover:from-brand-orange-light hover:to-brand-gold-light text-slate-950 font-bold tracking-wide transition-all shadow-[0_4px_20px_rgba(248,125,14,0.25)] hover:shadow-[0_4px_25px_rgba(248,125,14,0.4)] disabled:opacity-50 flex items-center justify-center" data-testid="forgot-send-otp">{loading ? "Sending..." : "Send OTP"}</button>
               <Link to="/admin/login" className="block text-center text-sm text-slate-400 hover:text-white transition mt-4">Back to login</Link>
             </form>
