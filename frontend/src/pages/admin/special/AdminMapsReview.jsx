@@ -256,7 +256,7 @@ export function AdminMapsReview() {
                 </div>
                 <div class="step-item">
                   <span class="step-number">3</span>
-                  <span>Instantly copy the AI-generated review description tailored to your rating.</span>
+                  <span>Instantly copy the generated review description tailored to your rating.</span>
                 </div>
                 <div class="step-item">
                   <span class="step-number">4</span>
@@ -483,7 +483,7 @@ export function AdminMapsReview() {
                     {[
                       "Scan the QR code using your phone camera.",
                       "Choose your star rating (1-5 stars).",
-                      "Copy the AI-generated review description.",
+                      "Copy the generated review description.",
                       "Paste the review directly on Google Maps!",
                     ].map((step, idx) => (
                       <div key={idx} className="flex gap-1.5 items-start text-[7px] leading-tight text-slate-600">
@@ -597,7 +597,7 @@ export function AdminMapsReview() {
           <div className="bg-blue-50/70 border border-blue-100 rounded-2xl p-5 flex gap-4">
             <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
             <div className="text-xs leading-relaxed text-blue-800 space-y-2">
-              <h4 className="font-bold text-blue-900">How the AI Review System Works:</h4>
+              <h4 className="font-bold text-blue-900">How the Review System Works:</h4>
               <p>
                 1. **Scan QR Code:** When parents, students, or visitors scan this QR code, they are taken to the dynamic review hub on your website.
               </p>
@@ -605,7 +605,7 @@ export function AdminMapsReview() {
                 2. **Choose Star Rating:** They select a rating from 1 to 5 stars depending on their experience.
               </p>
               <p>
-                3. **AI Generation:** The page uses your configured **Groq AI Key** to instantly write a unique, natural-sounding, short review matching their selected star rating. Because it is generated dynamically with randomness, no two reviews are ever the same.
+                3. **Draft Generation:** The page uses your configured **Groq Key** to instantly write a unique, natural-sounding, short review matching their selected star rating. Because it is generated dynamically with randomness, no two reviews are ever the same.
               </p>
               <p>
                 4. **Copy & Paste on Google:** The system copies the generated text to the clipboard and redirects them to the school's Google Maps review page. They just paste the text and submit.
