@@ -33,11 +33,21 @@ function orderedBases() {
 // Kept for backwards compatibility with any `import { API }` usage.
 export const API = `${DEFAULT_BASE}/api`;
 
-// In-memory auth token (fallback Authorization header for cross-origin setups).
-// Never persisted to localStorage, so it can't be stolen from storage via XSS.
+// In-memory auth token fallback initialized from localStorage to persist sessions on page refresh.
 let inMemoryToken = null;
+try {
+  inMemoryToken = localStorage.getItem("sdps_admin_token") || null;
+} catch (e) {}
+
 export function setAuthToken(token) {
   inMemoryToken = token || null;
+  try {
+    if (token) {
+      localStorage.setItem("sdps_admin_token", token);
+    } else {
+      localStorage.removeItem("sdps_admin_token");
+    }
+  } catch (e) {}
 }
 
 const api = axios.create({ withCredentials: true });
@@ -84,7 +94,10 @@ api.interceptors.response.use(
       !window.location.pathname.includes("/admin/forgot-password")
     ) {
       inMemoryToken = null;
-      try { localStorage.removeItem("sdps_admin_session"); } catch (e) {}
+      try {
+        localStorage.removeItem("sdps_admin_session");
+        localStorage.removeItem("sdps_admin_token");
+      } catch (e) {}
       window.location.href = "/admin/login";
     }
     return Promise.reject(err);

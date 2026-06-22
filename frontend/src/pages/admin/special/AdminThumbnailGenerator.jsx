@@ -376,10 +376,13 @@ export function AdminThumbnailGenerator() {
     oCtx.save();
     const cx = tx + textWidth / 2;
     const cy = ty + fontSize / 2;
-    const L = Math.max(textWidth, fontSize) * 1.5;
     const angleRad = (64 * Math.PI) / 180;
     const dx = Math.cos(angleRad);
     const dy = -Math.sin(angleRad);
+    
+    // Project bounding box of text onto the 64° gradient line to fit colors corner-to-corner
+    const projLength = textWidth * Math.abs(dx) + fontSize * Math.abs(dy);
+    const L = projLength;
     
     const x0 = cx - (dx * L) / 2;
     const y0 = cy - (dy * L) / 2;
