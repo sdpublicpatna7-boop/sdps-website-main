@@ -40,6 +40,9 @@ export function AdminThumbnailGenerator() {
   const [textNudgeX, setTextNudgeX] = useState(0);
   const [textNudgeY, setTextNudgeY] = useState(80);
   const [title1Size, setTitle1Size] = useState(152);
+  const [title2Size, setTitle2Size] = useState(42);
+  const [title2NudgeX, setTitle2NudgeX] = useState(0);
+  const [title2NudgeY, setTitle2NudgeY] = useState(0);
 
   // Loaded images for canvas rendering
   const [logoImage, setLogoImage] = useState(null);
@@ -669,7 +672,7 @@ export function AdminThumbnailGenerator() {
       const title1Height = lines.length * title1Size * 1.25;
       ctx.restore();
       
-      drawStyledTextWrapped(ctx, title2.trim(), textX, textY + title1Height + 50, 42, fontFamily, 42 * 1.25, maxWidth, false);
+      drawStyledTextWrapped(ctx, title2.trim(), textX + title2NudgeX, textY + title1Height + 50 + title2NudgeY, title2Size, fontFamily, title2Size * 1.25, maxWidth, false);
     }
   };
 
@@ -679,7 +682,7 @@ export function AdminThumbnailGenerator() {
   }, [
     logoImage, teacherImage, customBgImage, defaultBgImage, defaultBgLoaded, title1, title2, 
     teacherX, teacherY, teacherScale, 
-    textNudgeX, textNudgeY, title1Size,
+    textNudgeX, textNudgeY, title1Size, title2Size, title2NudgeX, title2NudgeY,
     bgTemplate, title1Color, title2Color, fontFamily, cardStyle
   ]);
 
@@ -691,6 +694,9 @@ export function AdminThumbnailGenerator() {
     setTextNudgeX(0);
     setTextNudgeY(80);
     setTitle1Size(152);
+    setTitle2Size(42);
+    setTitle2NudgeX(0);
+    setTitle2NudgeY(0);
     setTitle1Color("#6A11CB");
     setTitle2Color("#FF8C42");
     setPresetStyle("indigo");
@@ -1135,7 +1141,7 @@ export function AdminThumbnailGenerator() {
 
                     {/* Text Title positioning */}
                     <div className="space-y-4 pt-4 border-t border-slate-100">
-                      <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Title Typography Offsets</span>
+                      <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Title 1 (Subject) Offsets</span>
                       
                       <div>
                         <div className="flex justify-between text-xs font-medium text-slate-500 mb-1">
@@ -1171,11 +1177,57 @@ export function AdminThumbnailGenerator() {
                           <div className="flex items-center justify-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border">
                             <button onClick={() => setTextNudgeY(textNudgeY - 10)} className="p-1.5 bg-white hover:bg-slate-100 border rounded-lg shadow-sm"><ArrowUp className="w-3 h-3" /></button>
                             <span className="text-[11px] font-semibold text-slate-600 w-8 text-center">{textNudgeY}px</span>
-                            <button onClick={() => setTextNudgeY(textNudgeY + 10)} className="p-1.5 bg-white hover:bg-slate-100 border rounded-lg shadow-sm"><ArrowDown className="w-3 h-3" /></button>
+                            <button onClick={() => setTextNudgeY(textNudgeY + 10)} className="p-1.5 bg-white hover:bg-slate-100 border rounded-lg shadow-sm"><ArrowDown className="w-3.5 h-3.5" /></button>
                           </div>
                         </div>
                       </div>
                     </div>
+
+                    {/* Title 2 positioning */}
+                    {title2 && title2.trim() && (
+                      <div className="space-y-4 pt-4 border-t border-slate-100">
+                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Title 2 (Sub-heading) Offsets</span>
+                        
+                        <div>
+                          <div className="flex justify-between text-xs font-medium text-slate-500 mb-1">
+                            <span>Font Size</span>
+                            <span className="font-semibold text-slate-700">{title2Size}px</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => setTitle2Size(Math.max(20, title2Size - 2))} className="p-1 px-2.5 bg-slate-100 hover:bg-slate-200 border rounded-lg text-xs font-bold text-slate-600">-</button>
+                            <input 
+                              type="range" 
+                              min="20" 
+                              max="120" 
+                              step="2" 
+                              value={title2Size} 
+                              onChange={e => setTitle2Size(parseInt(e.target.value))}
+                              className="w-full accent-brand-blue"
+                            />
+                            <button onClick={() => setTitle2Size(Math.min(120, title2Size + 2))} className="p-1 px-2.5 bg-slate-100 hover:bg-slate-200 border rounded-lg text-xs font-bold text-slate-600">+</button>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1 text-center">Nudge Horizontal</label>
+                            <div className="flex items-center justify-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border">
+                              <button onClick={() => setTitle2NudgeX(title2NudgeX - 10)} className="p-1.5 bg-white hover:bg-slate-100 border rounded-lg shadow-sm"><ArrowLeft className="w-3 h-3" /></button>
+                              <span className="text-[11px] font-semibold text-slate-600 w-8 text-center">{title2NudgeX}px</span>
+                              <button onClick={() => setTitle2NudgeX(title2NudgeX + 10)} className="p-1.5 bg-white hover:bg-slate-100 border rounded-lg shadow-sm"><ArrowRight className="w-3.5 h-3.5" /></button>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1 text-center">Nudge Vertical</label>
+                            <div className="flex items-center justify-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border">
+                              <button onClick={() => setTitle2NudgeY(title2NudgeY - 10)} className="p-1.5 bg-white hover:bg-slate-100 border rounded-lg shadow-sm"><ArrowUp className="w-3 h-3" /></button>
+                              <span className="text-[11px] font-semibold text-slate-600 w-8 text-center">{title2NudgeY}px</span>
+                              <button onClick={() => setTitle2NudgeY(title2NudgeY + 10)} className="p-1.5 bg-white hover:bg-slate-100 border rounded-lg shadow-sm"><ArrowDown className="w-3.5 h-3.5" /></button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                   </div>
                 )}
