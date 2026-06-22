@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Newspaper, Bell, Image as ImageIcon, Video,
   Calendar, PartyPopper, Crown, Vote, Trophy, Users, Briefcase,
@@ -64,20 +64,56 @@ const SUPERADMIN_NAV = [
   { to: "/admin/staff-users", label: "Staff & Admin Users", icon: UserCog },
 ];
 
-// Staff-only nav — restricted to Holiday Homework
+// Staff-only nav — safe content management features
 const STAFF_NAV = [
+  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
+  { section: "Content" },
+  { to: "/admin/news", label: "News", icon: Newspaper },
+  { to: "/admin/notices", label: "Notices", icon: Bell },
+  { to: "/admin/gallery", label: "Gallery", icon: ImageIcon },
+  { to: "/admin/videos", label: "Videos", icon: Video },
+  { to: "/admin/calendar", label: "Calendar", icon: Calendar },
+  { to: "/admin/holidays", label: "Holidays", icon: PartyPopper },
+  { section: "School Pages" },
+  { to: "/admin/hostel-gallery", label: "Hostel Gallery", icon: Hotel },
+  { to: "/admin/khelo-patna-gallery", label: "Khelo Patna Gallery", icon: Trophy },
+  { section: "Student Council" },
+  { to: "/admin/council-members", label: "Members & Captains", icon: Crown },
+  { to: "/admin/election-posters", label: "Election Posters", icon: Vote },
+  { to: "/admin/council-results", label: "Election Results", icon: Trophy },
   { section: "Academics" },
   { to: "/admin/holiday-homework", label: "Holiday Homework", icon: ClipboardList },
+  { section: "Media Tools" },
+  { to: "/admin/educators", label: "Educators", icon: Users },
+  { to: "/admin/thumbnail-generator", label: "Thumbnail Generator", icon: ImageIcon },
+  { section: "Other" },
+  { to: "/admin/tc-records", label: "TC Records", icon: FileText },
+  { to: "/admin/popup", label: "Welcome Popup", icon: Megaphone },
+  { section: "Google Review" },
+  { to: "/admin/maps-review", label: "Google Review QR", icon: Star },
 ];
 
 export default function AdminLayout() {
   const { user, loading, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const isStaff = user?.role === "staff";
 
   useEffect(() => {
     if (!loading && !user) navigate("/admin/login");
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    if (!loading && user && isStaff) {
+      const path = location.pathname;
+      const isAllowed = STAFF_NAV.some(item => item.to && (item.to === path || (item.to !== "/admin" && path.startsWith(item.to))));
+      if (!isAllowed && path !== "/admin") {
+        navigate("/admin");
+      }
+    }
+  }, [location.pathname, user, loading, isStaff, navigate]);
 
   useEffect(() => {
     startPinger();
@@ -86,7 +122,6 @@ export default function AdminLayout() {
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   if (!user) return null;
 
-  const isStaff = user.role === "staff";
   const NAV = isStaff ? STAFF_NAV : SUPERADMIN_NAV;
 
   const renderNavLinks = (onItemClick) => (

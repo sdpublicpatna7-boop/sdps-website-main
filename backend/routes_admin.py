@@ -182,40 +182,41 @@ async def upload_file(
 
 
 # ============= GENERIC CRUD HELPER =============
-def _make_crud(collection_name: str, model_cls, sort_field: str = "created_at", sort_order: int = -1):
+def _make_crud(collection_name: str, model_cls, sort_field: str = "created_at", sort_order: int = -1, superadmin_only: bool = False):
     """Returns (list, get, create, update, delete) handler functions for a collection."""
+    dep = get_superadmin if superadmin_only else get_current_admin
 
-    async def list_items(admin: TokenData = Depends(get_current_admin)):
+    async def list_items(admin: TokenData = Depends(dep)):
         items = await db[collection_name].find({}, {"_id": 0}).sort(sort_field, sort_order).to_list(1000)
         return items
 
-    async def get_item(item_id: str, admin: TokenData = Depends(get_current_admin)):
+    async def get_item(item_id: str, admin: TokenData = Depends(dep)):
         item = await db[collection_name].find_one({"id": item_id}, {"_id": 0})
         if not item:
             raise HTTPException(status_code=404, detail="Not found")
         return item
 
-    async def create_item(payload: model_cls, admin: TokenData = Depends(get_current_admin)):
+    async def create_item(payload: model_cls, admin: TokenData = Depends(dep)):
         doc = payload.model_dump()
         await db[collection_name].insert_one(doc.copy())
         return doc
 
-    async def update_item(item_id: str, payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(get_current_admin)):
+    async def update_item(item_id: str, payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(dep)):
         update = _sanitize_update(payload, model_cls)
         if update:
             await db[collection_name].update_one({"id": item_id}, {"$set": update})
         item = await db[collection_name].find_one({"id": item_id}, {"_id": 0})
         return item
 
-    async def delete_item(item_id: str, admin: TokenData = Depends(get_current_admin)):
+    async def delete_item(item_id: str, admin: TokenData = Depends(dep)):
         res = await db[collection_name].delete_one({"id": item_id})
         return {"deleted": res.deleted_count}
 
     return list_items, get_item, create_item, update_item, delete_item
 
 
-def _register_crud(prefix: str, collection: str, model_cls, sort_field: str = "created_at", sort_order: int = -1):
-    list_h, get_h, create_h, update_h, delete_h = _make_crud(collection, model_cls, sort_field, sort_order)
+def _register_crud(prefix: str, collection: str, model_cls, sort_field: str = "created_at", sort_order: int = -1, superadmin_only: bool = False):
+    list_h, get_h, create_h, update_h, delete_h = _make_crud(collection, model_cls, sort_field, sort_order, superadmin_only)
     admin_router.add_api_route(prefix, list_h, methods=["GET"])
     admin_router.add_api_route(prefix + "/{item_id}", get_h, methods=["GET"])
     admin_router.add_api_route(prefix, create_h, methods=["POST"])
@@ -232,15 +233,15 @@ _register_crud("/holidays", "holidays", Holiday, "date", 1)
 _register_crud("/council-members", "council_members", CouncilMember, "order", 1)
 _register_crud("/election-posters", "election_posters", ElectionPoster, "year", -1)
 _register_crud("/council-results", "council_results", CouncilResult, "year", -1)
-_register_crud("/enquiry-questions", "enquiry_questions", FormQuestion, "order", 1)
-_register_crud("/admission-fields", "admission_fields", FormQuestion, "order", 1)
+_register_crud("/enquiry-questions", "enquiry_questions", FormQuestion, "order", 1, superadmin_only=True)
+_register_crud("/admission-fields", "admission_fields", FormQuestion, "order", 1, superadmin_only=True)
 _register_crud("/career-posts", "career_posts", CareerPost, "posted_at", -1)
-_register_crud("/career-questions", "career_questions", FormQuestion, "order", 1)
-_register_crud("/alumni-questions", "alumni_questions", FormQuestion, "order", 1)
-_register_crud("/alumni-meets", "alumni_meets", AlumniMeet, "date", -1)
-_register_crud("/eligibility-rows", "eligibility_rows", EligibilityRow, "order", 1)
-_register_crud("/fee-structure-rows", "fee_structure_rows", FeeStructureRow, "order", 1)
-_register_crud("/hostel-fee-rows", "hostel_fee_rows", HostelFeeRow, "order", 1)
+_register_crud("/career-questions", "career_questions", FormQuestion, "order", 1, superadmin_only=True)
+_register_crud("/alumni-questions", "alumni_questions", FormQuestion, "order", 1, superadmin_only=True)
+_register_crud("/alumni-meets", "alumni_meets", AlumniMeet, "date", -1, superadmin_only=True)
+_register_crud("/eligibility-rows", "eligibility_rows", EligibilityRow, "order", 1, superadmin_only=True)
+_register_crud("/fee-structure-rows", "fee_structure_rows", FeeStructureRow, "order", 1, superadmin_only=True)
+_register_crud("/hostel-fee-rows", "hostel_fee_rows", HostelFeeRow, "order", 1, superadmin_only=True)
 _register_crud("/administration-members", "administration_members", AdministrationMember, "order", 1)
 _register_crud("/educators", "educators", Educator, "created_at", -1)
 
@@ -271,13 +272,13 @@ async def delete_generated_thumbnail(item_id: str, admin: TokenData = Depends(ge
 
 # ============= READ-ONLY LISTS (for admin: enquiries, applications, etc) =============
 @admin_router.get("/admission-enquiries")
-async def list_enquiries(admin: TokenData = Depends(get_current_admin)):
+async def list_enquiries(admin: TokenData = Depends(get_superadmin)):
     items = await db.admission_enquiries.find({}, {"_id": 0}).sort("created_at", -1).to_list(2000)
     return items
 
 
 @admin_router.put("/admission-enquiries/{item_id}")
-async def update_enquiry(item_id: str, payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(get_current_admin)):
+async def update_enquiry(item_id: str, payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(get_superadmin)):
     update = _sanitize_update(payload, AdmissionEnquiry)
     if update:
         await db.admission_enquiries.update_one({"id": item_id}, {"$set": update})
@@ -285,37 +286,37 @@ async def update_enquiry(item_id: str, payload: Dict[str, Any] = Body(...), admi
 
 
 @admin_router.delete("/admission-enquiries/{item_id}")
-async def delete_enquiry(item_id: str, admin: TokenData = Depends(get_current_admin)):
+async def delete_enquiry(item_id: str, admin: TokenData = Depends(get_superadmin)):
     res = await db.admission_enquiries.delete_one({"id": item_id})
     return {"deleted": res.deleted_count}
 
 
 @admin_router.get("/admissions")
-async def list_admissions(admin: TokenData = Depends(get_current_admin)):
+async def list_admissions(admin: TokenData = Depends(get_superadmin)):
     items = await db.admissions.find({}, {"_id": 0}).sort("created_at", -1).to_list(2000)
     return items
 
 
 @admin_router.get("/career-applications")
-async def list_career_apps(admin: TokenData = Depends(get_current_admin)):
+async def list_career_apps(admin: TokenData = Depends(get_superadmin)):
     items = await db.career_applications.find({}, {"_id": 0}).sort("created_at", -1).to_list(2000)
     return items
 
 
 @admin_router.get("/alumni-members")
-async def list_alumni_members(admin: TokenData = Depends(get_current_admin)):
+async def list_alumni_members(admin: TokenData = Depends(get_superadmin)):
     items = await db.alumni_members.find({}, {"_id": 0}).sort("created_at", -1).to_list(2000)
     return items
 
 
 @admin_router.get("/payments")
-async def list_payments(admin: TokenData = Depends(get_current_admin)):
+async def list_payments(admin: TokenData = Depends(get_superadmin)):
     items = await db.payments.find({}, {"_id": 0}).sort("created_at", -1).to_list(2000)
     return items
 
 
 @admin_router.get("/contact-messages")
-async def list_contact_messages(admin: TokenData = Depends(get_current_admin)):
+async def list_contact_messages(admin: TokenData = Depends(get_superadmin)):
     items = await db.contact_messages.find({}, {"_id": 0}).sort("created_at", -1).to_list(2000)
     return items
 
@@ -339,7 +340,7 @@ async def update_popup_settings(payload: Dict[str, Any] = Body(...), admin: Toke
 
 
 @admin_router.get("/site-settings")
-async def get_site_settings_admin(admin: TokenData = Depends(get_current_admin)):
+async def get_site_settings_admin(admin: TokenData = Depends(get_superadmin)):
     doc = await db.site_settings.find_one({"id": "site"}, {"_id": 0})
     if not doc:
         doc = SiteSettings().model_dump()
@@ -348,7 +349,7 @@ async def get_site_settings_admin(admin: TokenData = Depends(get_current_admin))
 
 
 @admin_router.put("/site-settings")
-async def update_site_settings(payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(get_current_admin)):
+async def update_site_settings(payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(get_superadmin)):
     update = _sanitize_update(payload, SiteSettings)
     update["id"] = "site"
     await db.site_settings.update_one({"id": "site"}, {"$set": update}, upsert=True)
@@ -356,7 +357,7 @@ async def update_site_settings(payload: Dict[str, Any] = Body(...), admin: Token
 
 
 @admin_router.get("/alumni-settings")
-async def get_alumni_settings_admin(admin: TokenData = Depends(get_current_admin)):
+async def get_alumni_settings_admin(admin: TokenData = Depends(get_superadmin)):
     doc = await db.alumni_settings.find_one({"id": "alumni-settings"}, {"_id": 0})
     if not doc:
         doc = AlumniSettings().model_dump()
@@ -365,7 +366,7 @@ async def get_alumni_settings_admin(admin: TokenData = Depends(get_current_admin
 
 
 @admin_router.put("/alumni-settings")
-async def update_alumni_settings(payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(get_current_admin)):
+async def update_alumni_settings(payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(get_superadmin)):
     update = _sanitize_update(payload, AlumniSettings)
     update["id"] = "alumni-settings"
     await db.alumni_settings.update_one({"id": "alumni-settings"}, {"$set": update}, upsert=True)
@@ -686,7 +687,7 @@ async def update_hostel_gallery_item(item_id: str, payload: Dict[str, Any] = Bod
 
 # ============= LEGAL PAGES (Terms & Privacy) =============
 @admin_router.get("/legal/{page_id}")
-async def get_legal_page(page_id: str, admin: TokenData = Depends(get_current_admin)):
+async def get_legal_page(page_id: str, admin: TokenData = Depends(get_superadmin)):
     if page_id not in ("terms", "privacy"):
         raise HTTPException(status_code=400, detail="Invalid page_id")
     doc = await db.legal_pages.find_one({"id": page_id}, {"_id": 0})
@@ -709,7 +710,7 @@ async def get_legal_page(page_id: str, admin: TokenData = Depends(get_current_ad
 
 
 @admin_router.put("/legal/{page_id}")
-async def update_legal_page(page_id: str, payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(get_current_admin)):
+async def update_legal_page(page_id: str, payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(get_superadmin)):
     if page_id not in ("terms", "privacy"):
         raise HTTPException(status_code=400, detail="Invalid page_id")
     payload.pop("_id", None)
