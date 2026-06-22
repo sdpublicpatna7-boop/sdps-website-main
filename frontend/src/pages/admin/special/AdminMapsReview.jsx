@@ -1,20 +1,285 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { QrCode, Printer, Download, ExternalLink, Info, Star } from "lucide-react";
 import { toast } from "sonner";
 
 export function AdminMapsReview() {
   const reviewUrl = `${window.location.origin}/review`;
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(reviewUrl)}`;
-  const cardRef = useRef(null);
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(reviewUrl)}`;
+  const [previewType, setPreviewType] = useState("a4"); // "a4" | "card"
 
-  const handlePrint = () => {
+  const handlePrint = (type = "a4") => {
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
       toast.error("Popup blocker prevented printing. Please enable popups.");
       return;
     }
 
-    printWindow.document.write(`
+    const htmlContent = type === "a4" ? `
+      <html>
+        <head>
+          <title>Print Google Review Poster - SDPS Patna</title>
+          <style>
+            body {
+              margin: 0;
+              padding: 0;
+              background-color: #f1f5f9;
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+            }
+            .a4-container {
+              width: 210mm;
+              height: 297mm;
+              background: white;
+              box-sizing: border-box;
+              padding: 25mm 20mm;
+              display: flex;
+              flex-direction: column;
+              justify-content: space-between;
+              align-items: center;
+              position: relative;
+              border: 12px solid #0E3B91;
+            }
+            .a4-inner-border {
+              position: absolute;
+              top: 4mm;
+              left: 4mm;
+              right: 4mm;
+              bottom: 4mm;
+              border: 2px solid #C7A15B;
+              pointer-events: none;
+            }
+            .header {
+              display: flex;
+              align-items: center;
+              gap: 20px;
+              width: 100%;
+              border-bottom: 3px double #C7A15B;
+              padding-bottom: 20px;
+            }
+            .logo {
+              width: 80px;
+              height: 80px;
+              border-radius: 50%;
+              border: 2px solid #0E3B91;
+              padding: 2px;
+            }
+            .school-info {
+              text-align: left;
+            }
+            .school-name {
+              font-size: 28px;
+              font-weight: 900;
+              color: #0E3B91;
+              margin: 0;
+              letter-spacing: -0.5px;
+            }
+            .school-tagline {
+              font-size: 12px;
+              color: #C7A15B;
+              font-weight: 700;
+              margin: 4px 0 0 0;
+              text-transform: uppercase;
+              letter-spacing: 1.5px;
+            }
+            .main-content {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              flex-grow: 1;
+              width: 100%;
+              padding: 20px 0;
+            }
+            .heading {
+              font-size: 38px;
+              font-weight: 900;
+              color: #0F172A;
+              margin: 0 0 10px 0;
+              text-align: center;
+              text-transform: uppercase;
+              letter-spacing: -0.5px;
+            }
+            .stars {
+              display: flex;
+              gap: 8px;
+              margin-bottom: 25px;
+            }
+            .star {
+              color: #F87D0E;
+              font-size: 36px;
+            }
+            .description {
+              font-size: 15px;
+              color: #475569;
+              text-align: center;
+              max-width: 90%;
+              margin-bottom: 35px;
+              line-height: 1.6;
+            }
+            .qr-frame {
+              background: white;
+              border: 4px solid #0E3B91;
+              border-radius: 24px;
+              padding: 24px;
+              box-shadow: 0 15px 30px rgba(14, 59, 145, 0.1);
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              margin-bottom: 35px;
+            }
+            .qr-image {
+              width: 220px;
+              height: 220px;
+              display: block;
+            }
+            .qr-caption {
+              font-size: 12px;
+              font-weight: 800;
+              color: #0E3B91;
+              text-transform: uppercase;
+              margin-top: 15px;
+              letter-spacing: 1.5px;
+            }
+            .steps-container {
+              width: 100%;
+              max-width: 85%;
+              background: #F8FAFC;
+              border: 1px solid #E2E8F0;
+              border-radius: 18px;
+              padding: 20px 25px;
+            }
+            .steps-title {
+              font-size: 13px;
+              font-weight: 800;
+              color: #0F172A;
+              margin: 0 0 12px 0;
+              text-transform: uppercase;
+              letter-spacing: 1px;
+              text-align: center;
+            }
+            .step-item {
+              font-size: 12px;
+              color: #475569;
+              margin-bottom: 8px;
+              display: flex;
+              align-items: flex-start;
+              gap: 10px;
+              line-height: 1.5;
+              text-align: left;
+            }
+            .step-item:last-child {
+              margin-bottom: 0;
+            }
+            .step-number {
+              background: #0E3B91;
+              color: white;
+              font-weight: bold;
+              font-size: 10px;
+              width: 18px;
+              height: 18px;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              flex-shrink: 0;
+              margin-top: 1px;
+            }
+            .footer {
+              width: 100%;
+              border-top: 1px solid #E2E8F0;
+              padding-top: 15px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              font-size: 10px;
+              color: #64748B;
+              font-weight: 500;
+            }
+            @media print {
+              @page {
+                size: A4 portrait;
+                margin: 0;
+              }
+              body {
+                background: white;
+                padding: 0;
+              }
+              .a4-container {
+                border: none;
+                width: 210mm;
+                height: 297mm;
+                box-shadow: none;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="a4-container">
+            <div class="a4-inner-border"></div>
+            <div class="header">
+              <img class="logo" src="https://sdpublic.org/assets/img/logo.png" alt="SDPS Logo" />
+              <div class="school-info">
+                <div class="school-name">S.D. Public School</div>
+                <div class="school-tagline">Suryamuni Devi Public School, Patna</div>
+              </div>
+            </div>
+            
+            <div class="main-content">
+              <div class="heading">Share Your Experience!</div>
+              <div class="stars">
+                <span class="star">★</span>
+                <span class="star">★</span>
+                <span class="star">★</span>
+                <span class="star">★</span>
+                <span class="star">★</span>
+              </div>
+              <div class="description">
+                Your feedback helps us grow and serve our students better. Scan the QR code below to quickly rate and write a Google review for our school.
+              </div>
+              
+              <div class="qr-frame">
+                <img class="qr-image" src="${qrCodeUrl}" alt="Google Review QR Code" />
+                <div class="qr-caption">Scan to Rate Us</div>
+              </div>
+              
+              <div class="steps-container">
+                <div class="steps-title">How to Review in 4 Easy Steps</div>
+                <div class="step-item">
+                  <span class="step-number">1</span>
+                  <span>Open your phone's camera and scan the QR code.</span>
+                </div>
+                <div class="step-item">
+                  <span class="step-number">2</span>
+                  <span>Choose your star rating (1 to 5 stars) on the landing page.</span>
+                </div>
+                <div class="step-item">
+                  <span class="step-number">3</span>
+                  <span>Instantly copy the AI-generated review description tailored to your rating.</span>
+                </div>
+                <div class="step-item">
+                  <span class="step-number">4</span>
+                  <span>Paste the review directly on our Google Maps profile and submit!</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="footer">
+              <span>📍 Maurya Colony, Kumhrar, Patna</span>
+              <span>📧 helpdesk@sdpublic.org</span>
+              <span>🌐 www.sdpublic.org</span>
+            </div>
+          </div>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    ` : `
       <html>
         <head>
           <title>Print QR Code Card - SDPS Patna</title>
@@ -101,7 +366,9 @@ export function AdminMapsReview() {
           </script>
         </body>
       </html>
-    `);
+    `;
+
+    printWindow.document.write(htmlContent);
     printWindow.document.close();
   };
 
@@ -131,37 +398,134 @@ export function AdminMapsReview() {
           Google Maps Review System
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          Increase Google business ratings by printing a QR code card for receptions, PTMs, and circulars.
+          Increase Google business ratings by printing A4 posters or reception cards for parents and visitors.
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Preview Card */}
+        {/* Preview Panel */}
         <div className="lg:col-span-5 flex flex-col items-center">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 self-start">
-            Printable Card Preview
-          </span>
-          <div
-            ref={cardRef}
-            className="w-full max-w-[360px] bg-white border border-slate-200 rounded-3xl p-8 text-center shadow-lg transition-transform hover:scale-[1.01]"
-          >
-            <h2 className="text-2xl font-black text-slate-900 leading-tight mb-2">
-              Rate Us on Google!
-            </h2>
-            <p className="text-xs text-slate-500 leading-relaxed mb-6">
-              Scan this QR code to quickly rate and review your experience with S.D. Public School, Patna.
-            </p>
-            <div className="inline-block bg-slate-50 border border-slate-100 rounded-2xl p-4 mb-6">
-              <img
-                src={qrCodeUrl}
-                alt="QR Code Preview"
-                className="w-48 h-48 block mx-auto rounded-lg"
-              />
-            </div>
-            <div className="text-[10px] font-bold text-brand-orange uppercase tracking-widest flex items-center justify-center gap-1.5">
-              <Star className="w-3 h-3 fill-current" /> S.D. Public School, Patna <Star className="w-3 h-3 fill-current" />
+          <div className="w-full flex items-center justify-between mb-3">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+              Design Preview
+            </span>
+            <div className="flex gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+              <button
+                onClick={() => setPreviewType("a4")}
+                className={`px-3 py-1 text-[11px] font-bold rounded-md transition-all ${
+                  previewType === "a4" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                A4 Poster
+              </button>
+              <button
+                onClick={() => setPreviewType("card")}
+                className={`px-3 py-1 text-[11px] font-bold rounded-md transition-all ${
+                  previewType === "card" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                Compact Card
+              </button>
             </div>
           </div>
+
+          {previewType === "a4" ? (
+            <div className="w-full max-w-[340px] aspect-[1/1.414] bg-white border-[10px] border-brand-blue rounded-3xl p-5 text-center shadow-lg relative flex flex-col justify-between overflow-hidden">
+              {/* Inner gold border */}
+              <div className="absolute top-1.5 left-1.5 right-1.5 bottom-1.5 border-2 border-brand-gold pointer-events-none rounded-xl"></div>
+              
+              <div className="relative z-10 flex flex-col justify-between h-full">
+                {/* Header */}
+                <div className="flex items-center gap-2 border-b border-brand-gold/30 pb-2.5 text-left">
+                  <img
+                    src="https://sdpublic.org/assets/img/logo.png"
+                    alt="SDPS logo"
+                    className="w-10 h-10 rounded-full border border-brand-blue/30 p-0.5"
+                  />
+                  <div>
+                    <div className="text-sm font-black text-brand-blue leading-none">S.D. Public School</div>
+                    <div className="text-[7px] uppercase tracking-wider text-brand-gold font-bold mt-1">Suryamuni Devi Public School, Patna</div>
+                  </div>
+                </div>
+
+                {/* Main Content */}
+                <div className="flex-1 flex flex-col justify-center items-center py-2">
+                  <h2 className="text-base font-black text-slate-900 tracking-tight leading-none mb-1">
+                    SHARE YOUR EXPERIENCE!
+                  </h2>
+                  <div className="flex gap-0.5 mb-2.5 text-brand-orange">
+                    <Star className="w-3.5 h-3.5 fill-current" />
+                    <Star className="w-3.5 h-3.5 fill-current" />
+                    <Star className="w-3.5 h-3.5 fill-current" />
+                    <Star className="w-3.5 h-3.5 fill-current" />
+                    <Star className="w-3.5 h-3.5 fill-current" />
+                  </div>
+                  <p className="text-[9px] text-slate-500 leading-normal max-w-[92%] mb-3.5">
+                    Your feedback helps us grow. Scan the QR code below to quickly rate and review our school.
+                  </p>
+
+                  <div className="bg-white border-2 border-brand-blue rounded-2xl p-3.5 shadow-sm mb-3.5">
+                    <img
+                      src={qrCodeUrl}
+                      alt="QR Code"
+                      className="w-28 h-28 block rounded-md"
+                    />
+                    <div className="text-[8px] font-black text-brand-blue uppercase tracking-widest mt-1.5 leading-none">
+                      Scan to Rate Us
+                    </div>
+                  </div>
+
+                  {/* Steps */}
+                  <div className="w-full bg-slate-50 border border-slate-100 rounded-xl p-2.5 text-left space-y-1">
+                    <div className="text-[8px] font-extrabold text-slate-700 uppercase tracking-wide mb-1.5 text-center">
+                      How to review in 4 steps
+                    </div>
+                    {[
+                      "Scan the QR code using your phone camera.",
+                      "Choose your star rating (1-5 stars).",
+                      "Copy the AI-generated review description.",
+                      "Paste the review directly on Google Maps!",
+                    ].map((step, idx) => (
+                      <div key={idx} className="flex gap-1.5 items-start text-[7px] leading-tight text-slate-600">
+                        <span className="bg-brand-blue text-white text-[7px] font-bold w-3 h-3 rounded-full flex items-center justify-center shrink-0">
+                          {idx + 1}
+                        </span>
+                        <span>{step}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="border-t border-slate-100 pt-2 flex justify-between items-center text-[7px] text-slate-400 font-semibold">
+                  <span>📍 Kumhrar, Patna</span>
+                  <span>📧 helpdesk@sdpublic.org</span>
+                  <span>🌐 www.sdpublic.org</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div
+              className="w-full max-w-[340px] bg-white border border-slate-200 rounded-3xl p-8 text-center shadow-lg transition-transform hover:scale-[1.01]"
+            >
+              <h2 className="text-2xl font-black text-slate-900 leading-tight mb-2">
+                Rate Us on Google!
+              </h2>
+              <p className="text-xs text-slate-500 leading-relaxed mb-6">
+                Scan this QR code to quickly rate and review your experience with S.D. Public School, Patna.
+              </p>
+              <div className="inline-block bg-slate-50 border border-slate-100 rounded-2xl p-4 mb-6">
+                <img
+                  src={qrCodeUrl}
+                  alt="QR Code Preview"
+                  className="w-48 h-48 block mx-auto rounded-lg"
+                />
+              </div>
+              <div className="text-[10px] font-bold text-brand-orange uppercase tracking-widest flex items-center justify-center gap-1.5">
+                <Star className="w-3 h-3 fill-current" /> S.D. Public School, Patna <Star className="w-3 h-3 fill-current" />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Configurations & Instructions */}
@@ -172,28 +536,38 @@ export function AdminMapsReview() {
 
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
             <div>
-              <h3 className="text-base font-bold text-slate-800 mb-2">Actions</h3>
-              <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={handlePrint}
-                  className="px-4 py-2.5 bg-brand-orange hover:bg-brand-orange-hover text-white text-xs font-semibold rounded-xl shadow-md flex items-center gap-2 transition-transform hover:-translate-y-0.5"
-                >
-                  <Printer className="w-4 h-4" /> Print Review Card
-                </button>
-                <button
-                  onClick={handleDownloadQR}
-                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-xl shadow-md flex items-center gap-2 transition-transform hover:-translate-y-0.5"
-                >
-                  <Download className="w-4 h-4" /> Download QR Code Only
-                </button>
-                <a
-                  href={reviewUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl border border-slate-200 flex items-center gap-2 transition-all"
-                >
-                  Visit Public Page <ExternalLink className="w-3.5 h-3.5" />
-                </a>
+              <h3 className="text-base font-bold text-slate-800 mb-3">Print Actions</h3>
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    onClick={() => handlePrint("a4")}
+                    className="px-4 py-3 bg-brand-blue hover:bg-brand-blue/90 text-white text-xs font-semibold rounded-xl shadow-md flex items-center justify-center gap-2 transition-transform hover:-translate-y-0.5"
+                  >
+                    <Printer className="w-4 h-4" /> Print A4 Poster (Ready to Hang)
+                  </button>
+                  <button
+                    onClick={() => handlePrint("card")}
+                    className="px-4 py-3 bg-brand-orange hover:bg-brand-orange-hover text-white text-xs font-semibold rounded-xl shadow-md flex items-center justify-center gap-2 transition-transform hover:-translate-y-0.5"
+                  >
+                    <Printer className="w-4 h-4" /> Print Reception Card (3.5" x 5")
+                  </button>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleDownloadQR}
+                    className="flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-xl shadow-md flex items-center justify-center gap-2 transition-transform hover:-translate-y-0.5"
+                  >
+                    <Download className="w-4 h-4" /> Download QR Code Only
+                  </button>
+                  <a
+                    href={reviewUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl border border-slate-200 flex items-center justify-center gap-2 transition-all"
+                  >
+                    Visit Public Page <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
               </div>
             </div>
 
@@ -232,3 +606,4 @@ export function AdminMapsReview() {
 }
 
 export default AdminMapsReview;
+
