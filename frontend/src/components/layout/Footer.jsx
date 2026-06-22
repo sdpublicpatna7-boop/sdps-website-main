@@ -4,7 +4,7 @@ import { Phone, Mail, MapPin, Youtube, Instagram, Facebook } from "lucide-react"
 export default function Footer({ settings }) {
   const s = settings || {};
   return (
-    <footer className="mt-24 bg-gradient-to-br from-brand-blue-dark via-brand-blue to-brand-blue-light text-white relative overflow-hidden grain">
+    <footer className="bg-gradient-to-br from-brand-blue-dark via-brand-blue to-brand-blue-light text-white relative overflow-hidden grain">
       <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-brand-orange/20 blur-3xl" />
       <div className="absolute -bottom-32 -left-20 w-96 h-96 rounded-full bg-brand-lotus/15 blur-3xl" />
 
