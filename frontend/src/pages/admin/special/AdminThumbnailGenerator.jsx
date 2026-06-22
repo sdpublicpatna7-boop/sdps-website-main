@@ -1158,13 +1158,13 @@ export function AdminThumbnailGenerator() {
                           <input 
                             type="range" 
                             min="40" 
-                            max="180" 
+                            max="420" 
                             step="2" 
                             value={title1Size} 
                             onChange={e => setTitle1Size(parseInt(e.target.value))}
                             className="w-full accent-brand-blue"
                           />
-                          <button onClick={() => setTitle1Size(Math.min(180, title1Size + 2))} className="p-1 px-2.5 bg-slate-100 hover:bg-slate-200 border rounded-lg text-xs font-bold text-slate-600">+</button>
+                          <button onClick={() => setTitle1Size(Math.min(420, title1Size + 2))} className="p-1 px-2.5 bg-slate-100 hover:bg-slate-200 border rounded-lg text-xs font-bold text-slate-600">+</button>
                         </div>
                       </div>
 
