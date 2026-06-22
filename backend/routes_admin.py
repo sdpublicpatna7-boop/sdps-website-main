@@ -29,7 +29,8 @@ from models import (
     CareerPost, AlumniMeet, AlumniSettings, TCRecord, PopupSettings,
     SiteSettings, now_iso, new_id, AdmissionEnquiry,
     EligibilityRow, FeeStructureRow, HostelFeeRow, HostelGalleryItem,
-    AdministrationMember, LegalPage, ExamPaper, HolidayHomework, KheloPatnaPhoto
+    AdministrationMember, LegalPage, ExamPaper, HolidayHomework, KheloPatnaPhoto,
+    Educator, GeneratedThumbnail
 )
 
 logger = logging.getLogger(__name__)
@@ -153,6 +154,12 @@ async def upload_image(
     content = await file.read()
     if len(content) > 10 * 1024 * 1024:
         raise HTTPException(status_code=413, detail="Image must be ≤ 10MB before compression")
+    if sub_dir in ("educators", "thumbnails"):
+        try:
+            res = save_raw_file(content, sub_dir, file.filename)
+        except UnsafeUploadError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        return res
     res = compress_and_save(content, sub_dir=sub_dir)
     return res
 
@@ -235,6 +242,31 @@ _register_crud("/eligibility-rows", "eligibility_rows", EligibilityRow, "order",
 _register_crud("/fee-structure-rows", "fee_structure_rows", FeeStructureRow, "order", 1)
 _register_crud("/hostel-fee-rows", "hostel_fee_rows", HostelFeeRow, "order", 1)
 _register_crud("/administration-members", "administration_members", AdministrationMember, "order", 1)
+_register_crud("/educators", "educators", Educator, "created_at", -1)
+
+
+# ============= GENERATED THUMBNAILS =============
+@admin_router.post("/generated-thumbnails")
+async def create_generated_thumbnail(payload: GeneratedThumbnail, admin: TokenData = Depends(get_current_admin)):
+    doc = payload.model_dump()
+    user = await db.admin_users.find_one({"id": admin.sub})
+    doc["created_by"] = user.get("name") if (user and user.get("name")) else admin.email
+    doc["created_at"] = now_iso()
+    await db.generated_thumbnails.insert_one(doc.copy())
+    return doc
+
+
+@admin_router.get("/generated-thumbnails")
+async def list_generated_thumbnails(admin: TokenData = Depends(get_current_admin)):
+    items = await db.generated_thumbnails.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return items
+
+
+@admin_router.delete("/generated-thumbnails/{item_id}")
+async def delete_generated_thumbnail(item_id: str, admin: TokenData = Depends(get_current_admin)):
+    res = await db.generated_thumbnails.delete_one({"id": item_id})
+    return {"deleted": res.deleted_count}
+
 
 
 # ============= READ-ONLY LISTS (for admin: enquiries, applications, etc) =============

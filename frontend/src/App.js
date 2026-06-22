@@ -46,6 +46,7 @@ const AdminHolidays = lazy(() => import("@/pages/admin/crud/AdminHolidays"));
 const AdminEligibilityRows = lazy(() => import("@/pages/admin/crud/AdminEligibilityRows"));
 const AdminAdministrationMembers = lazy(() => import("@/pages/admin/crud/AdminAdministrationMembers"));
 const AdminHostelGallery = lazy(() => import("@/pages/admin/crud/AdminHostelGallery"));
+const AdminEducators = lazy(() => import("@/pages/admin/crud/AdminEducators"));
 
 // SpecialPages
 const AdminCalendar = lazy(() => import("@/pages/admin/special/AdminCalendar"));
@@ -60,6 +61,7 @@ const AdminAlumniMembers = lazy(() => import("@/pages/admin/special/AdminAlumniM
 const AdminContactMessages = lazy(() => import("@/pages/admin/special/AdminContactMessages"));
 const AdminIntegrationKeys = lazy(() => import("@/pages/admin/special/AdminIntegrationKeys"));
 const AdminKheloPatna = lazy(() => import("@/pages/admin/special/AdminKheloPatna"));
+const AdminThumbnailGenerator = lazy(() => import("@/pages/admin/special/AdminThumbnailGenerator"));
 
 // StaffModules
 const AdminHolidayHomework = lazy(() => import("@/pages/admin/staff/AdminHolidayHomework"));
@@ -154,6 +156,8 @@ function App() {
               <Route path="whatsapp-marketing" element={<WhatsAppMarketing />} />
               <Route path="fee-reminders" element={<FeeReminders />} />
               <Route path="birthday-greetings" element={<BirthdayGreetings />} />
+              <Route path="educators" element={<AdminEducators />} />
+              <Route path="thumbnail-generator" element={<AdminThumbnailGenerator />} />
               <Route path="site-settings" element={<AdminSiteSettings />} />
               <Route path="integration-keys" element={<AdminIntegrationKeys />} />
               <Route path="khelo-patna-gallery" element={<AdminKheloPatna />} />

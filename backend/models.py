@@ -460,3 +460,23 @@ class KheloPatnaPhoto(BaseDoc):
     caption: str = ""
     order: int = 0
     created_at: str = Field(default_factory=now_iso)
+
+
+# ---- Educator and Thumbnail Generator ----
+class Educator(BaseDoc):
+    id: str = Field(default_factory=new_id)
+    name: str
+    role: str = "SDPS Educator"
+    photo_url: str = ""
+    created_at: str = Field(default_factory=now_iso)
+
+
+class GeneratedThumbnail(BaseDoc):
+    id: str = Field(default_factory=new_id)
+    teacher_name: str
+    title1: str
+    title2: str
+    thumbnail_url: str
+    created_by: str = ""
+    created_at: str = Field(default_factory=now_iso)
+
