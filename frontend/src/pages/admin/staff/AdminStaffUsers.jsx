@@ -170,11 +170,12 @@ export function AdminStaffUsers() {
               </div>
               <div>
                 <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">
-                  Email *
+                  Email or Username *
                 </label>
                 <input
                   required
-                  type="email"
+                  type="text"
+                  placeholder="e.g. staff_user or staff@sdpublic.org"
                   className="w-full px-3 py-2 border rounded-lg"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
