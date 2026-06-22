@@ -1066,7 +1066,7 @@ async def generate_maps_review(payload: dict = Body(...)):
             f"- English communication development focus\n"
             f"- CBSE curriculum, established 1994, Pre-School to Class VIII\n\n"
             f"HUMANIZATION RULES:\n"
-            f"- Use natural language. Do NOT sound AI-generated.\n"
+            f"- Use natural language. Do NOT sound robotic or artificial.\n"
             f"- Sometimes use simple English, sometimes emotional language.\n"
             f"- Sometimes mention child's class, specific events, teachers, sports turf, summer camp, hostel.\n"
             f"- Occasionally include minor informal expressions.\n"
