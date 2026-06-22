@@ -347,8 +347,8 @@ export function AdminThumbnailGenerator() {
     // Determine gradient stops
     let stops = [];
     if (presetStyle === "custom" || bgTemplate === "navy") {
-      const colorStart = isTitle1 ? title1Color : title2Color;
-      const colorEnd = isTitle1 ? title2Color : title1Color;
+      const colorStart = title1Color;
+      const colorEnd = title2Color;
       const colorMid = interpolateColor(colorStart, colorEnd, 0.45);
       stops = [
         { offset: 0, color: colorStart },
@@ -1016,7 +1016,7 @@ export function AdminThumbnailGenerator() {
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-[11px] font-semibold text-slate-500 mb-1.5">Title 1 Color</label>
+                          <label className="block text-[11px] font-semibold text-slate-500 mb-1.5">Gradient Start</label>
                           <div className="flex items-center gap-2 bg-white px-2 py-1.5 rounded-lg border">
                             <input
                               type="color"
@@ -1031,7 +1031,7 @@ export function AdminThumbnailGenerator() {
                           </div>
                         </div>
                         <div>
-                          <label className="block text-[11px] font-semibold text-slate-500 mb-1.5">Title 2 Color</label>
+                          <label className="block text-[11px] font-semibold text-slate-500 mb-1.5">Gradient End</label>
                           <div className="flex items-center gap-2 bg-white px-2 py-1.5 rounded-lg border">
                             <input
                               type="color"

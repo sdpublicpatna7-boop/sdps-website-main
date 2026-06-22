@@ -30,6 +30,7 @@ const NAV = [
       { label: "House System", to: "/house-system" },
       { label: "Hostel", to: "/hostel" },
       { label: "Student Council", to: "/student-council" },
+      { label: "Gallery", to: "/gallery" },
       { label: "Videos", to: "/videos" },
       { label: "SDPS × Khelo Patna", to: "/khelo-patna" },
     ],
