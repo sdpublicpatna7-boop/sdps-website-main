@@ -21,7 +21,7 @@ export function AdminThumbnailGenerator() {
   // Inputs
   const [selectedTeacherId, setSelectedTeacherId] = useState("");
   const [title1, setTitle1] = useState("MATHEMATICS");
-  const [title2, setTitle2] = useState("SDPS Online Classes");
+  const [title2, setTitle2] = useState("");
   
   // Background & Preset Style Options
   const [bgTemplate, setBgTemplate] = useState("pastel"); // pastel | navy | custom
@@ -38,8 +38,8 @@ export function AdminThumbnailGenerator() {
   const [teacherY, setTeacherY] = useState(0);
   const [teacherScale, setTeacherScale] = useState(1.0);
   const [textNudgeX, setTextNudgeX] = useState(0);
-  const [textNudgeY, setTextNudgeY] = useState(0);
-  const [title1Size, setTitle1Size] = useState(130);
+  const [textNudgeY, setTextNudgeY] = useState(80);
+  const [title1Size, setTitle1Size] = useState(152);
 
   // Loaded images for canvas rendering
   const [logoImage, setLogoImage] = useState(null);
@@ -167,22 +167,32 @@ export function AdminThumbnailGenerator() {
 
   // Helper function to wrap text inside canvas
   const getLines = (ctx, text, maxWidth) => {
-    const words = text.split(" ");
-    const lines = [];
-    let currentLine = words[0] || "";
-
-    for (let i = 1; i < words.length; i++) {
-      const word = words[i];
-      const width = ctx.measureText(currentLine + " " + word).width;
-      if (width < maxWidth) {
-        currentLine += " " + word;
-      } else {
-        lines.push(currentLine);
-        currentLine = word;
+    if (!text) return [];
+    const paragraphs = text.split("\n");
+    const allLines = [];
+    
+    for (let p = 0; p < paragraphs.length; p++) {
+      const paragraph = paragraphs[p];
+      if (paragraph === "") {
+        allLines.push("");
+        continue;
       }
+      const words = paragraph.split(" ");
+      let currentLine = words[0] || "";
+      
+      for (let i = 1; i < words.length; i++) {
+        const word = words[i];
+        const width = ctx.measureText(currentLine + " " + word).width;
+        if (width < maxWidth) {
+          currentLine += " " + word;
+        } else {
+          allLines.push(currentLine);
+          currentLine = word;
+        }
+      }
+      allLines.push(currentLine);
     }
-    lines.push(currentLine);
-    return lines;
+    return allLines;
   };
 
   const wrapText = (ctx, text, x, y, lineHeight, maxWidth) => {
@@ -679,8 +689,8 @@ export function AdminThumbnailGenerator() {
     setTeacherY(0);
     setTeacherScale(1.0);
     setTextNudgeX(0);
-    setTextNudgeY(0);
-    setTitle1Size(130);
+    setTextNudgeY(80);
+    setTitle1Size(152);
     setTitle1Color("#6A11CB");
     setTitle2Color("#FF8C42");
     setPresetStyle("indigo");
@@ -914,12 +924,12 @@ export function AdminThumbnailGenerator() {
 
                     <div>
                       <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Title 1 (Subject / Topic)</label>
-                      <input 
-                        type="text" 
+                      <textarea 
                         value={title1}
                         onChange={e => setTitle1(e.target.value)}
                         placeholder="e.g. MATHEMATICS"
-                        className="w-full px-3 py-2.5 rounded-xl border border-slate-300 focus:border-brand-blue outline-none text-sm"
+                        rows={2}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-brand-blue outline-none text-sm resize-none"
                       />
                     </div>
 
