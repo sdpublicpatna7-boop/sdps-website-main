@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useOutletContext } from "react-router-dom";
 import api from "../../lib/api";
 import { toast, Toaster } from "sonner";
 import { Loader2, Check } from "lucide-react";
@@ -380,6 +380,13 @@ export function AdmissionForm() {
 }
 
 export function AdmissionsLanding() {
+  const { settings } = useOutletContext() || {};
+  const BACKEND = process.env.REACT_APP_BACKEND_URL || "";
+  const prospectusRaw = settings?.prospectus_pdf_url;
+  const prospectusUrl = prospectusRaw
+    ? (prospectusRaw.startsWith("http") ? prospectusRaw : `${BACKEND}${prospectusRaw}`)
+    : "https://sdpublic.org/assets/docs/Prospectus.pdf";
+
   return (
     <>
       {/* Hero */}
@@ -447,7 +454,7 @@ export function AdmissionsLanding() {
               <h3 className="font-headline text-xl font-semibold text-brand-ink mb-1">Download Our School Prospectus</h3>
               <p className="text-sm text-brand-ink/60">Get complete information about our school, facilities, curriculum, and values in our detailed prospectus.</p>
             </div>
-            <a href="https://sdpublic.org/assets/docs/Prospectus.pdf" target="_blank" rel="noreferrer"
+            <a href={prospectusUrl} target="_blank" rel="noreferrer"
               className="btn-primary shrink-0 flex items-center gap-2">
               📥 Download Prospectus
             </a>

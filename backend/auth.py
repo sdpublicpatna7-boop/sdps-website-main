@@ -2,7 +2,7 @@
 import os
 import secrets
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import Optional, List
 
 from fastapi import Depends, HTTPException, status, Request, Response
 from fastapi.security import OAuth2PasswordBearer
@@ -61,6 +61,7 @@ class TokenData(BaseModel):
     sub: str
     email: str
     role: str = "superadmin"   # "superadmin" | "staff"
+    permissions: List[str] = []
 
 
 def hash_password(password: str) -> str:
@@ -108,9 +109,10 @@ async def get_current_admin(
     sub = payload.get("sub")
     email = payload.get("email")
     role = payload.get("role", "superadmin")
+    permissions = payload.get("permissions", [])
     if not sub or not email:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
-    return TokenData(sub=sub, email=email, role=role)
+    return TokenData(sub=sub, email=email, role=role, permissions=permissions)
 
 
 async def get_superadmin(
@@ -122,6 +124,21 @@ async def get_superadmin(
     if td.role != "superadmin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Superadmin access required")
     return td
+
+
+def require_permission(permission_name: str):
+    """Requires superadmin role, or staff role with the specific permission name."""
+    async def dependency(request: Request, token: str = Depends(oauth2_scheme)) -> TokenData:
+        td = await get_current_admin(request, token)
+        if td.role == "superadmin":
+            return td
+        if permission_name in getattr(td, "permissions", []):
+            return td
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Access denied: permission '{permission_name}' required"
+        )
+    return dependency
 
 
 def generate_otp(length: int = 6) -> str:

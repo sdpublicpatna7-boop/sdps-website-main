@@ -11,86 +11,57 @@ import {
 import { useAuth } from "../../lib/auth";
 import { startPinger } from "../../lib/pinger";
 
-// Full nav — superadmin only
-const SUPERADMIN_NAV = [
+// Full nav options with permission mapping
+const NAV_ITEMS = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
   { section: "Content" },
-  { to: "/admin/news", label: "News", icon: Newspaper },
-  { to: "/admin/notices", label: "Notices", icon: Bell },
-  { to: "/admin/gallery", label: "Gallery", icon: ImageIcon },
-  { to: "/admin/videos", label: "Videos", icon: Video },
-  { to: "/admin/calendar", label: "Calendar", icon: Calendar },
-  { to: "/admin/holidays", label: "Holidays", icon: PartyPopper },
+  { to: "/admin/news", label: "News", icon: Newspaper, permission: "news" },
+  { to: "/admin/notices", label: "Notices", icon: Bell, permission: "notices" },
+  { to: "/admin/gallery", label: "Gallery", icon: ImageIcon, permission: "gallery" },
+  { to: "/admin/videos", label: "Videos", icon: Video, permission: "gallery" },
+  { to: "/admin/calendar", label: "Calendar", icon: Calendar, permission: "calendar" },
+  { to: "/admin/holidays", label: "Holidays", icon: PartyPopper, permission: "calendar" },
   { section: "School Pages" },
-  { to: "/admin/administration-members", label: "Administration Messages", icon: Users },
-  { to: "/admin/hostel-gallery", label: "Hostel Gallery", icon: Hotel },
-  { to: "/admin/khelo-patna-gallery", label: "Khelo Patna Gallery", icon: Trophy },
+  { to: "/admin/administration-members", label: "Administration Messages", icon: Users, permission: "site-settings" },
+  { to: "/admin/hostel-gallery", label: "Hostel Gallery", icon: Hotel, permission: "hostel-gallery" },
+  { to: "/admin/khelo-patna-gallery", label: "Khelo Patna Gallery", icon: Trophy, permission: "khelo-patna-gallery" },
   { section: "Student Council" },
-  { to: "/admin/council-members", label: "Members & Captains", icon: Crown },
-  { to: "/admin/election-posters", label: "Election Posters", icon: Vote },
-  { to: "/admin/council-results", label: "Election Results", icon: Trophy },
+  { to: "/admin/council-members", label: "Members & Captains", icon: Crown, permission: "council" },
+  { to: "/admin/election-posters", label: "Election Posters", icon: Vote, permission: "council" },
+  { to: "/admin/council-results", label: "Election Results", icon: Trophy, permission: "council" },
   { section: "Admissions" },
-  { to: "/admin/admission-enquiries", label: "Enquiries", icon: MessageSquare },
-  { to: "/admin/enquiry-questions", label: "Enquiry Questions", icon: FilePlus },
-  { to: "/admin/admission-fields", label: "Admission Form Builder", icon: FileText },
-  { to: "/admin/admissions", label: "Full Applications", icon: GraduationCap },
-  { to: "/admin/eligibility-rows", label: "Eligibility Criteria", icon: BookOpen },
+  { to: "/admin/admission-enquiries", label: "Enquiries", icon: MessageSquare, permission: "admissions" },
+  { to: "/admin/enquiry-questions", label: "Enquiry Questions", icon: FilePlus, permission: "admissions" },
+  { to: "/admin/admission-fields", label: "Admission Form Builder", icon: FileText, permission: "admissions" },
+  { to: "/admin/admissions", label: "Full Applications", icon: GraduationCap, permission: "admissions" },
+  { to: "/admin/eligibility-rows", label: "Eligibility Criteria", icon: BookOpen, permission: "site-settings" },
   { section: "Academics" },
-  { to: "/admin/holiday-homework", label: "Holiday Homework", icon: ClipboardList },
+  { to: "/admin/holiday-homework", label: "Holiday Homework", icon: ClipboardList, permission: "academics" },
   { section: "Career" },
-  { to: "/admin/career-posts", label: "Vacant Posts", icon: Briefcase },
-  { to: "/admin/career-questions", label: "Application Questions", icon: FilePlus },
-  { to: "/admin/career-applications", label: "Applications", icon: ScrollText },
+  { to: "/admin/career-posts", label: "Vacant Posts", icon: Briefcase, permission: "career" },
+  { to: "/admin/career-questions", label: "Application Questions", icon: FilePlus, permission: "career" },
+  { to: "/admin/career-applications", label: "Applications", icon: ScrollText, permission: "career" },
   { section: "Alumni" },
-  { to: "/admin/alumni-settings", label: "Alumni Settings (Hide/Show)", icon: EyeOff },
-  { to: "/admin/alumni-questions", label: "Alumni Form Questions", icon: FilePlus },
-  { to: "/admin/alumni-meets", label: "Alumni Meets", icon: Users },
-  { to: "/admin/alumni-members", label: "Members", icon: Award },
+  { to: "/admin/alumni-settings", label: "Alumni Settings (Hide/Show)", icon: EyeOff, permission: "alumni" },
+  { to: "/admin/alumni-questions", label: "Alumni Form Questions", icon: FilePlus, permission: "alumni" },
+  { to: "/admin/alumni-meets", label: "Alumni Meets", icon: Users, permission: "alumni" },
+  { to: "/admin/alumni-members", label: "Members", icon: Award, permission: "alumni" },
   { section: "Media Tools" },
-  { to: "/admin/educators", label: "Educators", icon: Users },
-  { to: "/admin/thumbnail-generator", label: "Thumbnail Generator", icon: ImageIcon },
+  { to: "/admin/educators", label: "Educators", icon: Users, permission: "media-tools" },
+  { to: "/admin/thumbnail-generator", label: "Thumbnail Generator", icon: ImageIcon, permission: "media-tools" },
   { section: "Other" },
-  { to: "/admin/tc-records", label: "TC Records", icon: FileText },
-  { to: "/admin/popup", label: "Welcome Popup", icon: Megaphone },
-  { to: "/admin/contact-messages", label: "Contact Messages", icon: MessageSquare },
-  { to: "/admin/whatsapp-marketing", label: "WhatsApp Marketing", icon: Megaphone },
-  { to: "/admin/fee-reminders", label: "Fee Reminders", icon: CreditCard },
-  { to: "/admin/birthday-greetings", label: "Birthday Greetings", icon: Cake },
-  { to: "/admin/site-settings", label: "Site Settings", icon: Settings },
-  { to: "/admin/integration-keys", label: "Integration Keys", icon: Settings },
+  { to: "/admin/tc-records", label: "TC Records", icon: FileText, permission: "tc-records" },
+  { to: "/admin/popup", label: "Welcome Popup", icon: Megaphone, permission: "popup" },
+  { to: "/admin/contact-messages", label: "Contact Messages", icon: MessageSquare, permission: "contact-messages" },
+  { to: "/admin/whatsapp-marketing", label: "WhatsApp Marketing", icon: Megaphone, permission: "whatsapp" },
+  { to: "/admin/fee-reminders", label: "Fee Reminders", icon: CreditCard, permission: "whatsapp" },
+  { to: "/admin/birthday-greetings", label: "Birthday Greetings", icon: Cake, permission: "whatsapp" },
+  { to: "/admin/site-settings", label: "Site Settings", icon: Settings, permission: "site-settings" },
+  { to: "/admin/integration-keys", label: "Integration Keys", icon: Settings, permission: "site-settings" },
   { section: "Google Review" },
-  { to: "/admin/maps-review", label: "Google Review QR", icon: Star },
+  { to: "/admin/maps-review", label: "Google Review QR", icon: Star, permission: "google-reviews" },
   { section: "User Management" },
-  { to: "/admin/staff-users", label: "Staff & Admin Users", icon: UserCog },
-];
-
-// Staff-only nav — safe content management features
-const STAFF_NAV = [
-  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { section: "Content" },
-  { to: "/admin/news", label: "News", icon: Newspaper },
-  { to: "/admin/notices", label: "Notices", icon: Bell },
-  { to: "/admin/gallery", label: "Gallery", icon: ImageIcon },
-  { to: "/admin/videos", label: "Videos", icon: Video },
-  { to: "/admin/calendar", label: "Calendar", icon: Calendar },
-  { to: "/admin/holidays", label: "Holidays", icon: PartyPopper },
-  { section: "School Pages" },
-  { to: "/admin/hostel-gallery", label: "Hostel Gallery", icon: Hotel },
-  { to: "/admin/khelo-patna-gallery", label: "Khelo Patna Gallery", icon: Trophy },
-  { section: "Student Council" },
-  { to: "/admin/council-members", label: "Members & Captains", icon: Crown },
-  { to: "/admin/election-posters", label: "Election Posters", icon: Vote },
-  { to: "/admin/council-results", label: "Election Results", icon: Trophy },
-  { section: "Academics" },
-  { to: "/admin/holiday-homework", label: "Holiday Homework", icon: ClipboardList },
-  { section: "Media Tools" },
-  { to: "/admin/educators", label: "Educators", icon: Users },
-  { to: "/admin/thumbnail-generator", label: "Thumbnail Generator", icon: ImageIcon },
-  { section: "Other" },
-  { to: "/admin/tc-records", label: "TC Records", icon: FileText },
-  { to: "/admin/popup", label: "Welcome Popup", icon: Megaphone },
-  { section: "Google Review" },
-  { to: "/admin/maps-review", label: "Google Review QR", icon: Star },
+  { to: "/admin/staff-users", label: "Staff & Admin Users", icon: UserCog, role: "superadmin" },
 ];
 
 export default function AdminLayout() {
@@ -106,14 +77,24 @@ export default function AdminLayout() {
   }, [user, loading, navigate]);
 
   useEffect(() => {
-    if (!loading && user && isStaff) {
+    if (!loading && user) {
       const path = location.pathname;
-      const isAllowed = STAFF_NAV.some(item => item.to && (item.to === path || (item.to !== "/admin" && path.startsWith(item.to))));
-      if (!isAllowed && path !== "/admin") {
+      if (path === "/admin") return;
+
+      const isAllowed = user.role === "superadmin" || NAV_ITEMS.some(item => {
+        if (!item.to) return false;
+        const matches = item.to === path || (item.to !== "/admin" && path.startsWith(item.to + "/")) || (item.to !== "/admin" && path === item.to);
+        if (!matches) return false;
+        if (item.role === "superadmin" && user.role !== "superadmin") return false;
+        if (item.permission && !user.permissions?.includes(item.permission)) return false;
+        return true;
+      });
+
+      if (!isAllowed) {
         navigate("/admin");
       }
     }
-  }, [location.pathname, user, loading, isStaff, navigate]);
+  }, [location.pathname, user, loading, navigate]);
 
   useEffect(() => {
     startPinger();
@@ -122,7 +103,30 @@ export default function AdminLayout() {
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   if (!user) return null;
 
-  const NAV = isStaff ? STAFF_NAV : SUPERADMIN_NAV;
+  // Filter NAV items based on permissions.
+  // We only show a section header if there's at least one visible item under it.
+  const filteredNav = [];
+  let currentSection = null;
+
+  for (const item of NAV_ITEMS) {
+    if (item.section) {
+      currentSection = item;
+    } else {
+      const isAllowed =
+        user.role === "superadmin" ||
+        (item.role !== "superadmin" && (!item.permission || user.permissions?.includes(item.permission)));
+
+      if (isAllowed) {
+        if (currentSection) {
+          filteredNav.push(currentSection);
+          currentSection = null;
+        }
+        filteredNav.push(item);
+      }
+    }
+  }
+
+  const NAV = filteredNav;
 
   const renderNavLinks = (onItemClick) => (
     <nav className="py-4 text-sm space-y-1">
@@ -315,7 +319,9 @@ export default function AdminLayout() {
             <span className="text-emerald-600 text-lg">🔒</span>
             <div>
               <div className="text-sm font-semibold text-emerald-700">Staff Access</div>
-              <div className="text-xs text-emerald-600 text-emerald-700/80">You can manage Exam Papers and Holiday Homework. Contact the admin for other changes.</div>
+              <div className="text-xs text-emerald-600 text-emerald-700/80">
+                You have access to {user.permissions?.length || 0} module(s). Contact the superadmin to request access to other sections.
+              </div>
             </div>
           </div>
         )}

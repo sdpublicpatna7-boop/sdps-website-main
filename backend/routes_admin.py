@@ -15,7 +15,7 @@ from slowapi.util import get_remote_address
 
 from auth import (
     hash_password, verify_password, create_access_token,
-    get_current_admin, get_superadmin, generate_otp, TokenData,
+    get_current_admin, get_superadmin, require_permission, generate_otp, TokenData,
     set_auth_cookie, clear_auth_cookie, ADMIN_COOKIE_NAME, JWT_EXPIRY_HOURS
 )
 
@@ -62,14 +62,25 @@ async def admin_login(request: Request, response: Response, payload: AdminLogin)
         raise HTTPException(status_code=401, detail="Invalid credentials")
     if not user.get("is_active", True):
         raise HTTPException(status_code=403, detail="Account is disabled. Contact the administrator.")
-    token = create_access_token({"sub": user["id"], "email": user["email"], "role": user.get("role", "superadmin")})
+    token = create_access_token({
+        "sub": user["id"],
+        "email": user["email"],
+        "role": user.get("role", "superadmin"),
+        "permissions": user.get("permissions", [])
+    })
     # Set the token as an HttpOnly cookie (primary). Also returned in the body
     # as a fallback for non-browser / cross-origin clients.
     set_auth_cookie(response, token, ADMIN_COOKIE_NAME, JWT_EXPIRY_HOURS)
     return {
         "access_token": token,
         "token_type": "bearer",
-        "user": {"id": user["id"], "email": user["email"], "name": user.get("name", "Admin")}
+        "user": {
+            "id": user["id"],
+            "email": user["email"],
+            "name": user.get("name", "Admin"),
+            "role": user.get("role", "superadmin"),
+            "permissions": user.get("permissions", [])
+        }
     }
 
 
@@ -182,9 +193,9 @@ async def upload_file(
 
 
 # ============= GENERIC CRUD HELPER =============
-def _make_crud(collection_name: str, model_cls, sort_field: str = "created_at", sort_order: int = -1, superadmin_only: bool = False):
+def _make_crud(collection_name: str, model_cls, sort_field: str = "created_at", sort_order: int = -1, permission: str = None):
     """Returns (list, get, create, update, delete) handler functions for a collection."""
-    dep = get_superadmin if superadmin_only else get_current_admin
+    dep = require_permission(permission) if permission else get_current_admin
 
     async def list_items(admin: TokenData = Depends(dep)):
         items = await db[collection_name].find({}, {"_id": 0}).sort(sort_field, sort_order).to_list(1000)
@@ -215,8 +226,8 @@ def _make_crud(collection_name: str, model_cls, sort_field: str = "created_at", 
     return list_items, get_item, create_item, update_item, delete_item
 
 
-def _register_crud(prefix: str, collection: str, model_cls, sort_field: str = "created_at", sort_order: int = -1, superadmin_only: bool = False):
-    list_h, get_h, create_h, update_h, delete_h = _make_crud(collection, model_cls, sort_field, sort_order, superadmin_only)
+def _register_crud(prefix: str, collection: str, model_cls, sort_field: str = "created_at", sort_order: int = -1, permission: str = None):
+    list_h, get_h, create_h, update_h, delete_h = _make_crud(collection, model_cls, sort_field, sort_order, permission)
     admin_router.add_api_route(prefix, list_h, methods=["GET"])
     admin_router.add_api_route(prefix + "/{item_id}", get_h, methods=["GET"])
     admin_router.add_api_route(prefix, create_h, methods=["POST"])
@@ -224,26 +235,26 @@ def _register_crud(prefix: str, collection: str, model_cls, sort_field: str = "c
     admin_router.add_api_route(prefix + "/{item_id}", delete_h, methods=["DELETE"])
 
 
-_register_crud("/news", "news", News, "date", -1)
-_register_crud("/notices", "notices", Notice, "date", -1)
-_register_crud("/gallery", "gallery", GalleryImage, "order", 1)
-_register_crud("/videos", "videos", VideoItem, "created_at", -1)
-_register_crud("/calendar", "calendar", CalendarEvent, "date", 1)
-_register_crud("/holidays", "holidays", Holiday, "date", 1)
-_register_crud("/council-members", "council_members", CouncilMember, "order", 1)
-_register_crud("/election-posters", "election_posters", ElectionPoster, "year", -1)
-_register_crud("/council-results", "council_results", CouncilResult, "year", -1)
-_register_crud("/enquiry-questions", "enquiry_questions", FormQuestion, "order", 1, superadmin_only=True)
-_register_crud("/admission-fields", "admission_fields", FormQuestion, "order", 1, superadmin_only=True)
-_register_crud("/career-posts", "career_posts", CareerPost, "posted_at", -1)
-_register_crud("/career-questions", "career_questions", FormQuestion, "order", 1, superadmin_only=True)
-_register_crud("/alumni-questions", "alumni_questions", FormQuestion, "order", 1, superadmin_only=True)
-_register_crud("/alumni-meets", "alumni_meets", AlumniMeet, "date", -1, superadmin_only=True)
-_register_crud("/eligibility-rows", "eligibility_rows", EligibilityRow, "order", 1, superadmin_only=True)
-_register_crud("/fee-structure-rows", "fee_structure_rows", FeeStructureRow, "order", 1, superadmin_only=True)
-_register_crud("/hostel-fee-rows", "hostel_fee_rows", HostelFeeRow, "order", 1, superadmin_only=True)
-_register_crud("/administration-members", "administration_members", AdministrationMember, "order", 1)
-_register_crud("/educators", "educators", Educator, "created_at", -1)
+_register_crud("/news", "news", News, "date", -1, permission="news")
+_register_crud("/notices", "notices", Notice, "date", -1, permission="notices")
+_register_crud("/gallery", "gallery", GalleryImage, "order", 1, permission="gallery")
+_register_crud("/videos", "videos", VideoItem, "created_at", -1, permission="gallery")
+_register_crud("/calendar", "calendar", CalendarEvent, "date", 1, permission="calendar")
+_register_crud("/holidays", "holidays", Holiday, "date", 1, permission="calendar")
+_register_crud("/council-members", "council_members", CouncilMember, "order", 1, permission="council")
+_register_crud("/election-posters", "election_posters", ElectionPoster, "year", -1, permission="council")
+_register_crud("/council-results", "council_results", CouncilResult, "year", -1, permission="council")
+_register_crud("/enquiry-questions", "enquiry_questions", FormQuestion, "order", 1, permission="admissions")
+_register_crud("/admission-fields", "admission_fields", FormQuestion, "order", 1, permission="admissions")
+_register_crud("/career-posts", "career_posts", CareerPost, "posted_at", -1, permission="career")
+_register_crud("/career-questions", "career_questions", FormQuestion, "order", 1, permission="career")
+_register_crud("/alumni-questions", "alumni_questions", FormQuestion, "order", 1, permission="alumni")
+_register_crud("/alumni-meets", "alumni_meets", AlumniMeet, "date", -1, permission="alumni")
+_register_crud("/eligibility-rows", "eligibility_rows", EligibilityRow, "order", 1, permission="site-settings")
+_register_crud("/fee-structure-rows", "fee_structure_rows", FeeStructureRow, "order", 1, permission="site-settings")
+_register_crud("/hostel-fee-rows", "hostel_fee_rows", HostelFeeRow, "order", 1, permission="site-settings")
+_register_crud("/administration-members", "administration_members", AdministrationMember, "order", 1, permission="site-settings")
+_register_crud("/educators", "educators", Educator, "created_at", -1, permission="media-tools")
 
 
 # ============= GENERATED THUMBNAILS =============
@@ -272,13 +283,13 @@ async def delete_generated_thumbnail(item_id: str, admin: TokenData = Depends(ge
 
 # ============= READ-ONLY LISTS (for admin: enquiries, applications, etc) =============
 @admin_router.get("/admission-enquiries")
-async def list_enquiries(admin: TokenData = Depends(get_superadmin)):
+async def list_enquiries(admin: TokenData = Depends(require_permission("admissions"))):
     items = await db.admission_enquiries.find({}, {"_id": 0}).sort("created_at", -1).to_list(2000)
     return items
 
 
 @admin_router.put("/admission-enquiries/{item_id}")
-async def update_enquiry(item_id: str, payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(get_superadmin)):
+async def update_enquiry(item_id: str, payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(require_permission("admissions"))):
     update = _sanitize_update(payload, AdmissionEnquiry)
     if update:
         await db.admission_enquiries.update_one({"id": item_id}, {"$set": update})
@@ -286,44 +297,44 @@ async def update_enquiry(item_id: str, payload: Dict[str, Any] = Body(...), admi
 
 
 @admin_router.delete("/admission-enquiries/{item_id}")
-async def delete_enquiry(item_id: str, admin: TokenData = Depends(get_superadmin)):
+async def delete_enquiry(item_id: str, admin: TokenData = Depends(require_permission("admissions"))):
     res = await db.admission_enquiries.delete_one({"id": item_id})
     return {"deleted": res.deleted_count}
 
 
 @admin_router.get("/admissions")
-async def list_admissions(admin: TokenData = Depends(get_superadmin)):
+async def list_admissions(admin: TokenData = Depends(require_permission("admissions"))):
     items = await db.admissions.find({}, {"_id": 0}).sort("created_at", -1).to_list(2000)
     return items
 
 
 @admin_router.get("/career-applications")
-async def list_career_apps(admin: TokenData = Depends(get_superadmin)):
+async def list_career_apps(admin: TokenData = Depends(require_permission("career"))):
     items = await db.career_applications.find({}, {"_id": 0}).sort("created_at", -1).to_list(2000)
     return items
 
 
 @admin_router.get("/alumni-members")
-async def list_alumni_members(admin: TokenData = Depends(get_superadmin)):
+async def list_alumni_members(admin: TokenData = Depends(require_permission("alumni"))):
     items = await db.alumni_members.find({}, {"_id": 0}).sort("created_at", -1).to_list(2000)
     return items
 
 
 @admin_router.get("/payments")
-async def list_payments(admin: TokenData = Depends(get_superadmin)):
+async def list_payments(admin: TokenData = Depends(require_permission("site-settings"))):
     items = await db.payments.find({}, {"_id": 0}).sort("created_at", -1).to_list(2000)
     return items
 
 
 @admin_router.get("/contact-messages")
-async def list_contact_messages(admin: TokenData = Depends(get_superadmin)):
+async def list_contact_messages(admin: TokenData = Depends(require_permission("contact-messages"))):
     items = await db.contact_messages.find({}, {"_id": 0}).sort("created_at", -1).to_list(2000)
     return items
 
 
 # ============= SINGLETON SETTINGS =============
 @admin_router.get("/popup-settings")
-async def get_popup_settings(admin: TokenData = Depends(get_current_admin)):
+async def get_popup_settings(admin: TokenData = Depends(require_permission("popup"))):
     doc = await db.popup_settings.find_one({"id": "popup"}, {"_id": 0})
     if not doc:
         doc = PopupSettings().model_dump()
@@ -332,7 +343,7 @@ async def get_popup_settings(admin: TokenData = Depends(get_current_admin)):
 
 
 @admin_router.put("/popup-settings")
-async def update_popup_settings(payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(get_current_admin)):
+async def update_popup_settings(payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(require_permission("popup"))):
     update = _sanitize_update(payload, PopupSettings)
     update["id"] = "popup"
     await db.popup_settings.update_one({"id": "popup"}, {"$set": update}, upsert=True)
@@ -340,7 +351,7 @@ async def update_popup_settings(payload: Dict[str, Any] = Body(...), admin: Toke
 
 
 @admin_router.get("/site-settings")
-async def get_site_settings_admin(admin: TokenData = Depends(get_superadmin)):
+async def get_site_settings_admin(admin: TokenData = Depends(require_permission("site-settings"))):
     doc = await db.site_settings.find_one({"id": "site"}, {"_id": 0})
     if not doc:
         doc = SiteSettings().model_dump()
@@ -349,7 +360,7 @@ async def get_site_settings_admin(admin: TokenData = Depends(get_superadmin)):
 
 
 @admin_router.put("/site-settings")
-async def update_site_settings(payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(get_superadmin)):
+async def update_site_settings(payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(require_permission("site-settings"))):
     update = _sanitize_update(payload, SiteSettings)
     update["id"] = "site"
     await db.site_settings.update_one({"id": "site"}, {"$set": update}, upsert=True)
@@ -357,7 +368,7 @@ async def update_site_settings(payload: Dict[str, Any] = Body(...), admin: Token
 
 
 @admin_router.get("/alumni-settings")
-async def get_alumni_settings_admin(admin: TokenData = Depends(get_superadmin)):
+async def get_alumni_settings_admin(admin: TokenData = Depends(require_permission("alumni"))):
     doc = await db.alumni_settings.find_one({"id": "alumni-settings"}, {"_id": 0})
     if not doc:
         doc = AlumniSettings().model_dump()
@@ -366,7 +377,7 @@ async def get_alumni_settings_admin(admin: TokenData = Depends(get_superadmin)):
 
 
 @admin_router.put("/alumni-settings")
-async def update_alumni_settings(payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(get_superadmin)):
+async def update_alumni_settings(payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(require_permission("alumni"))):
     update = _sanitize_update(payload, AlumniSettings)
     update["id"] = "alumni-settings"
     await db.alumni_settings.update_one({"id": "alumni-settings"}, {"$set": update}, upsert=True)
@@ -375,7 +386,7 @@ async def update_alumni_settings(payload: Dict[str, Any] = Body(...), admin: Tok
 
 # ============= TC RECORDS =============
 @admin_router.get("/tc-records")
-async def list_tc_records(admin: TokenData = Depends(get_current_admin)):
+async def list_tc_records(admin: TokenData = Depends(require_permission("tc-records"))):
     items = await db.tc_records.find({}, {"_id": 0}).sort("uploaded_at", -1).to_list(5000)
     return items
 
@@ -383,7 +394,7 @@ async def list_tc_records(admin: TokenData = Depends(get_current_admin)):
 @admin_router.post("/tc-records")
 async def create_tc_record(
     payload: Dict[str, Any] = Body(...),
-    admin: TokenData = Depends(get_current_admin)
+    admin: TokenData = Depends(require_permission("tc-records"))
 ):
     if not payload.get("tc_file_url"):
         raise HTTPException(status_code=400, detail="tc_file_url is required")
@@ -399,7 +410,7 @@ async def create_tc_record(
 
 
 @admin_router.delete("/tc-records/{item_id}")
-async def delete_tc_record(item_id: str, admin: TokenData = Depends(get_current_admin)):
+async def delete_tc_record(item_id: str, admin: TokenData = Depends(require_permission("tc-records"))):
     res = await db.tc_records.delete_one({"id": item_id})
     return {"deleted": res.deleted_count}
 
@@ -409,7 +420,7 @@ async def delete_tc_record(item_id: str, admin: TokenData = Depends(get_current_
 async def import_calendar_excel(
     file: UploadFile = File(...),
     target: str = Form("calendar"),  # 'calendar' or 'holidays'
-    admin: TokenData = Depends(get_current_admin)
+    admin: TokenData = Depends(require_permission("calendar"))
 ):
     content = await file.read()
     if len(content) > 5 * 1024 * 1024:
@@ -467,7 +478,7 @@ async def admin_stats(admin: TokenData = Depends(get_current_admin)):
 
 # ============= UPDATE ENV-LIKE KEYS via DB (Razorpay/Resend/SMS) =============
 @admin_router.get("/integration-keys")
-async def get_integration_keys(admin: TokenData = Depends(get_superadmin)):
+async def get_integration_keys(admin: TokenData = Depends(require_permission("site-settings"))):
     """Return masked keys (admin can update at .env). For now read-only env reflect."""
     def mask(v: str) -> str:
         if not v:
@@ -531,7 +542,7 @@ async def _check_whatsapp(url: str, secret: str) -> tuple:
 
 
 @admin_router.get("/integration-status")
-async def integration_status(admin: TokenData = Depends(get_superadmin)):
+async def integration_status(admin: TokenData = Depends(require_permission("site-settings"))):
     """Full integration inventory with live health checks and masked secrets.
 
     `status` is one of: ok | configured | down | not_configured.
@@ -650,7 +661,7 @@ async def integration_status(admin: TokenData = Depends(get_superadmin)):
 
 # ============= HOSTEL GALLERY =============
 @admin_router.get("/hostel-gallery")
-async def list_hostel_gallery(admin: TokenData = Depends(get_current_admin)):
+async def list_hostel_gallery(admin: TokenData = Depends(require_permission("hostel-gallery"))):
     items = await db.hostel_gallery.find({}, {"_id": 0}).sort("order", 1).to_list(500)
     return items
 
@@ -658,7 +669,7 @@ async def list_hostel_gallery(admin: TokenData = Depends(get_current_admin)):
 @admin_router.post("/hostel-gallery")
 async def create_hostel_gallery_item(
     payload: Dict[str, Any] = Body(...),
-    admin: TokenData = Depends(get_current_admin)
+    admin: TokenData = Depends(require_permission("hostel-gallery"))
 ):
     if not payload.get("image_url"):
         raise HTTPException(status_code=400, detail="image_url is required")
@@ -673,12 +684,12 @@ async def create_hostel_gallery_item(
 
 
 @admin_router.delete("/hostel-gallery/{item_id}")
-async def delete_hostel_gallery_item(item_id: str, admin: TokenData = Depends(get_current_admin)):
+async def delete_hostel_gallery_item(item_id: str, admin: TokenData = Depends(require_permission("hostel-gallery"))):
     await db.hostel_gallery.delete_one({"id": item_id})
     return {"deleted": item_id}
 
 @admin_router.put("/hostel-gallery/{item_id}")
-async def update_hostel_gallery_item(item_id: str, payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(get_current_admin)):
+async def update_hostel_gallery_item(item_id: str, payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(require_permission("hostel-gallery"))):
     update = _sanitize_update(payload, HostelGalleryItem)
     await db.hostel_gallery.update_one({"id": item_id}, {"$set": update})
     item = await db.hostel_gallery.find_one({"id": item_id}, {"_id": 0})
@@ -687,7 +698,7 @@ async def update_hostel_gallery_item(item_id: str, payload: Dict[str, Any] = Bod
 
 # ============= LEGAL PAGES (Terms & Privacy) =============
 @admin_router.get("/legal/{page_id}")
-async def get_legal_page(page_id: str, admin: TokenData = Depends(get_superadmin)):
+async def get_legal_page(page_id: str, admin: TokenData = Depends(require_permission("site-settings"))):
     if page_id not in ("terms", "privacy"):
         raise HTTPException(status_code=400, detail="Invalid page_id")
     doc = await db.legal_pages.find_one({"id": page_id}, {"_id": 0})
@@ -710,7 +721,7 @@ async def get_legal_page(page_id: str, admin: TokenData = Depends(get_superadmin
 
 
 @admin_router.put("/legal/{page_id}")
-async def update_legal_page(page_id: str, payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(get_superadmin)):
+async def update_legal_page(page_id: str, payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(require_permission("site-settings"))):
     if page_id not in ("terms", "privacy"):
         raise HTTPException(status_code=400, detail="Invalid page_id")
     payload.pop("_id", None)
@@ -739,6 +750,7 @@ async def create_staff_user(payload: Dict[str, Any] = Body(...), admin: TokenDat
         "email": payload["email"],
         "name": payload.get("name", "Staff Member"),
         "role": payload.get("role", "staff"),
+        "permissions": payload.get("permissions", []),
         "password_hash": hash_password(payload["password"]),
         "created_at": now_iso(),
     }
@@ -768,25 +780,25 @@ async def delete_staff_user(user_id: str, admin: TokenData = Depends(get_superad
 # ============= EXAM PAPERS (staff + superadmin) =============
 
 @admin_router.get("/exam-papers")
-async def list_exam_papers(admin: TokenData = Depends(get_current_admin)):
+async def list_exam_papers(admin: TokenData = Depends(require_permission("academics"))):
     items = await db.exam_papers.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return items
 
 @admin_router.post("/exam-papers")
-async def create_exam_paper(payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(get_current_admin)):
+async def create_exam_paper(payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(require_permission("academics"))):
     paper = ExamPaper(**{k: v for k, v in payload.items() if k not in ("id", "_id")}).model_dump()
     await db.exam_papers.insert_one(paper.copy())
     return {k: v for k, v in paper.items() if k != "_id"}
 
 @admin_router.put("/exam-papers/{item_id}")
-async def update_exam_paper(item_id: str, payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(get_current_admin)):
+async def update_exam_paper(item_id: str, payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(require_permission("academics"))):
     update = _sanitize_update(payload, ExamPaper)
     await db.exam_papers.update_one({"id": item_id}, {"$set": update})
     item = await db.exam_papers.find_one({"id": item_id}, {"_id": 0})
     return item
 
 @admin_router.delete("/exam-papers/{item_id}")
-async def delete_exam_paper(item_id: str, admin: TokenData = Depends(get_current_admin)):
+async def delete_exam_paper(item_id: str, admin: TokenData = Depends(require_permission("academics"))):
     await db.exam_papers.delete_one({"id": item_id})
     return {"deleted": item_id}
 
@@ -794,25 +806,25 @@ async def delete_exam_paper(item_id: str, admin: TokenData = Depends(get_current
 # ============= HOLIDAY HOMEWORK (staff + superadmin) =============
 
 @admin_router.get("/holiday-homework")
-async def list_holiday_homework(admin: TokenData = Depends(get_current_admin)):
+async def list_holiday_homework(admin: TokenData = Depends(require_permission("academics"))):
     items = await db.holiday_homework.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return items
 
 @admin_router.post("/holiday-homework")
-async def create_holiday_homework(payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(get_current_admin)):
+async def create_holiday_homework(payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(require_permission("academics"))):
     hw = HolidayHomework(**{k: v for k, v in payload.items() if k not in ("id", "_id")}).model_dump()
     await db.holiday_homework.insert_one(hw.copy())
     return {k: v for k, v in hw.items() if k != "_id"}
 
 @admin_router.put("/holiday-homework/{item_id}")
-async def update_holiday_homework(item_id: str, payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(get_current_admin)):
+async def update_holiday_homework(item_id: str, payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(require_permission("academics"))):
     update = _sanitize_update(payload, HolidayHomework)
     await db.holiday_homework.update_one({"id": item_id}, {"$set": update})
     item = await db.holiday_homework.find_one({"id": item_id}, {"_id": 0})
     return item
 
 @admin_router.delete("/holiday-homework/{item_id}")
-async def delete_holiday_homework(item_id: str, admin: TokenData = Depends(get_current_admin)):
+async def delete_holiday_homework(item_id: str, admin: TokenData = Depends(require_permission("academics"))):
     await db.holiday_homework.delete_one({"id": item_id})
     return {"deleted": item_id}
 
@@ -820,12 +832,12 @@ async def delete_holiday_homework(item_id: str, admin: TokenData = Depends(get_c
 # ============= KHELO PATNA GALLERY =============
 
 @admin_router.get("/khelo-patna-gallery")
-async def list_khelo_patna_gallery(admin: TokenData = Depends(get_current_admin)):
+async def list_khelo_patna_gallery(admin: TokenData = Depends(require_permission("khelo-patna-gallery"))):
     items = await db.khelo_patna_gallery.find({}, {"_id": 0}).sort("order", 1).to_list(200)
     return items
 
 @admin_router.post("/khelo-patna-gallery")
-async def create_khelo_patna_photo(payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(get_current_admin)):
+async def create_khelo_patna_photo(payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(require_permission("khelo-patna-gallery"))):
     if not payload.get("image_url"):
         raise HTTPException(status_code=400, detail="image_url required")
     item = KheloPatnaPhoto(image_url=payload["image_url"], caption=payload.get("caption",""), order=int(payload.get("order",0))).model_dump()
@@ -833,12 +845,12 @@ async def create_khelo_patna_photo(payload: Dict[str, Any] = Body(...), admin: T
     return {k:v for k,v in item.items() if k!="_id"}
 
 @admin_router.put("/khelo-patna-gallery/{item_id}")
-async def update_khelo_patna_photo(item_id: str, payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(get_current_admin)):
+async def update_khelo_patna_photo(item_id: str, payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(require_permission("khelo-patna-gallery"))):
     update = _sanitize_update(payload, KheloPatnaPhoto)
     await db.khelo_patna_gallery.update_one({"id": item_id}, {"$set": update})
     return await db.khelo_patna_gallery.find_one({"id": item_id}, {"_id": 0})
 
 @admin_router.delete("/khelo-patna-gallery/{item_id}")
-async def delete_khelo_patna_photo(item_id: str, admin: TokenData = Depends(get_current_admin)):
+async def delete_khelo_patna_photo(item_id: str, admin: TokenData = Depends(require_permission("khelo-patna-gallery"))):
     await db.khelo_patna_gallery.delete_one({"id": item_id})
     return {"deleted": item_id}
