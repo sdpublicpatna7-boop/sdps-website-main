@@ -1,10 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import api from "../../lib/api";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
 import WelcomePopup from "./WelcomePopup";
 import SalAssistant from "./SalAssistant";
+
+function PublicLoading() {
+  return (
+    <div className="flex items-center justify-center min-h-[50vh] w-full">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-blue"></div>
+    </div>
+  );
+}
 
 export default function PublicLayout() {
   const [settings, setSettings] = useState(null);
@@ -24,7 +32,9 @@ export default function PublicLayout() {
       <a href="#main-content" className="skip-link">Skip to main content</a>
       <Navbar settings={settings} />
       <main id="main-content" className="flex-1">
-        <Outlet context={{ settings }} />
+        <Suspense fallback={<PublicLoading />}>
+          <Outlet context={{ settings }} />
+        </Suspense>
       </main>
       <Footer settings={settings} />
       {!isReviewPage && <WelcomePopup popup={popup} />}

@@ -6,6 +6,7 @@ import {
   Calendar, Newspaper, ArrowRight, Play, Star, Smartphone
 } from "lucide-react";
 import api from "../../lib/api";
+import SEO from "../../components/layout/SEO";
 
 const FEATURES = [
   { icon: Sparkles, title: "Top-ranked Pre-School", desc: "A nurturing start for young minds with play-based learning" },
@@ -97,8 +98,39 @@ export default function Home() {
     ? demystifiedImage
     : `${process.env.REACT_APP_BACKEND_URL || ""}${demystifiedImage}`;
 
+  const schoolSchema = {
+    "@context": "https://schema.org",
+    "@type": "School",
+    "name": "S.D. Public School, Patna",
+    "alternateName": "Suryamuni Devi Public School",
+    "description": "S.D. Public School (Suryamuni Devi Public School) is a top-ranked co-educational CBSE school in Patna, Bihar, offering premium education, experienced faculty, and smart classrooms.",
+    "url": "https://sdpublic.org",
+    "logo": settings?.logo_url ? (settings.logo_url.startsWith("http") ? settings.logo_url : `https://sdpublic.org${settings.logo_url}`) : "https://sdpublic.org/assets/img/logo.png",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Maurya Colony, Gulzarbagh Road",
+      "addressLocality": "Patna",
+      "addressRegion": "Bihar",
+      "postalCode": "800007",
+      "addressCountry": "IN"
+    },
+    "telephone": settings?.contact_phone || "+91-612-2630007",
+    "email": settings?.contact_email || "info@sdpublic.org",
+    "foundingDate": "1994",
+    "sameAs": [
+      "https://www.facebook.com/sdpublicschoolpatna",
+      "https://www.youtube.com/channel/sdpublicschool"
+    ]
+  };
+
   return (
     <>
+      <SEO 
+        title="Home" 
+        description="Welcome to S.D. Public School (Suryamuni Devi Public School), Patna. Empowering Generations Since 1994 with academic excellence, moral values, and modern CBSE curriculum."
+        keywords="SDPS, SD Public School, Suryamuni Devi Public School, Patna, Bihar, CBSE school, admissions 2026, best school Patna"
+        schema={schoolSchema}
+      />
       {/* HERO */}
       <section className="relative overflow-hidden bg-hero-grad">
         {/* Antigravity floating background elements */}

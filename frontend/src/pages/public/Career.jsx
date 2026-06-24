@@ -4,6 +4,7 @@ import api from "../../lib/api";
 import { toast, Toaster } from "sonner";
 import { Briefcase, Loader2, Check } from "lucide-react";
 import { FileOrUrlField } from "../../components/admin/ResourceManager";
+import SEO from "../../components/layout/SEO";
 
 function Field({ label, required, children }) {
   return (
@@ -99,6 +100,11 @@ export default function Career() {
 
   return (
     <>
+      <SEO 
+        title="Careers & Faculty Openings"
+        description="Join our team of dedicated educators and staff members at S.D. Public School, Patna. Explore current job openings, requirements, and apply online."
+        keywords="SDPS careers, teacher jobs Patna, join school faculty Bihar, S.D. Public School employment"
+      />
       <Toaster position="top-right" />
 
       {/* Hero */}

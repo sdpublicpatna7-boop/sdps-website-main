@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import api from "../../lib/api";
 import { toast, Toaster } from "sonner";
 import { Loader2, Check, Calendar, MapPin } from "lucide-react";
+import SEO from "../../components/layout/SEO";
 
 const BACKEND = process.env.REACT_APP_BACKEND_URL;
 function fullUrl(u) { return u?.startsWith("http") ? u : `${BACKEND}${u}`; }
@@ -86,6 +87,11 @@ export default function Alumni() {
 
   return (
     <>
+      <SEO 
+        title="Alumni Network"
+        description="Re-connect with the S.D. Public School alumni network. Join our alumni association, register for upcoming meets, and share your success stories."
+        keywords="SDPS alumni, S.D. Public School alumni, alumni network Patna, school alumni meets Bihar"
+      />
       <Toaster position="top-right" />
       <section className="bg-hero-grad py-16">
         <div className="max-w-6xl mx-auto px-6 text-center">

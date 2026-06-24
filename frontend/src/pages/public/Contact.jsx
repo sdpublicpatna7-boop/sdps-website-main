@@ -3,6 +3,7 @@ import api from "../../lib/api";
 import { toast, Toaster } from "sonner";
 import { useOutletContext } from "react-router-dom";
 import { Phone, Mail, MapPin, Loader2 } from "lucide-react";
+import SEO from "../../components/layout/SEO";
 
 export default function Contact() {
   const { settings } = useOutletContext() || {};
@@ -22,6 +23,11 @@ export default function Contact() {
   const s = settings || {};
   return (
     <>
+      <SEO 
+        title="Contact Us"
+        description="Get in touch with S.D. Public School, Patna. Find our official contact phone numbers, email address, campus location address, and send a message directly to our admin office."
+        keywords="contact SDPS, S.D. Public School Patna phone number, school email Patna, campus address Suryamuni Devi Public School"
+      />
       <Toaster position="top-right" />
       <section className="bg-hero-grad py-14">
         <div className="max-w-4xl mx-auto px-6 text-center">

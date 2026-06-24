@@ -2,6 +2,7 @@ import { useOutletContext } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Award, Compass, Shield, BookOpen, GraduationCap, MapPin, Mail, Phone, Landmark } from "lucide-react";
 import PageHero from "@/components/layout/PageHero";
+import SEO from "@/components/layout/SEO";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -35,6 +36,11 @@ export function About() {
 
   return (
     <>
+      <SEO 
+        title="About Us"
+        description="Learn about the history, vision, and legacy of S.D. Public School, Patna. Founded in 1994, standalone as a beacon of academic excellence and value-based education."
+        keywords="About SDPS, S.D. Public School history, Suryamuni Devi Public School vision, Patna CBSE school about"
+      />
       <PageHero
         overline="Our Story"
         title="About S.D. Public School"

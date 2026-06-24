@@ -1,5 +1,6 @@
 import { useOutletContext } from "react-router-dom";
 import PageHero from "@/components/layout/PageHero";
+import SEO from "@/components/layout/SEO";
 
 export function Academics() {
   const { settings } = useOutletContext() || {};
@@ -15,6 +16,11 @@ export function Academics() {
     : `${process.env.REACT_APP_BACKEND_URL || ""}${facilitiesRaw}`;
   return (
     <>
+      <SEO 
+        title="Academics & Curriculum"
+        description="Explore the curriculum, pedagogical approach, and academic facilities at S.D. Public School, Patna. Standout CBSE education combining learning with character development."
+        keywords="SDPS academics, S.D. Public School curriculum, CBSE curriculum Patna, learning beyond classrooms"
+      />
       <PageHero overline="Curriculum" title="Academics at SDPS"
         subtitle="Learning Beyond Classrooms — we integrate experiential learning, project-based activities, and critical thinking at every level." />
 

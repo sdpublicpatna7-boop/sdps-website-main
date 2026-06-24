@@ -4,6 +4,7 @@ import api from "../../lib/api";
 import { toast, Toaster } from "sonner";
 import { Loader2, Check } from "lucide-react";
 import { ImageOrUrlField, FileOrUrlField } from "../../components/admin/ResourceManager";
+import SEO from "../../components/layout/SEO";
 
 function DynamicField({ q, value, onChange }) {
   const cls = "w-full px-4 py-2.5 rounded-xl border border-black/10 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 outline-none";
@@ -53,6 +54,11 @@ export function AdmissionEnquiry() {
 
   return (
     <>
+      <SEO 
+        title="Admission Enquiry"
+        description="Submit an admission enquiry for your child at S.D. Public School, Patna. Fill out student details, and our admissions office will reach out to you."
+        keywords="SDPS admission enquiry, school admissions Patna, CBSE school enquiry Patna"
+      />
       <Toaster position="top-right" />
       <section className="bg-hero-grad py-14">
         <div className="max-w-4xl mx-auto px-6 text-center">
@@ -245,6 +251,11 @@ export function AdmissionForm() {
 
   return (
     <>
+      <SEO 
+        title="Online Admission Form"
+        description="Fill out the official online student admission form for S.D. Public School, Patna. Upload required certificates and pay the registration fee securely."
+        keywords="online admission form SDPS, S.D. Public School registration, CBSE school application Patna"
+      />
       <Toaster position="top-right"/>
       <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
       <section className="bg-hero-grad py-14">
@@ -399,6 +410,11 @@ export function AdmissionsLanding() {
 
   return (
     <>
+      <SEO 
+        title="Admissions Open 2026-27"
+        description="Learn about the admission process, age eligibility, prospectus, and fee structure at S.D. Public School, Patna. Admissions open for Playgroup to Class VIII."
+        keywords="SDPS admissions open, school admissions Patna, CBSE curriculum Playgroup to Class 8 admissions"
+      />
       {/* Hero */}
       <section className="bg-hero-grad py-16 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
