@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Block admin panel and qp-portal from crawlers
+Disallow: /admin/
+Disallow: /qp-portal/
+
+Sitemap: https://sdpublic.org/sitemap.xml

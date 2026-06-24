@@ -61,7 +61,7 @@ const NAV_ITEMS = [
   { to: "/admin/fee-reminders", label: "Fee Reminders", icon: CreditCard, permission: "whatsapp" },
   { to: "/admin/birthday-greetings", label: "Birthday Greetings", icon: Cake, permission: "whatsapp" },
   { to: "/admin/site-settings", label: "Site Settings", icon: Settings, permission: "site-settings" },
-  { to: "/admin/integration-keys", label: "Integration Keys", icon: Settings, permission: "site-settings" },
+  { to: "/admin/integration-keys", label: "Integration Keys", icon: Settings, role: "superadmin" },
   { section: "Google Review" },
   { to: "/admin/maps-review", label: "Google Review QR", icon: Star, permission: "google-reviews" },
   { section: "User Management" },

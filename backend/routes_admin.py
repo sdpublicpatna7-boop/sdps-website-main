@@ -704,7 +704,7 @@ async def debug_mailercloud(to: str = "", admin: TokenData = Depends(require_per
 
 # ============= UPDATE ENV-LIKE KEYS via DB (Razorpay/Resend/SMS) =============
 @admin_router.get("/integration-keys")
-async def get_integration_keys(admin: TokenData = Depends(require_permission("site-settings"))):
+async def get_integration_keys(admin: TokenData = Depends(get_superadmin)):
     """Return masked keys (admin can update at .env). For now read-only env reflect."""
     def mask(v: str) -> str:
         if not v:
@@ -768,7 +768,7 @@ async def _check_whatsapp(url: str, secret: str) -> tuple:
 
 
 @admin_router.get("/integration-status")
-async def integration_status(admin: TokenData = Depends(require_permission("site-settings"))):
+async def integration_status(admin: TokenData = Depends(get_superadmin)):
     """Full integration inventory with live health checks and masked secrets.
 
     `status` is one of: ok | configured | down | not_configured.
