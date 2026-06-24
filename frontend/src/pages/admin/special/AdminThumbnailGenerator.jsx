@@ -92,7 +92,7 @@ export function AdminThumbnailGenerator() {
   useEffect(() => {
     const img = new Image();
     img.crossOrigin = "anonymous";
-    img.src = "/logo512.png";
+    img.src = "https://sdpublic.org/assets/img/logo.png";
     img.onload = () => setLogoImage(img);
     img.onerror = () => console.error("Failed to load school logo");
   }, []);

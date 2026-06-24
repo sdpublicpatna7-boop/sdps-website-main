@@ -422,7 +422,7 @@ export function AdminSalaryCertificate() {
               {/* Background Watermark Logo */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] select-none">
                 <img 
-                  src="/logo512.png" 
+                  src="https://sdpublic.org/assets/img/logo.png" 
                   className="w-96 h-96 object-contain" 
                   alt="" 
                 />
@@ -432,7 +432,7 @@ export function AdminSalaryCertificate() {
                 {/* Centered Certificate Header */}
                 <div className="text-center space-y-2 border-b border-amber-200 pb-4">
                   <img 
-                    src="/logo192.png" 
+                    src="https://sdpublic.org/assets/img/logo.png" 
                     alt="SDPS Logo" 
                     className="w-20 h-20 mx-auto object-contain"
                   />

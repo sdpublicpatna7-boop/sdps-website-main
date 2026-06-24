@@ -167,7 +167,7 @@ export default function AdminLayout() {
             <Menu className="w-6 h-6" />
           </button>
           <div className="flex items-center gap-2">
-            <img src="/logo192.png" alt="SDPS logo" className="w-8 h-8 rounded-full bg-white/10 p-0.5 shrink-0" />
+            <img src="https://sdpublic.org/assets/img/logo.png" alt="SDPS logo" className="w-8 h-8 rounded-full bg-white/10 p-0.5 shrink-0" />
             <div>
               <span className="font-headline font-bold text-sm tracking-tight">SDPS Admin</span>
               <span className="text-[9px] uppercase tracking-wider text-brand-gold font-semibold ml-2">
@@ -203,7 +203,7 @@ export default function AdminLayout() {
             <div className="m-4 p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] backdrop-blur-md shadow-xl flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="relative">
-                  <img src="/logo192.png" alt="SDPS logo" className="w-10 h-10 rounded-full ring-2 ring-brand-gold/60 shadow-[0_0_12px_rgba(199,161,91,0.3)] bg-white/10 p-0.5 shrink-0" />
+                  <img src="https://sdpublic.org/assets/img/logo.png" alt="SDPS logo" className="w-10 h-10 rounded-full ring-2 ring-brand-gold/60 shadow-[0_0_12px_rgba(199,161,91,0.3)] bg-white/10 p-0.5 shrink-0" />
                   <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-slate-950 rounded-full"></span>
                 </div>
                 <div className="overflow-hidden">
@@ -267,7 +267,7 @@ export default function AdminLayout() {
           {/* Brand header card */}
           <div className="m-4 p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] backdrop-blur-md shadow-xl flex items-center gap-3">
             <div className="relative">
-              <img src="/logo192.png" alt="SDPS logo" className="w-10 h-10 rounded-full ring-2 ring-brand-gold/60 shadow-[0_0_12px_rgba(199,161,91,0.3)] bg-white/10 p-0.5 shrink-0" />
+              <img src="https://sdpublic.org/assets/img/logo.png" alt="SDPS logo" className="w-10 h-10 rounded-full ring-2 ring-brand-gold/60 shadow-[0_0_12px_rgba(199,161,91,0.3)] bg-white/10 p-0.5 shrink-0" />
               <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-slate-950 rounded-full"></span>
             </div>
             <div className="overflow-hidden">

@@ -628,7 +628,7 @@ export function AdminSalarySlip() {
             <div className="flex items-center justify-between gap-4 border-b-2 border-slate-900 pb-4">
               <div className="flex items-center gap-4 text-left">
                 <img 
-                  src="/logo192.png" 
+                  src="https://sdpublic.org/assets/img/logo.png" 
                   alt="SDPS Logo" 
                   className="w-16 h-16 object-contain"
                 />

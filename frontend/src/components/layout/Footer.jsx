@@ -11,7 +11,7 @@ export default function Footer({ settings }) {
       <div className="relative max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-12 gap-10">
         <div className="md:col-span-4">
           <div className="flex items-center gap-3 mb-4">
-            <img src="/logo192.png" alt="SDPS" className="w-14 h-14 rounded-full ring-2 ring-brand-gold" />
+            <img src="https://sdpublic.org/assets/img/logo.png" alt="SDPS" className="w-14 h-14 rounded-full ring-2 ring-brand-gold" />
             <div>
               <div className="font-legacy text-3xl">S.D. Public School</div>
               <div className="text-xs tracking-widest opacity-80">EMPOWERING GENERATIONS</div>
