@@ -34,7 +34,7 @@ export default function KheloPatna() {
         <div className="relative max-w-6xl mx-auto px-6 text-center">
           {/* Dual logos */}
           <div className="flex items-center justify-center gap-6 mb-8">
-            <img src="https://sdpublic.org/assets/img/logo.png" alt="SDPS"
+            <img src={fullUrl(settings?.logo_url || "https://sdpublic.org/assets/img/logo.png")} alt="SDPS"
               className="h-20 w-20 rounded-full ring-4 ring-brand-gold object-contain bg-white p-1"
               onError={e => e.target.style.display = "none"} />
             <div className="text-4xl font-black text-brand-ink/20">×</div>
