@@ -295,15 +295,34 @@ export function AdminSalarySlip() {
             left: 0;
             top: 0;
             width: 100%;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 10px 0;
+            max-width: 100%;
+            margin: 0;
+            padding: 0 !important;
             box-shadow: none !important;
             border: none !important;
           }
           @page {
             size: A4 portrait;
-            margin: 1.5cm;
+            margin: 1.2cm;
+          }
+          /* Compress spacing on print to guarantee 1-page fit */
+          #salary-slip-print-area .my-5 {
+            margin-top: 0.5rem !important;
+            margin-bottom: 0.5rem !important;
+          }
+          #salary-slip-print-area .py-1 {
+            padding-top: 0.15rem !important;
+            padding-bottom: 0.15rem !important;
+          }
+          #salary-slip-print-area .py-1.5 {
+            padding-top: 0.25rem !important;
+            padding-bottom: 0.25rem !important;
+          }
+          #salary-slip-print-area h3 {
+            padding-bottom: 0.15rem !important;
+          }
+          #salary-slip-print-area .p-8 {
+            padding: 0.5rem !important;
           }
         }
       `}} />
@@ -609,7 +628,7 @@ export function AdminSalarySlip() {
             <div className="flex items-center justify-between gap-4 border-b-2 border-slate-900 pb-4">
               <div className="flex items-center gap-4 text-left">
                 <img 
-                  src="https://sdpublic.org/assets/img/logo.png" 
+                  src="/logo192.png" 
                   alt="SDPS Logo" 
                   className="w-16 h-16 object-contain"
                 />
@@ -672,7 +691,7 @@ export function AdminSalarySlip() {
             <div className="my-5 border-t border-dashed border-slate-400"></div>
 
             {/* Financial Grid (Earnings vs Deductions) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+            <div className="grid grid-cols-2 gap-8 items-start">
               {/* Earnings Table */}
               <div className="space-y-2">
                 <h3 className="text-xs font-bold text-slate-900 border-b border-slate-900 pb-1 tracking-wider uppercase">
@@ -769,7 +788,7 @@ export function AdminSalarySlip() {
             <div className="my-5 border-t border-dashed border-slate-400"></div>
 
             {/* Net Salary Section */}
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-row justify-between items-center gap-2">
               <div className="space-y-1">
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Net Payable Salary</span>
                 <span className="text-xl font-extrabold text-slate-900 tracking-tight">{formatCurrency(netSalary)}/-</span>
@@ -808,26 +827,6 @@ export function AdminSalarySlip() {
                 <div className="flex justify-between border-b border-slate-100 pb-1 col-span-2">
                   <span className="font-semibold text-slate-500">Payment Date</span>
                   <span className="font-bold text-slate-900">{formatPaymentDate(paymentDate)}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Divider */}
-            <div className="my-5 border-t border-dashed border-slate-400"></div>
-
-            {/* Seal & Signatory Footer Block */}
-            <div className="grid grid-cols-2 gap-4 text-xs pt-4">
-              <div className="space-y-4">
-                <span className="font-bold text-slate-900 block uppercase tracking-wider">School Seal</span>
-                <div className="w-24 h-24 border border-dashed border-slate-300 rounded-xl flex items-center justify-center text-[10px] text-slate-400 font-bold uppercase tracking-widest bg-slate-50 select-none">
-                  School Seal
-                </div>
-              </div>
-              <div className="text-right flex flex-col justify-between items-end h-28">
-                <span className="font-bold text-slate-900">For S.D. Public School, Patna-7</span>
-                <div className="w-48 border-t border-slate-900 text-center pt-1.5 mt-4">
-                  <span className="font-bold text-[10px] text-slate-700 block uppercase">Authorized Signatory</span>
-                  <span className="text-[9px] text-slate-500 block">(Managing Director / Principal Office)</span>
                 </div>
               </div>
             </div>

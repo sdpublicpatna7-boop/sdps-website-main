@@ -219,7 +219,7 @@ export function AdminMapsReview() {
           <div class="a4-container">
             <div class="a4-inner-border"></div>
             <div class="header">
-              <img class="logo" src="https://sdpublic.org/assets/img/logo.png" alt="SDPS Logo" />
+              <img class="logo" src="/logo192.png" alt="SDPS Logo" />
               <div class="school-info">
                 <div class="school-name">S.D. Public School</div>
                 <div class="school-tagline">Suryamuni Devi Public School, Patna</div>
@@ -438,7 +438,7 @@ export function AdminMapsReview() {
                 {/* Header */}
                 <div className="flex items-center gap-2 border-b border-brand-gold/30 pb-2.5 text-left">
                   <img
-                    src="https://sdpublic.org/assets/img/logo.png"
+                    src="/logo192.png"
                     alt="SDPS logo"
                     className="w-10 h-10 rounded-full border border-brand-blue/30 p-0.5"
                   />

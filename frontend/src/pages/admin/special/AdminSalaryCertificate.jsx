@@ -61,6 +61,7 @@ export function AdminSalaryCertificate() {
   // Form State
   const [employeeName, setEmployeeName] = useState("Principal");
   const [designation, setDesignation] = useState("Principal");
+  const [financialYear, setFinancialYear] = useState("2026-2027");
 
   // Earnings (to calculate Gross Salary)
   const [basicSalary, setBasicSalary] = useState(15000);
@@ -77,6 +78,8 @@ export function AdminSalaryCertificate() {
   // Calculations
   const grossSalary = basicSalary + hra + da + medicalAllowance + conveyanceAllowance + specialAllowance;
   const grossSalaryWords = numberToWords(grossSalary);
+  const annualSalary = grossSalary * 12;
+  const annualSalaryWords = numberToWords(annualSalary);
 
   const fetchHistory = async () => {
     try {
@@ -163,7 +166,8 @@ export function AdminSalaryCertificate() {
       conveyance_allowance: conveyanceAllowance,
       special_allowance: specialAllowance,
       gross_salary: grossSalary,
-      payment_date: paymentDate
+      payment_date: paymentDate,
+      financial_year: financialYear
     };
 
     try {
@@ -194,6 +198,7 @@ export function AdminSalaryCertificate() {
   const handleLoad = (item) => {
     setEmployeeName(item.employee_name || "");
     setDesignation(item.designation || "");
+    setFinancialYear(item.financial_year || "2026-2027");
     setBasicSalary(item.basic_salary || 0);
     setHra(item.hra || 0);
     setDa(item.da || 0);
@@ -224,15 +229,15 @@ export function AdminSalaryCertificate() {
             left: 0;
             top: 0;
             width: 100%;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 10px 0;
+            max-width: 100%;
+            margin: 0;
+            padding: 0 !important;
             box-shadow: none !important;
             border: none !important;
           }
           @page {
             size: A4 portrait;
-            margin: 1.5cm;
+            margin: 1.2cm;
           }
         }
       `}} />
@@ -316,6 +321,16 @@ export function AdminSalaryCertificate() {
                     type="date"
                     value={paymentDate}
                     onChange={(e) => setPaymentDate(e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-orange"
+                  />
+                </div>
+                <div className="space-y-1 col-span-2">
+                  <label className="text-[10px] font-semibold text-slate-400">Financial Year</label>
+                  <input
+                    type="text"
+                    value={financialYear}
+                    onChange={(e) => setFinancialYear(e.target.value)}
+                    placeholder="e.g. 2026-2027"
                     className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-orange"
                   />
                 </div>
@@ -407,7 +422,7 @@ export function AdminSalaryCertificate() {
               {/* Background Watermark Logo */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] select-none">
                 <img 
-                  src="https://sdpublic.org/assets/img/logo.png" 
+                  src="/logo512.png" 
                   className="w-96 h-96 object-contain" 
                   alt="" 
                 />
@@ -417,7 +432,7 @@ export function AdminSalaryCertificate() {
                 {/* Centered Certificate Header */}
                 <div className="text-center space-y-2 border-b border-amber-200 pb-4">
                   <img 
-                    src="https://sdpublic.org/assets/img/logo.png" 
+                    src="/logo192.png" 
                     alt="SDPS Logo" 
                     className="w-20 h-20 mx-auto object-contain"
                   />
@@ -448,7 +463,7 @@ export function AdminSalaryCertificate() {
                     This is to certify that Mr./Ms. <strong className="border-b-2 border-slate-900 px-1.5 text-slate-950 font-black">{employeeName}</strong> is working as <strong className="border-b border-slate-400 px-1.5 text-slate-950 font-bold">{designation}</strong> at S.D. Public School, Patna-7 on a full-time basis.
                   </p>
                   <p className="leading-loose">
-                    The employee is drawing a monthly gross salary of <strong className="border-b-2 border-slate-900 px-1.5 text-slate-950 font-black">{formatCurrency(grossSalary)}/-</strong> ({grossSalaryWords}).
+                    The employee is drawing a monthly gross salary of <strong className="border-b-2 border-slate-900 px-1.5 text-slate-950 font-black">{formatCurrency(grossSalary)}/-</strong> ({grossSalaryWords}), aggregating to an annual gross salary of <strong className="border-b-2 border-slate-900 px-1.5 text-slate-950 font-black">{formatCurrency(annualSalary)}/-</strong> ({annualSalaryWords}) for the Financial Year <strong className="border-b border-slate-400 px-1.5 text-slate-950 font-bold">{financialYear}</strong>.
                   </p>
                   <p className="leading-loose">
                     This certificate is issued upon the employee’s request for official purposes.

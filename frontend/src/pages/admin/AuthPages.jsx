@@ -124,7 +124,7 @@ export function AdminLogin() {
       <LoginWrapper>
         <div className="text-center mb-8">
           <img
-            src="https://sdpublic.org/assets/img/logo.png"
+            src="/logo192.png"
             alt="SDPS"
             className="w-16 h-16 mx-auto rounded-full ring-4 ring-brand-gold/20 shadow-[0_0_20px_rgba(199,161,91,0.3)] mb-4 animate-float"
           />

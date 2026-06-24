@@ -525,5 +525,6 @@ class SalaryCertificate(BaseDoc):
     special_allowance: int
     gross_salary: int
     payment_date: str
+    financial_year: Optional[str] = "2026-2027"
     created_by: Optional[str] = None
     created_at: str = Field(default_factory=now_iso)

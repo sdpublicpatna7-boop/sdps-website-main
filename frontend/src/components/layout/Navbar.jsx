@@ -98,7 +98,7 @@ export default function Navbar({ settings }) {
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3" data-testid="brand-logo-link">
             <img
-              src="https://sdpublic.org/assets/img/logo.png"
+              src="/logo192.png"
               alt="SDPS"
               className="w-12 h-12 rounded-full ring-1 ring-brand-gold/40"
             />
