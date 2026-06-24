@@ -56,7 +56,6 @@ export function AdminSalarySlip() {
   const [educators, setEducators] = useState([]);
   const [selectedTeacherId, setSelectedTeacherId] = useState("manual");
   const [loading, setLoading] = useState(false);
-  const [slipFormat, setSlipFormat] = useState("slip"); // "slip" | "certificate"
   const [history, setHistory] = useState([]);
 
   // Form State
@@ -217,7 +216,7 @@ export function AdminSalarySlip() {
       account_number: accountNumber,
       utr_id: utrId,
       payment_date: paymentDate,
-      slip_format: slipFormat
+      slip_format: "slip"
     };
 
     try {
@@ -271,7 +270,6 @@ export function AdminSalarySlip() {
     setAccountNumber(item.account_number || "");
     setUtrId(item.utr_id || "");
     setPaymentDate(item.payment_date || "");
-    setSlipFormat(item.slip_format || "slip");
     
     // Auto-select "manual" teacher mode since custom values have been loaded
     setSelectedTeacherId("manual");
@@ -601,358 +599,254 @@ export function AdminSalarySlip() {
               <ShieldCheck className="w-3.5 h-3.5 text-brand-orange" />
               Live Preview
             </div>
-
-            {/* Format Selector Toggle */}
-            <div className="flex gap-1 p-0.5 bg-slate-100 rounded-xl border border-slate-200 shadow-sm">
-              <button
-                type="button"
-                onClick={() => setSlipFormat("slip")}
-                className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all duration-200 ${
-                  slipFormat === "slip"
-                    ? "bg-white text-slate-800 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
-              >
-                Detailed Slip
-              </button>
-              <button
-                type="button"
-                onClick={() => setSlipFormat("certificate")}
-                className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all duration-200 ${
-                  slipFormat === "certificate"
-                    ? "bg-white text-slate-800 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
-              >
-                Short Certificate
-              </button>
-            </div>
           </div>
 
           <div
             id="salary-slip-print-area"
             className="bg-white border border-slate-200 rounded-3xl shadow-sm p-8 max-w-[800px] mx-auto text-slate-800 font-sans"
           >
-            {slipFormat === "slip" ? (
-              <>
-                {/* ── FORMAT 1: DETAILED SALARY SLIP ── */}
-                {/* Header */}
-                <div className="flex items-center justify-between gap-4 border-b-2 border-slate-900 pb-4">
-                  <div className="flex items-center gap-4 text-left">
-                    <img 
-                      src="https://sdpublic.org/assets/img/logo.png" 
-                      alt="SDPS Logo" 
-                      className="w-16 h-16 object-contain"
-                    />
-                    <div>
-                      <h2 className="text-xl font-extrabold tracking-wide text-slate-900 leading-tight">
-                        S.D. PUBLIC SCHOOL
-                      </h2>
-                      <p className="text-xs font-bold text-slate-600 uppercase tracking-widest">
-                        Patna-7, Bihar
-                      </p>
-                      <p className="text-[9px] font-semibold text-slate-500 italic mt-0.5">
-                        Empowering Generations Since 1994
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right space-y-1">
-                    <div className="inline-block px-3 py-1.5 border border-slate-950 font-black text-[10px] tracking-widest bg-slate-50 uppercase rounded">
-                      SALARY SLIP
-                    </div>
-                    <p className="text-xs font-bold text-slate-800 block">
-                      Month: {payPeriod}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Employee Details Grid */}
-                <div className="space-y-3">
-                  <h3 className="text-xs font-bold text-slate-900 border-b border-slate-900 pb-1 tracking-wider uppercase">
-                    Employee Details
-                  </h3>
-                  <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-xs">
-                    <div className="flex justify-between border-b border-slate-100 pb-1">
-                      <span className="font-semibold text-slate-500">Employee Name</span>
-                      <span className="font-bold text-slate-900">{employeeName}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-slate-100 pb-1">
-                      <span className="font-semibold text-slate-500">Designation</span>
-                      <span className="font-bold text-slate-900">{designation}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-slate-100 pb-1">
-                      <span className="font-semibold text-slate-500">Employee ID</span>
-                      <span className="font-bold text-slate-900">{employeeId}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-slate-100 pb-1">
-                      <span className="font-semibold text-slate-500">Department</span>
-                      <span className="font-bold text-slate-900">{department}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-slate-100 pb-1">
-                      <span className="font-semibold text-slate-500">Pay Period</span>
-                      <span className="font-bold text-slate-900">{payPeriod}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-slate-100 pb-1">
-                      <span className="font-semibold text-slate-500">Working / Present Days</span>
-                      <span className="font-bold text-slate-900">{workingDays} / {presentDays}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Divider */}
-                <div className="my-5 border-t border-dashed border-slate-400"></div>
-
-                {/* Financial Grid (Earnings vs Deductions) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                  {/* Earnings Table */}
-                  <div className="space-y-2">
-                    <h3 className="text-xs font-bold text-slate-900 border-b border-slate-900 pb-1 tracking-wider uppercase">
-                      Earnings
-                    </h3>
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="border-b border-slate-200 text-left font-bold text-slate-500">
-                          <th className="pb-1 font-semibold">Particulars</th>
-                          <th className="pb-1 text-right font-semibold">Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        <tr>
-                          <td className="py-1">Basic Salary</td>
-                          <td className="py-1 text-right font-semibold">{formatCurrency(basicSalary)}</td>
-                        </tr>
-                        <tr>
-                          <td className="py-1">House Rent Allowance (HRA)</td>
-                          <td className="py-1 text-right font-semibold">{formatCurrency(hra)}</td>
-                        </tr>
-                        <tr>
-                          <td className="py-1">Dearness Allowance (DA)</td>
-                          <td className="py-1 text-right font-semibold">{formatCurrency(da)}</td>
-                        </tr>
-                        <tr>
-                          <td className="py-1">Medical Allowance</td>
-                          <td className="py-1 text-right font-semibold">{formatCurrency(medicalAllowance)}</td>
-                        </tr>
-                        <tr>
-                          <td className="py-1">Conveyance Allowance</td>
-                          <td className="py-1 text-right font-semibold">{formatCurrency(conveyanceAllowance)}</td>
-                        </tr>
-                        <tr>
-                          <td className="py-1">Special Allowance</td>
-                          <td className="py-1 text-right font-semibold">{formatCurrency(specialAllowance)}</td>
-                        </tr>
-                        <tr className="border-t border-slate-900 font-bold bg-slate-50">
-                          <td className="py-1.5 pl-1 text-slate-900 font-bold">Gross Salary</td>
-                          <td className="py-1.5 pr-1 text-right text-slate-900 font-bold">{formatCurrency(grossSalary)}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Deductions Table */}
-                  <div className="space-y-2">
-                    <h3 className="text-xs font-bold text-slate-900 border-b border-slate-900 pb-1 tracking-wider uppercase">
-                      Deductions
-                    </h3>
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="border-b border-slate-200 text-left font-bold text-slate-500">
-                          <th className="pb-1 font-semibold">Particulars</th>
-                          <th className="pb-1 text-right font-semibold">Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        <tr>
-                          <td className="py-1">Provident Fund (PF)</td>
-                          <td className="py-1 text-right font-semibold">{formatCurrency(pf)}</td>
-                        </tr>
-                        <tr>
-                          <td className="py-1">Professional Tax</td>
-                          <td className="py-1 text-right font-semibold">{formatCurrency(professionalTax)}</td>
-                        </tr>
-                        <tr>
-                          <td className="py-1">Income Tax (TDS)</td>
-                          <td className="py-1 text-right font-semibold">{formatCurrency(tds)}</td>
-                        </tr>
-                        <tr>
-                          <td className="py-1">Other Deductions</td>
-                          <td className="py-1 text-right font-semibold">{formatCurrency(otherDeductions)}</td>
-                        </tr>
-                        {/* Empty spacer rows to align with earnings height */}
-                        <tr>
-                          <td className="py-1 text-transparent">Sp</td>
-                          <td className="py-1 text-right text-transparent">0</td>
-                        </tr>
-                        <tr>
-                          <td className="py-1 text-transparent">Sp</td>
-                          <td className="py-1 text-right text-transparent">0</td>
-                        </tr>
-                        <tr className="border-t border-slate-900 font-bold bg-slate-50">
-                          <td className="py-1.5 pl-1 text-slate-900 font-bold">Total Deductions</td>
-                          <td className="py-1.5 pr-1 text-right text-slate-900 font-bold">{formatCurrency(totalDeductions)}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* Divider */}
-                <div className="my-5 border-t border-dashed border-slate-400"></div>
-
-                {/* Net Salary Section */}
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Net Payable Salary</span>
-                    <span className="text-xl font-extrabold text-slate-900 tracking-tight">{formatCurrency(netSalary)}/-</span>
-                  </div>
-                  <div className="text-right md:max-w-md">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Amount in Words</span>
-                    <span className="text-xs font-bold text-slate-800 italic leading-relaxed block">{amountInWords}</span>
-                  </div>
-                </div>
-
-                {/* Divider */}
-                <div className="my-5 border-t border-dashed border-slate-400"></div>
-
-                {/* Payment Details */}
-                <div className="space-y-3">
-                  <h3 className="text-xs font-bold text-slate-900 border-b border-slate-900 pb-1 tracking-wider uppercase">
-                    Payment Details
-                  </h3>
-                  <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-xs">
-                    <div className="flex justify-between border-b border-slate-100 pb-1">
-                      <span className="font-semibold text-slate-500">Payment Mode</span>
-                      <span className="font-bold text-slate-900">{paymentMode}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-slate-100 pb-1">
-                      <span className="font-semibold text-slate-500">Bank Name</span>
-                      <span className="font-bold text-slate-900">{bankName || "__________________"}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-slate-100 pb-1">
-                      <span className="font-semibold text-slate-500">Account Number</span>
-                      <span className="font-bold text-slate-900">{accountNumber}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-slate-100 pb-1">
-                      <span className="font-semibold text-slate-500">UTR / Transaction ID</span>
-                      <span className="font-bold text-slate-900">{utrId || "__________________"}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-slate-100 pb-1 col-span-2">
-                      <span className="font-semibold text-slate-500">Payment Date</span>
-                      <span className="font-bold text-slate-900">{formatPaymentDate(paymentDate)}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Divider */}
-                <div className="my-5 border-t border-dashed border-slate-400"></div>
-
-                {/* Seal & Signatory Footer Block */}
-                <div className="grid grid-cols-2 gap-4 text-xs pt-4">
-                  <div className="space-y-4">
-                    <span className="font-bold text-slate-900 block uppercase tracking-wider">School Seal</span>
-                    <div className="w-24 h-24 border border-dashed border-slate-300 rounded-xl flex items-center justify-center text-[10px] text-slate-400 font-bold uppercase tracking-widest bg-slate-50 select-none">
-                      School Seal
-                    </div>
-                  </div>
-                  <div className="text-right flex flex-col justify-between items-end h-28">
-                    <span className="font-bold text-slate-900">For S.D. Public School, Patna-7</span>
-                    <div className="w-48 border-t border-slate-900 text-center pt-1.5 mt-4">
-                      <span className="font-bold text-[10px] text-slate-700 block uppercase">Authorized Signatory</span>
-                      <span className="text-[9px] text-slate-500 block">(Managing Director / Principal Office)</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Divider */}
-                <div className="my-5 border-t border-dashed border-slate-400"></div>
-
-                {/* Footer Taglines */}
-                <div className="text-center space-y-1">
-                  <h4 className="text-xs font-bold tracking-widest text-slate-900">
-                    S.D. PUBLIC SCHOOL, PATNA-7
-                  </h4>
-                  <p className="text-[10px] font-semibold text-slate-500 tracking-wider">
+            {/* Header */}
+            <div className="flex items-center justify-between gap-4 border-b-2 border-slate-900 pb-4">
+              <div className="flex items-center gap-4 text-left">
+                <img 
+                  src="https://sdpublic.org/assets/img/logo.png" 
+                  alt="SDPS Logo" 
+                  className="w-16 h-16 object-contain"
+                />
+                <div>
+                  <h2 className="text-xl font-extrabold tracking-wide text-slate-900 leading-tight">
+                    S.D. PUBLIC SCHOOL
+                  </h2>
+                  <p className="text-xs font-bold text-slate-600 uppercase tracking-widest">
+                    Patna-7, Bihar
+                  </p>
+                  <p className="text-[9px] font-semibold text-slate-500 italic mt-0.5">
                     Empowering Generations Since 1994
                   </p>
-                  <p className="text-[9px] text-slate-400 mt-4 leading-normal">
-                    This is a computer-generated salary slip and does not require a physical signature.
-                  </p>
-                </div>
-              </>
-            ) : (
-              <div className="relative border-[10px] border-double border-amber-600 p-8 rounded-2xl bg-amber-50/5 min-h-[680px] flex flex-col justify-between overflow-hidden text-slate-900">
-                {/* Background Watermark Logo */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] select-none">
-                  <img 
-                    src="https://sdpublic.org/assets/img/logo.png" 
-                    className="w-96 h-96 object-contain" 
-                    alt="" 
-                  />
-                </div>
-
-                <div className="space-y-6">
-                  {/* Centered Certificate Header */}
-                  <div className="text-center space-y-2 border-b border-amber-200 pb-4">
-                    <img 
-                      src="https://sdpublic.org/assets/img/logo.png" 
-                      alt="SDPS Logo" 
-                      className="w-20 h-20 mx-auto object-contain"
-                    />
-                    <h2 className="text-2xl font-black tracking-wide text-slate-900 leading-tight">
-                      S.D. PUBLIC SCHOOL
-                    </h2>
-                    <p className="text-xs font-bold text-slate-650 uppercase tracking-widest">
-                      Patna-7, Bihar
-                    </p>
-                    <p className="text-[10px] font-bold text-amber-600 italic tracking-wider">
-                      Empowering Generations Since 1994
-                    </p>
-                  </div>
-
-                  {/* Certificate Subtitles */}
-                  <div className="text-center py-2 space-y-2">
-                    <span className="text-[11px] font-black text-amber-700 tracking-widest bg-amber-50 border border-amber-200 px-4 py-1.5 rounded-full uppercase">
-                      SALARY CERTIFICATE
-                    </span>
-                    <h3 className="text-sm font-extrabold tracking-widest text-slate-800 uppercase block pt-4">
-                      TO WHOMSOEVER IT MAY CONCERN
-                    </h3>
-                  </div>
-
-                  {/* Certificate Body Paragraphs */}
-                  <div className="space-y-4 text-slate-900 leading-relaxed text-sm text-justify px-4">
-                    <p className="indent-12 leading-loose">
-                      This is to certify that Mr./Ms. <strong className="border-b-2 border-slate-900 px-1.5 text-slate-950 font-black">{employeeName}</strong> is working as <strong className="border-b border-slate-400 px-1.5 text-slate-950 font-bold">{designation}</strong> at S.D. Public School, Patna-7 on a full-time basis.
-                    </p>
-                    <p className="leading-loose">
-                      The employee is drawing a monthly gross salary of <strong className="border-b-2 border-slate-900 px-1.5 text-slate-950 font-black">{formatCurrency(grossSalary)}/-</strong> ({grossSalaryWords}).
-                    </p>
-                    <p className="leading-loose">
-                      This certificate is issued upon the employee’s request for official purposes.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Certificate Footer Seal & Signatures */}
-                <div className="grid grid-cols-2 gap-4 text-xs pt-8 px-4">
-                  <div className="space-y-3">
-                    <div className="text-xs font-semibold text-slate-600">
-                      Date: <span className="font-bold text-slate-900">{formatPaymentDate(paymentDate)}</span>
-                    </div>
-                    <div className="w-20 h-20 border border-dashed border-amber-300 rounded-xl flex items-center justify-center text-[9px] text-amber-400 font-bold uppercase tracking-widest bg-amber-50/20 select-none">
-                      School Seal
-                    </div>
-                  </div>
-                  <div className="text-right flex flex-col justify-end items-end h-28">
-                    <span className="font-bold text-slate-900">For S.D. Public School, Patna-7</span>
-                    <div className="w-48 border-t border-slate-900 text-center pt-1.5 mt-16">
-                      <span className="font-bold text-[10px] text-slate-700 block uppercase">Authorized Signatory</span>
-                      <span className="text-[9px] text-slate-500 block">(Seal & Signature)</span>
-                    </div>
-                  </div>
                 </div>
               </div>
-            )}
+              <div className="text-right space-y-1">
+                <div className="inline-block px-3 py-1.5 border border-slate-950 font-black text-[10px] tracking-widest bg-slate-50 uppercase rounded">
+                  SALARY SLIP
+                </div>
+                <p className="text-xs font-bold text-slate-800 block">
+                  Month: {payPeriod}
+                </p>
+              </div>
+            </div>
+
+            {/* Employee Details Grid */}
+            <div className="space-y-3 mt-4">
+              <h3 className="text-xs font-bold text-slate-900 border-b border-slate-900 pb-1 tracking-wider uppercase">
+                Employee Details
+              </h3>
+              <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-xs">
+                <div className="flex justify-between border-b border-slate-100 pb-1">
+                  <span className="font-semibold text-slate-500">Employee Name</span>
+                  <span className="font-bold text-slate-900">{employeeName}</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-100 pb-1">
+                  <span className="font-semibold text-slate-500">Designation</span>
+                  <span className="font-bold text-slate-900">{designation}</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-100 pb-1">
+                  <span className="font-semibold text-slate-500">Employee ID</span>
+                  <span className="font-bold text-slate-900">{employeeId}</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-100 pb-1">
+                  <span className="font-semibold text-slate-500">Department</span>
+                  <span className="font-bold text-slate-900">{department}</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-100 pb-1">
+                  <span className="font-semibold text-slate-500">Pay Period</span>
+                  <span className="font-bold text-slate-900">{payPeriod}</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-100 pb-1">
+                  <span className="font-semibold text-slate-500">Working / Present Days</span>
+                  <span className="font-bold text-slate-900">{workingDays} / {presentDays}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="my-5 border-t border-dashed border-slate-400"></div>
+
+            {/* Financial Grid (Earnings vs Deductions) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+              {/* Earnings Table */}
+              <div className="space-y-2">
+                <h3 className="text-xs font-bold text-slate-900 border-b border-slate-900 pb-1 tracking-wider uppercase">
+                  Earnings
+                </h3>
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-left font-bold text-slate-500">
+                      <th className="pb-1 font-semibold">Particulars</th>
+                      <th className="pb-1 text-right font-semibold">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    <tr>
+                      <td className="py-1">Basic Salary</td>
+                      <td className="py-1 text-right font-semibold">{formatCurrency(basicSalary)}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1">House Rent Allowance (HRA)</td>
+                      <td className="py-1 text-right font-semibold">{formatCurrency(hra)}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1">Dearness Allowance (DA)</td>
+                      <td className="py-1 text-right font-semibold">{formatCurrency(da)}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1">Medical Allowance</td>
+                      <td className="py-1 text-right font-semibold">{formatCurrency(medicalAllowance)}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1">Conveyance Allowance</td>
+                      <td className="py-1 text-right font-semibold">{formatCurrency(conveyanceAllowance)}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1">Special Allowance</td>
+                      <td className="py-1 text-right font-semibold">{formatCurrency(specialAllowance)}</td>
+                    </tr>
+                    <tr className="border-t border-slate-900 font-bold bg-slate-50">
+                      <td className="py-1.5 pl-1 text-slate-900 font-bold">Gross Salary</td>
+                      <td className="py-1.5 pr-1 text-right text-slate-900 font-bold">{formatCurrency(grossSalary)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Deductions Table */}
+              <div className="space-y-2">
+                <h3 className="text-xs font-bold text-slate-900 border-b border-slate-900 pb-1 tracking-wider uppercase">
+                  Deductions
+                </h3>
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-left font-bold text-slate-500">
+                      <th className="pb-1 font-semibold">Particulars</th>
+                      <th className="pb-1 text-right font-semibold">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    <tr>
+                      <td className="py-1">Provident Fund (PF)</td>
+                      <td className="py-1 text-right font-semibold">{formatCurrency(pf)}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1">Professional Tax</td>
+                      <td className="py-1 text-right font-semibold">{formatCurrency(professionalTax)}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1">Income Tax (TDS)</td>
+                      <td className="py-1 text-right font-semibold">{formatCurrency(tds)}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1">Other Deductions</td>
+                      <td className="py-1 text-right font-semibold">{formatCurrency(otherDeductions)}</td>
+                    </tr>
+                    {/* Empty spacer rows to align with earnings height */}
+                    <tr>
+                      <td className="py-1 text-transparent">Sp</td>
+                      <td className="py-1 text-right text-transparent">0</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1 text-transparent">Sp</td>
+                      <td className="py-1 text-right text-transparent">0</td>
+                    </tr>
+                    <tr className="border-t border-slate-900 font-bold bg-slate-50">
+                      <td className="py-1.5 pl-1 text-slate-900 font-bold">Total Deductions</td>
+                      <td className="py-1.5 pr-1 text-right text-slate-900 font-bold">{formatCurrency(totalDeductions)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="my-5 border-t border-dashed border-slate-400"></div>
+
+            {/* Net Salary Section */}
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Net Payable Salary</span>
+                <span className="text-xl font-extrabold text-slate-900 tracking-tight">{formatCurrency(netSalary)}/-</span>
+              </div>
+              <div className="text-right md:max-w-md">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Amount in Words</span>
+                <span className="text-xs font-bold text-slate-800 italic leading-relaxed block">{amountInWords}</span>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="my-5 border-t border-dashed border-slate-400"></div>
+
+            {/* Payment Details */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold text-slate-900 border-b border-slate-900 pb-1 tracking-wider uppercase">
+                Payment Details
+              </h3>
+              <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-xs">
+                <div className="flex justify-between border-b border-slate-100 pb-1">
+                  <span className="font-semibold text-slate-500">Payment Mode</span>
+                  <span className="font-bold text-slate-900">{paymentMode}</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-100 pb-1">
+                  <span className="font-semibold text-slate-500">Bank Name</span>
+                  <span className="font-bold text-slate-900">{bankName || "__________________"}</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-100 pb-1">
+                  <span className="font-semibold text-slate-500">Account Number</span>
+                  <span className="font-bold text-slate-900">{accountNumber}</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-100 pb-1">
+                  <span className="font-semibold text-slate-500">UTR / Transaction ID</span>
+                  <span className="font-bold text-slate-900">{utrId || "__________________"}</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-100 pb-1 col-span-2">
+                  <span className="font-semibold text-slate-500">Payment Date</span>
+                  <span className="font-bold text-slate-900">{formatPaymentDate(paymentDate)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="my-5 border-t border-dashed border-slate-400"></div>
+
+            {/* Seal & Signatory Footer Block */}
+            <div className="grid grid-cols-2 gap-4 text-xs pt-4">
+              <div className="space-y-4">
+                <span className="font-bold text-slate-900 block uppercase tracking-wider">School Seal</span>
+                <div className="w-24 h-24 border border-dashed border-slate-300 rounded-xl flex items-center justify-center text-[10px] text-slate-400 font-bold uppercase tracking-widest bg-slate-50 select-none">
+                  School Seal
+                </div>
+              </div>
+              <div className="text-right flex flex-col justify-between items-end h-28">
+                <span className="font-bold text-slate-900">For S.D. Public School, Patna-7</span>
+                <div className="w-48 border-t border-slate-900 text-center pt-1.5 mt-4">
+                  <span className="font-bold text-[10px] text-slate-700 block uppercase">Authorized Signatory</span>
+                  <span className="text-[9px] text-slate-500 block">(Managing Director / Principal Office)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="my-5 border-t border-dashed border-slate-400"></div>
+
+            {/* Footer Taglines */}
+            <div className="text-center space-y-1">
+              <h4 className="text-xs font-bold tracking-widest text-slate-900">
+                S.D. PUBLIC SCHOOL, PATNA-7
+              </h4>
+              <p className="text-[10px] font-semibold text-slate-500 tracking-wider">
+                Empowering Generations Since 1994
+              </p>
+              <p className="text-[9px] text-slate-400 mt-4 leading-normal">
+                This is a computer-generated salary slip and does not require a physical signature.
+              </p>
+            </div>
           </div>
         </div>
       </div>

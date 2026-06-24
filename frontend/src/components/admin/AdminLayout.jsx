@@ -50,6 +50,7 @@ const NAV_ITEMS = [
   { to: "/admin/educators", label: "Educators", icon: Users, permission: "media-tools" },
   { to: "/admin/thumbnail-generator", label: "Thumbnail Generator", icon: ImageIcon, permission: "media-tools" },
   { to: "/admin/salary-slip", label: "Salary Slip Generator", icon: FileText, permission: "media-tools" },
+  { to: "/admin/salary-certificate", label: "Salary Certificate", icon: FileText, permission: "media-tools" },
   { section: "Other" },
   { to: "/admin/tc-records", label: "TC Records", icon: FileText, permission: "tc-records" },
   { to: "/admin/popup", label: "Welcome Popup", icon: Megaphone, permission: "popup" },

@@ -73,6 +73,7 @@ const FeeReminders = lazy(() => import("@/pages/admin/FeeReminders"));
 const BirthdayGreetings = lazy(() => import("@/pages/admin/BirthdayGreetings"));
 const AdminMapsReview = lazy(() => import("@/pages/admin/special/AdminMapsReview"));
 const AdminSalarySlip = lazy(() => import("@/pages/admin/special/AdminSalarySlip"));
+const AdminSalaryCertificate = lazy(() => import("@/pages/admin/special/AdminSalaryCertificate"));
 
 function AdminLoading() {
   return (
@@ -160,6 +161,7 @@ function App() {
               <Route path="educators" element={<AdminEducators />} />
               <Route path="thumbnail-generator" element={<AdminThumbnailGenerator />} />
               <Route path="salary-slip" element={<AdminSalarySlip />} />
+              <Route path="salary-certificate" element={<AdminSalaryCertificate />} />
               <Route path="site-settings" element={<AdminSiteSettings />} />
               <Route path="integration-keys" element={<AdminIntegrationKeys />} />
               <Route path="khelo-patna-gallery" element={<AdminKheloPatna />} />

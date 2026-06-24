@@ -513,3 +513,17 @@ class SalarySlip(BaseDoc):
     created_at: str = Field(default_factory=now_iso)
 
 
+class SalaryCertificate(BaseDoc):
+    id: str = Field(default_factory=new_id)
+    employee_name: str
+    designation: str
+    basic_salary: int
+    hra: int
+    da: int
+    medical_allowance: int
+    conveyance_allowance: int
+    special_allowance: int
+    gross_salary: int
+    payment_date: str
+    created_by: Optional[str] = None
+    created_at: str = Field(default_factory=now_iso)
