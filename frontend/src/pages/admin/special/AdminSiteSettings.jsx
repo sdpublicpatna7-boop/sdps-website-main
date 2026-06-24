@@ -276,6 +276,96 @@ export function AdminSiteSettings() {
               subDir="misc"
             />
           </div>
+
+          {/* Director's Photo */}
+          <div>
+            <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">
+              Director's Photo
+            </label>
+            <p className="text-xs text-brand-ink/40 mb-2">
+              The photo of the Director displayed on the Administration Message page.
+            </p>
+            <ImageOrUrlField
+              value={data.director_photo_url || ""}
+              onChange={(v) => setData({ ...data, director_photo_url: v })}
+              subDir="misc"
+            />
+          </div>
+
+          {/* Principal's Photo */}
+          <div>
+            <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">
+              Principal's Photo
+            </label>
+            <p className="text-xs text-brand-ink/40 mb-2">
+              The photo of the Principal displayed on the Administration Message page.
+            </p>
+            <ImageOrUrlField
+              value={data.principal_photo_url || ""}
+              onChange={(v) => setData({ ...data, principal_photo_url: v })}
+              subDir="misc"
+            />
+          </div>
+
+          {/* About Page Trust Logo */}
+          <div>
+            <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">
+              About Page Trust Logo (Large)
+            </label>
+            <p className="text-xs text-brand-ink/40 mb-2">
+              The large Trust Logo displayed on the About Us page.
+            </p>
+            <ImageOrUrlField
+              value={data.about_trust_logo_url || ""}
+              onChange={(v) => setData({ ...data, about_trust_logo_url: v })}
+              subDir="misc"
+            />
+          </div>
+
+          {/* Academics Learning Image */}
+          <div>
+            <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">
+              Academics Page Curriculum Image
+            </label>
+            <p className="text-xs text-brand-ink/40 mb-2">
+              The "Learning Beyond Classrooms" graphic displayed on the Academics page.
+            </p>
+            <ImageOrUrlField
+              value={data.academics_learning_image_url || ""}
+              onChange={(v) => setData({ ...data, academics_learning_image_url: v })}
+              subDir="misc"
+            />
+          </div>
+
+          {/* Academics Facilities Image */}
+          <div>
+            <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">
+              Academics Page Facilities Image
+            </label>
+            <p className="text-xs text-brand-ink/40 mb-2">
+              The facilities infrastructure graphic displayed at the bottom of the Academics page.
+            </p>
+            <ImageOrUrlField
+              value={data.academics_facilities_image_url || ""}
+              onChange={(v) => setData({ ...data, academics_facilities_image_url: v })}
+              subDir="misc"
+            />
+          </div>
+
+          {/* Careers Team Photo */}
+          <div>
+            <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">
+              Careers Page Faculty Team Photo
+            </label>
+            <p className="text-xs text-brand-ink/40 mb-2">
+              The faculty team picture displayed on the Careers page.
+            </p>
+            <ImageOrUrlField
+              value={data.career_hero_image_url || ""}
+              onChange={(v) => setData({ ...data, career_hero_image_url: v })}
+              subDir="misc"
+            />
+          </div>
         </div>
 
         <div>

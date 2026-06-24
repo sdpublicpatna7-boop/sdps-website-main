@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import api from "../../lib/api";
 import { toast, Toaster } from "sonner";
 import { Briefcase, Loader2, Check } from "lucide-react";
@@ -18,11 +19,17 @@ function Field({ label, required, children }) {
 const INP = "w-full px-4 py-2.5 rounded-xl border border-black/10 focus:border-brand-blue outline-none font-[inherit] text-sm";
 
 export default function Career() {
+  const { settings } = useOutletContext() || {};
   const [posts, setPosts] = useState([]);
   const [selectedPost, setSelectedPost] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [resumeUrl, setResumeUrl] = useState("");
+
+  const careerHeroRaw = settings?.career_hero_image_url || "/sdps-team.png";
+  const careerHeroUrl = careerHeroRaw.startsWith("http")
+    ? careerHeroRaw
+    : `${process.env.REACT_APP_BACKEND_URL || ""}${careerHeroRaw}`;
 
   // Real form fields from SDPS career form
   const [form, setForm] = useState({
@@ -112,7 +119,7 @@ export default function Career() {
           <h2 className="section-title text-center mb-6">Our Dedicated Faculty</h2>
           <div className="rounded-3xl overflow-hidden bg-white">
             <img
-              src="/sdps-team.png"
+              src={careerHeroUrl}
               alt="SDPS Teaching Team"
               className="w-full object-contain"
               style={{ maxHeight: "340px", objectPosition: "center" }}

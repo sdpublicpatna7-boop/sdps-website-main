@@ -309,6 +309,12 @@ class SiteSettings(BaseDoc):
     hero_feature_image_url: str = "https://sdpublic.org/img/feature.jpg"
     admission_open_button_url: str = "https://sdpublic.org/assets/img/admission_open_button.png"
     ranked_badge_url: str = "https://sdpublic.org/assets/img/ranked.png"
+    director_photo_url: str = "https://sdpublic.org/assets/img/AKT.png"
+    principal_photo_url: str = "https://sdpublic.org/assets/img/RT.jpg"
+    about_trust_logo_url: str = "https://sdpublic.org/assets/img/about_new.jpg"
+    academics_learning_image_url: str = "https://sdpublic.org/assets/img/learning_beyond.png"
+    academics_facilities_image_url: str = "https://sdpublic.org/assets/img/world_class.jpg"
+    career_hero_image_url: str = "/sdps-team.png"
     qp_portal_url: str = "https://sdpublic.org/qp-portal/"
     stats: Dict[str, str] = {
         "years": "30+",

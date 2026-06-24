@@ -1,6 +1,18 @@
+import { useOutletContext } from "react-router-dom";
 import PageHero from "@/components/layout/PageHero";
 
 export function Academics() {
+  const { settings } = useOutletContext() || {};
+
+  const learningRaw = settings?.academics_learning_image_url || "https://sdpublic.org/assets/img/learning_beyond.png";
+  const learningUrl = learningRaw.startsWith("http")
+    ? learningRaw
+    : `${process.env.REACT_APP_BACKEND_URL || ""}${learningRaw}`;
+
+  const facilitiesRaw = settings?.academics_facilities_image_url || "https://sdpublic.org/assets/img/world_class.jpg";
+  const facilitiesUrl = facilitiesRaw.startsWith("http")
+    ? facilitiesRaw
+    : `${process.env.REACT_APP_BACKEND_URL || ""}${facilitiesRaw}`;
   return (
     <>
       <PageHero overline="Curriculum" title="Academics at SDPS"
@@ -27,7 +39,7 @@ export function Academics() {
             </div>
           </div>
           <div className="rounded-3xl overflow-hidden shadow-xl">
-            <img src="https://sdpublic.org/assets/img/learning_beyond.png" alt="Experiential Learning at SDPS"
+            <img src={learningUrl} alt="Experiential Learning at SDPS"
               className="w-full object-contain max-h-72 bg-white"
               onError={e => { e.target.src = "https://sdpublic.org/img/feature.jpg"; }} />
           </div>
@@ -83,7 +95,7 @@ export function Academics() {
             ))}
           </div>
           <div className="rounded-3xl overflow-hidden shadow-xl">
-            <img src="https://sdpublic.org/assets/img/world_class.jpg" alt="SDPS Facilities"
+            <img src={facilitiesUrl} alt="SDPS Facilities"
               className="w-full object-contain max-h-64 bg-white"
               onError={e => { e.target.style.display = "none"; }} />
           </div>

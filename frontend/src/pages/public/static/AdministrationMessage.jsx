@@ -1,10 +1,22 @@
 import { useState, useEffect } from "react";
+import { useOutletContext } from "react-router-dom";
 import PageHero from "@/components/layout/PageHero";
 import api from "@/lib/api";
 
 export function AdministrationMessage() {
+  const { settings } = useOutletContext() || {};
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const directorPhoto = settings?.director_photo_url || "https://sdpublic.org/assets/img/AKT.png";
+  const formattedDirector = directorPhoto.startsWith("http")
+    ? directorPhoto
+    : `${process.env.REACT_APP_BACKEND_URL || ""}${directorPhoto}`;
+
+  const principalPhoto = settings?.principal_photo_url || "https://sdpublic.org/assets/img/RT.jpg";
+  const formattedPrincipal = principalPhoto.startsWith("http")
+    ? principalPhoto
+    : `${process.env.REACT_APP_BACKEND_URL || ""}${principalPhoto}`;
 
   useEffect(() => {
     api.get("/administration-members")
@@ -30,7 +42,7 @@ export function AdministrationMessage() {
             <div className="bg-white rounded-3xl border border-black/5 shadow-sm overflow-hidden grid md:grid-cols-3 gap-0">
               <div className="bg-gradient-to-br from-brand-blue/10 to-brand-orange/10 p-8 flex flex-col items-center justify-center text-center md:border-r border-black/5">
                 <div className="w-28 h-28 rounded-full overflow-hidden ring-4 ring-brand-gold mb-4 bg-white">
-                  <img src="https://sdpublic.org/assets/img/AKT.png" alt="Director"
+                  <img src={formattedDirector} alt="Director"
                     className="w-full h-full object-contain bg-white"
                     onError={e => { e.target.style.display="none"; }} />
                 </div>
@@ -56,7 +68,7 @@ export function AdministrationMessage() {
             <div className="bg-white rounded-3xl border border-black/5 shadow-sm overflow-hidden grid md:grid-cols-3 gap-0">
               <div className="bg-gradient-to-br from-brand-lotus/10 to-brand-gold/10 p-8 flex flex-col items-center justify-center text-center md:border-r border-black/5">
                 <div className="w-28 h-28 rounded-full overflow-hidden ring-4 ring-brand-lotus mb-4 bg-white">
-                  <img src="https://sdpublic.org/assets/img/RT.jpg" alt="Principal"
+                  <img src={formattedPrincipal} alt="Principal"
                     className="w-full h-full object-cover"
                     onError={e => { e.target.style.display="none"; }} />
                 </div>

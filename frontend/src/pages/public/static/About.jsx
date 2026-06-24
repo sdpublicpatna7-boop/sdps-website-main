@@ -1,3 +1,4 @@
+import { useOutletContext } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Award, Compass, Shield, BookOpen, GraduationCap, MapPin, Mail, Phone, Landmark } from "lucide-react";
 import PageHero from "@/components/layout/PageHero";
@@ -20,13 +21,25 @@ const itemVariants = {
 };
 
 export function About() {
+  const { settings } = useOutletContext() || {};
+
+  const trustLogoRaw = settings?.about_trust_logo_url || "https://sdpublic.org/assets/img/about_new.jpg";
+  const trustLogoUrl = trustLogoRaw.startsWith("http")
+    ? trustLogoRaw
+    : `${process.env.REACT_APP_BACKEND_URL || ""}${trustLogoRaw}`;
+
+  const schoolLogoRaw = settings?.logo_url || "https://sdpublic.org/assets/img/logo.png";
+  const schoolLogoUrl = schoolLogoRaw.startsWith("http")
+    ? schoolLogoRaw
+    : `${process.env.REACT_APP_BACKEND_URL || ""}${schoolLogoRaw}`;
+
   return (
     <>
       <PageHero
         overline="Our Story"
         title="About S.D. Public School"
         subtitle="Our Legacy, Your Future — Founded in 1994, standing tall as a beacon of holistic education."
-        bgImage="https://sdpublic.org/assets/img/about_new.jpg"
+        bgImage={trustLogoUrl}
       />
 
       <motion.div
@@ -140,8 +153,8 @@ export function About() {
             <motion.div variants={itemVariants} className="rounded-3xl overflow-hidden shadow-lg border border-black/5 bg-white group relative">
               <div className="absolute inset-0 bg-brand-blue/5 opacity-0 group-hover:opacity-10 transition-opacity duration-300 z-10 pointer-events-none" />
               <img
-                src="https://sdpublic.org/assets/img/about_new.jpg"
-                alt="SDPS Campus"
+                src={trustLogoUrl}
+                alt="SDPS Campus / Trust Logo"
                 className="w-full object-contain max-h-72 bg-white p-4 transition-transform duration-500 group-hover:scale-[1.02]"
                 onError={e => { e.target.src = "https://sdpublic.org/img/feature.jpg"; }}
               />
@@ -152,7 +165,7 @@ export function About() {
               <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-brand-gold/10 rounded-full blur-xl group-hover:bg-brand-gold/20 transition-all duration-300" />
               <div className="flex items-center gap-5">
                 <img
-                  src="https://sdpublic.org/assets/img/logo.png"
+                  src={schoolLogoUrl}
                   alt="SDPS Logo"
                   className="w-16 h-16 rounded-full ring-4 ring-brand-gold/20 object-contain p-0.5 bg-white shadow-md"
                   onError={e => e.target.style.display = "none"}
