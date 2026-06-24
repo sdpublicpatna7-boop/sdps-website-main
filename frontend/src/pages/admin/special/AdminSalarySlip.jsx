@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { Printer, User, CreditCard, FileText, ArrowLeft, ArrowRight, ShieldCheck } from "lucide-react";
@@ -53,9 +54,15 @@ function numberToWords(num) {
 }
 
 export function AdminSalarySlip() {
+  const { settings } = useOutletContext() || {};
   const [educators, setEducators] = useState([]);
   const [selectedTeacherId, setSelectedTeacherId] = useState("manual");
   const [loading, setLoading] = useState(false);
+
+  const logoUrl = settings?.logo_url || "https://sdpublic.org/assets/img/logo.png";
+  const formattedLogo = logoUrl.startsWith("http")
+    ? logoUrl
+    : `${process.env.REACT_APP_BACKEND_URL || ""}${logoUrl}`;
   const [history, setHistory] = useState([]);
   const [showSignatures, setShowSignatures] = useState(true);
 
@@ -702,7 +709,7 @@ export function AdminSalarySlip() {
             <div className="flex items-center justify-between gap-4 border-b-2 border-slate-900 pb-4">
               <div className="flex items-center gap-4 text-left">
                 <img 
-                  src="https://sdpublic.org/assets/img/logo.png" 
+                  src={formattedLogo} 
                   alt="SDPS Logo" 
                   className="w-16 h-16 object-contain"
                 />

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../lib/auth";
 import api from "../../lib/api";
@@ -104,6 +104,21 @@ export function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [logoUrl, setLogoUrl] = useState("https://sdpublic.org/assets/img/logo.png");
+
+  useEffect(() => {
+    api.get("/site-settings")
+      .then((r) => {
+        if (r.data?.logo_url) {
+          const rawUrl = r.data.logo_url;
+          const formatted = rawUrl.startsWith("http")
+            ? rawUrl
+            : `${process.env.REACT_APP_BACKEND_URL || ""}${rawUrl}`;
+          setLogoUrl(formatted);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -124,7 +139,7 @@ export function AdminLogin() {
       <LoginWrapper>
         <div className="text-center mb-8">
           <img
-            src="https://sdpublic.org/assets/img/logo.png"
+            src={logoUrl}
             alt="SDPS"
             className="w-16 h-16 mx-auto rounded-full ring-4 ring-brand-gold/20 shadow-[0_0_20px_rgba(199,161,91,0.3)] mb-4 animate-float"
           />

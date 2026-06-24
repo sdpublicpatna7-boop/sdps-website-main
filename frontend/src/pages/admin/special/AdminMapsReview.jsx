@@ -1,9 +1,16 @@
 import { useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import { QrCode, Printer, Download, ExternalLink, Info, Star } from "lucide-react";
 import { toast } from "sonner";
 
 export function AdminMapsReview() {
+  const { settings } = useOutletContext() || {};
   const reviewUrl = `${window.location.origin}/review`;
+  
+  const logoUrl = settings?.logo_url || "https://sdpublic.org/assets/img/logo.png";
+  const formattedLogo = logoUrl.startsWith("http")
+    ? logoUrl
+    : `${process.env.REACT_APP_BACKEND_URL || ""}${logoUrl}`;
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(reviewUrl)}`;
   const [previewType, setPreviewType] = useState("a4"); // "a4" | "card"
 
@@ -219,7 +226,7 @@ export function AdminMapsReview() {
           <div class="a4-container">
             <div class="a4-inner-border"></div>
             <div class="header">
-              <img class="logo" src="https://sdpublic.org/assets/img/logo.png" alt="SDPS Logo" />
+              <img class="logo" src="${formattedLogo}" alt="SDPS Logo" />
               <div class="school-info">
                 <div class="school-name">S.D. Public School</div>
                 <div class="school-tagline">Suryamuni Devi Public School, Patna</div>
@@ -438,7 +445,7 @@ export function AdminMapsReview() {
                 {/* Header */}
                 <div className="flex items-center gap-2 border-b border-brand-gold/30 pb-2.5 text-left">
                   <img
-                    src="https://sdpublic.org/assets/img/logo.png"
+                    src={formattedLogo}
                     alt="SDPS logo"
                     className="w-10 h-10 rounded-full border border-brand-blue/30 p-0.5"
                   />

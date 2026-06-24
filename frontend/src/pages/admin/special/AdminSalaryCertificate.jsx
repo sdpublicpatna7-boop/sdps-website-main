@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { Printer, FileText, ArrowRight, ShieldCheck } from "lucide-react";
@@ -53,9 +54,15 @@ function numberToWords(num) {
 }
 
 export function AdminSalaryCertificate() {
+  const { settings } = useOutletContext() || {};
   const [educators, setEducators] = useState([]);
   const [selectedTeacherId, setSelectedTeacherId] = useState("manual");
   const [loading, setLoading] = useState(false);
+
+  const logoUrl = settings?.logo_url || "https://sdpublic.org/assets/img/logo.png";
+  const formattedLogo = logoUrl.startsWith("http")
+    ? logoUrl
+    : `${process.env.REACT_APP_BACKEND_URL || ""}${logoUrl}`;
   const [history, setHistory] = useState([]);
   const [showSignatures, setShowSignatures] = useState(true);
 
@@ -478,7 +485,7 @@ export function AdminSalaryCertificate() {
               {/* Background Watermark Logo */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] select-none">
                 <img 
-                  src="https://sdpublic.org/assets/img/logo.png" 
+                  src={formattedLogo} 
                   className="w-96 h-96 object-contain" 
                   alt="" 
                 />
@@ -488,7 +495,7 @@ export function AdminSalaryCertificate() {
                 {/* Centered Certificate Header */}
                 <div className="text-center space-y-2 border-b border-amber-200 pb-4">
                   <img 
-                    src="https://sdpublic.org/assets/img/logo.png" 
+                    src={formattedLogo} 
                     alt="SDPS Logo" 
                     className="w-20 h-20 mx-auto object-contain"
                   />
