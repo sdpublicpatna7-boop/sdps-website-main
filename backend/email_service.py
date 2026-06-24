@@ -43,8 +43,11 @@ async def send_email(to_email: str, subject: str, html_content: str) -> dict:
         "html_body": html_content,
     }
 
+    # Format Authorization header to ensure Bearer prefix is present
+    auth_header = MAILERCLOUD_API_KEY if MAILERCLOUD_API_KEY.startswith("Bearer ") else f"Bearer {MAILERCLOUD_API_KEY}"
     headers = {
-        "Authorization": MAILERCLOUD_API_KEY,
+        "Authorization": auth_header,
+        "api-key": MAILERCLOUD_API_KEY,
         "Content-Type": "application/json",
     }
 
