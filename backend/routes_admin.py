@@ -375,7 +375,7 @@ async def email_salary_certificate(payload: EmailSendPayload, admin: TokenData =
     res = await send_email(payload.email, subject, full_html)
     if not res.get("success"):
         raise HTTPException(status_code=500, detail=res.get("message") or "Failed to send email")
-    return {"sent": True}
+    return {"sent": True, "mailercloud_response": res.get("mailercloud_response")}
 
 
 @admin_router.post("/experience-certificates/send-email")
@@ -387,7 +387,7 @@ async def email_experience_certificate(payload: EmailSendPayload, admin: TokenDa
     res = await send_email(payload.email, subject, full_html)
     if not res.get("success"):
         raise HTTPException(status_code=500, detail=res.get("message") or "Failed to send email")
-    return {"sent": True}
+    return {"sent": True, "mailercloud_response": res.get("mailercloud_response")}
 
 
 # ============= READ-ONLY LISTS (for admin: enquiries, applications, etc) =============

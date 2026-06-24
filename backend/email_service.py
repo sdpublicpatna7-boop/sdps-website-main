@@ -59,15 +59,17 @@ async def send_email(to_email: str, subject: str, html_content: str) -> dict:
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.post(MAILERCLOUD_SEND_URL, json=payload, headers=headers)
         data = resp.json()
+        logger.info(f"MailerCloud response for '{subject}' to {to_email}: HTTP {resp.status_code} | body: {data}")
         # MailerCloud returns statusCode 1000 on success
         if resp.status_code in (200, 201) and data.get("statusCode") == 1000:
             return {
                 "success": True,
                 "message": "sent",
+                "mailercloud_response": data,
             }
         error_msg = data.get("message") or f"HTTP {resp.status_code} / statusCode {data.get('statusCode')}"
         logger.error(f"MailerCloud error {resp.status_code}: {data}")
-        return {"success": False, "message": error_msg}
+        return {"success": False, "message": error_msg, "mailercloud_response": data}
     except Exception as e:
         logger.error(f"MailerCloud request failed: {e}")
         return {"success": False, "message": str(e)}
