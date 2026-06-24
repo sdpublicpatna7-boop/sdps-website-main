@@ -585,6 +585,72 @@ async def admin_stats(admin: TokenData = Depends(get_current_admin)):
     }
 
 
+# ============= DEBUG MAILERCLOUD INTEGRATION =============
+@admin_router.get("/debug-mailercloud")
+async def debug_mailercloud(admin: TokenData = Depends(require_permission("site-settings"))):
+    import httpx
+    mailer_key = os.environ.get("MAILERCLOUD_API_KEY", "")
+    sender_email = os.environ.get("SENDER_EMAIL", "noreply@sdpublic.org")
+    sender_name = os.environ.get("SENDER_NAME", "S.D. Public School")
+    
+    if not mailer_key:
+        return {"error": "MAILERCLOUD_API_KEY not configured in environment"}
+        
+    results = {}
+    
+    # Try different combinations of endpoints and headers to identify what works
+    test_cases = [
+        {
+            "name": "cloudapi-v1-message-send-html_body",
+            "url": "https://cloudapi.mailercloud.com/v1/message/send",
+            "payload": {
+                "from": {"name": sender_name, "email": sender_email},
+                "to": [{"email": "aarav@sdpublic.org"}],
+                "subject": "Debug Test (html_body)",
+                "html_body": "<p>Hello, this is a test from MailerCloud debug endpoint.</p>"
+            }
+        },
+        {
+            "name": "cloudapi-v1-message-send-html",
+            "url": "https://cloudapi.mailercloud.com/v1/message/send",
+            "payload": {
+                "from": {"name": sender_name, "email": sender_email},
+                "to": [{"email": "aarav@sdpublic.org"}],
+                "subject": "Debug Test (html)",
+                "html": "<p>Hello, this is a test from MailerCloud debug endpoint.</p>"
+            }
+        },
+        {
+            "name": "cloudapi-v1-send-mail",
+            "url": "https://cloudapi.mailercloud.com/v1/send/mail",
+            "payload": {
+                "from": {"name": sender_name, "email": sender_email},
+                "to": [{"email": "aarav@sdpublic.org"}],
+                "subject": "Debug Test (send/mail)",
+                "html": "<p>Hello, this is a test from MailerCloud debug endpoint.</p>"
+            }
+        }
+    ]
+    
+    for tc in test_cases:
+        headers = {
+            "Authorization": f"Bearer {mailer_key}",
+            "api-key": mailer_key,
+            "Content-Type": "application/json"
+        }
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                r = await client.post(tc["url"], json=tc["payload"], headers=headers)
+            results[tc["name"]] = {
+                "status_code": r.status_code,
+                "body": r.json() if r.headers.get("Content-Type", "").startswith("application/json") else r.text[:500]
+            }
+        except Exception as e:
+            results[tc["name"]] = {"error": str(e)}
+            
+    return results
+
+
 # ============= UPDATE ENV-LIKE KEYS via DB (Razorpay/Resend/SMS) =============
 @admin_router.get("/integration-keys")
 async def get_integration_keys(admin: TokenData = Depends(require_permission("site-settings"))):
