@@ -74,6 +74,7 @@ const BirthdayGreetings = lazy(() => import("@/pages/admin/BirthdayGreetings"));
 const AdminMapsReview = lazy(() => import("@/pages/admin/special/AdminMapsReview"));
 const AdminSalarySlip = lazy(() => import("@/pages/admin/special/AdminSalarySlip"));
 const AdminSalaryCertificate = lazy(() => import("@/pages/admin/special/AdminSalaryCertificate"));
+const AdminExperienceCertificate = lazy(() => import("@/pages/admin/special/AdminExperienceCertificate"));
 
 function AdminLoading() {
   return (
@@ -162,6 +163,7 @@ function App() {
               <Route path="thumbnail-generator" element={<AdminThumbnailGenerator />} />
               <Route path="salary-slip" element={<AdminSalarySlip />} />
               <Route path="salary-certificate" element={<AdminSalaryCertificate />} />
+              <Route path="experience-certificate" element={<AdminExperienceCertificate />} />
               <Route path="site-settings" element={<AdminSiteSettings />} />
               <Route path="integration-keys" element={<AdminIntegrationKeys />} />
               <Route path="khelo-patna-gallery" element={<AdminKheloPatna />} />

@@ -528,3 +528,14 @@ class SalaryCertificate(BaseDoc):
     financial_year: Optional[str] = "2026-2027"
     created_by: Optional[str] = None
     created_at: str = Field(default_factory=now_iso)
+
+
+class ExperienceCertificate(BaseDoc):
+    id: str = Field(default_factory=new_id)
+    employee_name: str
+    designation: str
+    joining_date: str
+    leaving_date: str
+    certificate_date: str
+    created_by: Optional[str] = None
+    created_at: str = Field(default_factory=now_iso)

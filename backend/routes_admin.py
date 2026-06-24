@@ -30,7 +30,7 @@ from models import (
     SiteSettings, now_iso, new_id, AdmissionEnquiry,
     EligibilityRow, FeeStructureRow, HostelFeeRow, HostelGalleryItem,
     AdministrationMember, LegalPage, ExamPaper, HolidayHomework, KheloPatnaPhoto,
-    Educator, GeneratedThumbnail, SalarySlip, SalaryCertificate
+    Educator, GeneratedThumbnail, SalarySlip, SalaryCertificate, ExperienceCertificate
 )
 
 logger = logging.getLogger(__name__)
@@ -323,6 +323,29 @@ async def list_salary_certificates(admin: TokenData = Depends(require_permission
 @admin_router.delete("/salary-certificates/{item_id}")
 async def delete_salary_certificate(item_id: str, admin: TokenData = Depends(require_permission("media-tools"))):
     res = await db.salary_certificates.delete_one({"id": item_id})
+    return {"deleted": res.deleted_count}
+
+
+# ============= EXPERIENCE CERTIFICATES =============
+@admin_router.post("/experience-certificates")
+async def create_experience_certificate(payload: ExperienceCertificate, admin: TokenData = Depends(require_permission("media-tools"))):
+    doc = payload.model_dump()
+    user = await db.admin_users.find_one({"id": admin.sub})
+    doc["created_by"] = user.get("name") if (user and user.get("name")) else admin.email
+    doc["created_at"] = now_iso()
+    await db.experience_certificates.insert_one(doc.copy())
+    return doc
+
+
+@admin_router.get("/experience-certificates")
+async def list_experience_certificates(admin: TokenData = Depends(require_permission("media-tools"))):
+    items = await db.experience_certificates.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return items
+
+
+@admin_router.delete("/experience-certificates/{item_id}")
+async def delete_experience_certificate(item_id: str, admin: TokenData = Depends(require_permission("media-tools"))):
+    res = await db.experience_certificates.delete_one({"id": item_id})
     return {"deleted": res.deleted_count}
 
 
