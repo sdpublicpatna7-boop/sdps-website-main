@@ -1,7 +1,8 @@
 """
-MailerCloud email service wrapper.
-API docs: https://www.mailercloud.com/
-Endpoint: POST https://cloudapi.mailercloud.com/v1/message/send
+MailerCloud Email API service wrapper.
+API docs: https://help.mailercloud.com/en/articles/155-mailercloud-email-api-help-guide
+Endpoint: POST https://email-api.mailercloud.com/email
+Auth:     Authorization: <api_key>  (plain key, no "Bearer" prefix)
 """
 import os
 import asyncio
@@ -14,13 +15,13 @@ MAILERCLOUD_API_KEY = os.environ.get("MAILERCLOUD_API_KEY", "")
 SENDER_EMAIL        = os.environ.get("SENDER_EMAIL", "noreply@sdpublic.org")
 SENDER_NAME         = os.environ.get("SENDER_NAME", "S.D. Public School")
 
-MAILERCLOUD_SEND_URL = "https://cloudapi.mailercloud.com/v1/message/send"
+MAILERCLOUD_SEND_URL = "https://email-api.mailercloud.com/email"
 
 
 async def send_email(to_email: str, subject: str, html_content: str) -> dict:
     """
-    Send a transactional email via MailerCloud.
-    Returns {success: bool, message: str, email_id?: str}.
+    Send a transactional email via MailerCloud Email API.
+    Returns {success: bool, message: str}.
     If MAILERCLOUD_API_KEY is not set, logs the attempt and returns success=False.
     """
     if not MAILERCLOUD_API_KEY:
@@ -31,24 +32,26 @@ async def send_email(to_email: str, subject: str, html_content: str) -> dict:
             "mocked": True
         }
 
+    # MailerCloud Email API payload structure
     payload = {
-        "from": {
-            "name": SENDER_NAME,
-            "email": SENDER_EMAIL,
+        "version": "1.0",
+        "email": {
+            "from": SENDER_EMAIL,
+            "fromName": SENDER_NAME,
+            "subject": subject,
+            "html": html_content,
+            "recipients": {
+                "to": [{"name": to_email, "email": to_email}]
+            },
         },
-        "to": [
-            {"email": to_email}
-        ],
-        "subject": subject,
-        "html_body": html_content,
-        "html": html_content,
+        "metadata": {
+            "campaignType": "TRANSACTIONAL",
+        },
     }
 
-    # Format Authorization header to ensure Bearer prefix is present
-    auth_header = MAILERCLOUD_API_KEY if MAILERCLOUD_API_KEY.startswith("Bearer ") else f"Bearer {MAILERCLOUD_API_KEY}"
+    # MailerCloud expects the raw API key — NO "Bearer" prefix
     headers = {
-        "Authorization": auth_header,
-        "api-key": MAILERCLOUD_API_KEY,
+        "Authorization": MAILERCLOUD_API_KEY,
         "Content-Type": "application/json",
     }
 
@@ -56,14 +59,15 @@ async def send_email(to_email: str, subject: str, html_content: str) -> dict:
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.post(MAILERCLOUD_SEND_URL, json=payload, headers=headers)
         data = resp.json()
-        if resp.status_code in (200, 201, 202):
+        # MailerCloud returns statusCode 1000 on success
+        if resp.status_code in (200, 201) and data.get("statusCode") == 1000:
             return {
                 "success": True,
                 "message": "sent",
-                "email_id": data.get("message_id") or data.get("id") or "",
             }
+        error_msg = data.get("message") or f"HTTP {resp.status_code} / statusCode {data.get('statusCode')}"
         logger.error(f"MailerCloud error {resp.status_code}: {data}")
-        return {"success": False, "message": data.get("message") or str(data)}
+        return {"success": False, "message": error_msg}
     except Exception as e:
         logger.error(f"MailerCloud request failed: {e}")
         return {"success": False, "message": str(e)}

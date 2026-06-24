@@ -596,59 +596,37 @@ async def debug_mailercloud(admin: TokenData = Depends(require_permission("site-
     if not mailer_key:
         return {"error": "MAILERCLOUD_API_KEY not configured in environment"}
         
-    results = {}
-    
-    # Try different combinations of endpoints and headers to identify what works
-    test_cases = [
-        {
-            "name": "cloudapi-v1-message-send-html_body",
-            "url": "https://cloudapi.mailercloud.com/v1/message/send",
-            "payload": {
-                "from": {"name": sender_name, "email": sender_email},
-                "to": [{"email": "aarav@sdpublic.org"}],
-                "subject": "Debug Test (html_body)",
-                "html_body": "<p>Hello, this is a test from MailerCloud debug endpoint.</p>"
-            }
+    # Correct MailerCloud Email API — plain key, no Bearer prefix
+    headers = {
+        "Authorization": mailer_key,
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "version": "1.0",
+        "email": {
+            "from": sender_email,
+            "fromName": sender_name,
+            "subject": "SDPS Email Test — MailerCloud Integration",
+            "html": "<h2>S.D. Public School</h2><p>This is a test email from the MailerCloud Email API integration. If you received this, the email service is working correctly!</p>",
+            "recipients": {
+                "to": [{"name": "Admin", "email": sender_email}]
+            },
         },
-        {
-            "name": "cloudapi-v1-message-send-html",
-            "url": "https://cloudapi.mailercloud.com/v1/message/send",
-            "payload": {
-                "from": {"name": sender_name, "email": sender_email},
-                "to": [{"email": "aarav@sdpublic.org"}],
-                "subject": "Debug Test (html)",
-                "html": "<p>Hello, this is a test from MailerCloud debug endpoint.</p>"
-            }
+        "metadata": {
+            "campaignType": "TRANSACTIONAL",
         },
-        {
-            "name": "cloudapi-v1-send-mail",
-            "url": "https://cloudapi.mailercloud.com/v1/send/mail",
-            "payload": {
-                "from": {"name": sender_name, "email": sender_email},
-                "to": [{"email": "aarav@sdpublic.org"}],
-                "subject": "Debug Test (send/mail)",
-                "html": "<p>Hello, this is a test from MailerCloud debug endpoint.</p>"
-            }
+    }
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            r = await client.post("https://email-api.mailercloud.com/email", json=payload, headers=headers)
+        data = r.json()
+        return {
+            "status_code": r.status_code,
+            "response": data,
+            "success": r.status_code in (200, 201) and data.get("statusCode") == 1000,
         }
-    ]
-    
-    for tc in test_cases:
-        headers = {
-            "Authorization": f"Bearer {mailer_key}",
-            "api-key": mailer_key,
-            "Content-Type": "application/json"
-        }
-        try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                r = await client.post(tc["url"], json=tc["payload"], headers=headers)
-            results[tc["name"]] = {
-                "status_code": r.status_code,
-                "body": r.json() if r.headers.get("Content-Type", "").startswith("application/json") else r.text[:500]
-            }
-        except Exception as e:
-            results[tc["name"]] = {"error": str(e)}
-            
-    return results
+    except Exception as e:
+        return {"error": str(e)}
 
 
 # ============= UPDATE ENV-LIKE KEYS via DB (Razorpay/Resend/SMS) =============
