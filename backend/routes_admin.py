@@ -20,7 +20,7 @@ from auth import (
 )
 
 limiter = Limiter(key_func=get_remote_address)
-from email_service import send_email, render_template
+from email_service import send_email, render_template, format_salary_slip_email, format_salary_certificate_email, format_experience_certificate_email
 from image_utils import compress_and_save, save_raw_file, UnsafeUploadError
 from models import (
     AdminLogin, AdminPasswordReset, AdminPasswordResetConfirm, AdminChangePassword,
@@ -347,6 +347,47 @@ async def list_experience_certificates(admin: TokenData = Depends(require_permis
 async def delete_experience_certificate(item_id: str, admin: TokenData = Depends(require_permission("media-tools"))):
     res = await db.experience_certificates.delete_one({"id": item_id})
     return {"deleted": res.deleted_count}
+
+
+class EmailSendPayload(BaseModel):
+    email: str
+    data: Dict[str, Any]
+
+
+@admin_router.post("/salary-slips/send-email")
+async def email_salary_slip(payload: EmailSendPayload, admin: TokenData = Depends(require_permission("media-tools"))):
+    data = payload.data
+    html_body = format_salary_slip_email(data)
+    subject = f"Salary Slip - {data.get('pay_period')} - {data.get('employee_name')}"
+    full_html = render_template(subject, html_body)
+    res = await send_email(payload.email, subject, full_html)
+    if not res.get("success"):
+        raise HTTPException(status_code=500, detail=res.get("message") or "Failed to send email")
+    return {"sent": True}
+
+
+@admin_router.post("/salary-certificates/send-email")
+async def email_salary_certificate(payload: EmailSendPayload, admin: TokenData = Depends(require_permission("media-tools"))):
+    data = payload.data
+    html_body = format_salary_certificate_email(data)
+    subject = f"Salary Certificate - {data.get('employee_name')}"
+    full_html = render_template(subject, html_body)
+    res = await send_email(payload.email, subject, full_html)
+    if not res.get("success"):
+        raise HTTPException(status_code=500, detail=res.get("message") or "Failed to send email")
+    return {"sent": True}
+
+
+@admin_router.post("/experience-certificates/send-email")
+async def email_experience_certificate(payload: EmailSendPayload, admin: TokenData = Depends(require_permission("media-tools"))):
+    data = payload.data
+    html_body = format_experience_certificate_email(data)
+    subject = f"Experience Certificate - {data.get('employee_name')}"
+    full_html = render_template(subject, html_body)
+    res = await send_email(payload.email, subject, full_html)
+    if not res.get("success"):
+        raise HTTPException(status_code=500, detail=res.get("message") or "Failed to send email")
+    return {"sent": True}
 
 
 # ============= READ-ONLY LISTS (for admin: enquiries, applications, etc) =============

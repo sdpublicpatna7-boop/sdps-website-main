@@ -57,6 +57,7 @@ export function AdminSalaryCertificate() {
   const [selectedTeacherId, setSelectedTeacherId] = useState("manual");
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState([]);
+  const [showSignatures, setShowSignatures] = useState(true);
 
   // Form State
   const [employeeName, setEmployeeName] = useState("Principal");
@@ -183,6 +184,40 @@ export function AdminSalaryCertificate() {
     }
   };
 
+  const handleSendEmail = async () => {
+    const email = window.prompt("Enter the employee's email address to send this Salary Certificate:");
+    if (!email) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+
+    const payload = {
+      email,
+      data: {
+        employee_name: employeeName,
+        designation: designation,
+        gross_salary: grossSalary,
+        gross_salary_words: grossSalaryWords,
+        annual_salary: annualSalary,
+        annual_salary_words: annualSalaryWords,
+        financial_year: financialYear,
+        certificate_date: formatPaymentDate(paymentDate)
+      }
+    };
+
+    try {
+      setLoading(true);
+      await api.post("/admin/salary-certificates/send-email", payload);
+      toast.success(`Salary certificate successfully sent to ${email} via MailerCloud!`);
+    } catch (err) {
+      console.error(err);
+      toast.error(err?.response?.data?.detail || "Failed to send email");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this salary certificate record?")) return;
     try {
@@ -231,13 +266,14 @@ export function AdminSalaryCertificate() {
             width: 100%;
             max-width: 100%;
             margin: 0;
-            padding: 0 !important;
+            padding: 1.5cm 1.5cm !important;
             box-shadow: none !important;
             border: none !important;
+            box-sizing: border-box;
           }
           @page {
             size: A4 portrait;
-            margin: 1.2cm;
+            margin: 0;
           }
         }
       `}} />
@@ -254,6 +290,14 @@ export function AdminSalaryCertificate() {
           </p>
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={handleSendEmail}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow-md transition duration-200 hover:-translate-y-0.5"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+            Send Email
+          </button>
           <button
             onClick={handleSave}
             disabled={loading}
@@ -333,6 +377,18 @@ export function AdminSalaryCertificate() {
                     placeholder="e.g. 2026-2027"
                     className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-orange"
                   />
+                </div>
+                <div className="col-span-2 flex items-center gap-2 py-1">
+                  <input
+                    type="checkbox"
+                    id="show-signatures-checkbox"
+                    checked={showSignatures}
+                    onChange={(e) => setShowSignatures(e.target.checked)}
+                    className="rounded text-brand-orange focus:ring-brand-orange"
+                  />
+                  <label htmlFor="show-signatures-checkbox" className="text-xs font-semibold text-slate-600 select-none">
+                    Include Seal & Signature in Printout
+                  </label>
                 </div>
               </div>
             </div>
@@ -477,17 +533,30 @@ export function AdminSalaryCertificate() {
                   <div className="text-xs font-semibold text-slate-600">
                     Date: <span className="font-bold text-slate-900">{formatPaymentDate(paymentDate)}</span>
                   </div>
-                  <div className="w-20 h-20 border border-dashed border-amber-300 rounded-xl flex items-center justify-center text-[9px] text-amber-400 font-bold uppercase tracking-widest bg-amber-50/20 select-none">
-                    School Seal
-                  </div>
+                  {showSignatures && (
+                    <div className="w-20 h-20 border border-dashed border-amber-300 rounded-xl flex items-center justify-center text-[9px] text-amber-400 font-bold uppercase tracking-widest bg-amber-50/20 select-none">
+                      School Seal
+                    </div>
+                  )}
                 </div>
-                <div className="text-right flex flex-col justify-end items-end h-28">
-                  <span className="font-bold text-slate-900">For S.D. Public School, Patna-7</span>
-                  <div className="w-48 border-t border-slate-900 text-center pt-1.5 mt-16">
-                    <span className="font-bold text-[10px] text-slate-700 block uppercase">Authorized Signatory</span>
-                    <span className="text-[9px] text-slate-500 block">(Seal & Signature)</span>
+                {showSignatures ? (
+                  <div className="text-right flex flex-col justify-end items-end h-28">
+                    <span className="font-bold text-slate-900">For S.D. Public School, Patna-7</span>
+                    <div className="w-48 border-t border-slate-900 text-center pt-1.5 mt-16">
+                      <span className="font-bold text-[10px] text-slate-700 block uppercase">Authorized Signatory</span>
+                      <span className="text-[9px] text-slate-500 block">(Seal & Signature)</span>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="text-right flex flex-col justify-end items-end h-28">
+                    <span className="text-[9px] text-slate-400 block pb-2">
+                      Computer-Generated Document
+                    </span>
+                    <span className="text-[9px] text-slate-400 block leading-normal">
+                      This certificate is digitally generated and does not require a physical signature or seal.
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

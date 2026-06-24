@@ -57,6 +57,7 @@ export function AdminSalarySlip() {
   const [selectedTeacherId, setSelectedTeacherId] = useState("manual");
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState([]);
+  const [showSignatures, setShowSignatures] = useState(true);
 
   // Form State
   const [employeeName, setEmployeeName] = useState("Principal");
@@ -232,6 +233,58 @@ export function AdminSalarySlip() {
     }
   };
 
+  const handleSendEmail = async () => {
+    const email = window.prompt("Enter the employee's email address to send this Salary Slip:");
+    if (!email) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+
+    const payload = {
+      email,
+      data: {
+        employee_name: employeeName,
+        designation: designation,
+        employee_id: employeeId,
+        department: department,
+        pay_period: payPeriod,
+        working_days: workingDays,
+        present_days: presentDays,
+        basic_salary: basicSalary,
+        hra: hra,
+        da: da,
+        medical_allowance: medicalAllowance,
+        conveyance_allowance: conveyanceAllowance,
+        special_allowance: specialAllowance,
+        pf: pf,
+        professional_tax: professionalTax,
+        tds: tds,
+        other_deductions: otherDeductions,
+        gross_salary: grossSalary,
+        total_deductions: totalDeductions,
+        net_salary: netSalary,
+        amount_in_words: amountInWords,
+        payment_mode: paymentMode,
+        bank_name: bankName,
+        account_number: accountNumber,
+        utr_id: utrId,
+        payment_date: formatPaymentDate(paymentDate)
+      }
+    };
+
+    try {
+      setLoading(true);
+      await api.post("/admin/salary-slips/send-email", payload);
+      toast.success(`Salary slip successfully sent to ${email} via MailerCloud!`);
+    } catch (err) {
+      console.error(err);
+      toast.error(err?.response?.data?.detail || "Failed to send email");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this salary slip record?")) return;
     try {
@@ -297,13 +350,14 @@ export function AdminSalarySlip() {
             width: 100%;
             max-width: 100%;
             margin: 0;
-            padding: 0 !important;
+            padding: 1.5cm 1.5cm !important;
             box-shadow: none !important;
             border: none !important;
+            box-sizing: border-box;
           }
           @page {
             size: A4 portrait;
-            margin: 1.2cm;
+            margin: 0;
           }
           /* Compress spacing on print to guarantee 1-page fit */
           #salary-slip-print-area .my-5 {
@@ -339,6 +393,14 @@ export function AdminSalarySlip() {
           </p>
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={handleSendEmail}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow-md transition duration-200 hover:-translate-y-0.5"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+            Send Email
+          </button>
           <button
             onClick={handleSave}
             disabled={loading}
@@ -446,6 +508,18 @@ export function AdminSalarySlip() {
                       className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-orange"
                     />
                   </div>
+                </div>
+                <div className="col-span-2 flex items-center gap-2 py-1">
+                  <input
+                    type="checkbox"
+                    id="show-signatures-checkbox"
+                    checked={showSignatures}
+                    onChange={(e) => setShowSignatures(e.target.checked)}
+                    className="rounded text-brand-orange focus:ring-brand-orange"
+                  />
+                  <label htmlFor="show-signatures-checkbox" className="text-xs font-semibold text-slate-600 select-none">
+                    Include Seal & Signature in Printout
+                  </label>
                 </div>
               </div>
             </div>
@@ -834,6 +908,24 @@ export function AdminSalarySlip() {
             {/* Divider */}
             <div className="my-5 border-t border-dashed border-slate-400"></div>
 
+            {/* Signature & Seal Block */}
+            {showSignatures ? (
+              <div className="grid grid-cols-2 gap-4 text-xs pt-2 pb-6">
+                <div className="space-y-2">
+                  <div className="w-20 h-20 border border-dashed border-slate-300 rounded-xl flex items-center justify-center text-[9px] text-slate-400 font-bold uppercase tracking-widest bg-slate-50 select-none">
+                    School Seal
+                  </div>
+                </div>
+                <div className="text-right flex flex-col justify-end items-end h-20">
+                  <span className="font-bold text-slate-950">For S.D. Public School, Patna-7</span>
+                  <div className="w-48 border-t border-slate-900 text-center pt-1.5 mt-10">
+                    <span className="font-bold text-[10px] text-slate-700 block uppercase">Authorized Signatory</span>
+                    <span className="text-[9px] text-slate-500 block">(Seal & Signature)</span>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
             {/* Footer Taglines */}
             <div className="text-center space-y-1">
               <h4 className="text-xs font-bold tracking-widest text-slate-900">
@@ -842,9 +934,11 @@ export function AdminSalarySlip() {
               <p className="text-[10px] font-semibold text-slate-500 tracking-wider">
                 Empowering Generations Since 1994
               </p>
-              <p className="text-[9px] text-slate-400 mt-4 leading-normal">
-                This is a computer-generated salary slip and does not require a physical signature.
-              </p>
+              {!showSignatures && (
+                <p className="text-[9px] text-slate-400 mt-4 leading-normal">
+                  This is a computer-generated salary slip and does not require a physical signature.
+                </p>
+              )}
             </div>
           </div>
         </div>
