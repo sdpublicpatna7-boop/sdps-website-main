@@ -30,7 +30,7 @@ from models import (
     SiteSettings, now_iso, new_id, AdmissionEnquiry,
     EligibilityRow, FeeStructureRow, HostelFeeRow, HostelGalleryItem,
     AdministrationMember, LegalPage, ExamPaper, HolidayHomework, KheloPatnaPhoto,
-    Educator, GeneratedThumbnail
+    Educator, GeneratedThumbnail, SalarySlip
 )
 
 logger = logging.getLogger(__name__)
@@ -279,6 +279,28 @@ async def delete_generated_thumbnail(item_id: str, admin: TokenData = Depends(ge
     res = await db.generated_thumbnails.delete_one({"id": item_id})
     return {"deleted": res.deleted_count}
 
+
+# ============= SALARY SLIPS =============
+@admin_router.post("/salary-slips")
+async def create_salary_slip(payload: SalarySlip, admin: TokenData = Depends(require_permission("media-tools"))):
+    doc = payload.model_dump()
+    user = await db.admin_users.find_one({"id": admin.sub})
+    doc["created_by"] = user.get("name") if (user and user.get("name")) else admin.email
+    doc["created_at"] = now_iso()
+    await db.salary_slips.insert_one(doc.copy())
+    return doc
+
+
+@admin_router.get("/salary-slips")
+async def list_salary_slips(admin: TokenData = Depends(require_permission("media-tools"))):
+    items = await db.salary_slips.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return items
+
+
+@admin_router.delete("/salary-slips/{item_id}")
+async def delete_salary_slip(item_id: str, admin: TokenData = Depends(require_permission("media-tools"))):
+    res = await db.salary_slips.delete_one({"id": item_id})
+    return {"deleted": res.deleted_count}
 
 
 # ============= READ-ONLY LISTS (for admin: enquiries, applications, etc) =============

@@ -480,3 +480,36 @@ class GeneratedThumbnail(BaseDoc):
     created_by: str = ""
     created_at: str = Field(default_factory=now_iso)
 
+
+class SalarySlip(BaseDoc):
+    id: str = Field(default_factory=new_id)
+    employee_name: str
+    designation: str
+    employee_id: str
+    department: str
+    pay_period: str
+    working_days: int
+    present_days: int
+    basic_salary: int
+    hra: int
+    da: int
+    medical_allowance: int
+    conveyance_allowance: int
+    special_allowance: int
+    pf: int
+    professional_tax: int
+    tds: int
+    other_deductions: int
+    gross_salary: int
+    total_deductions: int
+    net_salary: int
+    payment_mode: str
+    bank_name: str
+    account_number: str
+    utr_id: str
+    payment_date: str
+    slip_format: str = "slip"
+    created_by: Optional[str] = None
+    created_at: str = Field(default_factory=now_iso)
+
+
