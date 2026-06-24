@@ -880,58 +880,78 @@ export function AdminSalarySlip() {
                 </div>
               </>
             ) : (
-              <>
-                {/* ── FORMAT 2: SHORT SALARY CERTIFICATE ── */}
-                {/* Header/Letterhead */}
-                <div className="flex items-center gap-4 border-b-2 border-slate-900 pb-4">
+              <div className="relative border-[10px] border-double border-amber-600 p-8 rounded-2xl bg-amber-50/5 min-h-[680px] flex flex-col justify-between overflow-hidden text-slate-900">
+                {/* Background Watermark Logo */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] select-none">
                   <img 
                     src="https://sdpublic.org/assets/img/logo.png" 
-                    alt="SDPS Logo" 
-                    className="w-16 h-16 object-contain"
+                    className="w-96 h-96 object-contain" 
+                    alt="" 
                   />
-                  <div className="text-left">
-                    <h2 className="text-xl font-extrabold tracking-wide text-slate-900 leading-tight">
+                </div>
+
+                <div className="space-y-6">
+                  {/* Centered Certificate Header */}
+                  <div className="text-center space-y-2 border-b border-amber-200 pb-4">
+                    <img 
+                      src="https://sdpublic.org/assets/img/logo.png" 
+                      alt="SDPS Logo" 
+                      className="w-20 h-20 mx-auto object-contain"
+                    />
+                    <h2 className="text-2xl font-black tracking-wide text-slate-900 leading-tight">
                       S.D. PUBLIC SCHOOL
                     </h2>
-                    <p className="text-xs font-bold text-slate-600 uppercase tracking-widest">
+                    <p className="text-xs font-bold text-slate-650 uppercase tracking-widest">
                       Patna-7, Bihar
                     </p>
-                    <p className="text-[9px] font-semibold text-slate-500 italic mt-0.5">
+                    <p className="text-[10px] font-bold text-amber-600 italic tracking-wider">
                       Empowering Generations Since 1994
                     </p>
                   </div>
-                </div>
 
-                {/* Certificate Content */}
-                <div className="space-y-6 pt-4 text-slate-950 leading-relaxed text-sm">
-                  <div className="text-right text-xs font-semibold text-slate-600">
-                    Date: {formatPaymentDate(paymentDate)}
-                  </div>
-
-                  <div className="text-center py-4">
-                    <h3 className="text-base font-extrabold tracking-widest border-b-2 border-slate-900 pb-1.5 inline-block uppercase">
+                  {/* Certificate Subtitles */}
+                  <div className="text-center py-2 space-y-2">
+                    <span className="text-[11px] font-black text-amber-700 tracking-widest bg-amber-50 border border-amber-200 px-4 py-1.5 rounded-full uppercase">
+                      SALARY CERTIFICATE
+                    </span>
+                    <h3 className="text-sm font-extrabold tracking-widest text-slate-800 uppercase block pt-4">
                       TO WHOMSOEVER IT MAY CONCERN
                     </h3>
                   </div>
 
-                  <p className="indent-12 text-justify leading-loose">
-                    This is to certify that Mr./Ms. <strong className="border-b border-slate-900 px-1.5">{employeeName}</strong> is working as <strong className="border-b border-slate-900 px-1.5">{designation}</strong> at S.D. Public School, Patna-7 on a full-time basis. The employee is drawing a monthly gross salary of <strong className="border-b border-slate-900 px-1.5">{formatCurrency(grossSalary)}/-</strong> ({grossSalaryWords}).
-                  </p>
+                  {/* Certificate Body Paragraphs */}
+                  <div className="space-y-4 text-slate-900 leading-relaxed text-sm text-justify px-4">
+                    <p className="indent-12 leading-loose">
+                      This is to certify that Mr./Ms. <strong className="border-b-2 border-slate-900 px-1.5 text-slate-950 font-black">{employeeName}</strong> is working as <strong className="border-b border-slate-400 px-1.5 text-slate-950 font-bold">{designation}</strong> at S.D. Public School, Patna-7 on a full-time basis.
+                    </p>
+                    <p className="leading-loose">
+                      The employee is drawing a monthly gross salary of <strong className="border-b-2 border-slate-900 px-1.5 text-slate-950 font-black">{formatCurrency(grossSalary)}/-</strong> ({grossSalaryWords}).
+                    </p>
+                    <p className="leading-loose">
+                      This certificate is issued upon the employee’s request for official purposes.
+                    </p>
+                  </div>
+                </div>
 
-                  <p className="leading-loose">
-                    This certificate is issued upon the employee’s request for official purposes.
-                  </p>
-
-                  {/* Certificate Signature */}
-                  <div className="pt-16 text-right">
-                    <p className="font-bold text-sm">For S.D. Public School, Patna-7</p>
-                    <div className="w-56 ml-auto border-t border-slate-900 text-center pt-2 mt-20">
+                {/* Certificate Footer Seal & Signatures */}
+                <div className="grid grid-cols-2 gap-4 text-xs pt-8 px-4">
+                  <div className="space-y-3">
+                    <div className="text-xs font-semibold text-slate-600">
+                      Date: <span className="font-bold text-slate-900">{formatPaymentDate(paymentDate)}</span>
+                    </div>
+                    <div className="w-20 h-20 border border-dashed border-amber-300 rounded-xl flex items-center justify-center text-[9px] text-amber-400 font-bold uppercase tracking-widest bg-amber-50/20 select-none">
+                      School Seal
+                    </div>
+                  </div>
+                  <div className="text-right flex flex-col justify-end items-end h-28">
+                    <span className="font-bold text-slate-900">For S.D. Public School, Patna-7</span>
+                    <div className="w-48 border-t border-slate-900 text-center pt-1.5 mt-16">
                       <span className="font-bold text-[10px] text-slate-700 block uppercase">Authorized Signatory</span>
                       <span className="text-[9px] text-slate-500 block">(Seal & Signature)</span>
                     </div>
                   </div>
                 </div>
-              </>
+              </div>
             )}
           </div>
         </div>
