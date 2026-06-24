@@ -387,12 +387,22 @@ export function AdmissionsLanding() {
     ? (prospectusRaw.startsWith("http") ? prospectusRaw : `${BACKEND}${prospectusRaw}`)
     : "https://sdpublic.org/assets/docs/Prospectus.pdf";
 
+  const openButtonRaw = settings?.admission_open_button_url || "https://sdpublic.org/assets/img/admission_open_button.png";
+  const openButtonUrl = openButtonRaw.startsWith("http")
+    ? openButtonRaw
+    : `${BACKEND}${openButtonRaw}`;
+
+  const rankedBadgeRaw = settings?.ranked_badge_url || "https://sdpublic.org/assets/img/ranked.png";
+  const rankedBadgeUrl = rankedBadgeRaw.startsWith("http")
+    ? rankedBadgeRaw
+    : `${BACKEND}${rankedBadgeRaw}`;
+
   return (
     <>
       {/* Hero */}
       <section className="bg-hero-grad py-16 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
-          <img src="https://sdpublic.org/assets/img/admission_open_button.png" alt="" className="w-full h-full object-contain" />
+          <img src={openButtonUrl} alt="" className="w-full h-full object-contain" />
         </div>
         <div className="relative max-w-6xl mx-auto px-6 text-center">
           <div className="inline-flex items-center gap-2 bg-brand-orange/10 text-brand-orange text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full mb-4">
@@ -438,7 +448,7 @@ export function AdmissionsLanding() {
 
           {/* Admission image */}
           <div className="mt-10 rounded-3xl overflow-hidden shadow-xl text-center">
-            <img src="https://sdpublic.org/assets/img/admission_open_button.png" alt="Admission Open"
+            <img src={openButtonUrl} alt="Admission Open"
               className="max-h-48 mx-auto object-contain py-4"
               onError={e => { e.target.style.display = "none"; }} />
           </div>
@@ -469,7 +479,7 @@ export function AdmissionsLanding() {
           <h2 className="section-title text-center mb-2">SDPS Curious Minds Pre-School</h2>
 
           <div className="flex justify-center mb-8">
-            <img src="https://sdpublic.org/assets/img/ranked.png" alt="Top Ranked Pre-School"
+            <img src={rankedBadgeUrl} alt="Top Ranked Pre-School"
               className="h-20 object-contain"
               onError={e => { e.target.style.display = "none"; }} />
           </div>

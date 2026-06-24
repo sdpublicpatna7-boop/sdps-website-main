@@ -84,14 +84,13 @@ export function AdminSiteSettings() {
           )}
         </div>
 
-        {/* Document Embeds */}
+        {/* Document Embeds, PDFs & Images */}
         <div className="border border-brand-blue/20 bg-brand-blue/5 rounded-xl p-5 space-y-4">
           <h3 className="font-headline font-semibold text-brand-blue flex items-center gap-2">
-            <span>📄</span> Document Embeds &amp; PDFs
+            <span>📄</span> Document Embeds, PDFs &amp; Site Images
           </h3>
           <p className="text-xs text-brand-ink/60">
-            Upload PDFs from your device or paste a URL. These are shown inline (embedded) on public
-            pages — no download needed.
+            Upload files/images from your device or paste a URL. These are shown inline or as design elements on public pages.
           </p>
 
           {/* Fee Structure PDF */}
@@ -199,6 +198,81 @@ export function AdminSiteSettings() {
             <ImageOrUrlField
               value={data.khelo_patna_hero_image_url || ""}
               onChange={(v) => setData({ ...data, khelo_patna_hero_image_url: v })}
+              subDir="misc"
+            />
+          </div>
+
+          {/* School Logo */}
+          <div>
+            <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">
+              School Logo Image
+            </label>
+            <p className="text-xs text-brand-ink/40 mb-2">
+              The school logo shown in the website header, footer, and emails.
+            </p>
+            <ImageOrUrlField
+              value={data.logo_url || ""}
+              onChange={(v) => setData({ ...data, logo_url: v })}
+              subDir="misc"
+            />
+          </div>
+
+          {/* Homepage Hero Banner */}
+          <div>
+            <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">
+              Homepage Hero Banner Image
+            </label>
+            <p className="text-xs text-brand-ink/40 mb-2">
+              The primary hero background/banner image fallback.
+            </p>
+            <ImageOrUrlField
+              value={data.hero_banner_url || ""}
+              onChange={(v) => setData({ ...data, hero_banner_url: v })}
+              subDir="misc"
+            />
+          </div>
+
+          {/* Homepage Feature Image */}
+          <div>
+            <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">
+              Homepage Hero Feature Image (Right side)
+            </label>
+            <p className="text-xs text-brand-ink/40 mb-2">
+              The featured image showing next to the main headline on the homepage.
+            </p>
+            <ImageOrUrlField
+              value={data.hero_feature_image_url || ""}
+              onChange={(v) => setData({ ...data, hero_feature_image_url: v })}
+              subDir="misc"
+            />
+          </div>
+
+          {/* Admissions Page Open Button */}
+          <div>
+            <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">
+              Admissions Page Open Button Image
+            </label>
+            <p className="text-xs text-brand-ink/40 mb-2">
+              The banner graphic promoting open admissions on the admissions landing page.
+            </p>
+            <ImageOrUrlField
+              value={data.admission_open_button_url || ""}
+              onChange={(v) => setData({ ...data, admission_open_button_url: v })}
+              subDir="misc"
+            />
+          </div>
+
+          {/* Preschool Ranked Badge */}
+          <div>
+            <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">
+              Preschool Ranked Badge Image
+            </label>
+            <p className="text-xs text-brand-ink/40 mb-2">
+              The top-ranked preschool seal displayed on the admissions landing page.
+            </p>
+            <ImageOrUrlField
+              value={data.ranked_badge_url || ""}
+              onChange={(v) => setData({ ...data, ranked_badge_url: v })}
               subDir="misc"
             />
           </div>

@@ -9,7 +9,10 @@ export function Demystified() {
   useEffect(() => {
     api.get("/site-settings").then(r => setSiteSettings(r.data)).catch(() => {});
   }, []);
-  const imgUrl = siteSettings?.demystified_image_url || settings?.demystified_image_url || "https://sdpublic.org/assets/img/demystified.jpg";
+  const demystifiedRaw = siteSettings?.demystified_image_url || settings?.demystified_image_url || "https://sdpublic.org/assets/img/demystified.jpg";
+  const imgUrl = demystifiedRaw.startsWith("http")
+    ? demystifiedRaw
+    : `${process.env.REACT_APP_BACKEND_URL || ""}${demystifiedRaw}`;
 
   return (
     <>

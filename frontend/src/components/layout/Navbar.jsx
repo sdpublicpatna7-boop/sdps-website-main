@@ -52,6 +52,11 @@ export default function Navbar({ settings }) {
   const [open, setOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState(null);
 
+  const logoUrl = settings?.logo_url || "https://sdpublic.org/assets/img/logo.png";
+  const formattedLogo = logoUrl.startsWith("http")
+    ? logoUrl
+    : `${process.env.REACT_APP_BACKEND_URL || ""}${logoUrl}`;
+
   return (
     <header className="sticky top-0 z-40">
       {/* Top utility bar */}
@@ -98,7 +103,7 @@ export default function Navbar({ settings }) {
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3" data-testid="brand-logo-link">
             <img
-              src="https://sdpublic.org/assets/img/logo.png"
+              src={formattedLogo}
               alt="SDPS"
               className="w-12 h-12 rounded-full ring-1 ring-brand-gold/40"
             />

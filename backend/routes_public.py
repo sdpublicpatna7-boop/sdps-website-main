@@ -333,6 +333,12 @@ async def get_site_settings():
         default = SiteSettings().model_dump()
         await db.site_settings.insert_one(default.copy())
         doc = default
+    else:
+        # Merge with defaults to ensure any newly added settings are always present
+        defaults = SiteSettings().model_dump()
+        for k, v in defaults.items():
+            if k not in doc:
+                doc[k] = v
     # ERP_LOGIN_URL env always wins over DB — changing it on Render is the single source of truth.
     env_erp = os.environ.get("ERP_LOGIN_URL", "").strip()
     if env_erp:

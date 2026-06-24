@@ -304,6 +304,11 @@ class SiteSettings(BaseDoc):
     demystified_image_url: str = "https://sdpublic.org/assets/img/demystified.jpg"
     preschool_banner_image_url: str = "https://sdpublic.org/assets/img/banner.jpg"
     khelo_patna_hero_image_url: str = "/khelo-patna-hero.jpg"
+    logo_url: str = "https://sdpublic.org/assets/img/logo.png"
+    hero_banner_url: str = "https://sdpublic.org/assets/img/banner.jpg"
+    hero_feature_image_url: str = "https://sdpublic.org/img/feature.jpg"
+    admission_open_button_url: str = "https://sdpublic.org/assets/img/admission_open_button.png"
+    ranked_badge_url: str = "https://sdpublic.org/assets/img/ranked.png"
     qp_portal_url: str = "https://sdpublic.org/qp-portal/"
     stats: Dict[str, str] = {
         "years": "30+",

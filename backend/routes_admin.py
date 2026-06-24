@@ -20,7 +20,8 @@ from auth import (
 )
 
 limiter = Limiter(key_func=get_remote_address)
-from email_service import send_email, render_template, format_salary_slip_email, format_salary_certificate_email, format_experience_certificate_email
+from email_service import send_email, send_email_with_attachment, render_template, render_attachment_cover_email, format_salary_slip_email, format_salary_certificate_email, format_experience_certificate_email
+from pdf_service import generate_protected_pdf, wrap_for_pdf
 from image_utils import compress_and_save, save_raw_file, UnsafeUploadError
 from models import (
     AdminLogin, AdminPasswordReset, AdminPasswordResetConfirm, AdminChangePassword,
@@ -357,37 +358,99 @@ class EmailSendPayload(BaseModel):
 @admin_router.post("/salary-slips/send-email")
 async def email_salary_slip(payload: EmailSendPayload, admin: TokenData = Depends(require_permission("media-tools"))):
     data = payload.data
-    html_body = format_salary_slip_email(data)
-    subject = f"Salary Slip - {data.get('pay_period')} - {data.get('employee_name')}"
-    full_html = render_template(subject, html_body)
-    res = await send_email(payload.email, subject, full_html)
+    employee_name = data.get("employee_name", "Employee")
+    pay_period = data.get("pay_period", "")
+    subject = f"Salary Slip - {pay_period} - {employee_name}"
+
+    # Generate the document HTML and convert to protected PDF
+    doc_html = format_salary_slip_email(data)
+    pdf_html = wrap_for_pdf(f"Salary Slip — {pay_period}", doc_html)
+    try:
+        pdf_bytes = generate_protected_pdf(pdf_html)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
+
+    # Send email with PDF attachment
+    safe_period = pay_period.replace(" ", "_").replace("/", "-")
+    cover_html = render_attachment_cover_email(
+        employee_name, "Salary Slip",
+        extra_info=f"Pay Period: <strong>{pay_period}</strong>"
+    )
+    res = await send_email_with_attachment(
+        to_email=payload.email,
+        subject=subject,
+        html_body=cover_html,
+        pdf_bytes=pdf_bytes,
+        pdf_filename=f"Salary_Slip_{safe_period}_{employee_name.replace(' ', '_')}.pdf",
+        to_name=employee_name,
+    )
     if not res.get("success"):
         raise HTTPException(status_code=500, detail=res.get("message") or "Failed to send email")
-    return {"sent": True}
+    return {"sent": True, "method": res.get("method", "unknown")}
 
 
 @admin_router.post("/salary-certificates/send-email")
 async def email_salary_certificate(payload: EmailSendPayload, admin: TokenData = Depends(require_permission("media-tools"))):
     data = payload.data
-    html_body = format_salary_certificate_email(data)
-    subject = f"Salary Certificate - {data.get('employee_name')}"
-    full_html = render_template(subject, html_body)
-    res = await send_email(payload.email, subject, full_html)
+    employee_name = data.get("employee_name", "Employee")
+    subject = f"Salary Certificate - {employee_name}"
+
+    # Generate the document HTML and convert to protected PDF
+    doc_html = format_salary_certificate_email(data)
+    pdf_html = wrap_for_pdf("Salary Certificate", doc_html)
+    try:
+        pdf_bytes = generate_protected_pdf(pdf_html)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
+
+    # Send email with PDF attachment
+    cover_html = render_attachment_cover_email(
+        employee_name, "Salary Certificate",
+        extra_info=f"Financial Year: <strong>{data.get('financial_year', '')}</strong>"
+    )
+    res = await send_email_with_attachment(
+        to_email=payload.email,
+        subject=subject,
+        html_body=cover_html,
+        pdf_bytes=pdf_bytes,
+        pdf_filename=f"Salary_Certificate_{employee_name.replace(' ', '_')}.pdf",
+        to_name=employee_name,
+    )
     if not res.get("success"):
         raise HTTPException(status_code=500, detail=res.get("message") or "Failed to send email")
-    return {"sent": True, "mailercloud_response": res.get("mailercloud_response")}
+    return {"sent": True, "method": res.get("method", "unknown")}
 
 
 @admin_router.post("/experience-certificates/send-email")
 async def email_experience_certificate(payload: EmailSendPayload, admin: TokenData = Depends(require_permission("media-tools"))):
     data = payload.data
-    html_body = format_experience_certificate_email(data)
-    subject = f"Experience Certificate - {data.get('employee_name')}"
-    full_html = render_template(subject, html_body)
-    res = await send_email(payload.email, subject, full_html)
+    employee_name = data.get("employee_name", "Employee")
+    subject = f"Experience Certificate - {employee_name}"
+
+    # Generate the document HTML and convert to protected PDF
+    doc_html = format_experience_certificate_email(data)
+    pdf_html = wrap_for_pdf("Experience Certificate", doc_html)
+    try:
+        pdf_bytes = generate_protected_pdf(pdf_html)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
+
+    # Send email with PDF attachment
+    cover_html = render_attachment_cover_email(
+        employee_name, "Experience Certificate",
+        extra_info=f"Tenure: {data.get('joining_date', '')} — {data.get('leaving_date', 'Present')}"
+    )
+    res = await send_email_with_attachment(
+        to_email=payload.email,
+        subject=subject,
+        html_body=cover_html,
+        pdf_bytes=pdf_bytes,
+        pdf_filename=f"Experience_Certificate_{employee_name.replace(' ', '_')}.pdf",
+        to_name=employee_name,
+    )
     if not res.get("success"):
         raise HTTPException(status_code=500, detail=res.get("message") or "Failed to send email")
-    return {"sent": True, "mailercloud_response": res.get("mailercloud_response")}
+    return {"sent": True, "method": res.get("method", "unknown")}
 
 
 # ============= READ-ONLY LISTS (for admin: enquiries, applications, etc) =============
@@ -465,6 +528,12 @@ async def get_site_settings_admin(admin: TokenData = Depends(require_permission(
     if not doc:
         doc = SiteSettings().model_dump()
         await db.site_settings.insert_one(doc.copy())
+    else:
+        # Merge with defaults to ensure any newly added settings are always present
+        defaults = SiteSettings().model_dump()
+        for k, v in defaults.items():
+            if k not in doc:
+                doc[k] = v
     return doc
 
 

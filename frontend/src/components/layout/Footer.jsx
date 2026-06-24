@@ -3,6 +3,10 @@ import { Phone, Mail, MapPin, Youtube, Instagram, Facebook } from "lucide-react"
 
 export default function Footer({ settings }) {
   const s = settings || {};
+  const logoUrl = s.logo_url || "https://sdpublic.org/assets/img/logo.png";
+  const formattedLogo = logoUrl.startsWith("http")
+    ? logoUrl
+    : `${process.env.REACT_APP_BACKEND_URL || ""}${logoUrl}`;
   return (
     <footer className="bg-gradient-to-br from-brand-blue-dark via-brand-blue to-brand-blue-light text-white relative overflow-hidden grain">
       <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-brand-orange/20 blur-3xl" />
@@ -11,7 +15,7 @@ export default function Footer({ settings }) {
       <div className="relative max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-12 gap-10">
         <div className="md:col-span-4">
           <div className="flex items-center gap-3 mb-4">
-            <img src="https://sdpublic.org/assets/img/logo.png" alt="SDPS" className="w-14 h-14 rounded-full ring-2 ring-brand-gold" />
+            <img src={formattedLogo} alt="SDPS" className="w-14 h-14 rounded-full ring-2 ring-brand-gold" />
             <div>
               <div className="font-legacy text-3xl">S.D. Public School</div>
               <div className="text-xs tracking-widest opacity-80">EMPOWERING GENERATIONS</div>

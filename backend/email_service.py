@@ -1,28 +1,43 @@
 """
-MailerCloud Email API service wrapper.
-API docs: https://help.mailercloud.com/en/articles/155-mailercloud-email-api-help-guide
-Endpoint: POST https://email-api.mailercloud.com/email
-Auth:     Authorization: <api_key>  (plain key, no "Bearer" prefix)
+Email Service for S.D. Public School
+- MailerCloud Email API for simple text/HTML emails
+- SMTP via Hostinger for emails with PDF attachments (faster delivery)
 """
 import os
+import io
+import base64
 import asyncio
 import logging
 import httpx
+import aiosmtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
 
 logger = logging.getLogger(__name__)
 
+# ── Configuration ─────────────────────────────────────────────────────────────
 MAILERCLOUD_API_KEY = os.environ.get("MAILERCLOUD_API_KEY", "")
 SENDER_EMAIL        = os.environ.get("SENDER_EMAIL", "noreply@sdpublic.org")
 SENDER_NAME         = os.environ.get("SENDER_NAME", "S.D. Public School")
 
 MAILERCLOUD_SEND_URL = "https://email-api.mailercloud.com/email"
 
+# SMTP settings (Hostinger)
+SMTP_HOST     = os.environ.get("SMTP_HOST", "smtp.hostinger.com")
+SMTP_PORT     = int(os.environ.get("SMTP_PORT", "465"))
+SMTP_USER     = os.environ.get("SMTP_USER", "")
+SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
+
+LOGO_URL = "https://sdpublic.org/assets/img/logo.png"
+
+
+# ── MailerCloud API (simple emails without attachments) ───────────────────────
 
 async def send_email(to_email: str, subject: str, html_content: str) -> dict:
     """
     Send a transactional email via MailerCloud Email API.
     Returns {success: bool, message: str}.
-    If MAILERCLOUD_API_KEY is not set, logs the attempt and returns success=False.
     """
     if not MAILERCLOUD_API_KEY:
         logger.warning(f"[EMAIL MOCK] To: {to_email} | Subject: {subject}")
@@ -32,7 +47,6 @@ async def send_email(to_email: str, subject: str, html_content: str) -> dict:
             "mocked": True
         }
 
-    # MailerCloud Email API payload structure
     payload = {
         "version": "1.0",
         "email": {
@@ -49,7 +63,6 @@ async def send_email(to_email: str, subject: str, html_content: str) -> dict:
         },
     }
 
-    # MailerCloud expects the raw API key — NO "Bearer" prefix
     headers = {
         "Authorization": MAILERCLOUD_API_KEY,
         "Content-Type": "application/json",
@@ -60,13 +73,8 @@ async def send_email(to_email: str, subject: str, html_content: str) -> dict:
             resp = await client.post(MAILERCLOUD_SEND_URL, json=payload, headers=headers)
         data = resp.json()
         logger.info(f"MailerCloud response for '{subject}' to {to_email}: HTTP {resp.status_code} | body: {data}")
-        # MailerCloud returns statusCode 1000 on success
         if resp.status_code in (200, 201) and data.get("statusCode") == 1000:
-            return {
-                "success": True,
-                "message": "sent",
-                "mailercloud_response": data,
-            }
+            return {"success": True, "message": "sent", "mailercloud_response": data}
         error_msg = data.get("message") or f"HTTP {resp.status_code} / statusCode {data.get('statusCode')}"
         logger.error(f"MailerCloud error {resp.status_code}: {data}")
         return {"success": False, "message": error_msg, "mailercloud_response": data}
@@ -75,8 +83,69 @@ async def send_email(to_email: str, subject: str, html_content: str) -> dict:
         return {"success": False, "message": str(e)}
 
 
+# ── SMTP (emails with PDF attachments — instant delivery) ─────────────────────
+
+async def send_email_with_attachment(
+    to_email: str,
+    subject: str,
+    html_body: str,
+    pdf_bytes: bytes,
+    pdf_filename: str,
+    to_name: str = "",
+) -> dict:
+    """
+    Send an email with a PDF attachment via SMTP (Hostinger).
+    Falls back to MailerCloud (without attachment) if SMTP is not configured.
+    """
+    # If SMTP is not configured, try MailerCloud without attachment
+    if not SMTP_USER or not SMTP_PASSWORD:
+        logger.warning("[EMAIL] SMTP not configured, falling back to MailerCloud (no attachment)")
+        return await send_email(to_email, subject, html_body)
+
+    try:
+        # Build MIME message
+        msg = MIMEMultipart("mixed")
+        msg["From"] = f"{SENDER_NAME} <{SMTP_USER}>"
+        msg["To"] = f"{to_name} <{to_email}>" if to_name else to_email
+        msg["Subject"] = subject
+
+        # HTML body
+        html_part = MIMEText(html_body, "html", "utf-8")
+        msg.attach(html_part)
+
+        # PDF attachment
+        pdf_part = MIMEApplication(pdf_bytes, _subtype="pdf")
+        pdf_part.add_header("Content-Disposition", "attachment", filename=pdf_filename)
+        msg.attach(pdf_part)
+
+        # Send via SMTP
+        await aiosmtplib.send(
+            msg,
+            hostname=SMTP_HOST,
+            port=SMTP_PORT,
+            username=SMTP_USER,
+            password=SMTP_PASSWORD,
+            use_tls=True if SMTP_PORT == 465 else False,
+            start_tls=True if SMTP_PORT == 587 else False,
+        )
+
+        logger.info(f"SMTP email sent: '{subject}' to {to_email} with attachment {pdf_filename}")
+        return {"success": True, "message": "sent via SMTP", "method": "smtp"}
+
+    except Exception as e:
+        logger.error(f"SMTP send failed: {e}")
+        # Fallback to MailerCloud without attachment
+        logger.info("Falling back to MailerCloud (no attachment)...")
+        result = await send_email(to_email, subject, html_body)
+        result["smtp_error"] = str(e)
+        result["method"] = "mailercloud_fallback"
+        return result
+
+
+# ── Branded Email Templates ──────────────────────────────────────────────────
+
 def render_template(title: str, body_html: str, footer: str = "S.D. Public School, Patna") -> str:
-    """Render a branded HTML email template."""
+    """Render a branded HTML email template with school logo."""
     return f"""
     <!DOCTYPE html>
     <html><head><meta charset="UTF-8">
@@ -88,7 +157,8 @@ def render_template(title: str, body_html: str, footer: str = "S.D. Public Schoo
                     overflow:hidden;border:1px solid #e2e8f0;">
         <tr>
           <td style="background:linear-gradient(135deg,#0E3B91 0%,#1e4cb8 100%);
-                     padding:24px 32px;color:#ffffff;">
+                     padding:24px 32px;color:#ffffff;text-align:center;">
+            <img src="{LOGO_URL}" alt="SDPS Logo" style="height:50px;margin-bottom:8px;display:block;margin-left:auto;margin-right:auto;">
             <h2 style="margin:0;font-size:20px;letter-spacing:0.5px;">S.D. Public School</h2>
             <p style="margin:4px 0 0;font-size:13px;opacity:0.9;">
               Empowering Generations Since 1994
@@ -112,6 +182,37 @@ def render_template(title: str, body_html: str, footer: str = "S.D. Public Schoo
     </body></html>
     """
 
+
+def render_attachment_cover_email(
+    employee_name: str,
+    document_type: str,
+    extra_info: str = "",
+) -> str:
+    """
+    Render a short branded cover email for PDF attachment emails.
+    The actual document is in the PDF — this is just the email body.
+    """
+    extra_line = f"<p style='font-size:14px;color:#334155;'>{extra_info}</p>" if extra_info else ""
+    body = f"""
+    <p style="font-size:15px;color:#1e293b;">Dear <strong>{employee_name}</strong>,</p>
+    <p style="font-size:14px;color:#334155;line-height:1.7;">
+        Please find your <strong>{document_type}</strong> attached as a PDF document with this email.
+    </p>
+    {extra_line}
+    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:14px 18px;margin:20px 0;">
+        <p style="margin:0;font-size:13px;color:#0369a1;">
+            📎 <strong>Attachment:</strong> {document_type} (PDF)<br>
+            🔒 This document is digitally secured and protected against modifications.
+        </p>
+    </div>
+    <p style="font-size:13px;color:#64748b;">
+        If you have any questions regarding this document, please contact the school administration.
+    </p>
+    """
+    return render_template(document_type, body)
+
+
+# ── Document-specific email formatters (for inline HTML emails) ───────────────
 
 def format_salary_slip_email(data: dict) -> str:
     import uuid
@@ -249,7 +350,7 @@ def format_salary_certificate_email(data: dict) -> str:
         </p>
         
         <p style="line-height:1.8;font-size:14px;text-align:justify;margin-bottom:24px;">
-            This certificate is issued upon the employee’s request for official purposes.
+            This certificate is issued upon the employee's request for official purposes.
         </p>
         
         <table border="0" cellpadding="0" cellspacing="0" width="100%" style="font-size:12px;color:#475569;margin-top:20px;">
@@ -321,4 +422,3 @@ def format_experience_certificate_email(data: dict) -> str:
         </div>
     </div>
     """
-

@@ -82,6 +82,21 @@ export default function Home() {
   const playStoreUrl = settings?.play_store_url || "https://play.google.com/store/apps/details?id=com.gungunerp.appsdpublicschool";
   const preschoolBanner = settings?.preschool_banner_image_url || "https://sdpublic.org/assets/img/banner.jpg";
 
+  const heroFeatureImage = settings?.hero_feature_image_url || "https://sdpublic.org/img/feature.jpg";
+  const formattedHeroFeature = heroFeatureImage.startsWith("http")
+    ? heroFeatureImage
+    : `${process.env.REACT_APP_BACKEND_URL || ""}${heroFeatureImage}`;
+
+  const heroBannerImage = settings?.hero_banner_url || "https://sdpublic.org/assets/img/banner.jpg";
+  const formattedHeroBanner = heroBannerImage.startsWith("http")
+    ? heroBannerImage
+    : `${process.env.REACT_APP_BACKEND_URL || ""}${heroBannerImage}`;
+
+  const demystifiedImage = settings?.demystified_image_url || "https://sdpublic.org/assets/img/demystified.jpg";
+  const formattedDemystified = demystifiedImage.startsWith("http")
+    ? demystifiedImage
+    : `${process.env.REACT_APP_BACKEND_URL || ""}${demystifiedImage}`;
+
   return (
     <>
       {/* HERO */}
@@ -153,10 +168,10 @@ export default function Home() {
           >
             <div className="relative aspect-[4/5] rounded-[2.5rem] overflow-hidden bg-white/40 border border-white/60 backdrop-blur-sm p-3 shadow-2xl group hover:-translate-y-2 hover:shadow-[0_30px_60px_rgba(8,32,82,0.1)] transition-all duration-500">
               <img
-                src="https://sdpublic.org/img/feature.jpg"
+                src={formattedHeroFeature}
                 alt="SDPS School"
                 className="w-full h-full object-cover rounded-[2rem] transition duration-500 group-hover:scale-[1.02]"
-                onError={(e) => { e.target.src = "https://sdpublic.org/assets/img/banner.jpg"; }}
+                onError={(e) => { e.target.src = formattedHeroBanner; }}
               />
               <div className="absolute bottom-6 left-6 right-6 bg-white/80 backdrop-blur-md border border-white/60 rounded-2xl p-4 flex items-center gap-3 shadow-lg">
                 <a href={settings?.hero_video_url || "https://www.youtube.com/watch?v=Lv7W4kSSM3w"} target="_blank" rel="noreferrer"
@@ -318,7 +333,7 @@ export default function Home() {
           <h2 className="section-title text-center mb-10">Demystified</h2>
           <div className="rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/60 p-3 bg-white/40 backdrop-blur-sm">
             <img
-              src="https://sdpublic.org/assets/img/demystified.jpg"
+              src={formattedDemystified}
               alt="SDPS Demystified"
               className="w-full object-contain rounded-[2rem] hover:scale-[1.002] transition-transform duration-500"
               loading="lazy"
