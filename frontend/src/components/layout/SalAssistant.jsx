@@ -302,7 +302,7 @@ export default function SalAssistant() {
               animate={{ opacity: 1, x: 0,  scale: 1 }}
               exit={{   opacity: 0, x: 20,  scale: 0.88 }}
               transition={{ type: "spring", stiffness: 300, damping: 24 }}
-              className="absolute bottom-20 right-full mr-3 z-10 cursor-pointer"
+              className="absolute bottom-20 right-full mr-3 z-10 cursor-pointer hidden sm:block"
               onClick={openChat}
               style={{ minWidth: 190, maxWidth: 230 }}
             >
@@ -338,7 +338,7 @@ export default function SalAssistant() {
           whileHover={{ scale: 1.05, y: -4 }}
           whileTap={{ scale: 0.96 }}
           transition={{ type: "spring", stiffness: 400, damping: 20 }}
-          className="relative w-28 h-40 sm:w-36 sm:h-48 focus:outline-none"
+          className="relative w-24 h-32 sm:w-36 sm:h-48 focus:outline-none"
           style={{ filter: "drop-shadow(0 10px 28px rgba(0,0,0,0.22))" }}
         >
           <AvatarBody className="w-full h-full" showEyes={true} />

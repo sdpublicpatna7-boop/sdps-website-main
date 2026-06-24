@@ -58,12 +58,12 @@ function AnimatedStat({ raw, label, suffix = "+" }) {
       whileInView={{ opacity: 1, y: 0 }} 
       transition={{ duration: 0.6, ease: "easeOut" }} 
       viewport={{ once: true }}
-      className="bg-white/50 backdrop-blur-sm border border-slate-100 hover:border-slate-200/80 hover:shadow-[0_8px_30px_rgb(0,0,0,0.015)] rounded-3xl p-6 transition-all duration-300"
+      className="bg-white/50 backdrop-blur-sm border border-slate-100 hover:border-slate-200/80 hover:shadow-[0_8px_30px_rgb(0,0,0,0.015)] rounded-2xl sm:rounded-3xl p-3 sm:p-6 transition-all duration-300"
     >
-      <div className="font-headline text-5xl sm:text-6xl text-brand-blue font-bold tracking-tight bg-gradient-to-br from-brand-blue via-brand-blue-light to-brand-blue bg-clip-text text-transparent">
+      <div className="font-headline text-3xl sm:text-5xl lg:text-6xl text-brand-blue font-bold tracking-tight bg-gradient-to-br from-brand-blue via-brand-blue-light to-brand-blue bg-clip-text text-transparent whitespace-nowrap">
         {display}{suffix}
       </div>
-      <div className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-slate-400 mt-3">{label}</div>
+      <div className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-slate-400 mt-2 sm:mt-3">{label}</div>
     </motion.div>
   );
 }
@@ -226,7 +226,7 @@ export default function Home() {
 
       {/* STATS — animated counter on scroll */}
       <section className="py-16 border-y border-brand-blue/5 bg-white">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 text-center">
           {[
             { raw: stats.years, label: "Years of Excellence", suffix: "+" },
             { raw: stats.educators, label: "Qualified Educators", suffix: "+" },
