@@ -587,7 +587,7 @@ async def admin_stats(admin: TokenData = Depends(get_current_admin)):
 
 # ============= DEBUG MAILERCLOUD INTEGRATION =============
 @admin_router.get("/debug-mailercloud")
-async def debug_mailercloud(admin: TokenData = Depends(require_permission("site-settings"))):
+async def debug_mailercloud(to: str = "", admin: TokenData = Depends(require_permission("site-settings"))):
     import httpx
     mailer_key = os.environ.get("MAILERCLOUD_API_KEY", "")
     sender_email = os.environ.get("SENDER_EMAIL", "noreply@sdpublic.org")
@@ -595,6 +595,8 @@ async def debug_mailercloud(admin: TokenData = Depends(require_permission("site-
     
     if not mailer_key:
         return {"error": "MAILERCLOUD_API_KEY not configured in environment"}
+    
+    recipient = to or sender_email
         
     # Correct MailerCloud Email API — plain key, no Bearer prefix
     headers = {
@@ -607,9 +609,9 @@ async def debug_mailercloud(admin: TokenData = Depends(require_permission("site-
             "from": sender_email,
             "fromName": sender_name,
             "subject": "SDPS Email Test — MailerCloud Integration",
-            "html": "<h2>S.D. Public School</h2><p>This is a test email from the MailerCloud Email API integration. If you received this, the email service is working correctly!</p>",
+            "html": "<h2>S.D. Public School</h2><p>This is a test email from the MailerCloud Email API integration. If you received this, the email service is working correctly!</p><p>Sent at: " + str(__import__('datetime').datetime.now()) + "</p>",
             "recipients": {
-                "to": [{"name": "Admin", "email": sender_email}]
+                "to": [{"name": "Test Recipient", "email": recipient}]
             },
         },
         "metadata": {
@@ -621,6 +623,8 @@ async def debug_mailercloud(admin: TokenData = Depends(require_permission("site-
             r = await client.post("https://email-api.mailercloud.com/email", json=payload, headers=headers)
         data = r.json()
         return {
+            "sent_to": recipient,
+            "sent_from": sender_email,
             "status_code": r.status_code,
             "response": data,
             "success": r.status_code in (200, 201) and data.get("statusCode") == 1000,
