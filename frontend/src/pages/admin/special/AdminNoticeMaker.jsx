@@ -89,6 +89,39 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
     }
   }, [selectedRolePreset, signaturePresets]);
 
+  // Auto-Counting Reference Number Configuration
+  const [autoRefEnabled, setAutoRefEnabled] = useState(true);
+  const [refPrefix, setRefPrefix] = useState("SDPS/2026-27/");
+  const [refLocked, setRefLocked] = useState(false);
+  const [refSerial, setRefSerial] = useState(() => {
+    try {
+      const saved = localStorage.getItem("sdps_notice_serial");
+      return saved ? parseInt(saved) : 45;
+    } catch {
+      return 45;
+    }
+  });
+
+  // Save serial to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem("sdps_notice_serial", refSerial.toString());
+    } catch (err) {
+      console.error("Failed to save serial counter", err);
+    }
+  }, [refSerial]);
+
+  const finalizeRefNo = () => {
+    if (autoRefEnabled && !refLocked) {
+      const generated = `Ref No: ${refPrefix}${refSerial.toString().padStart(3, "0")}`;
+      setRefNo(generated);
+      setRefLocked(true);
+      setRefSerial(prev => prev + 1);
+      return generated;
+    }
+    return refNo;
+  };
+
   // Drafts Local History
   const [drafts, setDrafts] = useState(() => {
     try {
@@ -124,7 +157,10 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
   };
 
   const handlePrint = () => {
-    window.print();
+    finalizeRefNo();
+    setTimeout(() => {
+      window.print();
+    }, 150);
   };
 
   // Save draft locally
@@ -146,7 +182,11 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
       letterheadHeader,
       selectedRolePreset,
       signatureUrl,
-      sigHeight
+      sigHeight,
+      autoRefEnabled,
+      refPrefix,
+      refSerial,
+      refLocked
     };
 
     setDrafts(prev => [newDraft, ...prev.filter(d => d.noticeTitle !== noticeTitle || d.subject !== subject)]);
@@ -169,6 +209,10 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
     setSelectedRolePreset(item.selectedRolePreset || "custom");
     setSignatureUrl(item.signatureUrl || "");
     setSigHeight(item.sigHeight || 48);
+    setAutoRefEnabled(item.autoRefEnabled !== undefined ? item.autoRefEnabled : true);
+    setRefPrefix(item.refPrefix || "SDPS/2026-27/");
+    setRefSerial(item.refSerial || 45);
+    setRefLocked(item.refLocked || false);
     toast.success("Draft loaded into notice editor!");
   };
 
@@ -196,16 +240,19 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
     setSelectedRolePreset("principal");
     setSignatureUrl(signaturePresets.principal || "");
     setSigHeight(48);
+    setAutoRefEnabled(true);
+    setRefPrefix("SDPS/2026-27/");
+    setRefLocked(false);
     toast.success("Notice editor reset to defaults!");
   };
 
   const handleUploadSignature = async (file) => {
     const fd = new FormData();
-    fd.append("file", file);
     fd.append("sub_dir", "signatures");
+    fd.append("file", file);
     setUploadingSignature(true);
     try {
-      const r = await api.post("/admin/upload/image", fd, {
+      const r = await api.post("/admin/upload-image", fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       const url = r.data.url;
@@ -228,9 +275,11 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
   const handlePublish = async () => {
     if (!window.confirm("Are you sure you want to publish this notice to the website notices board? It will be visible to the public immediately.")) return;
     
+    const finalRef = finalizeRefNo();
+    
     // Map fields to backend Notice model
     // We compose the description with Subject, Ref No, and By Order information so that it displays complete on public notice board
-    const publishedDescription = `${subject ? `**${subject}**\n\n` : ""}${refNo ? `${refNo}\n\n` : ""}${bodyText}\n\n${signatoryHeader}\n${signatoryAuthority}`;
+    const publishedDescription = `${subject ? `**${subject}**\n\n` : ""}${finalRef ? `${finalRef}\n\n` : ""}${bodyText}\n\n${signatoryHeader}\n${signatoryAuthority}`;
     
     const payload = {
       title: `${noticeTitle}${subject ? `: ${subject.replace(/^Subject:\s*/i, "")}` : ""}`,
@@ -378,26 +427,90 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Ref Number</label>
-                <input
-                  type="text"
-                  value={refNo}
-                  onChange={(e) => setRefNo(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-orange focus:border-brand-orange bg-slate-50"
-                  placeholder="Ref No: SDPS/2026/045"
-                />
+            {/* Reference Number Section */}
+            <div className="bg-slate-50/50 p-3 rounded-2xl border border-slate-150 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Reference Number</span>
+                <label className="flex items-center gap-1.5 text-[10px] text-slate-500 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={autoRefEnabled}
+                    onChange={(e) => {
+                      setAutoRefEnabled(e.target.checked);
+                      if (!e.target.checked) setRefLocked(false);
+                    }}
+                    className="rounded text-brand-orange focus:ring-brand-orange w-3.5 h-3.5 border-slate-300"
+                  />
+                  <span className="font-semibold">Auto-Count</span>
+                </label>
               </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Notice Date</label>
-                <input
-                  type="date"
-                  value={noticeDate}
-                  onChange={(e) => setNoticeDate(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-orange focus:border-brand-orange bg-slate-50"
-                />
-              </div>
+
+              {autoRefEnabled ? (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-0.5">
+                      <label className="text-[9px] font-semibold text-slate-400 uppercase">Prefix</label>
+                      <input
+                        type="text"
+                        value={refPrefix}
+                        onChange={(e) => setRefPrefix(e.target.value)}
+                        disabled={refLocked}
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-orange bg-white disabled:opacity-50"
+                        placeholder="e.g. SDPS/2026-27/"
+                      />
+                    </div>
+                    <div className="space-y-0.5">
+                      <label className="text-[9px] font-semibold text-slate-400 uppercase">Next Serial</label>
+                      <input
+                        type="number"
+                        value={refSerial}
+                        onChange={(e) => setRefSerial(Math.max(1, parseInt(e.target.value) || 1))}
+                        disabled={refLocked}
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-orange bg-white disabled:opacity-50 font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px] bg-white px-2.5 py-1.5 rounded-lg border border-slate-100">
+                    <span className="font-medium text-slate-400">Status:</span>
+                    {refLocked ? (
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-red-500">Locked ({refNo.replace("Ref No: ", "")})</span>
+                        <button
+                          type="button"
+                          onClick={() => setRefLocked(false)}
+                          className="text-[9px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-bold uppercase transition"
+                        >
+                          Unlock
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="font-bold text-emerald-600 animate-pulse">Unlocked (Locks on Print/Publish)</span>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-0.5">
+                  <label className="text-[9px] font-semibold text-slate-400 uppercase">Manual Ref Number</label>
+                  <input
+                    type="text"
+                    value={refNo}
+                    onChange={(e) => setRefNo(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-orange bg-white"
+                    placeholder="e.g. Ref No: SDPS/2026/045"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Notice Date</label>
+              <input
+                type="date"
+                value={noticeDate}
+                onChange={(e) => setNoticeDate(e.target.value)}
+                className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-orange focus:border-brand-orange bg-slate-50"
+              />
             </div>
 
             <div className="space-y-1">
@@ -704,7 +817,7 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
 
               {/* Document Reference No & Date Row */}
               <div className="flex justify-between items-center text-xs text-slate-700 font-bold border-b border-slate-100 pb-2 px-2">
-                <div>{refNo || "Ref No: .........................."}</div>
+                <div>{autoRefEnabled && !refLocked ? `Ref No: ${refPrefix}${refSerial.toString().padStart(3, "0")}` : refNo || "Ref No: .........................."}</div>
                 <div>Date: {formatDate(noticeDate)}</div>
               </div>
 
