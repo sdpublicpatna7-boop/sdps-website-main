@@ -611,9 +611,19 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
                 )}
 
                 <div className="pt-2 border-t border-slate-200/60">
-                  <label className={`flex items-center justify-center gap-2 py-2 border-2 border-dashed border-slate-350 hover:border-brand-orange bg-white rounded-xl cursor-pointer text-xs font-bold text-slate-600 transition ${uploadingSignature ? "opacity-50" : ""}`}>
+                  <label className={`flex items-center justify-center gap-2 py-2 rounded-xl cursor-pointer text-xs font-bold transition ${
+                    uploadingSignature 
+                      ? "opacity-50 bg-slate-50 text-slate-400 border border-slate-200 cursor-not-allowed" 
+                      : signaturePresets[selectedRolePreset]
+                        ? "bg-slate-100 border border-slate-300 text-slate-700 hover:bg-slate-200 hover:border-slate-400"
+                        : "border-2 border-dashed border-slate-350 bg-white text-slate-600 hover:border-brand-orange"
+                  }`}>
                     <FileUp className="w-3.5 h-3.5" />
-                    {uploadingSignature ? "Uploading PNG..." : "Upload PNG Signature"}
+                    {uploadingSignature 
+                      ? "Uploading PNG..." 
+                      : signaturePresets[selectedRolePreset] 
+                        ? "Change / Replace Signature" 
+                        : "Upload PNG Signature"}
                     <input
                       type="file"
                       accept="image/png"
