@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import api from "@/lib/api";
 import { toast } from "sonner";
-import { Printer, FileText, Save, Send, Trash, Plus, RotateCcw, AlertTriangle, Shield } from "lucide-react";
+import { Printer, FileText, Save, Send, Trash, Plus, RotateCcw, AlertTriangle, Shield, FileUp } from "lucide-react";
 
 export function AdminNoticeMaker() {
   const { settings } = useOutletContext() || {};
@@ -45,6 +45,50 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
   const [lineHeight, setLineHeight] = useState("relaxed"); // snug, normal, relaxed, loose
   const [letterheadHeader, setLetterheadHeader] = useState(true);
 
+  // Signature Presets & Configuration
+  const [selectedRolePreset, setSelectedRolePreset] = useState("principal"); // principal, director, management, custom
+  const [signatureUrl, setSignatureUrl] = useState("");
+  const [sigHeight, setSigHeight] = useState(48); // range from 32 to 80
+  const [uploadingSignature, setUploadingSignature] = useState(false);
+  
+  const [signaturePresets, setSignaturePresets] = useState(() => {
+    try {
+      const saved = localStorage.getItem("sdps_signature_presets");
+      return saved ? JSON.parse(saved) : { principal: "", director: "", management: "" };
+    } catch {
+      return { principal: "", director: "", management: "" };
+    }
+  });
+
+  // Save presets whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem("sdps_signature_presets", JSON.stringify(signaturePresets));
+    } catch (err) {
+      console.error("Failed to save signature presets", err);
+    }
+  }, [signaturePresets]);
+
+  // Sync active signature and signatory names on preset select
+  useEffect(() => {
+    if (selectedRolePreset === "principal") {
+      setSignatoryHeader("By Order:");
+      setSignatoryAuthority("Principal");
+      setSignatureUrl(signaturePresets.principal || "");
+    } else if (selectedRolePreset === "director") {
+      setSignatoryHeader("By Order:");
+      setSignatoryAuthority("Director");
+      setSignatureUrl(signaturePresets.director || "");
+    } else if (selectedRolePreset === "management") {
+      setSignatoryHeader("By Order:");
+      setSignatoryAuthority("Management / Trustee");
+      setSignatureUrl(signaturePresets.management || "");
+    } else if (selectedRolePreset === "custom") {
+      // Keep custom text, clear signature
+      setSignatureUrl("");
+    }
+  }, [selectedRolePreset, signaturePresets]);
+
   // Drafts Local History
   const [drafts, setDrafts] = useState(() => {
     try {
@@ -74,6 +118,11 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
     return dateStr;
   };
 
+  const fullUrl = (u) => {
+    if (!u) return "";
+    return u.startsWith("http") ? u : `${process.env.REACT_APP_BACKEND_URL || ""}${u}`;
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -94,7 +143,10 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
       showSealBox,
       fontSize,
       lineHeight,
-      letterheadHeader
+      letterheadHeader,
+      selectedRolePreset,
+      signatureUrl,
+      sigHeight
     };
 
     setDrafts(prev => [newDraft, ...prev.filter(d => d.noticeTitle !== noticeTitle || d.subject !== subject)]);
@@ -114,6 +166,9 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
     setFontSize(item.fontSize || "sm");
     setLineHeight(item.lineHeight || "relaxed");
     setLetterheadHeader(item.letterheadHeader !== undefined ? item.letterheadHeader : true);
+    setSelectedRolePreset(item.selectedRolePreset || "custom");
+    setSignatureUrl(item.signatureUrl || "");
+    setSigHeight(item.sigHeight || 48);
     toast.success("Draft loaded into notice editor!");
   };
 
@@ -138,7 +193,35 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
     setFontSize("sm");
     setLineHeight("relaxed");
     setLetterheadHeader(true);
+    setSelectedRolePreset("principal");
+    setSignatureUrl(signaturePresets.principal || "");
+    setSigHeight(48);
     toast.success("Notice editor reset to defaults!");
+  };
+
+  const handleUploadSignature = async (file) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("sub_dir", "signatures");
+    setUploadingSignature(true);
+    try {
+      const r = await api.post("/admin/upload/image", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const url = r.data.url;
+      // Save it to presets
+      setSignaturePresets(prev => {
+        const next = { ...prev, [selectedRolePreset]: url };
+        return next;
+      });
+      setSignatureUrl(url);
+      toast.success(`${selectedRolePreset} signature uploaded and saved for future use!`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to upload signature. Ensure it is a valid PNG image.");
+    } finally {
+      setUploadingSignature(false);
+    }
   };
 
   // Publish to backend Notice Board
@@ -352,6 +435,123 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
             </div>
           </div>
 
+          {/* Digital Signature Presets & Upload */}
+          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+            <h3 className="text-xs font-bold text-slate-800 border-b border-slate-100 pb-2 uppercase tracking-wide flex items-center gap-1.5">
+              <span>✍️</span> Digital Signature Presets
+            </h3>
+            
+            {/* Preset selectors */}
+            <div className="grid grid-cols-4 gap-1.5 text-[10px]">
+              {["principal", "director", "management", "custom"].map(role => (
+                <button
+                  key={role}
+                  type="button"
+                  onClick={() => setSelectedRolePreset(role)}
+                  className={`py-2 px-1 rounded-xl font-bold uppercase transition border ${
+                    selectedRolePreset === role
+                      ? "bg-brand-orange border-brand-orange text-white"
+                      : "bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  {role}
+                </button>
+              ))}
+            </div>
+
+            {/* Selected preset state & uploader */}
+            {selectedRolePreset !== "custom" && (
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-150 space-y-3">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-bold text-slate-500 uppercase tracking-wider">
+                    {selectedRolePreset} Preset
+                  </span>
+                  {signaturePresets[selectedRolePreset] && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm(`Clear saved signature image for ${selectedRolePreset}?`)) {
+                          setSignaturePresets(prev => ({ ...prev, [selectedRolePreset]: "" }));
+                          toast.success(`Cleared ${selectedRolePreset} signature preset`);
+                        }
+                      }}
+                      className="text-[10px] text-red-500 font-bold hover:underline"
+                    >
+                      Delete Saved
+                    </button>
+                  )}
+                </div>
+
+                {signaturePresets[selectedRolePreset] ? (
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={fullUrl(signaturePresets[selectedRolePreset])}
+                      alt="Preset signature"
+                      className="h-10 w-fit object-contain border border-slate-200 bg-white p-1 rounded-lg animate-fade-up"
+                    />
+                    <span className="text-[10px] text-slate-400 font-medium">Loaded automatically</span>
+                  </div>
+                ) : (
+                  <div className="text-[10px] text-slate-500 flex items-center gap-1 bg-amber-50/50 border border-amber-100/70 p-2.5 rounded-xl">
+                    <span>⚠️</span> No signature image saved for {selectedRolePreset} yet.
+                  </div>
+                )}
+
+                <div className="pt-2 border-t border-slate-200/60">
+                  <label className={`flex items-center justify-center gap-2 py-2 border-2 border-dashed border-slate-350 hover:border-brand-orange bg-white rounded-xl cursor-pointer text-xs font-bold text-slate-600 transition ${uploadingSignature ? "opacity-50" : ""}`}>
+                    <FileUp className="w-3.5 h-3.5" />
+                    {uploadingSignature ? "Uploading PNG..." : "Upload PNG Signature"}
+                    <input
+                      type="file"
+                      accept="image/png"
+                      className="hidden"
+                      disabled={uploadingSignature}
+                      onChange={(e) => {
+                        const f = e.target.files[0];
+                        if (f) handleUploadSignature(f);
+                      }}
+                    />
+                  </label>
+                  <p className="text-[9px] text-slate-400 text-center mt-1">Recommended: Transparent background PNG</p>
+                </div>
+              </div>
+            )}
+
+            {selectedRolePreset === "custom" && (
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-150 space-y-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">Custom Signature URL</label>
+                  <input
+                    type="text"
+                    value={signatureUrl}
+                    onChange={(e) => setSignatureUrl(e.target.value)}
+                    placeholder="https://example.com/signature.png"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-orange"
+                  />
+                </div>
+                <p className="text-[10px] text-slate-400">Allows pasting external direct links to signatures.</p>
+              </div>
+            )}
+
+            {/* Signature Width/Height Sizer Control */}
+            {signatureUrl && (
+              <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  <span>Signature Height</span>
+                  <span className="text-brand-orange">{sigHeight}px</span>
+                </div>
+                <input
+                  type="range"
+                  min="30"
+                  max="90"
+                  value={sigHeight}
+                  onChange={(e) => setSigHeight(parseInt(e.target.value))}
+                  className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-brand-orange"
+                />
+              </div>
+            )}
+          </div>
+
           {/* Styling Options */}
           <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
             <h3 className="text-xs font-bold text-slate-800 border-b border-slate-100 pb-2 uppercase tracking-wide">Layout & Style Controls</h3>
@@ -545,7 +745,22 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
               {/* Signatory Authority */}
               <div className="text-right flex flex-col justify-end items-end pb-3">
                 {signatoryHeader && <span className="font-bold text-xs text-slate-700">{signatoryHeader}</span>}
-                <div className="w-48 border-t border-slate-300 text-center pt-1.5 mt-12">
+                
+                {/* Dynamic Signature PNG */}
+                {signatureUrl ? (
+                  <div className="flex items-center justify-end mt-1 mb-1 pr-4 relative select-none pointer-events-none" style={{ height: `${sigHeight}px` }}>
+                    <img
+                      src={fullUrl(signatureUrl)}
+                      alt="Signature"
+                      className="object-contain"
+                      style={{ height: `${sigHeight}px`, maxWidth: "160px" }}
+                    />
+                  </div>
+                ) : (
+                  <div className="h-10" />
+                )}
+
+                <div className="w-48 border-t border-slate-300 text-center pt-1.5">
                   <span className="font-bold text-xs text-slate-900 uppercase tracking-wide block">{signatoryAuthority}</span>
                   <span className="text-[9px] text-slate-500 block">(Seal & Signature)</span>
                 </div>
