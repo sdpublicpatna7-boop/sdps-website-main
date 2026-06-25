@@ -53,6 +53,7 @@ const NAV_ITEMS = [
   { to: "/admin/salary-slip", label: "Salary Slip Generator", icon: FileText, permission: "media-tools" },
   { to: "/admin/salary-certificate", label: "Salary Certificate", icon: FileText, permission: "media-tools" },
   { to: "/admin/experience-certificate", label: "Experience Certificate", icon: FileText, permission: "media-tools" },
+  { to: "/admin/notice-maker", label: "Notice Maker", icon: FileText, permission: "media-tools" },
   { section: "Other" },
   { to: "/admin/tc-records", label: "TC Records", icon: FileText, permission: "tc-records" },
   { to: "/admin/popup", label: "Welcome Popup", icon: Megaphone, permission: "popup" },
