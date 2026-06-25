@@ -50,6 +50,8 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
   const [signatureUrl, setSignatureUrl] = useState("");
   const [sigHeight, setSigHeight] = useState(48); // range from 32 to 80
   const [uploadingSignature, setUploadingSignature] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState("");
+  const [uploadingPdf, setUploadingPdf] = useState(false);
   
   const [signaturePresets, setSignaturePresets] = useState(() => {
     try {
@@ -186,7 +188,8 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
       autoRefEnabled,
       refPrefix,
       refSerial,
-      refLocked
+      refLocked,
+      pdfUrl
     };
 
     setDrafts(prev => [newDraft, ...prev.filter(d => d.noticeTitle !== noticeTitle || d.subject !== subject)]);
@@ -213,6 +216,7 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
     setRefPrefix(item.refPrefix || "SDPS/2026-27/");
     setRefSerial(item.refSerial || 45);
     setRefLocked(item.refLocked || false);
+    setPdfUrl(item.pdfUrl || "");
     toast.success("Draft loaded into notice editor!");
   };
 
@@ -243,6 +247,7 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
     setAutoRefEnabled(true);
     setRefPrefix("SDPS/2026-27/");
     setRefLocked(false);
+    setPdfUrl("");
     toast.success("Notice editor reset to defaults!");
   };
 
@@ -271,6 +276,32 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
     }
   };
 
+  const handleUploadPdf = async (file) => {
+    if (!file) return;
+    if (file.type !== "application/pdf") {
+      toast.error("Please select a valid PDF file.");
+      return;
+    }
+    const fd = new FormData();
+    fd.append("sub_dir", "notices");
+    fd.append("max_mb", "10");
+    fd.append("file", file);
+    setUploadingPdf(true);
+    try {
+      const r = await api.post("/admin/upload-file", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const url = r.data.url;
+      setPdfUrl(url);
+      toast.success("PDF attached successfully!");
+    } catch (err) {
+      console.error(err);
+      toast.error(err?.response?.data?.detail || "Failed to upload PDF.");
+    } finally {
+      setUploadingPdf(false);
+    }
+  };
+
   // Publish to backend Notice Board
   const handlePublish = async () => {
     if (!window.confirm("Are you sure you want to publish this notice to the website notices board? It will be visible to the public immediately.")) return;
@@ -286,7 +317,7 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
       description: publishedDescription,
       date: formatDate(noticeDate),
       pinned: false,
-      file_url: null
+      file_url: pdfUrl || null
     };
 
     try {
@@ -671,6 +702,71 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
                   onChange={(e) => setSigHeight(parseInt(e.target.value))}
                   className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-brand-orange"
                 />
+              </div>
+            )}
+          </div>
+
+          {/* PDF Attachment Section */}
+          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+            <h3 className="text-xs font-bold text-slate-800 border-b border-slate-100 pb-2 uppercase tracking-wide flex items-center gap-1.5">
+              <span>📄</span> PDF Notice Attachment
+            </h3>
+            
+            {pdfUrl ? (
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-150 space-y-3">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-bold text-slate-500 uppercase tracking-wider">
+                    Attached PDF File
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm("Remove this PDF attachment from the notice?")) {
+                        setPdfUrl("");
+                        toast.success("PDF attachment removed");
+                      }
+                    }}
+                    className="text-[10px] text-red-500 font-bold hover:underline flex items-center gap-1"
+                  >
+                    <Trash className="w-3 h-3" /> Remove
+                  </button>
+                </div>
+                <div className="flex items-center gap-3">
+                  <FileText className="w-8 h-8 text-red-500 bg-white p-1 rounded-lg border border-slate-200 animate-fade-up" />
+                  <div className="min-w-0 flex-1">
+                    <a
+                      href={fullUrl(pdfUrl)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs font-semibold text-blue-650 hover:underline block truncate"
+                    >
+                      {pdfUrl.split("/").pop()}
+                    </a>
+                    <span className="text-[9px] text-slate-400">Successfully uploaded and linked</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <label className={`flex flex-col items-center justify-center border-2 border-dashed border-slate-350 bg-white rounded-2xl p-4 cursor-pointer text-xs font-bold transition hover:border-brand-orange ${
+                  uploadingPdf ? "opacity-50 cursor-not-allowed" : ""
+                }`}>
+                  <FileUp className="w-6 h-6 text-slate-400 mb-1.5" />
+                  <span className="text-slate-600">
+                    {uploadingPdf ? "Uploading PDF..." : "Upload Official PDF"}
+                  </span>
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    className="hidden"
+                    disabled={uploadingPdf}
+                    onChange={(e) => {
+                      const f = e.target.files[0];
+                      if (f) handleUploadPdf(f);
+                    }}
+                  />
+                </label>
+                <p className="text-[9px] text-slate-400 text-center">Attach a PDF of the signed notice to let users download it</p>
               </div>
             )}
           </div>

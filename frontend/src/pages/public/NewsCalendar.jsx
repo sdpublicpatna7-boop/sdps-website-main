@@ -49,7 +49,6 @@ export function NoticesList() {
               {n.pinned && <span className="inline-block mb-2 px-2 py-0.5 bg-brand-orange text-white text-[10px] uppercase tracking-wider rounded-full">Pinned</span>}
               <div className="text-xs text-brand-ink/50 mb-1">{n.date}</div>
               <h3 className="font-headline font-semibold">{n.title}</h3>
-              <p className="text-sm text-brand-ink/70 mt-1">{n.description}</p>
             </div>
             {n.file_url && (
               <a href={fullUrl(n.file_url)} target="_blank" rel="noreferrer" className="btn-glass shrink-0 text-sm">Download</a>
