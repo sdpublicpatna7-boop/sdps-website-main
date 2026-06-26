@@ -1,12 +1,14 @@
 import { Link } from "react-router-dom";
 import { Phone, Mail, MapPin, Youtube, Instagram, Facebook } from "lucide-react";
+import { optimizeCloudinary } from "@/lib/api";
 
 export default function Footer({ settings }) {
   const s = settings || {};
   const logoUrl = s.logo_url || "";
-  const formattedLogo = logoUrl
+  const rawLogo = logoUrl
     ? (logoUrl.startsWith("http") ? logoUrl : `${process.env.REACT_APP_BACKEND_URL || ""}${logoUrl}`)
     : "";
+  const formattedLogo = optimizeCloudinary(rawLogo, 120);
   return (
     <footer className="bg-gradient-to-br from-brand-blue-dark via-brand-blue to-brand-blue-light text-white relative overflow-hidden grain">
       <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-brand-orange/20 blur-3xl" />

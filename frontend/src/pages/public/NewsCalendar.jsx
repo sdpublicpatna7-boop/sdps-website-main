@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import api from "../../lib/api";
+import api, { optimizeCloudinary } from "../../lib/api";
 
 const BACKEND = process.env.REACT_APP_BACKEND_URL;
 function fullUrl(u) { return u?.startsWith("http") ? u : `${BACKEND}${u}`; }
@@ -19,7 +19,7 @@ export function NewsList() {
         {news.length === 0 && <div className="col-span-2 text-center text-brand-ink/60 py-20">No news yet.</div>}
         {news.map(n => (
           <article key={n.id} className="bg-white rounded-2xl p-6 border border-black/5 beam-card" data-testid={`news-${n.id}`}>
-            {n.image_url && <img src={fullUrl(n.image_url)} alt="" className="w-full object-contain max-h-48 bg-white rounded-xl mb-4" />}
+            {n.image_url && <img src={optimizeCloudinary(fullUrl(n.image_url), 500)} alt="" className="w-full object-contain max-h-48 bg-white rounded-xl mb-4" />}
             <div className="text-xs text-brand-orange uppercase tracking-wider font-semibold">{n.date} · {n.category}</div>
             <h3 className="font-headline font-semibold text-xl mt-2 mb-2">{n.title}</h3>
             <p className="text-sm text-brand-ink/70">{n.content}</p>
@@ -101,7 +101,7 @@ export function CalendarPage() {
           <div className="space-y-3">
             {holidays.map((h) => (
               <div key={h.id} className="flex items-center gap-4 bg-white rounded-2xl p-4 border border-black/5">
-                {h.icon_url ? <img src={fullUrl(h.icon_url)} alt="" className="w-10 h-10" /> : <div className="w-10 h-10 rounded-full bg-brand-lotus/30" />}
+                {h.icon_url ? <img src={optimizeCloudinary(fullUrl(h.icon_url), 100)} alt="" className="w-10 h-10" /> : <div className="w-10 h-10 rounded-full bg-brand-lotus/30" />}
                 <div className="flex-1">
                   <div className="font-headline font-semibold">{h.name}</div>
                   <div className="text-xs text-brand-ink/60">{h.date}</div>

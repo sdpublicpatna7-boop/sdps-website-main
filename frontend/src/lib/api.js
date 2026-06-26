@@ -104,4 +104,18 @@ api.interceptors.response.use(
   }
 );
 
+export function optimizeCloudinary(url, width = null) {
+  if (!url || typeof url !== "string") return url;
+  if (url.includes("res.cloudinary.com")) {
+    if (url.includes("/upload/q_auto")) return url;
+    const params = ["q_auto", "f_auto"];
+    if (width) {
+      params.push(`w_${width}`);
+    }
+    const paramString = params.join(",");
+    return url.replace("/upload/", `/upload/${paramString}/`);
+  }
+  return url;
+}
+
 export default api;

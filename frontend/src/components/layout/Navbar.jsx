@@ -1,6 +1,7 @@
 import { Link, NavLink } from "react-router-dom";
 import { useState } from "react";
 import { Menu, X, ChevronDown, Phone, Mail } from "lucide-react";
+import { optimizeCloudinary } from "@/lib/api";
 
 const NAV = [
   { label: "Home", to: "/" },
@@ -53,9 +54,10 @@ export default function Navbar({ settings }) {
   const [openMenu, setOpenMenu] = useState(null);
 
   const logoUrl = settings?.logo_url || "";
-  const formattedLogo = logoUrl
+  const rawLogo = logoUrl
     ? (logoUrl.startsWith("http") ? logoUrl : `${process.env.REACT_APP_BACKEND_URL || ""}${logoUrl}`)
     : "";
+  const formattedLogo = optimizeCloudinary(rawLogo, 120);
 
   return (
     <header className="sticky top-0 z-40">

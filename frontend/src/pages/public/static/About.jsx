@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Award, Compass, Shield, BookOpen, GraduationCap, MapPin, Mail, Phone, Landmark } from "lucide-react";
 import PageHero from "@/components/layout/PageHero";
 import SEO from "@/components/layout/SEO";
+import { optimizeCloudinary } from "@/lib/api";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -25,14 +26,16 @@ export function About() {
   const { settings } = useOutletContext() || {};
 
   const trustLogoRaw = settings?.about_trust_logo_url || "";
-  const trustLogoUrl = trustLogoRaw
+  const rawTrustLogo = trustLogoRaw
     ? (trustLogoRaw.startsWith("http") ? trustLogoRaw : `${process.env.REACT_APP_BACKEND_URL || ""}${trustLogoRaw}`)
     : "";
+  const trustLogoUrl = optimizeCloudinary(rawTrustLogo, 800);
 
   const schoolLogoRaw = settings?.logo_url || "";
-  const schoolLogoUrl = schoolLogoRaw
+  const rawSchoolLogo = schoolLogoRaw
     ? (schoolLogoRaw.startsWith("http") ? schoolLogoRaw : `${process.env.REACT_APP_BACKEND_URL || ""}${schoolLogoRaw}`)
     : "";
+  const schoolLogoUrl = optimizeCloudinary(rawSchoolLogo, 160);
 
   return (
     <>

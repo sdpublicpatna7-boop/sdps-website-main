@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { Link } from "react-router-dom";
+import { optimizeCloudinary } from "@/lib/api";
 
 export default function WelcomePopup({ popup }) {
   const [open, setOpen] = useState(false);
@@ -24,9 +25,10 @@ export default function WelcomePopup({ popup }) {
   if (!popup?.enabled) return null;
 
   const imageUrl = popup.image_url;
-  const formattedImageUrl = imageUrl
+  const rawImageUrl = imageUrl
     ? (imageUrl.startsWith("http") ? imageUrl : `${process.env.REACT_APP_BACKEND_URL || ""}${imageUrl}`)
     : "";
+  const formattedImageUrl = optimizeCloudinary(rawImageUrl, 600);
 
   return (
     <AnimatePresence>
