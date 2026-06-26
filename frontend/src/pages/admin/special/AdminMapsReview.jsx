@@ -7,10 +7,10 @@ export function AdminMapsReview() {
   const { settings } = useOutletContext() || {};
   const reviewUrl = `${window.location.origin}/review`;
   
-  const logoUrl = settings?.logo_url || "https://sdpublic.org/assets/img/logo.png";
-  const formattedLogo = logoUrl.startsWith("http")
-    ? logoUrl
-    : `${process.env.REACT_APP_BACKEND_URL || ""}${logoUrl}`;
+  const logoUrl = settings?.logo_url || "";
+  const formattedLogo = logoUrl
+    ? (logoUrl.startsWith("http") ? logoUrl : `${process.env.REACT_APP_BACKEND_URL || ""}${logoUrl}`)
+    : "";
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(reviewUrl)}`;
   const [previewType, setPreviewType] = useState("a4"); // "a4" | "card"
 
@@ -444,11 +444,15 @@ export function AdminMapsReview() {
               <div className="relative z-10 flex flex-col justify-between h-full">
                 {/* Header */}
                 <div className="flex items-center gap-2 border-b border-brand-gold/30 pb-2.5 text-left">
-                  <img
-                    src={formattedLogo}
-                    alt="SDPS logo"
-                    className="w-10 h-10 rounded-full border border-brand-blue/30 p-0.5"
-                  />
+                  {formattedLogo ? (
+                    <img
+                      src={formattedLogo}
+                      alt="SDPS logo"
+                      className="w-10 h-10 rounded-full border border-brand-blue/30 p-0.5"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-slate-100 animate-pulse border border-slate-200" />
+                  )}
                   <div>
                     <div className="text-sm font-black text-brand-blue leading-none">S.D. Public School</div>
                     <div className="text-[7px] uppercase tracking-wider text-brand-gold font-bold mt-1">Suryamuni Devi Public School, Patna</div>

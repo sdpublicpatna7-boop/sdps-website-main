@@ -34,9 +34,12 @@ export default function KheloPatna() {
         <div className="relative max-w-6xl mx-auto px-6 text-center">
           {/* Dual logos */}
           <div className="flex items-center justify-center gap-6 mb-8">
-            <img src={fullUrl(settings?.logo_url || "https://sdpublic.org/assets/img/logo.png")} alt="SDPS"
-              className="h-20 w-20 rounded-full ring-4 ring-brand-gold object-contain bg-white p-1"
-              onError={e => e.target.style.display = "none"} />
+            {settings?.logo_url ? (
+              <img src={fullUrl(settings.logo_url)} alt="SDPS"
+                className="h-20 w-20 rounded-full ring-4 ring-brand-gold object-contain bg-white p-1" />
+            ) : (
+              <div className="h-20 w-20 rounded-full bg-slate-100 animate-pulse border border-slate-200" />
+            )}
             <div className="text-4xl font-black text-brand-ink/20">×</div>
             <div className="h-20 w-20 rounded-full ring-4 ring-amber-400 bg-brand-ink overflow-hidden flex items-center justify-center">
               <img src="/khelo-patna-logo.png" alt="Khelo Patna" className="w-full h-full object-cover" />

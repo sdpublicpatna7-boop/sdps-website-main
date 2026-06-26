@@ -74,13 +74,37 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [settings, setSettings] = useState(null);
-  const [logoUrl, setLogoUrl] = useState("https://sdpublic.org/assets/img/logo.png");
+  const [settings, setSettings] = useState(() => {
+    try {
+      const cached = localStorage.getItem("sdps_site_settings");
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [logoUrl, setLogoUrl] = useState(() => {
+    try {
+      const cached = localStorage.getItem("sdps_site_settings");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed?.logo_url) {
+          const rawUrl = parsed.logo_url;
+          return rawUrl.startsWith("http")
+            ? rawUrl
+            : `${process.env.REACT_APP_BACKEND_URL || ""}${rawUrl}`;
+        }
+      }
+    } catch (e) {}
+    return "";
+  });
 
   useEffect(() => {
     api.get("/site-settings")
       .then((r) => {
         setSettings(r.data);
+        try {
+          localStorage.setItem("sdps_site_settings", JSON.stringify(r.data));
+        } catch (e) {}
         if (r.data?.logo_url) {
           const rawUrl = r.data.logo_url;
           const formatted = rawUrl.startsWith("http")
@@ -187,7 +211,11 @@ export default function AdminLayout() {
             <Menu className="w-6 h-6" />
           </button>
           <div className="flex items-center gap-2">
-            <img src={logoUrl} alt="SDPS logo" className="w-8 h-8 rounded-full bg-white/10 p-0.5 shrink-0" />
+            {logoUrl ? (
+              <img src={logoUrl} alt="SDPS logo" className="w-8 h-8 rounded-full bg-white/10 p-0.5 shrink-0 object-contain" />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-white/10 animate-pulse shrink-0" />
+            )}
             <div>
               <span className="font-headline font-bold text-sm tracking-tight">SDPS Admin</span>
               <span className="text-[9px] uppercase tracking-wider text-brand-gold font-semibold ml-2">
@@ -223,7 +251,11 @@ export default function AdminLayout() {
             <div className="m-4 p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] backdrop-blur-md shadow-xl flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="relative">
-                  <img src={logoUrl} alt="SDPS logo" className="w-10 h-10 rounded-full ring-2 ring-brand-gold/60 shadow-[0_0_12px_rgba(199,161,91,0.3)] bg-white/10 p-0.5 shrink-0" />
+                  {logoUrl ? (
+                    <img src={logoUrl} alt="SDPS logo" className="w-10 h-10 rounded-full ring-2 ring-brand-gold/60 shadow-[0_0_12px_rgba(199,161,91,0.3)] bg-white/10 p-0.5 shrink-0 object-contain" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-white/10 animate-pulse ring-2 ring-brand-gold/60 shrink-0" />
+                  )}
                   <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-slate-950 rounded-full"></span>
                 </div>
                 <div className="overflow-hidden">
@@ -287,7 +319,11 @@ export default function AdminLayout() {
           {/* Brand header card */}
           <div className="m-4 p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] backdrop-blur-md shadow-xl flex items-center gap-3">
             <div className="relative">
-              <img src={logoUrl} alt="SDPS logo" className="w-10 h-10 rounded-full ring-2 ring-brand-gold/60 shadow-[0_0_12px_rgba(199,161,91,0.3)] bg-white/10 p-0.5 shrink-0" />
+              {logoUrl ? (
+                <img src={logoUrl} alt="SDPS logo" className="w-10 h-10 rounded-full ring-2 ring-brand-gold/60 shadow-[0_0_12px_rgba(199,161,91,0.3)] bg-white/10 p-0.5 shrink-0 object-contain" />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-white/10 animate-pulse ring-2 ring-brand-gold/60 shrink-0" />
+              )}
               <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-slate-950 rounded-full"></span>
             </div>
             <div className="overflow-hidden">

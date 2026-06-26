@@ -24,15 +24,15 @@ const itemVariants = {
 export function About() {
   const { settings } = useOutletContext() || {};
 
-  const trustLogoRaw = settings?.about_trust_logo_url || "https://sdpublic.org/assets/img/about_new.jpg";
-  const trustLogoUrl = trustLogoRaw.startsWith("http")
-    ? trustLogoRaw
-    : `${process.env.REACT_APP_BACKEND_URL || ""}${trustLogoRaw}`;
+  const trustLogoRaw = settings?.about_trust_logo_url || "";
+  const trustLogoUrl = trustLogoRaw
+    ? (trustLogoRaw.startsWith("http") ? trustLogoRaw : `${process.env.REACT_APP_BACKEND_URL || ""}${trustLogoRaw}`)
+    : "";
 
-  const schoolLogoRaw = settings?.logo_url || "https://sdpublic.org/assets/img/logo.png";
-  const schoolLogoUrl = schoolLogoRaw.startsWith("http")
-    ? schoolLogoRaw
-    : `${process.env.REACT_APP_BACKEND_URL || ""}${schoolLogoRaw}`;
+  const schoolLogoRaw = settings?.logo_url || "";
+  const schoolLogoUrl = schoolLogoRaw
+    ? (schoolLogoRaw.startsWith("http") ? schoolLogoRaw : `${process.env.REACT_APP_BACKEND_URL || ""}${schoolLogoRaw}`)
+    : "";
 
   return (
     <>
@@ -158,24 +158,31 @@ export function About() {
             {/* School Campus Photo Card */}
             <motion.div variants={itemVariants} className="rounded-3xl overflow-hidden shadow-lg border border-black/5 bg-white group relative">
               <div className="absolute inset-0 bg-brand-blue/5 opacity-0 group-hover:opacity-10 transition-opacity duration-300 z-10 pointer-events-none" />
-              <img
-                src={trustLogoUrl}
-                alt="SDPS Campus / Trust Logo"
-                className="w-full object-contain max-h-72 bg-white p-4 transition-transform duration-500 group-hover:scale-[1.02]"
-                onError={e => { e.target.src = "https://sdpublic.org/img/feature.jpg"; }}
-              />
+              {trustLogoUrl ? (
+                <img
+                  src={trustLogoUrl}
+                  alt="SDPS Campus / Trust Logo"
+                  className="w-full object-contain max-h-72 bg-white p-4 transition-transform duration-500 group-hover:scale-[1.02]"
+                  onError={e => { e.target.src = "https://sdpublic.org/img/feature.jpg"; }}
+                />
+              ) : (
+                <div className="w-full h-72 bg-slate-100 animate-pulse" />
+              )}
             </motion.div>
 
             {/* Identity Badge */}
             <motion.div variants={itemVariants} className="bg-white rounded-3xl border border-black/5 p-6 shadow-sm relative overflow-hidden group">
               <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-brand-gold/10 rounded-full blur-xl group-hover:bg-brand-gold/20 transition-all duration-300" />
               <div className="flex items-center gap-5">
-                <img
-                  src={schoolLogoUrl}
-                  alt="SDPS Logo"
-                  className="w-16 h-16 rounded-full ring-4 ring-brand-gold/20 object-contain p-0.5 bg-white shadow-md"
-                  onError={e => e.target.style.display = "none"}
-                />
+                {schoolLogoUrl ? (
+                  <img
+                    src={schoolLogoUrl}
+                    alt="SDPS Logo"
+                    className="w-16 h-16 rounded-full ring-4 ring-brand-gold/20 object-contain p-0.5 bg-white shadow-md"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-slate-100 animate-pulse border border-slate-200" />
+                )}
                 <div>
                   <div className="font-headline font-extrabold text-brand-blue text-lg">S.D. Public School</div>
                   <div className="text-xs text-brand-ink/60 font-semibold mt-0.5">Suryamuni Devi Public School</div>

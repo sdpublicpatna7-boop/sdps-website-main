@@ -52,10 +52,10 @@ export default function Navbar({ settings }) {
   const [open, setOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState(null);
 
-  const logoUrl = settings?.logo_url || "https://sdpublic.org/assets/img/logo.png";
-  const formattedLogo = logoUrl.startsWith("http")
-    ? logoUrl
-    : `${process.env.REACT_APP_BACKEND_URL || ""}${logoUrl}`;
+  const logoUrl = settings?.logo_url || "";
+  const formattedLogo = logoUrl
+    ? (logoUrl.startsWith("http") ? logoUrl : `${process.env.REACT_APP_BACKEND_URL || ""}${logoUrl}`)
+    : "";
 
   return (
     <header className="sticky top-0 z-40">
@@ -102,11 +102,15 @@ export default function Navbar({ settings }) {
       <div className="glass-card border-b border-black/5">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3" data-testid="brand-logo-link">
-            <img
-              src={formattedLogo}
-              alt="SDPS"
-              className="w-12 h-12 rounded-full ring-1 ring-brand-gold/40"
-            />
+            {formattedLogo ? (
+              <img
+                src={formattedLogo}
+                alt="SDPS"
+                className="w-12 h-12 rounded-full ring-1 ring-brand-gold/40 object-contain p-0.5 bg-white"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-full bg-slate-200/40 animate-pulse border border-white/10" />
+            )}
             <div className="leading-tight">
               <div className="font-legacy text-2xl text-brand-blue">S.D. Public School</div>
               <div className="text-[10px] uppercase tracking-[0.2em] text-brand-orange font-headline">

@@ -59,10 +59,10 @@ export function AdminSalaryCertificate() {
   const [selectedTeacherId, setSelectedTeacherId] = useState("manual");
   const [loading, setLoading] = useState(false);
 
-  const logoUrl = settings?.logo_url || "https://sdpublic.org/assets/img/logo.png";
-  const formattedLogo = logoUrl.startsWith("http")
-    ? logoUrl
-    : `${process.env.REACT_APP_BACKEND_URL || ""}${logoUrl}`;
+  const logoUrl = settings?.logo_url || "";
+  const formattedLogo = logoUrl
+    ? (logoUrl.startsWith("http") ? logoUrl : `${process.env.REACT_APP_BACKEND_URL || ""}${logoUrl}`)
+    : "";
   const [history, setHistory] = useState([]);
   const [showSignatures, setShowSignatures] = useState(true);
 
@@ -483,22 +483,28 @@ export function AdminSalaryCertificate() {
           >
             <div className="relative border-[10px] border-double border-amber-600 p-8 rounded-2xl bg-amber-50/5 min-h-[680px] flex flex-col justify-between overflow-hidden text-slate-900">
               {/* Background Watermark Logo */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] select-none">
-                <img 
-                  src={formattedLogo} 
-                  className="w-96 h-96 object-contain" 
-                  alt="" 
-                />
-              </div>
+              {formattedLogo && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] select-none">
+                  <img 
+                    src={formattedLogo} 
+                    className="w-96 h-96 object-contain" 
+                    alt="" 
+                  />
+                </div>
+              )}
 
               <div className="space-y-6">
                 {/* Centered Certificate Header */}
                 <div className="text-center space-y-2 border-b border-amber-200 pb-4">
-                  <img 
-                    src={formattedLogo} 
-                    alt="SDPS Logo" 
-                    className="w-20 h-20 mx-auto object-contain"
-                  />
+                  {formattedLogo ? (
+                    <img 
+                      src={formattedLogo} 
+                      alt="SDPS Logo" 
+                      className="w-20 h-20 mx-auto object-contain"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 mx-auto rounded-full bg-slate-100 animate-pulse border border-slate-200" />
+                  )}
                   <h2 className="text-2xl font-black tracking-wide text-slate-900 leading-tight">
                     S.D. PUBLIC SCHOOL
                   </h2>

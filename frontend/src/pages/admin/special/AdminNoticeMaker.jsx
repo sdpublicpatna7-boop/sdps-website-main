@@ -9,10 +9,10 @@ export function AdminNoticeMaker() {
   const [loading, setLoading] = useState(false);
   
   // School Logo formatting
-  const logoUrl = settings?.logo_url || "https://sdpublic.org/assets/img/logo.png";
-  const formattedLogo = logoUrl.startsWith("http")
-    ? logoUrl
-    : `${process.env.REACT_APP_BACKEND_URL || ""}${logoUrl}`;
+  const logoUrl = settings?.logo_url || "";
+  const formattedLogo = logoUrl
+    ? (logoUrl.startsWith("http") ? logoUrl : `${process.env.REACT_APP_BACKEND_URL || ""}${logoUrl}`)
+    : "";
 
   // Form State
   const [noticeTitle, setNoticeTitle] = useState("NOTICE");
@@ -885,7 +885,7 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
             style={{ minHeight: "1000px" }}
           >
             {/* Watermark Logo */}
-            {showWatermark && (
+            {showWatermark && formattedLogo && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] select-none z-0">
                 <img src={formattedLogo} className="w-[30rem] h-[30rem] object-contain" alt="" />
               </div>
@@ -896,11 +896,15 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
               {letterheadHeader ? (
                 <div className="flex items-center justify-between border-b-4 border-double border-brand-blue pb-4 mb-6">
                   <div className="flex items-center gap-5">
-                    <img 
-                      src={formattedLogo} 
-                      alt="SDPS Logo" 
-                      className="w-20 h-20 object-contain rounded-full ring-2 ring-brand-gold p-0.5 bg-white shrink-0" 
-                    />
+                    {formattedLogo ? (
+                      <img 
+                        src={formattedLogo} 
+                        alt="SDPS Logo" 
+                        className="w-20 h-20 object-contain rounded-full ring-2 ring-brand-gold p-0.5 bg-white shrink-0" 
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-full bg-slate-100 animate-pulse border border-slate-200 shrink-0" />
+                    )}
                     <div className="text-left">
                       <h2 className="font-headline text-2xl font-black tracking-wide text-brand-blue leading-none">
                         S.D. PUBLIC SCHOOL

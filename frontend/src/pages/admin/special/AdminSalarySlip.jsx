@@ -59,10 +59,10 @@ export function AdminSalarySlip() {
   const [selectedTeacherId, setSelectedTeacherId] = useState("manual");
   const [loading, setLoading] = useState(false);
 
-  const logoUrl = settings?.logo_url || "https://sdpublic.org/assets/img/logo.png";
-  const formattedLogo = logoUrl.startsWith("http")
-    ? logoUrl
-    : `${process.env.REACT_APP_BACKEND_URL || ""}${logoUrl}`;
+  const logoUrl = settings?.logo_url || "";
+  const formattedLogo = logoUrl
+    ? (logoUrl.startsWith("http") ? logoUrl : `${process.env.REACT_APP_BACKEND_URL || ""}${logoUrl}`)
+    : "";
   const [history, setHistory] = useState([]);
   const [showSignatures, setShowSignatures] = useState(true);
 
@@ -708,11 +708,15 @@ export function AdminSalarySlip() {
             {/* Header */}
             <div className="flex items-center justify-between gap-4 border-b-2 border-slate-900 pb-4">
               <div className="flex items-center gap-4 text-left">
-                <img 
-                  src={formattedLogo} 
-                  alt="SDPS Logo" 
-                  className="w-16 h-16 object-contain"
-                />
+                {formattedLogo ? (
+                  <img 
+                    src={formattedLogo} 
+                    alt="SDPS Logo" 
+                    className="w-16 h-16 object-contain"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-slate-100 animate-pulse border border-slate-200 shrink-0" />
+                )}
                 <div>
                   <h2 className="text-xl font-extrabold tracking-wide text-slate-900 leading-tight">
                     S.D. PUBLIC SCHOOL

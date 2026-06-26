@@ -104,7 +104,21 @@ export function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [logoUrl, setLogoUrl] = useState("https://sdpublic.org/assets/img/logo.png");
+  const [logoUrl, setLogoUrl] = useState(() => {
+    try {
+      const cached = localStorage.getItem("sdps_site_settings");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed?.logo_url) {
+          const rawUrl = parsed.logo_url;
+          return rawUrl.startsWith("http")
+            ? rawUrl
+            : `${process.env.REACT_APP_BACKEND_URL || ""}${rawUrl}`;
+        }
+      }
+    } catch (e) {}
+    return "";
+  });
 
   useEffect(() => {
     api.get("/site-settings")
@@ -115,6 +129,9 @@ export function AdminLogin() {
             ? rawUrl
             : `${process.env.REACT_APP_BACKEND_URL || ""}${rawUrl}`;
           setLogoUrl(formatted);
+          try {
+            localStorage.setItem("sdps_site_settings", JSON.stringify(r.data));
+          } catch (e) {}
         }
       })
       .catch(() => {});
@@ -138,11 +155,15 @@ export function AdminLogin() {
       <Toaster position="top-right" />
       <LoginWrapper>
         <div className="text-center mb-8">
-          <img
-            src={logoUrl}
-            alt="SDPS"
-            className="w-16 h-16 mx-auto rounded-full ring-4 ring-brand-gold/20 shadow-[0_0_20px_rgba(199,161,91,0.3)] mb-4 animate-float"
-          />
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt="SDPS"
+              className="w-16 h-16 mx-auto rounded-full ring-4 ring-brand-gold/20 shadow-[0_0_20px_rgba(199,161,91,0.3)] mb-4 animate-float object-contain"
+            />
+          ) : (
+            <div className="w-16 h-16 mx-auto rounded-full bg-slate-800/80 animate-pulse border border-slate-700 ring-4 ring-brand-gold/20 mb-4" />
+          )}
           <h1 className="font-headline font-bold text-3xl tracking-tight text-white">SDPS Admin</h1>
           <p className="text-xs uppercase tracking-widest text-brand-gold font-semibold mt-1">Control Panel Login</p>
         </div>
