@@ -377,6 +377,86 @@ export function AdminSiteSettings() {
             onChange={(e) => setData({ ...data, address: e.target.value })}
           />
         </div>
+
+        {/* Testimonials and Video Testimonials */}
+        <div className="border border-brand-orange/20 bg-brand-orange/5 rounded-xl p-5 space-y-4">
+          <h3 className="font-headline font-semibold text-brand-orange flex items-center gap-2">
+            <span>🗣️</span> Parents Testimonials &amp; Video Settings
+          </h3>
+          <p className="text-xs text-brand-ink/60">
+            Configure the parent testimonials and social video links shown in the "What Parents Say" section at the bottom of the Home Page.
+          </p>
+
+          <div className="border-t border-slate-200/50 pt-4 space-y-4">
+            <h4 className="font-headline text-sm font-semibold text-brand-blue">Testimonial 1 (Standard Text Card)</h4>
+            <div className="grid sm:grid-cols-2 gap-4">
+              {SET_FIELD("Parent Name", "testimonial_parent_name")}
+              {SET_FIELD("Parent Class Info", "testimonial_parent_info")}
+            </div>
+            <div>
+              <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">Testimonial Text</label>
+              <textarea
+                className="w-full mt-1 px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                rows={2}
+                value={data.testimonial_parent_text || ""}
+                onChange={(e) => setData({ ...data, testimonial_parent_text: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="border-t border-slate-200/50 pt-4 space-y-4">
+            <h4 className="font-headline text-sm font-semibold text-brand-blue">Testimonial 2 (YouTube Video Card)</h4>
+            <div className="grid sm:grid-cols-2 gap-4">
+              {SET_FIELD("Parent Name", "testimonial_video_parent_1")}
+              {SET_FIELD("Parent Class Info", "testimonial_video_info_1")}
+              {SET_FIELD("YouTube Video URL", "testimonial_video_url_1")}
+            </div>
+            <div>
+              <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">Video Card Description</label>
+              <textarea
+                className="w-full mt-1 px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                rows={2}
+                value={data.testimonial_video_text_1 || ""}
+                onChange={(e) => setData({ ...data, testimonial_video_text_1: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">Video Thumbnail Image</label>
+              <ImageOrUrlField
+                value={data.testimonial_video_thumb_1 || ""}
+                onChange={(v) => setData({ ...data, testimonial_video_thumb_1: v })}
+                subDir="misc"
+              />
+            </div>
+          </div>
+
+          <div className="border-t border-slate-200/50 pt-4 space-y-4">
+            <h4 className="font-headline text-sm font-semibold text-brand-blue">Testimonial 3 (Social Feed Video Card)</h4>
+            <div className="grid sm:grid-cols-2 gap-4">
+              {SET_FIELD("Parent Name", "testimonial_video_parent_2")}
+              {SET_FIELD("Parent Class Info", "testimonial_video_info_2")}
+              {SET_FIELD("Social Video/Profile URL", "testimonial_video_url_2")}
+            </div>
+            <div>
+              <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">Video Card Description</label>
+              <textarea
+                className="w-full mt-1 px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                rows={2}
+                value={data.testimonial_video_text_2 || ""}
+                onChange={(e) => setData({ ...data, testimonial_video_text_2: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">Video Thumbnail Image</label>
+              <ImageOrUrlField
+                value={data.testimonial_video_thumb_2 || ""}
+                onChange={(v) => setData({ ...data, testimonial_video_thumb_2: v })}
+                subDir="misc"
+              />
+            </div>
+          </div>
+        </div>
+
         <h3 className="font-headline font-semibold mt-2">Stats (Homepage)</h3>
         <div className="grid sm:grid-cols-4 gap-3">
           {["years", "educators", "students", "alumni"].map((k) => (

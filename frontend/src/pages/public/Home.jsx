@@ -86,6 +86,16 @@ export default function Home() {
   const instagramUrl = settings?.instagram_url || "https://instagram.com";
   const facebookUrl = settings?.facebook_url || "https://facebook.com";
 
+  const rawThumb1 = settings?.testimonial_video_thumb_1 || "https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&q=80&w=600";
+  const formattedThumb1 = rawThumb1.startsWith("http")
+    ? rawThumb1
+    : `${process.env.REACT_APP_BACKEND_URL || ""}${rawThumb1}`;
+
+  const rawThumb2 = settings?.testimonial_video_thumb_2 || "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=600";
+  const formattedThumb2 = rawThumb2.startsWith("http")
+    ? rawThumb2
+    : `${process.env.REACT_APP_BACKEND_URL || ""}${rawThumb2}`;
+
   const heroFeatureImage = settings?.hero_feature_image_url || "https://sdpublic.org/img/feature.jpg";
   const formattedHeroFeature = heroFeatureImage.startsWith("http")
     ? heroFeatureImage
@@ -458,16 +468,16 @@ export default function Home() {
                   ))}
                 </div>
                 <p className="text-slate-600 leading-relaxed italic text-sm mb-6">
-                  "The individual attention my daughter receives at S.D. Public School is remarkable. Her confidence in speaking and logic skills has blossomed since Playgroup. The teachers are incredibly nurturing."
+                  "{settings?.testimonial_parent_text || "The individual attention my daughter receives at S.D. Public School is remarkable. Her confidence in speaking and logic skills has blossomed since Playgroup. The teachers are incredibly nurturing."}"
                 </p>
               </div>
               <div className="flex items-center gap-3 pt-4 border-t border-slate-50">
                 <div className="w-11 h-11 rounded-full bg-brand-blue/10 flex items-center justify-center font-bold text-brand-blue border border-brand-blue/20">
-                  RK
+                  {settings?.testimonial_parent_name ? settings.testimonial_parent_name.split(' ').map(n => n[0]).join('') : "RK"}
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm text-slate-800">Rajesh Kumar</h4>
-                  <p className="text-xs text-slate-400">Parent of Riya (Class II)</p>
+                  <h4 className="font-bold text-sm text-slate-800">{settings?.testimonial_parent_name || "Rajesh Kumar"}</h4>
+                  <p className="text-xs text-slate-400">{settings?.testimonial_parent_info || "Parent of Riya (Class II)"}</p>
                 </div>
               </div>
             </div>
@@ -476,12 +486,12 @@ export default function Home() {
             <div className="bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm flex flex-col hover:shadow-md transition-all duration-300 group">
               <div className="relative aspect-video bg-slate-900 overflow-hidden">
                 <img 
-                  src="https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&q=80&w=600" 
+                  src={formattedThumb1} 
                   alt="Video Testimonial Thumbnail" 
                   className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
                 />
                 <a 
-                  href={youtubeUrl} 
+                  href={settings?.testimonial_video_url_1 || youtubeUrl} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors"
@@ -499,15 +509,15 @@ export default function Home() {
               </div>
               <div className="p-6 flex-grow flex flex-col justify-between">
                 <p className="text-slate-600 text-sm leading-relaxed mb-6">
-                  "Watch how S.D. Public School focuses on active class participation and holistic academic growth. Our experience with the school's online learning and physical campus has been wonderful."
+                  "{settings?.testimonial_video_text_1 || "Watch how S.D. Public School focuses on active class participation and holistic academic growth. Our experience with the school's online learning and physical campus has been wonderful."}"
                 </p>
                 <div className="flex items-center gap-3 pt-4 border-t border-slate-50">
                   <div className="w-11 h-11 rounded-full bg-brand-blue/10 flex items-center justify-center font-bold text-brand-blue border border-brand-blue/20">
-                    SM
+                    {settings?.testimonial_video_parent_1 ? settings.testimonial_video_parent_1.split(' ').map(n => n[0]).join('') : "SM"}
                   </div>
                   <div>
-                    <h4 className="font-bold text-sm text-slate-800">Suman Mishra</h4>
-                    <p className="text-xs text-slate-400">Parent of Aarav (Class VI)</p>
+                    <h4 className="font-bold text-sm text-slate-800">{settings?.testimonial_video_parent_1 || "Suman Mishra"}</h4>
+                    <p className="text-xs text-slate-400">{settings?.testimonial_video_info_1 || "Parent of Aarav (Class VI)"}</p>
                   </div>
                 </div>
               </div>
@@ -517,12 +527,12 @@ export default function Home() {
             <div className="bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm flex flex-col hover:shadow-md transition-all duration-300 group">
               <div className="relative aspect-video bg-slate-900 overflow-hidden">
                 <img 
-                  src="https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=600" 
+                  src={formattedThumb2} 
                   alt="Video Testimonial Thumbnail" 
                   className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
                 />
                 <a 
-                  href={facebookUrl} 
+                  href={settings?.testimonial_video_url_2 || facebookUrl} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors"
@@ -540,15 +550,15 @@ export default function Home() {
               </div>
               <div className="p-6 flex-grow flex flex-col justify-between">
                 <p className="text-slate-600 text-sm leading-relaxed mb-6">
-                  "Check out our sports day reel and parent sharing sessions on social media! S.D. Public School is active, energetic, and provides excellent extracurricular exposure."
+                  "{settings?.testimonial_video_text_2 || "Check out our sports day reel and parent sharing sessions on social media! S.D. Public School is active, energetic, and provides excellent extracurricular exposure."}"
                 </p>
                 <div className="flex items-center gap-3 pt-4 border-t border-slate-50">
                   <div className="w-11 h-11 rounded-full bg-brand-blue/10 flex items-center justify-center font-bold text-brand-blue border border-brand-blue/20">
-                    AS
+                    {settings?.testimonial_video_parent_2 ? settings.testimonial_video_parent_2.split(' ').map(n => n[0]).join('') : "AS"}
                   </div>
                   <div>
-                    <h4 className="font-bold text-sm text-slate-800">Amit Sharma</h4>
-                    <p className="text-xs text-slate-400">Parent of Priyanshu (Class VIII)</p>
+                    <h4 className="font-bold text-sm text-slate-800">{settings?.testimonial_video_parent_2 || "Amit Sharma"}</h4>
+                    <p className="text-xs text-slate-400">{settings?.testimonial_video_info_2 || "Parent of Priyanshu (Class VIII)"}</p>
                   </div>
                 </div>
               </div>

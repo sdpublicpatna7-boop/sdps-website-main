@@ -316,6 +316,24 @@ class SiteSettings(BaseDoc):
     academics_facilities_image_url: str = "https://sdpublic.org/assets/img/world_class.jpg"
     career_hero_image_url: str = "/sdps-team.png"
     qp_portal_url: str = "https://sdpublic.org/qp-portal/"
+    
+    # Community Voices / Testimonials
+    testimonial_parent_name: str = "Rajesh Kumar"
+    testimonial_parent_info: str = "Parent of Riya (Class II)"
+    testimonial_parent_text: str = "The individual attention my daughter receives at S.D. Public School is remarkable. Her confidence in speaking and logic skills has blossomed since Playgroup. The teachers are incredibly nurturing."
+    
+    testimonial_video_url_1: str = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+    testimonial_video_thumb_1: str = "https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&q=80&w=600"
+    testimonial_video_text_1: str = "Watch how S.D. Public School focuses on active class participation and holistic academic growth. Our experience with the school's online learning and physical campus has been wonderful."
+    testimonial_video_parent_1: str = "Suman Mishra"
+    testimonial_video_info_1: str = "Parent of Aarav (Class VI)"
+    
+    testimonial_video_url_2: str = "https://www.facebook.com"
+    testimonial_video_thumb_2: str = "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=600"
+    testimonial_video_text_2: str = "Check out our sports day reel and parent sharing sessions on social media! S.D. Public School is active, energetic, and provides excellent extracurricular exposure."
+    testimonial_video_parent_2: str = "Amit Sharma"
+    testimonial_video_info_2: str = "Parent of Priyanshu (Class VIII)"
+
     stats: Dict[str, str] = {
         "years": "30+",
         "educators": "75+",
