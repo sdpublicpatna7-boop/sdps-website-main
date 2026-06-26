@@ -4,7 +4,9 @@ export default function SEO({ title, description, keywords, ogImage, ogUrl, sche
   const defaultTitle = "S.D. Public School, Patna | Empowering Generations Since 1994";
   const defaultDesc = "S.D. Public School (Suryamuni Devi Public School), Patna, Bihar — Empowering Generations Since 1994. Admissions open for 2026-27.";
   
-  const fullTitle = title ? `${title} | S.D. Public School, Patna` : defaultTitle;
+  const fullTitle = title 
+    ? (title.includes("S.D. Public School") || title.includes("SDPS") ? title : `${title} | S.D. Public School, Patna`) 
+    : defaultTitle;
   const fullDesc = description || defaultDesc;
 
   return (
