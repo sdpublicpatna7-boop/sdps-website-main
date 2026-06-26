@@ -93,33 +93,6 @@ export default function Home() {
   const instagramUrl = settings?.instagram_url || "https://instagram.com";
   const facebookUrl = settings?.facebook_url || "https://facebook.com";
 
-  const DEFAULT_TESTIMONIALS = [
-    {
-      id: "default-1",
-      parent_name: "Rajesh Kumar",
-      parent_info: "Parent of Riya (Class II)",
-      type: "text",
-      text: "The individual attention my daughter receives at S.D. Public School is remarkable. Her confidence in speaking and logic skills has blossomed since Playgroup. The teachers are incredibly nurturing."
-    },
-    {
-      id: "default-2",
-      parent_name: "Suman Mishra",
-      parent_info: "Parent of Aarav (Class VI)",
-      type: "youtube",
-      text: "Watch how S.D. Public School focuses on active class participation and holistic academic growth. Our experience with the school's online learning and physical campus has been wonderful.",
-      video_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-      video_thumb_url: "https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&q=80&w=600"
-    },
-    {
-      id: "default-3",
-      parent_name: "Amit Sharma",
-      parent_info: "Parent of Priyanshu (Class VIII)",
-      type: "facebook",
-      text: "Check out our sports day reel and parent sharing sessions on social media! S.D. Public School is active, energetic, and provides excellent extracurricular exposure.",
-      video_url: "https://www.facebook.com/watch/?v=12345",
-      video_thumb_url: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=600"
-    }
-  ];
 
   const getYouTubeId = (url) => {
     if (!url) return null;
@@ -176,7 +149,6 @@ export default function Home() {
     return { src, style };
   };
 
-  const displayTestimonials = testimonials.length > 0 ? testimonials : DEFAULT_TESTIMONIALS;
 
   const heroFeatureRaw = settings?.hero_feature_image_url || "https://sdpublic.org/img/feature.jpg";
   const { style: heroFeatureStyle, cleanUrl: cleanHeroFeature } = parseImageTransform(heroFeatureRaw);
@@ -550,7 +522,7 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {displayTestimonials.map((t) => {
+            {testimonials.map((t) => {
               const isVideo = t.type !== "text";
               const isPlaying = playingVideoId === t.id;
               const { src: thumbSrc, style: thumbStyle } = getTestimonialThumb(t);
