@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 import PageHero from "@/components/layout/PageHero";
-import api from "@/lib/api";
+import api, { parseImageTransform } from "@/lib/api";
 
 export function Demystified() {
   const { settings } = useOutletContext() || {};
@@ -10,9 +10,10 @@ export function Demystified() {
     api.get("/site-settings").then(r => setSiteSettings(r.data)).catch(() => {});
   }, []);
   const demystifiedRaw = siteSettings?.demystified_image_url || settings?.demystified_image_url || "https://sdpublic.org/assets/img/demystified.jpg";
-  const imgUrl = demystifiedRaw.startsWith("http")
-    ? demystifiedRaw
-    : `${process.env.REACT_APP_BACKEND_URL || ""}${demystifiedRaw}`;
+  const { style: demystifiedStyle, cleanUrl: cleanDemystifiedUrl } = parseImageTransform(demystifiedRaw);
+  const imgUrl = cleanDemystifiedUrl.startsWith("http")
+    ? cleanDemystifiedUrl
+    : `${process.env.REACT_APP_BACKEND_URL || ""}${cleanDemystifiedUrl}`;
 
   return (
     <>
@@ -24,7 +25,7 @@ export function Demystified() {
             src={imgUrl}
             alt="Demystified — SDPS at a glance"
             className="w-full object-contain"
-            style={{ maxHeight: "none", display: "block" }}
+            style={{ ...demystifiedStyle, maxHeight: "none", display: "block" }}
             onError={e => { e.target.style.display = "none"; }}
           />
         </div>

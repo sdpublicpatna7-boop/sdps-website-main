@@ -169,7 +169,7 @@ export function AdminSiteSettings() {
               value={data.demystified_image_url || ""}
               onChange={(v) => setData({ ...data, demystified_image_url: v })}
               subDir="misc"
-              aspect="video"
+              aspect="demystified"
             />
           </div>
 
@@ -185,7 +185,7 @@ export function AdminSiteSettings() {
               value={data.preschool_banner_image_url || ""}
               onChange={(v) => setData({ ...data, preschool_banner_image_url: v })}
               subDir="misc"
-              aspect="video"
+              aspect="preschool"
             />
           </div>
 
@@ -201,7 +201,7 @@ export function AdminSiteSettings() {
               value={data.khelo_patna_hero_image_url || ""}
               onChange={(v) => setData({ ...data, khelo_patna_hero_image_url: v })}
               subDir="misc"
-              aspect="video"
+              aspect="khelo_patna"
             />
           </div>
 
@@ -217,7 +217,7 @@ export function AdminSiteSettings() {
               value={data.logo_url || ""}
               onChange={(v) => setData({ ...data, logo_url: v })}
               subDir="misc"
-              aspect="square"
+              aspect="logo"
             />
           </div>
 
@@ -233,7 +233,7 @@ export function AdminSiteSettings() {
               value={data.hero_banner_url || ""}
               onChange={(v) => setData({ ...data, hero_banner_url: v })}
               subDir="misc"
-              aspect="video"
+              aspect="hero_banner"
             />
           </div>
 
@@ -249,7 +249,7 @@ export function AdminSiteSettings() {
               value={data.hero_feature_image_url || ""}
               onChange={(v) => setData({ ...data, hero_feature_image_url: v })}
               subDir="misc"
-              aspect="video"
+              aspect="hero_feature"
             />
           </div>
 
@@ -265,7 +265,7 @@ export function AdminSiteSettings() {
               value={data.admission_open_button_url || ""}
               onChange={(v) => setData({ ...data, admission_open_button_url: v })}
               subDir="misc"
-              aspect="video"
+              aspect="admission_open"
             />
           </div>
 
@@ -281,7 +281,7 @@ export function AdminSiteSettings() {
               value={data.ranked_badge_url || ""}
               onChange={(v) => setData({ ...data, ranked_badge_url: v })}
               subDir="misc"
-              aspect="square"
+              aspect="ranked_badge"
             />
           </div>
 
@@ -297,7 +297,7 @@ export function AdminSiteSettings() {
               value={data.director_photo_url || ""}
               onChange={(v) => setData({ ...data, director_photo_url: v })}
               subDir="misc"
-              aspect="round"
+              aspect="director"
             />
           </div>
 
@@ -313,7 +313,7 @@ export function AdminSiteSettings() {
               value={data.principal_photo_url || ""}
               onChange={(v) => setData({ ...data, principal_photo_url: v })}
               subDir="misc"
-              aspect="round"
+              aspect="principal"
             />
           </div>
 
@@ -329,7 +329,7 @@ export function AdminSiteSettings() {
               value={data.about_trust_logo_url || ""}
               onChange={(v) => setData({ ...data, about_trust_logo_url: v })}
               subDir="misc"
-              aspect="square"
+              aspect="about_trust"
             />
           </div>
 
@@ -345,7 +345,7 @@ export function AdminSiteSettings() {
               value={data.academics_learning_image_url || ""}
               onChange={(v) => setData({ ...data, academics_learning_image_url: v })}
               subDir="misc"
-              aspect="video"
+              aspect="academics_learning"
             />
           </div>
 
@@ -361,7 +361,7 @@ export function AdminSiteSettings() {
               value={data.academics_facilities_image_url || ""}
               onChange={(v) => setData({ ...data, academics_facilities_image_url: v })}
               subDir="misc"
-              aspect="video"
+              aspect="academics_facilities"
             />
           </div>
 
@@ -377,7 +377,7 @@ export function AdminSiteSettings() {
               value={data.career_hero_image_url || ""}
               onChange={(v) => setData({ ...data, career_hero_image_url: v })}
               subDir="misc"
-              aspect="video"
+              aspect="career_hero"
             />
           </div>
         </div>

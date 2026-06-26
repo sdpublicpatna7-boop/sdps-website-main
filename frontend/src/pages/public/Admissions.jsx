@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
-import api from "../../lib/api";
+import api, { parseImageTransform } from "../../lib/api";
 import { toast, Toaster } from "sonner";
 import { Loader2, Check } from "lucide-react";
 import { ImageOrUrlField, FileOrUrlField } from "../../components/admin/ResourceManager";
@@ -398,15 +398,17 @@ export function AdmissionsLanding() {
     ? (prospectusRaw.startsWith("http") ? prospectusRaw : `${BACKEND}${prospectusRaw}`)
     : "https://sdpublic.org/assets/docs/Prospectus.pdf";
 
-  const openButtonRaw = settings?.admission_open_button_url || "https://sdpublic.org/assets/img/admission_open_button.png";
-  const openButtonUrl = openButtonRaw.startsWith("http")
-    ? openButtonRaw
-    : `${BACKEND}${openButtonRaw}`;
+  const openButtonRawVal = settings?.admission_open_button_url || "https://sdpublic.org/assets/img/admission_open_button.png";
+  const { style: openButtonStyle, cleanUrl: cleanOpenButton } = parseImageTransform(openButtonRawVal);
+  const openButtonUrl = cleanOpenButton.startsWith("http")
+    ? cleanOpenButton
+    : `${BACKEND}${cleanOpenButton}`;
 
-  const rankedBadgeRaw = settings?.ranked_badge_url || "https://sdpublic.org/assets/img/ranked.png";
-  const rankedBadgeUrl = rankedBadgeRaw.startsWith("http")
-    ? rankedBadgeRaw
-    : `${BACKEND}${rankedBadgeRaw}`;
+  const rankedBadgeRawVal = settings?.ranked_badge_url || "https://sdpublic.org/assets/img/ranked.png";
+  const { style: rankedBadgeStyle, cleanUrl: cleanRankedBadge } = parseImageTransform(rankedBadgeRawVal);
+  const rankedBadgeUrl = cleanRankedBadge.startsWith("http")
+    ? cleanRankedBadge
+    : `${BACKEND}${cleanRankedBadge}`;
 
   return (
     <>
@@ -465,6 +467,7 @@ export function AdmissionsLanding() {
           {/* Admission image */}
           <div className="mt-10 rounded-3xl overflow-hidden shadow-xl text-center">
             <img src={openButtonUrl} alt="Admission Open"
+              style={openButtonStyle}
               className="max-h-48 mx-auto object-contain py-4"
               onError={e => { e.target.style.display = "none"; }} />
           </div>
@@ -496,6 +499,7 @@ export function AdmissionsLanding() {
 
           <div className="flex justify-center mb-8">
             <img src={rankedBadgeUrl} alt="Top Ranked Pre-School"
+              style={rankedBadgeStyle}
               className="h-20 object-contain"
               onError={e => { e.target.style.display = "none"; }} />
           </div>

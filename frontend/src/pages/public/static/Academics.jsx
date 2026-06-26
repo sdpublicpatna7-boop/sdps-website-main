@@ -1,19 +1,22 @@
 import { useOutletContext } from "react-router-dom";
 import PageHero from "@/components/layout/PageHero";
 import SEO from "@/components/layout/SEO";
+import { parseImageTransform } from "@/lib/api";
 
 export function Academics() {
   const { settings } = useOutletContext() || {};
 
-  const learningRaw = settings?.academics_learning_image_url || "https://sdpublic.org/assets/img/learning_beyond.png";
-  const learningUrl = learningRaw.startsWith("http")
-    ? learningRaw
-    : `${process.env.REACT_APP_BACKEND_URL || ""}${learningRaw}`;
+  const learningRawVal = settings?.academics_learning_image_url || "https://sdpublic.org/assets/img/learning_beyond.png";
+  const { style: learningStyle, cleanUrl: cleanLearning } = parseImageTransform(learningRawVal);
+  const learningUrl = cleanLearning.startsWith("http")
+    ? cleanLearning
+    : `${process.env.REACT_APP_BACKEND_URL || ""}${cleanLearning}`;
 
-  const facilitiesRaw = settings?.academics_facilities_image_url || "https://sdpublic.org/assets/img/world_class.jpg";
-  const facilitiesUrl = facilitiesRaw.startsWith("http")
-    ? facilitiesRaw
-    : `${process.env.REACT_APP_BACKEND_URL || ""}${facilitiesRaw}`;
+  const facilitiesRawVal = settings?.academics_facilities_image_url || "https://sdpublic.org/assets/img/world_class.jpg";
+  const { style: facilitiesStyle, cleanUrl: cleanFacilities } = parseImageTransform(facilitiesRawVal);
+  const facilitiesUrl = cleanFacilities.startsWith("http")
+    ? cleanFacilities
+    : `${process.env.REACT_APP_BACKEND_URL || ""}${cleanFacilities}`;
   return (
     <>
       <SEO 
@@ -46,6 +49,7 @@ export function Academics() {
           </div>
           <div className="rounded-3xl overflow-hidden shadow-xl">
             <img src={learningUrl} alt="Experiential Learning at SDPS"
+              style={learningStyle}
               className="w-full object-contain max-h-72 bg-white"
               onError={e => { e.target.src = "https://sdpublic.org/img/feature.jpg"; }} />
           </div>
@@ -102,6 +106,7 @@ export function Academics() {
           </div>
           <div className="rounded-3xl overflow-hidden shadow-xl">
             <img src={facilitiesUrl} alt="SDPS Facilities"
+              style={facilitiesStyle}
               className="w-full object-contain max-h-64 bg-white"
               onError={e => { e.target.style.display = "none"; }} />
           </div>

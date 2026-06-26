@@ -1,12 +1,13 @@
 import { Link } from "react-router-dom";
 import { Phone, Mail, MapPin, Youtube, Instagram, Facebook } from "lucide-react";
-import { optimizeCloudinary } from "@/lib/api";
+import { optimizeCloudinary, parseImageTransform } from "@/lib/api";
 
 export default function Footer({ settings }) {
   const s = settings || {};
   const logoUrl = s.logo_url || "";
-  const rawLogo = logoUrl
-    ? (logoUrl.startsWith("http") ? logoUrl : `${process.env.REACT_APP_BACKEND_URL || ""}${logoUrl}`)
+  const { style: logoStyle, cleanUrl: cleanLogoUrl } = parseImageTransform(logoUrl);
+  const rawLogo = cleanLogoUrl
+    ? (cleanLogoUrl.startsWith("http") ? cleanLogoUrl : `${process.env.REACT_APP_BACKEND_URL || ""}${cleanLogoUrl}`)
     : "";
   const formattedLogo = optimizeCloudinary(rawLogo, 120);
   return (
@@ -18,7 +19,14 @@ export default function Footer({ settings }) {
         <div className="md:col-span-4">
           <div className="flex items-center gap-3 mb-4">
             {formattedLogo ? (
-              <img src={formattedLogo} alt="SDPS" className="w-14 h-14 rounded-full ring-2 ring-brand-gold object-contain p-0.5 bg-white" />
+              <div className="w-14 h-14 rounded-full ring-2 ring-brand-gold overflow-hidden p-0.5 bg-white flex items-center justify-center relative shrink-0">
+                <img
+                  src={formattedLogo}
+                  alt="SDPS"
+                  style={logoStyle}
+                  className="w-full h-full object-cover rounded-full"
+                />
+              </div>
             ) : (
               <div className="w-14 h-14 rounded-full bg-white/10 animate-pulse ring-2 ring-brand-gold/40 shrink-0" />
             )}

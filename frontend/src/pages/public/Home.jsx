@@ -86,7 +86,9 @@ export default function Home() {
   const stats = settings?.stats || { years: "30+", educators: "75+", students: "50000+", alumni: "5000+" };
   const erpUrl = settings?.erp_url || "https://sdpublic.gungunerp.in";
   const playStoreUrl = settings?.play_store_url || "https://play.google.com/store/apps/details?id=com.gungunerp.appsdpublicschool";
-  const preschoolBanner = settings?.preschool_banner_image_url || "https://sdpublic.org/assets/img/banner.jpg";
+  const preschoolBannerRaw = settings?.preschool_banner_image_url || "https://sdpublic.org/assets/img/banner.jpg";
+  const { style: preschoolStyle, cleanUrl: cleanPreschool } = parseImageTransform(preschoolBannerRaw);
+  const preschoolBanner = cleanPreschool;
   const youtubeUrl = settings?.youtube_channel || "https://youtube.com";
   const instagramUrl = settings?.instagram_url || "https://instagram.com";
   const facebookUrl = settings?.facebook_url || "https://facebook.com";
@@ -176,20 +178,23 @@ export default function Home() {
 
   const displayTestimonials = testimonials.length > 0 ? testimonials : DEFAULT_TESTIMONIALS;
 
-  const heroFeatureImage = settings?.hero_feature_image_url || "https://sdpublic.org/img/feature.jpg";
-  const formattedHeroFeature = heroFeatureImage.startsWith("http")
-    ? heroFeatureImage
-    : `${process.env.REACT_APP_BACKEND_URL || ""}${heroFeatureImage}`;
+  const heroFeatureRaw = settings?.hero_feature_image_url || "https://sdpublic.org/img/feature.jpg";
+  const { style: heroFeatureStyle, cleanUrl: cleanHeroFeature } = parseImageTransform(heroFeatureRaw);
+  const formattedHeroFeature = cleanHeroFeature.startsWith("http")
+    ? cleanHeroFeature
+    : `${process.env.REACT_APP_BACKEND_URL || ""}${cleanHeroFeature}`;
 
-  const heroBannerImage = settings?.hero_banner_url || "https://sdpublic.org/assets/img/banner.jpg";
-  const formattedHeroBanner = heroBannerImage.startsWith("http")
-    ? heroBannerImage
-    : `${process.env.REACT_APP_BACKEND_URL || ""}${heroBannerImage}`;
+  const heroBannerRaw = settings?.hero_banner_url || "https://sdpublic.org/assets/img/banner.jpg";
+  const { cleanUrl: cleanHeroBanner } = parseImageTransform(heroBannerRaw);
+  const formattedHeroBanner = cleanHeroBanner.startsWith("http")
+    ? cleanHeroBanner
+    : `${process.env.REACT_APP_BACKEND_URL || ""}${cleanHeroBanner}`;
 
-  const demystifiedImage = settings?.demystified_image_url || "https://sdpublic.org/assets/img/demystified.jpg";
-  const formattedDemystified = demystifiedImage.startsWith("http")
-    ? demystifiedImage
-    : `${process.env.REACT_APP_BACKEND_URL || ""}${demystifiedImage}`;
+  const demystifiedRaw = settings?.demystified_image_url || "https://sdpublic.org/assets/img/demystified.jpg";
+  const { style: demystifiedStyle, cleanUrl: cleanDemystified } = parseImageTransform(demystifiedRaw);
+  const formattedDemystified = cleanDemystified.startsWith("http")
+    ? cleanDemystified
+    : `${process.env.REACT_APP_BACKEND_URL || ""}${cleanDemystified}`;
 
   const schoolSchema = {
     "@context": "https://schema.org",
@@ -292,12 +297,15 @@ export default function Home() {
             className="lg:col-span-5 relative"
           >
             <div className="relative aspect-[4/5] rounded-[2.5rem] overflow-hidden bg-white/40 border border-white/60 backdrop-blur-sm p-3 shadow-2xl group hover:-translate-y-2 hover:shadow-[0_30px_60px_rgba(8,32,82,0.1)] transition-all duration-500">
-              <img
-                src={formattedHeroFeature}
-                alt="SDPS School"
-                className="w-full h-full object-cover rounded-[2rem] transition duration-500 group-hover:scale-[1.02]"
-                onError={(e) => { e.target.src = formattedHeroBanner; }}
-              />
+              <div className="w-full h-full rounded-[2rem] overflow-hidden">
+                <img
+                  src={formattedHeroFeature}
+                  alt="SDPS School"
+                  style={heroFeatureStyle}
+                  className="w-full h-full object-cover transition duration-500 group-hover:scale-[1.02]"
+                  onError={(e) => { e.target.src = formattedHeroBanner; }}
+                />
+              </div>
               <div className="absolute bottom-6 left-6 right-6 bg-white/80 backdrop-blur-md border border-white/60 rounded-2xl p-4 flex items-center gap-3 shadow-lg">
                 <a href={settings?.hero_video_url || "https://www.youtube.com/watch?v=Lv7W4kSSM3w"} target="_blank" rel="noreferrer"
                   className="w-12 h-12 rounded-full bg-brand-orange flex items-center justify-center shrink-0 hover:scale-110 shadow-md transition" data-testid="hero-video-btn">
@@ -457,13 +465,16 @@ export default function Home() {
           <div className="overline mb-3 text-center text-brand-orange font-bold">Know Us Better</div>
           <h2 className="section-title text-center mb-10">Demystified</h2>
           <div className="rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/60 p-3 bg-white/40 backdrop-blur-sm">
-            <img
-              src={formattedDemystified}
-              alt="SDPS Demystified"
-              className="w-full object-contain rounded-[2rem] hover:scale-[1.002] transition-transform duration-500"
-              loading="lazy"
-              onError={(e) => { e.target.style.display = "none"; }}
-            />
+            <div className="w-full rounded-[2rem] overflow-hidden">
+              <img
+                src={formattedDemystified}
+                alt="SDPS Demystified"
+                style={demystifiedStyle}
+                className="w-full object-contain hover:scale-[1.002] transition-transform duration-500"
+                loading="lazy"
+                onError={(e) => { e.target.style.display = "none"; }}
+              />
+            </div>
           </div>
         </div>
       </section>
@@ -494,11 +505,14 @@ export default function Home() {
             transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }} 
             className="relative p-3 bg-white/40 border border-white/60 backdrop-blur-sm rounded-[3rem] shadow-2xl"
           >
-            <img src={preschoolBanner.startsWith("http") ? preschoolBanner : `${process.env.REACT_APP_BACKEND_URL || ''}${preschoolBanner}`} alt="Pre-School"
-              className="rounded-[2.5rem] w-full object-contain max-h-[450px] bg-white shadow-sm p-2"
-              loading="lazy"
-              onError={(e) => { e.target.src = "https://sdpublic.org/img/feature.jpg"; }}
-            />
+            <div className="rounded-[2.5rem] overflow-hidden bg-white shadow-sm p-2">
+              <img src={preschoolBanner.startsWith("http") ? preschoolBanner : `${process.env.REACT_APP_BACKEND_URL || ''}${preschoolBanner}`} alt="Pre-School"
+                style={preschoolStyle}
+                className="w-full object-contain max-h-[450px] rounded-[2rem]"
+                loading="lazy"
+                onError={(e) => { e.target.src = "https://sdpublic.org/img/feature.jpg"; }}
+              />
+            </div>
             <div className="absolute -bottom-4 -right-4 bg-brand-orange text-white px-5 py-3 rounded-2xl shadow-xl font-playful text-lg animate-wiggle border border-brand-orange-light/20 z-10">
               Fun Learning! ✨
             </div>

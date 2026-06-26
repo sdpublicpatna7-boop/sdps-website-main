@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
-import api from "../../lib/api";
+import api, { parseImageTransform } from "../../lib/api";
 import { toast, Toaster } from "sonner";
 import { Briefcase, Loader2, Check } from "lucide-react";
 import { FileOrUrlField } from "../../components/admin/ResourceManager";
@@ -27,10 +27,11 @@ export default function Career() {
   const [done, setDone] = useState(false);
   const [resumeUrl, setResumeUrl] = useState("");
 
-  const careerHeroRaw = settings?.career_hero_image_url || "/sdps-team.png";
-  const careerHeroUrl = careerHeroRaw.startsWith("http")
-    ? careerHeroRaw
-    : `${process.env.REACT_APP_BACKEND_URL || ""}${careerHeroRaw}`;
+  const careerHeroRawVal = settings?.career_hero_image_url || "/sdps-team.png";
+  const { style: careerHeroStyle, cleanUrl: cleanCareerHero } = parseImageTransform(careerHeroRawVal);
+  const careerHeroUrl = cleanCareerHero.startsWith("http")
+    ? cleanCareerHero
+    : `${process.env.REACT_APP_BACKEND_URL || ""}${cleanCareerHero}`;
 
   // Real form fields from SDPS career form
   const [form, setForm] = useState({
@@ -128,7 +129,7 @@ export default function Career() {
               src={careerHeroUrl}
               alt="SDPS Teaching Team"
               className="w-full object-contain"
-              style={{ maxHeight: "340px", objectPosition: "center" }}
+              style={{ ...careerHeroStyle, maxHeight: "340px", objectPosition: "center" }}
             />
           </div>
           <p className="text-center text-sm text-brand-ink/50 mt-4">

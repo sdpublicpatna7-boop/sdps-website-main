@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { Link } from "react-router-dom";
-import { optimizeCloudinary } from "@/lib/api";
+import { optimizeCloudinary, parseImageTransform } from "@/lib/api";
 
 export default function WelcomePopup({ popup }) {
   const [open, setOpen] = useState(false);
@@ -24,9 +24,10 @@ export default function WelcomePopup({ popup }) {
 
   if (!popup?.enabled) return null;
 
-  const imageUrl = popup.image_url;
-  const rawImageUrl = imageUrl
-    ? (imageUrl.startsWith("http") ? imageUrl : `${process.env.REACT_APP_BACKEND_URL || ""}${imageUrl}`)
+  const imageUrlRaw = popup.image_url;
+  const { style: popupImgStyle, cleanUrl: cleanPopupImg } = parseImageTransform(imageUrlRaw || "");
+  const rawImageUrl = cleanPopupImg
+    ? (cleanPopupImg.startsWith("http") ? cleanPopupImg : `${process.env.REACT_APP_BACKEND_URL || ""}${cleanPopupImg}`)
     : "";
   const formattedImageUrl = optimizeCloudinary(rawImageUrl, 600);
 
@@ -67,7 +68,7 @@ export default function WelcomePopup({ popup }) {
                   onLoad={() => setImgLoading(false)}
                   onError={() => setImgLoading(false)}
                   className={`w-full object-contain bg-white rounded-2xl border border-black/5 mx-auto transition-opacity duration-300 ${imgLoading ? "opacity-0 absolute h-0 w-0 overflow-hidden" : "opacity-100"}`}
-                  style={{ maxHeight: "340px", display: "block" }}
+                  style={{ ...popupImgStyle, maxHeight: "340px", display: "block" }}
                 />
               </div>
             )}

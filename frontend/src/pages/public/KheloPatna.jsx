@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
 import { Link, useOutletContext } from "react-router-dom";
-import api from "../../lib/api";
+import api, { parseImageTransform } from "../../lib/api";
 
 const BACKEND = process.env.REACT_APP_BACKEND_URL || "";
 function fullUrl(u) { return u?.startsWith("http") ? u : `${BACKEND}${u}`; }
 
 export default function KheloPatna() {
   const { settings } = useOutletContext() || {};
-  const heroImg = settings?.khelo_patna_hero_image_url || "/khelo-patna-hero.jpg";
-  const heroImgUrl = heroImg.startsWith("http") || (heroImg.startsWith("/") && !heroImg.startsWith("/static")) ? heroImg : `${BACKEND}${heroImg}`;
+  const heroImgRaw = settings?.khelo_patna_hero_image_url || "/khelo-patna-hero.jpg";
+  const { style: heroImgStyle, cleanUrl: cleanHeroImg } = parseImageTransform(heroImgRaw);
+  const heroImgUrl = cleanHeroImg.startsWith("http") || (cleanHeroImg.startsWith("/") && !cleanHeroImg.startsWith("/static")) ? cleanHeroImg : `${BACKEND}${cleanHeroImg}`;
 
   const features = [
     { icon: "⚽", title: "Elite Turf Facility", desc: "Premium quality artificial turf suitable for football, cricket, and multi-sports activities." },
@@ -109,6 +110,7 @@ export default function KheloPatna() {
           </div>
           <div className="rounded-3xl overflow-hidden shadow-xl bg-slate-50 flex items-center justify-center">
             <img src={heroImgUrl} alt="SDPS Khelo Patna Partnership"
+              style={heroImgStyle}
               className="w-full object-contain max-h-[400px]"
               onError={e => e.target.style.display = "none"} />
           </div>

@@ -1,7 +1,7 @@
 import { Link, NavLink } from "react-router-dom";
 import { useState } from "react";
 import { Menu, X, ChevronDown, Phone, Mail } from "lucide-react";
-import { optimizeCloudinary } from "@/lib/api";
+import { optimizeCloudinary, parseImageTransform } from "@/lib/api";
 
 const NAV = [
   { label: "Home", to: "/" },
@@ -54,8 +54,9 @@ export default function Navbar({ settings }) {
   const [openMenu, setOpenMenu] = useState(null);
 
   const logoUrl = settings?.logo_url || "";
-  const rawLogo = logoUrl
-    ? (logoUrl.startsWith("http") ? logoUrl : `${process.env.REACT_APP_BACKEND_URL || ""}${logoUrl}`)
+  const { style: logoStyle, cleanUrl: cleanLogoUrl } = parseImageTransform(logoUrl);
+  const rawLogo = cleanLogoUrl
+    ? (cleanLogoUrl.startsWith("http") ? cleanLogoUrl : `${process.env.REACT_APP_BACKEND_URL || ""}${cleanLogoUrl}`)
     : "";
   const formattedLogo = optimizeCloudinary(rawLogo, 120);
 
@@ -105,11 +106,14 @@ export default function Navbar({ settings }) {
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3" data-testid="brand-logo-link">
             {formattedLogo ? (
-              <img
-                src={formattedLogo}
-                alt="SDPS"
-                className="w-12 h-12 rounded-full ring-1 ring-brand-gold/40 object-contain p-0.5 bg-white"
-              />
+              <div className="w-12 h-12 rounded-full ring-1 ring-brand-gold/40 overflow-hidden p-0.5 bg-white flex items-center justify-center relative shrink-0">
+                <img
+                  src={formattedLogo}
+                  alt="SDPS"
+                  style={logoStyle}
+                  className="w-full h-full object-cover rounded-full"
+                />
+              </div>
             ) : (
               <div className="w-12 h-12 rounded-full bg-slate-200/40 animate-pulse border border-white/10" />
             )}

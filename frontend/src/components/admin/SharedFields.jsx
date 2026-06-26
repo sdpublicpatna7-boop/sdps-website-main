@@ -26,6 +26,227 @@ const ASPECT_PRESETS = {
   }
 };
 
+function MockupPreview({ aspect, imageUrl, scale, x, y }) {
+  const [naturalAspect, setNaturalAspect] = useState(16 / 9);
+
+  const handleImageLoad = (e) => {
+    const { naturalWidth, naturalHeight } = e.target;
+    if (naturalWidth && naturalHeight) {
+      setNaturalAspect(naturalWidth / naturalHeight);
+    }
+  };
+
+  const imgStyle = {
+    transform: `scale(${scale}) translate(${x}px, ${y}px)`,
+    transformOrigin: "center center",
+    transition: "transform 0.05s ease-out",
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    display: "block"
+  };
+
+  const ImageWrapper = ({ className = "" }) => (
+    <div 
+      className={`overflow-hidden relative bg-slate-100 border border-slate-200 shadow-inner ${className}`}
+      style={{ aspectRatio: naturalAspect }}
+    >
+      <img
+        src={imageUrl}
+        alt="Previewing"
+        onLoad={handleImageLoad}
+        style={imgStyle}
+      />
+    </div>
+  );
+
+  switch (aspect) {
+    case "logo":
+      return (
+        <div className="w-full bg-slate-50 border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+          <div className="bg-[#0b2552] text-[8px] text-white/85 px-3 py-1 flex justify-between items-center select-none font-semibold">
+            <span>📞 +91 99551 90262</span>
+            <span>ERP Login</span>
+          </div>
+          <div className="bg-white/95 px-3 py-2 flex items-center gap-2 border-b border-slate-100 select-none">
+            <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-200 shadow-sm shrink-0 bg-white flex items-center justify-center p-0.5">
+              <img src={imageUrl} alt="Logo" style={imgStyle} className="rounded-full" onLoad={handleImageLoad} />
+            </div>
+            <div className="leading-none flex-1">
+              <div className="text-[10px] font-bold text-slate-800">S.D. Public School</div>
+              <div className="text-[5px] uppercase tracking-wider text-slate-500 font-bold">Empowering Generations</div>
+            </div>
+            <div className="flex gap-1.5 text-[7px] text-slate-500 font-bold">
+              <span>Home</span>
+              <span>About</span>
+              <span>Admissions</span>
+            </div>
+          </div>
+          <div className="p-3 text-center text-[9px] text-slate-400 font-bold bg-white/60">Website Header Preview</div>
+        </div>
+      );
+
+    case "director":
+    case "principal":
+      return (
+        <div className="w-full max-w-[320px] bg-white border border-slate-150 rounded-2xl shadow-sm p-4 space-y-3">
+          <div className="flex gap-3 items-center">
+            <div className="w-16 h-16 rounded-full overflow-hidden ring-4 ring-amber-400 bg-slate-50 shrink-0 relative flex items-center justify-center shadow-inner">
+              <img src={imageUrl} alt="Avatar" style={imgStyle} className="rounded-full" onLoad={handleImageLoad} />
+            </div>
+            <div className="flex-1 space-y-1.5">
+              <div className="h-2.5 w-2/3 bg-slate-200 rounded" />
+              <div className="h-2 w-1/2 bg-[#f97316]/20 rounded" />
+              <div className="h-1.5 w-1/3 bg-slate-100 rounded" />
+            </div>
+          </div>
+          <div className="border-t border-slate-50 pt-2 text-[9px] text-slate-400 italic font-semibold leading-relaxed">
+            "ज्ञान का प्रायोगिक रूप ही शिक्षा है। शिक्षा के बदौलत ही समाज में जागरूकता..."
+          </div>
+        </div>
+      );
+
+    case "welcome_popup":
+      return (
+        <div className="w-full max-w-[240px] bg-white border border-slate-200 rounded-3xl shadow-lg p-3 space-y-3">
+          <div className="flex justify-between items-center pb-1 border-b border-slate-50">
+            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">SDPS Update</span>
+            <div className="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center text-[9px] text-slate-500 font-bold cursor-pointer">×</div>
+          </div>
+          <ImageWrapper className="w-full rounded-2xl" />
+          <div className="space-y-1">
+            <div className="h-2.5 w-3/4 bg-slate-200 rounded" />
+            <div className="h-1.5 w-full bg-slate-100 rounded" />
+            <div className="h-1.5 w-5/6 bg-slate-100 rounded" />
+          </div>
+          <div className="h-6 w-20 bg-[#0E3B91] rounded-lg" />
+        </div>
+      );
+
+    case "demystified":
+      return (
+        <div className="w-full max-w-[320px] bg-white border border-slate-200 rounded-2xl shadow-sm p-3 space-y-2">
+          <div className="bg-slate-50 h-8 rounded-lg flex items-center px-3 text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+            📖 Demystified Page Infographic
+          </div>
+          <ImageWrapper className="w-full rounded-xl" />
+        </div>
+      );
+
+    case "preschool":
+      return (
+        <div className="w-full max-w-[320px] bg-gradient-to-br from-pink-50 via-amber-50 to-orange-50/70 border border-slate-200 rounded-3xl p-4 flex gap-4 items-center shadow-sm">
+          <div className="flex-1 space-y-1.5">
+            <div className="text-[10px] font-bold text-[#0E3B91]">Pre-School Section</div>
+            <div className="h-1.5 w-full bg-slate-200/60 rounded" />
+            <div className="h-1.5 w-5/6 bg-slate-100/60 rounded" />
+            <div className="h-4.5 w-16 bg-[#f97316] rounded-lg" />
+          </div>
+          <div className="w-20 shrink-0">
+            <ImageWrapper className="w-full rounded-2xl shadow-md border border-white p-0.5 bg-white" />
+          </div>
+        </div>
+      );
+
+    case "khelo_patna":
+      return (
+        <div className="w-full max-w-[320px] bg-white border border-slate-200 rounded-2xl p-4 space-y-3 shadow-sm">
+          <div className="flex justify-center items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-slate-100" />
+            <span className="text-[10px] text-slate-350 font-bold">×</span>
+            <div className="w-6 h-6 rounded-full bg-slate-900 flex items-center justify-center text-[8px] text-white">KP</div>
+          </div>
+          <div className="text-center text-[10px] font-bold text-slate-800">SDPS × Khelo Patna Partnership</div>
+          <ImageWrapper className="w-full rounded-2xl" />
+        </div>
+      );
+
+    case "hero_feature":
+      return (
+        <div className="w-full max-w-[320px] bg-slate-50 border border-slate-200 rounded-3xl p-4 grid grid-cols-12 gap-3 items-center shadow-sm">
+          <div className="col-span-7 space-y-2">
+            <div className="h-3 w-3/4 bg-slate-300 rounded" />
+            <div className="h-1.5 w-full bg-slate-200 rounded" />
+            <div className="h-1.5 w-5/6 bg-slate-200 rounded" />
+            <div className="flex gap-1.5 mt-2">
+              <div className="h-5 w-12 bg-slate-300 rounded-lg" />
+              <div className="h-5 w-12 bg-slate-200 rounded-lg" />
+            </div>
+          </div>
+          <div className="col-span-5">
+            <ImageWrapper className="w-full rounded-2xl shadow-md" />
+          </div>
+        </div>
+      );
+
+    case "hero_banner":
+      return (
+        <div className="w-full max-w-[320px] bg-slate-100 border border-slate-200 rounded-2xl overflow-hidden relative shadow-sm" style={{ aspectRatio: '16/9' }}>
+          <img src={imageUrl} alt="Hero Banner" style={imgStyle} onLoad={handleImageLoad} />
+          <div className="absolute inset-0 bg-[#0E3B91]/30 p-4 flex flex-col justify-end space-y-1 select-none">
+            <div className="h-3 w-1/2 bg-white/90 rounded" />
+            <div className="h-1.5 w-2/3 bg-white/70 rounded" />
+            <div className="h-4.5 w-12 bg-brand-orange rounded-md mt-1" />
+          </div>
+        </div>
+      );
+
+    case "admission_open":
+      return (
+        <div className="w-full max-w-[320px] bg-white border border-slate-200 rounded-2xl p-3 space-y-2 shadow-sm">
+          <div className="bg-[#0b2552] text-white py-1.5 rounded-lg text-center text-[8px] font-bold uppercase tracking-wider select-none">
+            Admissions Open 2026-27
+          </div>
+          <ImageWrapper className="w-full rounded-xl" />
+        </div>
+      );
+
+    case "ranked_badge":
+      return (
+        <div className="w-full max-w-[320px] bg-white border border-slate-200 rounded-2xl p-4 flex flex-col items-center space-y-2 shadow-sm">
+          <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider select-none">Ranked Seal Badge</div>
+          <div className="w-16 h-16 rounded-full overflow-hidden border border-slate-200 shadow-inner bg-white flex items-center justify-center p-0.5">
+            <img src={imageUrl} alt="Badge" style={imgStyle} className="rounded-full" onLoad={handleImageLoad} />
+          </div>
+          <div className="h-2 w-24 bg-slate-100 rounded" />
+        </div>
+      );
+
+    case "about_trust":
+      return (
+        <div className="w-full max-w-[320px] bg-white border border-slate-200 rounded-2xl p-4 grid grid-cols-12 gap-3 shadow-sm">
+          <div className="col-span-8 space-y-2">
+            <div className="h-3 w-1/2 bg-slate-250 rounded" />
+            <div className="h-1.5 w-full bg-slate-100 rounded" />
+            <div className="h-1.5 w-5/6 bg-slate-100 rounded" />
+          </div>
+          <div className="col-span-4">
+            <ImageWrapper className="w-full rounded-xl shadow-md" />
+          </div>
+        </div>
+      );
+
+    case "academics_learning":
+    case "academics_facilities":
+    case "career_hero":
+      return (
+        <div className="w-full max-w-[320px] bg-white border border-slate-200 rounded-2xl p-3 space-y-2 shadow-sm">
+          <div className="h-2.5 w-1/2 bg-slate-300 rounded" />
+          <ImageWrapper className="w-full rounded-xl" />
+          <div className="h-1.5 w-full bg-slate-100 rounded" />
+        </div>
+      );
+
+    default:
+      // Fallback
+      return (
+        <div className="flex flex-col items-center justify-center w-full">
+          <ImageWrapper className="w-full max-w-[240px] rounded-2xl" />
+        </div>
+      );
+  }
+}
+
 // Reusable dual-mode image field (upload from device OR paste URL)
 export function ImageOrUrlField({ value, onChange, subDir = "misc", aspect = "video" }) {
   const [mode, setMode] = useState(value && value.startsWith("http") ? "url" : "upload");
@@ -188,22 +409,17 @@ export function ImageOrUrlField({ value, onChange, subDir = "misc", aspect = "vi
             </div>
 
             {/* Live Preview Demo container */}
-            <div className="flex flex-col items-center justify-center py-6 bg-slate-50 rounded-2xl border border-slate-100">
-              <span className="text-[10px] uppercase font-bold text-slate-400 mb-3 tracking-wider">
-                Live Site Demo ({preset.label})
+            <div className="flex flex-col items-center justify-center py-6 bg-slate-50 rounded-2xl border border-slate-100 overflow-y-auto max-h-[300px]">
+              <span className="text-[10px] uppercase font-bold text-slate-400 mb-3 tracking-wider select-none">
+                Live Site Demo
               </span>
-              <div className={`relative overflow-hidden bg-slate-200 border border-slate-300 shadow-inner flex items-center justify-center ${preset.containerClass}`}>
-                <img
-                  src={fullUrl(base)}
-                  alt="Adjusting"
-                  style={{
-                    transform: `scale(${tempScale}) translate(${tempX}px, ${tempY}px)`,
-                    transformOrigin: "center center",
-                    transition: "transform 0.05s ease-out",
-                  }}
-                  className={preset.imgClass}
-                />
-              </div>
+              <MockupPreview
+                aspect={aspect}
+                imageUrl={fullUrl(base)}
+                scale={tempScale}
+                x={tempX}
+                y={tempY}
+              />
             </div>
 
             {/* Controls */}

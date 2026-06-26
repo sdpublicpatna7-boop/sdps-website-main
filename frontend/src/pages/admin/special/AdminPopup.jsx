@@ -68,6 +68,7 @@ export function AdminPopup() {
             value={data.image_url || ""}
             onChange={(v) => setData({ ...data, image_url: v })}
             subDir="popup"
+            aspect="welcome_popup"
           />
         </div>
         <div className="grid sm:grid-cols-2 gap-4">
