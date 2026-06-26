@@ -62,6 +62,7 @@ const AdminEligibilityRows = lazy(() => import("@/pages/admin/crud/AdminEligibil
 const AdminAdministrationMembers = lazy(() => import("@/pages/admin/crud/AdminAdministrationMembers"));
 const AdminHostelGallery = lazy(() => import("@/pages/admin/crud/AdminHostelGallery"));
 const AdminEducators = lazy(() => import("@/pages/admin/crud/AdminEducators"));
+const AdminTestimonials = lazy(() => import("@/pages/admin/crud/AdminTestimonials"));
 
 // SpecialPages
 const AdminCalendar = lazy(() => import("@/pages/admin/special/AdminCalendar"));
@@ -163,6 +164,7 @@ function App() {
                 <Route path="eligibility-rows" element={<AdminEligibilityRows />} />
                 <Route path="hostel-gallery" element={<AdminHostelGallery />} />
                 <Route path="administration-members" element={<AdminAdministrationMembers />} />
+                <Route path="testimonials" element={<AdminTestimonials />} />
                 <Route path="career-posts" element={<AdminCareerPosts />} />
                 <Route path="career-questions" element={<AdminCareerQuestions />} />
                 <Route path="career-applications" element={<AdminCareerApps />} />

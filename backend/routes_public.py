@@ -494,6 +494,13 @@ async def list_administration_members():
     return items
 
 
+# ---- Testimonials ----
+@public_router.get("/testimonials")
+async def list_testimonials_public():
+    items = await db.testimonials.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return items
+
+
 # ---- Legal Pages ----
 @public_router.get("/legal/{page_id}")
 async def get_legal_page_public(page_id: str):

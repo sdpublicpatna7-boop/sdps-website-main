@@ -4,123 +4,8 @@ import { useAdminList, uploadImage, uploadFile, fullUrl } from "../../lib/admin"
 import { toast, Toaster } from "sonner";
 import { Plus, Trash2, Edit2, X, Save, Loader2, ImageIcon, FileUp, Link2, Upload } from "lucide-react";
 
-/**
- * Dual-mode image input: local upload OR paste a URL
- * Exported so other pages can import and reuse it.
- */
-export function ImageOrUrlField({ value, onChange, subDir }) {
-  const [mode, setMode] = useState(value && value.startsWith("http") ? "url" : "upload");
-  const [uploading, setUploading] = useState(false);
-
-  return (
-    <div className="space-y-2">
-      {/* Preview */}
-      {value && (
-        <div className="relative w-fit">
-          <img src={fullUrl(value)} alt="" className="h-28 rounded-xl object-cover border border-slate-200 shadow-sm" />
-          <button type="button" onClick={() => onChange("")}
-            className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600">×</button>
-        </div>
-      )}
-
-      {/* Mode toggle */}
-      <div className="flex gap-1 p-1 bg-slate-100 rounded-lg w-fit">
-        <button type="button" onClick={() => setMode("upload")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition ${mode === "upload" ? "bg-white shadow text-brand-blue" : "text-slate-500 hover:text-slate-700"}`}>
-          <Upload className="w-3.5 h-3.5" /> Upload File
-        </button>
-        <button type="button" onClick={() => setMode("url")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition ${mode === "url" ? "bg-white shadow text-brand-blue" : "text-slate-500 hover:text-slate-700"}`}>
-          <Link2 className="w-3.5 h-3.5" /> Paste URL
-        </button>
-      </div>
-
-      {mode === "upload" ? (
-        <label className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl cursor-pointer text-sm font-medium border-2 border-dashed transition
-          ${uploading ? "border-brand-blue bg-brand-blue/5 text-brand-blue" : "border-slate-300 bg-slate-50 hover:border-brand-blue hover:bg-brand-blue/5 text-slate-600"}`}>
-          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
-          {uploading ? "Uploading..." : value ? "Change image" : "Choose image from device"}
-          <input type="file" accept="image/*" className="hidden" disabled={uploading} onChange={async (e) => {
-            const file = e.target.files[0]; if (!file) return;
-            setUploading(true);
-            try {
-              const r = await uploadImage(file, subDir || "gallery");
-              onChange(r.url);
-              toast.success(`Uploaded — ${r.size_kb} KB`);
-            } catch { toast.error("Upload failed"); }
-            finally { setUploading(false); e.target.value = ""; }
-          }} />
-        </label>
-      ) : (
-        <input
-          type="url"
-          placeholder="https://example.com/image.jpg or https://sdpublic.org/..."
-          className="w-full px-3 py-2.5 rounded-xl border border-slate-300 focus:border-brand-blue outline-none text-sm"
-          value={value && value.startsWith("http") ? value : ""}
-          onChange={e => onChange(e.target.value)}
-        />
-      )}
-    </div>
-  );
-}
-
-/**
- * Dual-mode file input: local upload OR paste a URL
- * Exported so other pages can import and reuse it.
- */
-export function FileOrUrlField({ value, onChange, subDir, maxMb }) {
-  const [mode, setMode] = useState(value && value.startsWith("http") ? "url" : "upload");
-  const [uploading, setUploading] = useState(false);
-
-  return (
-    <div className="space-y-2">
-      {value && (
-        <div className="flex items-center gap-2">
-          <a href={fullUrl(value)} target="_blank" rel="noreferrer"
-            className="text-brand-blue text-sm underline truncate max-w-xs">📎 Current file</a>
-          <button type="button" onClick={() => onChange("")} className="text-xs text-red-500 hover:text-red-700">Remove</button>
-        </div>
-      )}
-
-      <div className="flex gap-1 p-1 bg-slate-100 rounded-lg w-fit">
-        <button type="button" onClick={() => setMode("upload")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition ${mode === "upload" ? "bg-white shadow text-brand-blue" : "text-slate-500 hover:text-slate-700"}`}>
-          <Upload className="w-3.5 h-3.5" /> Upload File
-        </button>
-        <button type="button" onClick={() => setMode("url")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition ${mode === "url" ? "bg-white shadow text-brand-blue" : "text-slate-500 hover:text-slate-700"}`}>
-          <Link2 className="w-3.5 h-3.5" /> Paste URL
-        </button>
-      </div>
-
-      {mode === "upload" ? (
-        <label className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl cursor-pointer text-sm font-medium border-2 border-dashed transition
-          ${uploading ? "border-brand-blue bg-brand-blue/5 text-brand-blue" : "border-slate-300 bg-slate-50 hover:border-brand-blue hover:bg-brand-blue/5 text-slate-600"}`}>
-          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileUp className="w-4 h-4" />}
-          {uploading ? "Uploading..." : value ? "Replace file" : `Choose file (max ${maxMb || 5} MB)`}
-          <input type="file" className="hidden" disabled={uploading} onChange={async (e) => {
-            const file = e.target.files[0]; if (!file) return;
-            setUploading(true);
-            try {
-              const r = await uploadFile(file, subDir || "misc", maxMb || 5);
-              onChange(r.url);
-              toast.success("File uploaded");
-            } catch (err) { toast.error(err?.response?.data?.detail || "Upload failed"); }
-            finally { setUploading(false); e.target.value = ""; }
-          }} />
-        </label>
-      ) : (
-        <input
-          type="url"
-          placeholder="https://example.com/document.pdf"
-          className="w-full px-3 py-2.5 rounded-xl border border-slate-300 focus:border-brand-blue outline-none text-sm"
-          value={value && value.startsWith("http") ? value : ""}
-          onChange={e => onChange(e.target.value)}
-        />
-      )}
-    </div>
-  );
-}
+import { ImageOrUrlField, FileOrUrlField } from "./SharedFields";
+export { ImageOrUrlField, FileOrUrlField };
 
 /**
  * Generic Resource Manager component
@@ -202,7 +87,7 @@ export default function ResourceManager({ config }) {
       </label>
     );
     if (f.type === "image") return (
-      <ImageOrUrlField value={v || ""} onChange={set} subDir={config.sub_dir} />
+      <ImageOrUrlField value={v || ""} onChange={set} subDir={config.sub_dir} aspect={f.aspect} />
     );
     if (f.type === "file") return (
       <FileOrUrlField value={v || ""} onChange={set} subDir={config.sub_dir} maxMb={f.file_max_mb} />

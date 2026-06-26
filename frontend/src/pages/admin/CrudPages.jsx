@@ -17,3 +17,4 @@ export { AdminFeeStructureRows } from "./crud/AdminFeeStructureRows";
 export { AdminHostelFeeRows } from "./crud/AdminHostelFeeRows";
 export { AdminAdministrationMembers } from "./crud/AdminAdministrationMembers";
 export { AdminHostelGallery } from "./crud/AdminHostelGallery";
+export { AdminTestimonials } from "./crud/AdminTestimonials";

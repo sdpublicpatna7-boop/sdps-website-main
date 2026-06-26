@@ -31,7 +31,7 @@ from models import (
     SiteSettings, now_iso, new_id, AdmissionEnquiry,
     EligibilityRow, FeeStructureRow, HostelFeeRow, HostelGalleryItem,
     AdministrationMember, LegalPage, ExamPaper, HolidayHomework, KheloPatnaPhoto,
-    Educator, GeneratedThumbnail, SalarySlip, SalaryCertificate, ExperienceCertificate
+    Educator, GeneratedThumbnail, SalarySlip, SalaryCertificate, ExperienceCertificate, Testimonial
 )
 
 logger = logging.getLogger(__name__)
@@ -256,6 +256,7 @@ _register_crud("/fee-structure-rows", "fee_structure_rows", FeeStructureRow, "or
 _register_crud("/hostel-fee-rows", "hostel_fee_rows", HostelFeeRow, "order", 1, permission="site-settings")
 _register_crud("/administration-members", "administration_members", AdministrationMember, "order", 1, permission="site-settings")
 _register_crud("/educators", "educators", Educator, "created_at", -1, permission="media-tools")
+_register_crud("/testimonials", "testimonials", Testimonial, "created_at", -1, permission="site-settings")
 
 
 # ============= GENERATED THUMBNAILS =============

@@ -72,10 +72,15 @@ export default function Home() {
   const { settings } = useOutletContext() || {};
   const [news, setNews] = useState([]);
   const [calendar, setCalendar] = useState([]);
+  const [testimonials, setTestimonials] = useState([]);
+  const [playingVideoId, setPlayingVideoId] = useState(null);
 
   useEffect(() => {
     api.get("/news?limit=4").then((r) => setNews(r.data)).catch(() => {});
     api.get("/calendar").then((r) => setCalendar(r.data.slice(0, 6))).catch(() => {});
+    api.get("/testimonials")
+      .then((r) => setTestimonials(r.data))
+      .catch((e) => console.error("Error loading testimonials:", e));
   }, []);
 
   const stats = settings?.stats || { years: "30+", educators: "75+", students: "50000+", alumni: "5000+" };
@@ -86,17 +91,90 @@ export default function Home() {
   const instagramUrl = settings?.instagram_url || "https://instagram.com";
   const facebookUrl = settings?.facebook_url || "https://facebook.com";
 
-  const rawThumb1 = settings?.testimonial_video_thumb_1 || "https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&q=80&w=600";
-  const { style: thumbStyle1, cleanUrl: cleanThumb1 } = parseImageTransform(rawThumb1);
-  const formattedThumb1 = cleanThumb1.startsWith("http")
-    ? cleanThumb1
-    : `${process.env.REACT_APP_BACKEND_URL || ""}${cleanThumb1}`;
+  const DEFAULT_TESTIMONIALS = [
+    {
+      id: "default-1",
+      parent_name: "Rajesh Kumar",
+      parent_info: "Parent of Riya (Class II)",
+      type: "text",
+      text: "The individual attention my daughter receives at S.D. Public School is remarkable. Her confidence in speaking and logic skills has blossomed since Playgroup. The teachers are incredibly nurturing."
+    },
+    {
+      id: "default-2",
+      parent_name: "Suman Mishra",
+      parent_info: "Parent of Aarav (Class VI)",
+      type: "youtube",
+      text: "Watch how S.D. Public School focuses on active class participation and holistic academic growth. Our experience with the school's online learning and physical campus has been wonderful.",
+      video_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      video_thumb_url: "https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&q=80&w=600"
+    },
+    {
+      id: "default-3",
+      parent_name: "Amit Sharma",
+      parent_info: "Parent of Priyanshu (Class VIII)",
+      type: "facebook",
+      text: "Check out our sports day reel and parent sharing sessions on social media! S.D. Public School is active, energetic, and provides excellent extracurricular exposure.",
+      video_url: "https://www.facebook.com/watch/?v=12345",
+      video_thumb_url: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=600"
+    }
+  ];
 
-  const rawThumb2 = settings?.testimonial_video_thumb_2 || "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=600";
-  const { style: thumbStyle2, cleanUrl: cleanThumb2 } = parseImageTransform(rawThumb2);
-  const formattedThumb2 = cleanThumb2.startsWith("http")
-    ? cleanThumb2
-    : `${process.env.REACT_APP_BACKEND_URL || ""}${cleanThumb2}`;
+  const getYouTubeId = (url) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    if (match && match[2].length === 11) {
+      return match[2];
+    }
+    const shortMatch = url.match(/youtube\.com\/shorts\/([^#\&\?]+)/);
+    if (shortMatch) {
+      return shortMatch[1];
+    }
+    return null;
+  };
+
+  const getEmbedUrl = (url, type) => {
+    if (!url) return "";
+    if (type === "youtube") {
+      const id = getYouTubeId(url);
+      return id ? `https://www.youtube.com/embed/${id}?autoplay=1` : url;
+    }
+    if (type === "instagram") {
+      let cleanUrl = url.split("?")[0];
+      if (!cleanUrl.endsWith("/")) cleanUrl += "/";
+      if (!cleanUrl.endsWith("/embed/")) cleanUrl += "embed/";
+      return cleanUrl;
+    }
+    if (type === "facebook") {
+      return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=0&autoplay=true`;
+    }
+    return url;
+  };
+
+  const getTestimonialThumb = (item) => {
+    let rawThumb = item.video_thumb_url;
+    if (!rawThumb && item.type === "youtube") {
+      const ytId = getYouTubeId(item.video_url);
+      if (ytId) {
+        rawThumb = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+      }
+    }
+    
+    if (!rawThumb) {
+      rawThumb = item.type === "youtube"
+        ? "https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&q=80&w=600"
+        : "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=600";
+    }
+
+    const { style, cleanUrl } = parseImageTransform(rawThumb);
+    const src = cleanUrl.startsWith("http")
+      ? cleanUrl
+      : `${process.env.REACT_APP_BACKEND_URL || ""}${cleanUrl}`;
+    
+    return { src, style };
+  };
+
+  const displayTestimonials = testimonials.length > 0 ? testimonials : DEFAULT_TESTIMONIALS;
 
   const heroFeatureImage = settings?.hero_feature_image_url || "https://sdpublic.org/img/feature.jpg";
   const formattedHeroFeature = heroFeatureImage.startsWith("http")
@@ -458,115 +536,86 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Testimonial 1 - Text */}
-            <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-300 relative group">
-              <span className="text-6xl text-slate-100 font-serif absolute top-4 left-6 pointer-events-none">“</span>
-              <div className="relative z-10">
-                <div className="flex items-center gap-1 text-brand-gold mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <svg key={i} className="w-4 h-4 fill-current text-brand-gold" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  ))}
-                </div>
-                <p className="text-slate-600 leading-relaxed italic text-sm mb-6">
-                  "{settings?.testimonial_parent_text || "The individual attention my daughter receives at S.D. Public School is remarkable. Her confidence in speaking and logic skills has blossomed since Playgroup. The teachers are incredibly nurturing."}"
-                </p>
-              </div>
-              <div className="flex items-center gap-3 pt-4 border-t border-slate-50">
-                <div className="w-11 h-11 rounded-full bg-brand-blue/10 flex items-center justify-center font-bold text-brand-blue border border-brand-blue/20">
-                  {settings?.testimonial_parent_name ? settings.testimonial_parent_name.split(' ').map(n => n[0]).join('') : "RK"}
-                </div>
-                <div>
-                  <h4 className="font-bold text-sm text-slate-800">{settings?.testimonial_parent_name || "Rajesh Kumar"}</h4>
-                  <p className="text-xs text-slate-400">{settings?.testimonial_parent_info || "Parent of Riya (Class II)"}</p>
-                </div>
-              </div>
-            </div>
+            {displayTestimonials.map((t) => {
+              const isVideo = t.type !== "text";
+              const isPlaying = playingVideoId === t.id;
+              const { src: thumbSrc, style: thumbStyle } = getTestimonialThumb(t);
+              const initials = t.parent_name ? t.parent_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : "P";
 
-            {/* Testimonial 2 - Video Card (YouTube) */}
-            <div className="bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm flex flex-col hover:shadow-md transition-all duration-300 group">
-              <div className="relative aspect-video bg-slate-900 overflow-hidden">
-                <img 
-                  src={formattedThumb1} 
-                  alt="Video Testimonial Thumbnail" 
-                  style={thumbStyle1}
-                  className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
-                />
-                <a 
-                  href={settings?.testimonial_video_url_1 || youtubeUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors"
-                >
-                  <div className="w-14 h-14 rounded-full bg-red-600 flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <svg className="w-6 h-6 fill-current translate-x-0.5" viewBox="0 0 24 24">
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
-                  </div>
-                </a>
-                <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm text-white px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                  YouTube Video
-                </div>
-              </div>
-              <div className="p-6 flex-grow flex flex-col justify-between">
-                <p className="text-slate-600 text-sm leading-relaxed mb-6">
-                  "{settings?.testimonial_video_text_1 || "Watch how S.D. Public School focuses on active class participation and holistic academic growth. Our experience with the school's online learning and physical campus has been wonderful."}"
-                </p>
-                <div className="flex items-center gap-3 pt-4 border-t border-slate-50">
-                  <div className="w-11 h-11 rounded-full bg-brand-blue/10 flex items-center justify-center font-bold text-brand-blue border border-brand-blue/20">
-                    {settings?.testimonial_video_parent_1 ? settings.testimonial_video_parent_1.split(' ').map(n => n[0]).join('') : "SM"}
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-sm text-slate-800">{settings?.testimonial_video_parent_1 || "Suman Mishra"}</h4>
-                    <p className="text-xs text-slate-400">{settings?.testimonial_video_info_1 || "Parent of Aarav (Class VI)"}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+              return (
+                <div key={t.id} className="bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-300 relative group min-h-[360px]">
+                  
+                  {isVideo ? (
+                    <div className="relative aspect-video bg-slate-900 overflow-hidden w-full">
+                      {isPlaying ? (
+                        <iframe
+                          src={getEmbedUrl(t.video_url, t.type)}
+                          title={t.parent_name}
+                          className="w-full h-full absolute inset-0 border-none"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                          scrolling={t.type === "facebook" ? "no" : "yes"}
+                        ></iframe>
+                      ) : (
+                        <>
+                          <img 
+                            src={thumbSrc} 
+                            alt={`${t.parent_name}'s Video Thumbnail`} 
+                            style={thumbStyle}
+                            className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
+                          />
+                          <button 
+                            onClick={() => setPlayingVideoId(t.id)}
+                            className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors focus:outline-none"
+                          >
+                            <div className={`w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300 ${
+                              t.type === "youtube" 
+                                ? "bg-red-600" 
+                                : "bg-gradient-to-tr from-blue-600 via-pink-500 to-yellow-500"
+                            }`}>
+                              <svg className="w-6 h-6 fill-current translate-x-0.5" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z" />
+                              </svg>
+                            </div>
+                          </button>
+                          <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm text-white px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase flex items-center gap-1.5 pointer-events-none">
+                            <span className={`w-2 h-2 rounded-full animate-pulse ${t.type === "youtube" ? "bg-red-500" : "bg-pink-500"}`} />
+                            {t.type} Video
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="p-8 pb-0 relative">
+                      <span className="text-6xl text-slate-100 font-serif absolute top-4 left-6 pointer-events-none">“</span>
+                      <div className="flex items-center gap-1 text-brand-gold mb-4 relative z-10">
+                        {[...Array(5)].map((_, i) => (
+                          <svg key={i} className="w-4 h-4 fill-current text-brand-gold" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-            {/* Testimonial 3 - Video Card (Instagram/Facebook Reels) */}
-            <div className="bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm flex flex-col hover:shadow-md transition-all duration-300 group">
-              <div className="relative aspect-video bg-slate-900 overflow-hidden">
-                <img 
-                  src={formattedThumb2} 
-                  alt="Video Testimonial Thumbnail" 
-                  style={thumbStyle2}
-                  className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
-                />
-                <a 
-                  href={settings?.testimonial_video_url_2 || facebookUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors"
-                >
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-blue-600 via-pink-500 to-yellow-500 flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <svg className="w-6 h-6 fill-current translate-x-0.5" viewBox="0 0 24 24">
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
+                  <div className="p-6 flex-grow flex flex-col justify-between">
+                    <p className="text-slate-600 text-sm leading-relaxed mb-6 italic">
+                      "{t.text}"
+                    </p>
+                    <div className="flex items-center gap-3 pt-4 border-t border-slate-50">
+                      <div className="w-11 h-11 rounded-full bg-brand-blue/10 flex items-center justify-center font-bold text-brand-blue border border-brand-blue/20">
+                        {initials}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-sm text-slate-800">{t.parent_name}</h4>
+                        <p className="text-xs text-slate-400">{t.parent_info}</p>
+                      </div>
+                    </div>
                   </div>
-                </a>
-                <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm text-white px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-pink-500 animate-pulse" />
-                  Social Feed
+
                 </div>
-              </div>
-              <div className="p-6 flex-grow flex flex-col justify-between">
-                <p className="text-slate-600 text-sm leading-relaxed mb-6">
-                  "{settings?.testimonial_video_text_2 || "Check out our sports day reel and parent sharing sessions on social media! S.D. Public School is active, energetic, and provides excellent extracurricular exposure."}"
-                </p>
-                <div className="flex items-center gap-3 pt-4 border-t border-slate-50">
-                  <div className="w-11 h-11 rounded-full bg-brand-blue/10 flex items-center justify-center font-bold text-brand-blue border border-brand-blue/20">
-                    {settings?.testimonial_video_parent_2 ? settings.testimonial_video_parent_2.split(' ').map(n => n[0]).join('') : "AS"}
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-sm text-slate-800">{settings?.testimonial_video_parent_2 || "Amit Sharma"}</h4>
-                    <p className="text-xs text-slate-400">{settings?.testimonial_video_info_2 || "Parent of Priyanshu (Class VIII)"}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+              );
+            })}
           </div>
 
           {/* Social Links Badge */}

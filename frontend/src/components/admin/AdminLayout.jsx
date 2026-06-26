@@ -24,6 +24,7 @@ const NAV_ITEMS = [
   { to: "/admin/holidays", label: "Holidays", icon: PartyPopper, permission: "calendar" },
   { section: "School Pages" },
   { to: "/admin/administration-members", label: "Administration Messages", icon: Users, permission: "site-settings" },
+  { to: "/admin/testimonials", label: "Testimonials", icon: MessageSquare, permission: "site-settings" },
   { to: "/admin/hostel-gallery", label: "Hostel Gallery", icon: Hotel, permission: "hostel-gallery" },
   { to: "/admin/khelo-patna-gallery", label: "Khelo Patna Gallery", icon: Trophy, permission: "khelo-patna-gallery" },
   { section: "Student Council" },

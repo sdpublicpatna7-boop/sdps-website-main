@@ -568,3 +568,14 @@ class ExperienceCertificate(BaseDoc):
     certificate_date: str
     created_by: Optional[str] = None
     created_at: str = Field(default_factory=now_iso)
+
+
+class Testimonial(BaseDoc):
+    id: str = Field(default_factory=new_id)
+    parent_name: str
+    parent_info: str
+    type: str         # "text", "youtube", "instagram", "facebook"
+    text: str
+    video_url: str = ""
+    video_thumb_url: str = ""
+    created_at: str = Field(default_factory=now_iso)

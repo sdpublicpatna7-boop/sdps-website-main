@@ -1,11 +1,41 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { Sliders, X, Upload, Link2, ImageIcon, Loader2 } from "lucide-react";
 import { fullUrl, uploadImage, uploadFile } from "@/lib/admin";
 
+const ASPECT_PRESETS = {
+  video: {
+    label: "Video Aspect Ratio (16:9)",
+    containerClass: "w-full max-w-sm aspect-video rounded-2xl",
+    imgClass: "w-full h-full object-cover"
+  },
+  round: {
+    label: "Circular Avatar (1:1)",
+    containerClass: "w-40 h-40 rounded-full ring-4 ring-brand-blue/20",
+    imgClass: "w-full h-full object-cover"
+  },
+  portrait: {
+    label: "Portrait Card (3:4)",
+    containerClass: "w-48 h-64 rounded-2xl",
+    imgClass: "w-full h-full object-cover"
+  },
+  square: {
+    label: "Square (1:1)",
+    containerClass: "w-48 h-48 rounded-2xl",
+    imgClass: "w-full h-full object-cover"
+  }
+};
+
 // Reusable dual-mode image field (upload from device OR paste URL)
-export function ImageOrUrlField({ value, onChange, subDir = "misc" }) {
+export function ImageOrUrlField({ value, onChange, subDir = "misc", aspect = "video" }) {
   const [mode, setMode] = useState(value && value.startsWith("http") ? "url" : "upload");
   const [uploading, setUploading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Modal edit states
+  const [tempScale, setTempScale] = useState(1);
+  const [tempX, setTempX] = useState(0);
+  const [tempY, setTempY] = useState(0);
 
   // Parse existing parameters from the value
   const parseParams = (urlStr) => {
@@ -22,150 +52,82 @@ export function ImageOrUrlField({ value, onChange, subDir = "misc" }) {
   };
 
   const { base, scale, x, y } = parseParams(value);
+  const preset = ASPECT_PRESETS[aspect] || ASPECT_PRESETS.video;
 
-  const updateParam = (newScale, newX, newY) => {
+  const openAdjustmentModal = () => {
+    setTempScale(scale);
+    setTempX(x);
+    setTempY(y);
+    setIsModalOpen(true);
+  };
+
+  const applyChanges = () => {
     if (!base) return;
     const params = new URLSearchParams();
-    if (newScale !== 1) params.set("scale", newScale.toFixed(2));
-    if (newX !== 0) params.set("x", Math.round(newX).toString());
-    if (newY !== 0) params.set("y", Math.round(newY).toString());
+    if (tempScale !== 1) params.set("scale", tempScale.toFixed(2));
+    if (tempX !== 0) params.set("x", Math.round(tempX).toString());
+    if (tempY !== 0) params.set("y", Math.round(tempY).toString());
     const queryStr = params.toString();
     onChange(queryStr ? `${base}?${queryStr}` : base);
+    setIsModalOpen(false);
+    toast.success("Image position updated");
   };
 
   return (
-    <div className="space-y-4 mt-1 border border-slate-100 p-4 rounded-2xl bg-slate-50/50">
+    <div className="space-y-3 mt-1">
       {value && (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-          {/* Live Preview Container */}
-          <div className="relative w-40 h-40 rounded-2xl border border-slate-200 shadow-sm overflow-hidden bg-slate-100 flex items-center justify-center">
+        <div className="flex items-center gap-4 border border-slate-100 p-3 rounded-2xl bg-slate-50/50 w-fit">
+          <div className="relative w-16 h-16 rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-slate-100 flex items-center justify-center">
             <img
               src={fullUrl(base)}
               alt="Preview"
               style={{
                 transform: `scale(${scale}) translate(${x}px, ${y}px)`,
                 transformOrigin: "center center",
-                transition: "transform 0.1s ease-out",
               }}
               className="w-full h-full object-cover"
             />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <button
+              type="button"
+              onClick={openAdjustmentModal}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-xs font-semibold transition shadow-sm"
+            >
+              <Sliders className="w-3.5 h-3.5" /> Adjust Position
+            </button>
             <button
               type="button"
               onClick={() => onChange("")}
-              className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-sm hover:bg-red-600 shadow-md font-bold z-10"
+              className="text-left text-xs text-red-500 hover:text-red-700 font-semibold pl-1"
             >
-              ×
+              Remove Image
             </button>
-          </div>
-
-          {/* Adjustments Controls */}
-          <div className="flex-grow w-full space-y-3">
-            <h4 className="text-xs font-bold uppercase text-brand-blue tracking-wide flex items-center gap-1.5">
-              <span>🎛️</span> Image Position Adjustment
-            </h4>
-            
-            {/* Zoom Control */}
-            <div className="space-y-1">
-              <div className="flex justify-between text-xs text-slate-500">
-                <span>Zoom Level: {scale.toFixed(2)}x</span>
-                <button 
-                  type="button" 
-                  onClick={() => updateParam(1, x, y)} 
-                  className="text-brand-orange hover:underline font-semibold"
-                >
-                  Reset Zoom
-                </button>
-              </div>
-              <input
-                type="range"
-                min="1"
-                max="3"
-                step="0.05"
-                value={scale}
-                onChange={(e) => updateParam(parseFloat(e.target.value), x, y)}
-                className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-blue"
-              />
-            </div>
-
-            {/* Horizontal Nudge (X) */}
-            <div className="space-y-1">
-              <div className="flex justify-between text-xs text-slate-500">
-                <span>Horizontal Nudge (X): {x}px</span>
-                <button 
-                  type="button" 
-                  onClick={() => updateParam(scale, 0, y)} 
-                  className="text-brand-orange hover:underline font-semibold"
-                >
-                  Center X
-                </button>
-              </div>
-              <input
-                type="range"
-                min="-100"
-                max="100"
-                step="1"
-                value={x}
-                onChange={(e) => updateParam(scale, parseInt(e.target.value), y)}
-                className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-blue"
-              />
-            </div>
-
-            {/* Vertical Nudge (Y) */}
-            <div className="space-y-1">
-              <div className="flex justify-between text-xs text-slate-500">
-                <span>Vertical Nudge (Y): {y}px</span>
-                <button 
-                  type="button" 
-                  onClick={() => updateParam(scale, x, 0)} 
-                  className="text-brand-orange hover:underline font-semibold"
-                >
-                  Center Y
-                </button>
-              </div>
-              <input
-                type="range"
-                min="-100"
-                max="100"
-                step="1"
-                value={y}
-                onChange={(e) => updateParam(scale, x, parseInt(e.target.value))}
-                className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-blue"
-              />
-            </div>
-
-            {/* Reset All Adjustments */}
-            {(scale !== 1 || x !== 0 || y !== 0) && (
-              <button
-                type="button"
-                onClick={() => updateParam(1, 0, 0)}
-                className="px-3 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-md transition"
-              >
-                Reset All Adjustments
-              </button>
-            )}
           </div>
         </div>
       )}
+
       <div className="flex gap-1 p-1 bg-slate-100 rounded-lg w-fit text-xs">
         <button
           type="button"
           onClick={() => setMode("upload")}
-          className={`px-3 py-1.5 rounded-md font-semibold transition ${
+          className={`flex items-center gap-1 px-3 py-1.5 rounded-md font-semibold transition ${
             mode === "upload" ? "bg-white shadow text-brand-blue" : "text-slate-500"
           }`}
         >
-          📁 Upload
+          <Upload className="w-3 h-3" /> Upload
         </button>
         <button
           type="button"
           onClick={() => setMode("url")}
-          className={`px-3 py-1.5 rounded-md font-semibold transition ${
+          className={`flex items-center gap-1 px-3 py-1.5 rounded-md font-semibold transition ${
             mode === "url" ? "bg-white shadow text-brand-blue" : "text-slate-500"
           }`}
         >
-          🔗 URL
+          <Link2 className="w-3 h-3" /> URL
         </button>
       </div>
+
       {mode === "upload" ? (
         <label
           className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl cursor-pointer text-sm border-2 border-dashed transition ${
@@ -174,6 +136,7 @@ export function ImageOrUrlField({ value, onChange, subDir = "misc" }) {
               : "border-slate-300 bg-slate-50 hover:border-brand-blue text-slate-600"
           }`}
         >
+          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
           {uploading ? "Uploading..." : value ? "Change image" : "Choose image from device"}
           <input
             type="file"
@@ -205,6 +168,148 @@ export function ImageOrUrlField({ value, onChange, subDir = "misc" }) {
           value={value && value.startsWith("http") ? value : ""}
           onChange={(e) => onChange(e.target.value)}
         />
+      )}
+
+      {/* Adjustments Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-6 border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="font-headline font-bold text-lg text-slate-800 flex items-center gap-2">
+                <span>🎛️</span> Adjust Image Position
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 transition p-1 hover:bg-slate-100 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Live Preview Demo container */}
+            <div className="flex flex-col items-center justify-center py-6 bg-slate-50 rounded-2xl border border-slate-100">
+              <span className="text-[10px] uppercase font-bold text-slate-400 mb-3 tracking-wider">
+                Live Site Demo ({preset.label})
+              </span>
+              <div className={`relative overflow-hidden bg-slate-200 border border-slate-300 shadow-inner flex items-center justify-center ${preset.containerClass}`}>
+                <img
+                  src={fullUrl(base)}
+                  alt="Adjusting"
+                  style={{
+                    transform: `scale(${tempScale}) translate(${tempX}px, ${tempY}px)`,
+                    transformOrigin: "center center",
+                    transition: "transform 0.05s ease-out",
+                  }}
+                  className={preset.imgClass}
+                />
+              </div>
+            </div>
+
+            {/* Controls */}
+            <div className="space-y-4">
+              {/* Zoom */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs text-slate-500 font-semibold">
+                  <span>Zoom Level: {tempScale.toFixed(2)}x</span>
+                  <button
+                    type="button"
+                    onClick={() => setTempScale(1)}
+                    className="text-brand-orange hover:underline"
+                  >
+                    Reset
+                  </button>
+                </div>
+                <input
+                  type="range"
+                  min="1"
+                  max="3"
+                  step="0.05"
+                  value={tempScale}
+                  onChange={(e) => setTempScale(parseFloat(e.target.value))}
+                  className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-blue"
+                />
+              </div>
+
+              {/* Horizontal */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs text-slate-500 font-semibold">
+                  <span>Horizontal Nudge (X): {tempX}px</span>
+                  <button
+                    type="button"
+                    onClick={() => setTempX(0)}
+                    className="text-brand-orange hover:underline"
+                  >
+                    Center
+                  </button>
+                </div>
+                <input
+                  type="range"
+                  min="-100"
+                  max="100"
+                  step="1"
+                  value={tempX}
+                  onChange={(e) => setTempX(parseInt(e.target.value))}
+                  className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-blue"
+                />
+              </div>
+
+              {/* Vertical */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs text-slate-500 font-semibold">
+                  <span>Vertical Nudge (Y): {tempY}px</span>
+                  <button
+                    type="button"
+                    onClick={() => setTempY(0)}
+                    className="text-brand-orange hover:underline"
+                  >
+                    Center
+                  </button>
+                </div>
+                <input
+                  type="range"
+                  min="-100"
+                  max="100"
+                  step="1"
+                  value={tempY}
+                  onChange={(e) => setTempY(parseInt(e.target.value))}
+                  className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-blue"
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-between items-center pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setTempScale(1);
+                  setTempX(0);
+                  setTempY(0);
+                }}
+                className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold rounded-xl transition"
+              >
+                Reset All
+              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold rounded-xl transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={applyChanges}
+                  className="px-4 py-2 bg-brand-blue hover:bg-brand-blue-light text-white text-xs font-semibold rounded-xl shadow-md transition"
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
