@@ -118,4 +118,24 @@ export function optimizeCloudinary(url, width = null) {
   return url;
 }
 
+export function parseImageTransform(urlStr) {
+  if (!urlStr || typeof urlStr !== "string") return { style: {}, cleanUrl: urlStr };
+  const parts = urlStr.split("?");
+  const cleanUrl = parts[0];
+  const query = parts[1];
+  if (!query) return { style: {}, cleanUrl };
+  const searchParams = new URLSearchParams(query);
+  const scale = searchParams.get("scale");
+  const x = searchParams.get("x");
+  const y = searchParams.get("y");
+  if (!scale && !x && !y) return { style: {}, cleanUrl };
+  return {
+    style: {
+      transform: `scale(${scale || 1}) translate(${x || 0}px, ${y || 0}px)`,
+      transformOrigin: "center center",
+    },
+    cleanUrl,
+  };
+}
+
 export default api;

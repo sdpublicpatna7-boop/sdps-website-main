@@ -5,7 +5,7 @@ import {
   GraduationCap, Sparkles, Building2, ShieldCheck, Heart, Trophy,
   Calendar, Newspaper, ArrowRight, Play, Star, Smartphone
 } from "lucide-react";
-import api from "../../lib/api";
+import api, { parseImageTransform } from "../../lib/api";
 import SEO from "../../components/layout/SEO";
 
 const FEATURES = [
@@ -87,14 +87,16 @@ export default function Home() {
   const facebookUrl = settings?.facebook_url || "https://facebook.com";
 
   const rawThumb1 = settings?.testimonial_video_thumb_1 || "https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&q=80&w=600";
-  const formattedThumb1 = rawThumb1.startsWith("http")
-    ? rawThumb1
-    : `${process.env.REACT_APP_BACKEND_URL || ""}${rawThumb1}`;
+  const { style: thumbStyle1, cleanUrl: cleanThumb1 } = parseImageTransform(rawThumb1);
+  const formattedThumb1 = cleanThumb1.startsWith("http")
+    ? cleanThumb1
+    : `${process.env.REACT_APP_BACKEND_URL || ""}${cleanThumb1}`;
 
   const rawThumb2 = settings?.testimonial_video_thumb_2 || "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=600";
-  const formattedThumb2 = rawThumb2.startsWith("http")
-    ? rawThumb2
-    : `${process.env.REACT_APP_BACKEND_URL || ""}${rawThumb2}`;
+  const { style: thumbStyle2, cleanUrl: cleanThumb2 } = parseImageTransform(rawThumb2);
+  const formattedThumb2 = cleanThumb2.startsWith("http")
+    ? cleanThumb2
+    : `${process.env.REACT_APP_BACKEND_URL || ""}${cleanThumb2}`;
 
   const heroFeatureImage = settings?.hero_feature_image_url || "https://sdpublic.org/img/feature.jpg";
   const formattedHeroFeature = heroFeatureImage.startsWith("http")
@@ -488,6 +490,7 @@ export default function Home() {
                 <img 
                   src={formattedThumb1} 
                   alt="Video Testimonial Thumbnail" 
+                  style={thumbStyle1}
                   className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
                 />
                 <a 
@@ -529,6 +532,7 @@ export default function Home() {
                 <img 
                   src={formattedThumb2} 
                   alt="Video Testimonial Thumbnail" 
+                  style={thumbStyle2}
                   className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
                 />
                 <a 

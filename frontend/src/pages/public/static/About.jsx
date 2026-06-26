@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Award, Compass, Shield, BookOpen, GraduationCap, MapPin, Mail, Phone, Landmark } from "lucide-react";
 import PageHero from "@/components/layout/PageHero";
 import SEO from "@/components/layout/SEO";
-import { optimizeCloudinary } from "@/lib/api";
+import { optimizeCloudinary, parseImageTransform } from "@/lib/api";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -26,8 +26,9 @@ export function About() {
   const { settings } = useOutletContext() || {};
 
   const trustLogoRaw = settings?.about_trust_logo_url || "";
-  const rawTrustLogo = trustLogoRaw
-    ? (trustLogoRaw.startsWith("http") ? trustLogoRaw : `${process.env.REACT_APP_BACKEND_URL || ""}${trustLogoRaw}`)
+  const { style: trustLogoStyle, cleanUrl: cleanTrustLogoUrl } = parseImageTransform(trustLogoRaw);
+  const rawTrustLogo = cleanTrustLogoUrl
+    ? (cleanTrustLogoUrl.startsWith("http") ? cleanTrustLogoUrl : `${process.env.REACT_APP_BACKEND_URL || ""}${cleanTrustLogoUrl}`)
     : "";
   const trustLogoUrl = optimizeCloudinary(rawTrustLogo, 800);
 
@@ -165,6 +166,7 @@ export function About() {
                 <img
                   src={trustLogoUrl}
                   alt="SDPS Campus / Trust Logo"
+                  style={trustLogoStyle}
                   className="w-full object-contain max-h-72 bg-white p-4 transition-transform duration-500 group-hover:scale-[1.02]"
                   onError={e => { e.target.src = "https://sdpublic.org/img/feature.jpg"; }}
                 />
