@@ -92,12 +92,15 @@ export default function Footer({ settings }) {
       </div>
 
       <div className="border-t border-white/10 py-5 text-center text-xs opacity-70">
-        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-          <span>© {new Date().getFullYear()} S.D. Public School. All Rights Reserved.</span>
-          <span className="hidden sm:inline opacity-40">|</span>
-          <a href="/terms" className="hover:opacity-100 hover:underline transition">Terms & Conditions</a>
-          <span className="opacity-40">|</span>
-          <a href="/privacy" className="hover:opacity-100 hover:underline transition">Privacy Policy</a>
+        <div className="max-w-7xl mx-auto px-4 flex flex-col items-center justify-center gap-3">
+          <p className="max-w-3xl leading-relaxed">
+            © {new Date().getFullYear()} S.D. Public School. All Rights Reserved. | Located at Maurya Colony, Near R.O.B Kumhrar, Biscoman Golambar, Gulzarbagh Road, Patna, Bihar 800007. Proudly serving families across Kumhrar, Gulzarbagh, and Kankarbagh.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+            <a href="/terms" className="hover:opacity-100 hover:underline transition">Terms & Conditions</a>
+            <span className="opacity-40">|</span>
+            <a href="/privacy" className="hover:opacity-100 hover:underline transition">Privacy Policy</a>
+          </div>
         </div>
       </div>
     </footer>

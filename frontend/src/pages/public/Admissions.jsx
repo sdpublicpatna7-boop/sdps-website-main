@@ -411,8 +411,8 @@ export function AdmissionsLanding() {
   return (
     <>
       <SEO 
-        title="Admissions Open 2026-27"
-        description="Learn about the admission process, age eligibility, prospectus, and fee structure at S.D. Public School, Patna. Admissions open for Playgroup to Class VIII."
+        title="School Admissions 2026-27 | S.D. Public School, Patna"
+        description="Secure your child's future at S.D. Public School, Patna. Admissions open for Playgroup to Class VIII for academic session 2026-27 near Kumhrar. Apply online today!"
         keywords="SDPS admissions open, school admissions Patna, CBSE curriculum Playgroup to Class 8 admissions"
       />
       {/* Hero */}

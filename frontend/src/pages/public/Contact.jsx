@@ -24,8 +24,8 @@ export default function Contact() {
   return (
     <>
       <SEO 
-        title="Contact Us"
-        description="Get in touch with S.D. Public School, Patna. Find our official contact phone numbers, email address, campus location address, and send a message directly to our admin office."
+        title="Contact Us & Location Map | S.D. Public School Patna"
+        description="Contact S.D. Public School in Kumhrar, Patna. Get directions, phone numbers, and admission helpline details. Visit our Maurya Colony campus today."
         keywords="contact SDPS, S.D. Public School Patna phone number, school email Patna, campus address Suryamuni Devi Public School"
       />
       <Toaster position="top-right" />
