@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 
 export default function WelcomePopup({ popup }) {
   const [open, setOpen] = useState(false);
+  const [imgLoading, setImgLoading] = useState(true);
 
   useEffect(() => {
     if (!popup?.enabled) return;
@@ -21,6 +22,11 @@ export default function WelcomePopup({ popup }) {
   };
 
   if (!popup?.enabled) return null;
+
+  const imageUrl = popup.image_url;
+  const formattedImageUrl = imageUrl
+    ? (imageUrl.startsWith("http") ? imageUrl : `${process.env.REACT_APP_BACKEND_URL || ""}${imageUrl}`)
+    : "";
 
   return (
     <AnimatePresence>
@@ -47,11 +53,18 @@ export default function WelcomePopup({ popup }) {
               <X className="w-4 h-4" />
             </button>
             {popup.image_url && (
-              <div className="px-4 pt-5 pb-1">
+              <div className="px-4 pt-5 pb-1 relative">
+                {imgLoading && (
+                  <div className="w-full h-48 bg-slate-100 animate-pulse rounded-2xl flex items-center justify-center text-slate-400 text-xs font-semibold">
+                    Loading image...
+                  </div>
+                )}
                 <img
-                  src={popup.image_url}
+                  src={formattedImageUrl}
                   alt=""
-                  className="w-full object-contain bg-white rounded-2xl border border-black/5 mx-auto"
+                  onLoad={() => setImgLoading(false)}
+                  onError={() => setImgLoading(false)}
+                  className={`w-full object-contain bg-white rounded-2xl border border-black/5 mx-auto transition-opacity duration-300 ${imgLoading ? "opacity-0 absolute h-0 w-0 overflow-hidden" : "opacity-100"}`}
                   style={{ maxHeight: "340px", display: "block" }}
                 />
               </div>

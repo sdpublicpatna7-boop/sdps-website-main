@@ -23,7 +23,14 @@ export default function PublicLayout() {
       return null;
     }
   });
-  const [popup, setPopup] = useState(null);
+  const [popup, setPopup] = useState(() => {
+    try {
+      const cached = localStorage.getItem("sdps_welcome_popup");
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
   const { pathname } = useLocation();
 
   // Hide distracting overlays on the review page
@@ -38,7 +45,14 @@ export default function PublicLayout() {
         } catch (e) {}
       })
       .catch(() => {});
-    api.get("/popup").then((r) => setPopup(r.data)).catch(() => {});
+    api.get("/popup")
+      .then((r) => {
+        setPopup(r.data);
+        try {
+          localStorage.setItem("sdps_welcome_popup", JSON.stringify(r.data));
+        } catch (e) {}
+      })
+      .catch(() => {});
   }, []);
 
   return (
