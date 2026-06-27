@@ -174,7 +174,7 @@ function navBar(role,pageName){
 
   return `<nav style="background:${navBg};backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid ${navBorder};padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;font-family:'Inter',sans-serif;flex-shrink:0;box-shadow:${navShadow};z-index:100;position:relative">
     <div style="display:flex;align-items:center;gap:12px">
-      <img src="https://sdpublic.org/assets/img/logo.png" style="height:36px;width:36px;object-fit:contain;border-radius:50%;border:1px solid ${logoBorder}" onerror="this.onerror=null;this.src='/logo512.png'"/>
+      <img src="https://res.cloudinary.com/drx3kb809/image/upload/v1782313772/sdps/misc/hffxigjkpw7cbc7cmdm5.jpg" style="height:36px;width:36px;object-fit:contain;border-radius:50%;border:1px solid ${logoBorder}" onerror="this.onerror=null;this.src='/logo512.png'"/>
       <div>
         <div style="font-size:13px;font-weight:800;color:${textColor};letter-spacing:-.3px;font-family:'Outfit',sans-serif">S.D. Public School</div>
         <div style="font-size:9px;color:${subtextColor};font-weight:600;margin-top:-1px;text-transform:uppercase;letter-spacing:.05em">Question Paper Portal</div>
