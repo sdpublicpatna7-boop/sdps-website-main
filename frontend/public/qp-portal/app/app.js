@@ -597,7 +597,7 @@ async function triggerAIGenerator() {
   
   const origText = genBtn.innerHTML;
   genBtn.disabled = true;
-  genBtn.innerHTML = '<div class="spinner"></div> <span>Claude is thinking...</span>';
+  genBtn.innerHTML = '<div class="spinner"></div> <span>Claude Fable 5 is thinking...</span>';
   
   // Format prompt instructions matching backend prompt structure
   const prompt = `Generate ${count} school exam questions for ${state.currentAssignment ? state.currentAssignment.class_name : 'Class VIII'} students on the topic "${topic}". The question types must be strictly "${type}". Return a clean JSON array with fields: question_text, type, marks, options.`;
