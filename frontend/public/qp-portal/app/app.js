@@ -818,7 +818,33 @@ function loadSettings() {
   const init = parts.map(p => p[0]).join('').substring(0, 2).toUpperCase();
   document.getElementById('avatar-initials').textContent = init;
   
-  document.getElementById('settings-api-base').textContent = API;
+  // Profile details
+  document.getElementById('settings-user-id').textContent = state.user.id || '-';
+  document.getElementById('settings-user-phone').textContent = state.user.phone || 'Not provided';
+  
+  // Filter assignments for this user
+  const myAssignments = (state.assignments || []).filter(a => {
+    if (state.user.role === 'qp_admin') return true; // Admins oversee all
+    return a.teacher_id === state.user.id;
+  });
+  
+  document.getElementById('settings-user-assignments-count').textContent = myAssignments.length;
+  
+  const listContainer = document.getElementById('settings-assignments-list');
+  if (listContainer) {
+    if (myAssignments.length === 0) {
+      listContainer.innerHTML = `<div style="color: var(--text-muted); text-align: center; padding: 10px 0;">No active assignments.</div>`;
+    } else {
+      listContainer.innerHTML = myAssignments.map(a => `
+        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.02); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.03);">
+          <span style="font-weight: 500; color: #fff;">${esc(a.subject)} (${esc(a.class_name)})</span>
+          <span style="font-size: 10px; padding: 2px 6px; border-radius: 4px; background: rgba(248, 125, 14, 0.1); color: var(--primary); font-weight: 600;">
+            ${(a.status || 'draft').toUpperCase()}
+          </span>
+        </div>
+      `).join('');
+    }
+  }
 }
 
 // ── NOTIFICATIONS MANAGER ──

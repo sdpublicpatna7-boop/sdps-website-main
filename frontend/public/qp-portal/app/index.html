@@ -242,19 +242,22 @@
         </div>
 
         <div class="settings-group">
-          <h4>System Info</h4>
+          <h4>Profile Details</h4>
           <div class="settings-card info-card">
             <div class="info-row">
-              <span>App Target</span>
-              <strong>Capacitor Mobile Container</strong>
+              <span>User ID</span>
+              <strong id="settings-user-id">-</strong>
             </div>
             <div class="info-row">
-              <span>Active API Base</span>
-              <strong id="settings-api-base">https://api.sdpublic.org</strong>
+              <span>Phone No.</span>
+              <strong id="settings-user-phone">-</strong>
             </div>
             <div class="info-row">
-              <span>Security Shield</span>
-              <strong style="color: #10b981;">🛡️ FLAG_SECURE ON</strong>
+              <span>Total Assignments</span>
+              <strong id="settings-user-assignments-count">0</strong>
+            </div>
+            <div id="settings-assignments-list" style="margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; font-size: 11px; display: flex; flex-direction: column; gap: 6px;">
+              <!-- List of assigned papers -->
             </div>
           </div>
         </div>
