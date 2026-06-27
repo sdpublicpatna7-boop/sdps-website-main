@@ -6,8 +6,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',sans-serif;background:#f8fafc;color:#334155;min-height:100vh;display:flex;flex-direction:column}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+body{font-family:'Inter',sans-serif;background:#f8fafc;color:#334155;min-height:100vh;display:flex;flex-direction:column;user-select:none;-webkit-user-select:none}
+input,textarea,[contenteditable="true"]{user-select:text!important;-webkit-user-select:text!important}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.1);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,0.2)}
 .main{flex:1;padding:32px;overflow-y:auto;max-width:1400px;width:100%;margin:0 auto}
 .page-title{font-family:'Outfit',sans-serif;font-size:24px;font-weight:800;color:#0f172a;letter-spacing:-.5px}
 .page-sub{font-size:13px;color:#64748b;margin-top:4px;margin-bottom:24px}
@@ -43,6 +47,15 @@ tr:hover td{background:#f8fafc}
   .filter-bar select{min-width:0!important;flex:1}
   table{display:block;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}
   .modal{padding:20px}
+}
+#reviewPaper {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+}
+@media print {
+  body { display: none !important; }
 }
 </style>
 </head>
@@ -95,13 +108,20 @@ let currentUser=null, canReview=false, reviewTarget=null, allRows=[];
 
 window.addEventListener('DOMContentLoaded',async()=>{
   const u=getUser();
-  if(!u||u.role!=='incharge'){location.href='/qp-portal/index.html';return;}
+  if(!u||u.role!=='incharge'){location.href='./index.html';return;}
   currentUser=u; canReview=u.can_review||false;
   document.getElementById('nav').innerHTML=navBar('incharge','Progress Dashboard');
   if(u.incharge_classes?.length){
     document.getElementById('myClassesBadge').textContent='My classes: '+u.incharge_classes.join(', ');
   }
   if(canReview) document.getElementById('reviewColHead').textContent='Review';
+
+  // SECURE: Disable copy & contextmenu on review paper modal
+  const reviewPaper = document.getElementById('reviewPaper');
+  if (reviewPaper) {
+    reviewPaper.addEventListener('contextmenu', e => e.preventDefault());
+    reviewPaper.addEventListener('copy', e => e.preventDefault());
+  }
 
   const archives=await apiFetch('/archives')||[];
   const sel=document.getElementById('archiveFilter');

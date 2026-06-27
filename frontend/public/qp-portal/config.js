@@ -12,7 +12,9 @@
  */
 window.QP_CONFIG = {
   apiBases: [
-    "https://sdps-website-main.onrender.com",
-    "https://api.sdpublic.org"
+    "http://localhost:8000",
+    "http://10.0.2.2:8000",
+    "https://api.sdpublic.org",
+    "https://sdps-website-main.onrender.com"
   ]
 };

@@ -6,8 +6,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',sans-serif;background:#f8fafc;color:#334155;min-height:100vh;display:flex;flex-direction:column}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+body{font-family:'Inter',sans-serif;background:#f8fafc;color:#334155;min-height:100vh;display:flex;flex-direction:column;user-select:none;-webkit-user-select:none}
+input,textarea,[contenteditable="true"]{user-select:text!important;-webkit-user-select:text!important}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.1);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,0.2)}
 .layout{display:flex;flex:1;overflow:hidden;height:calc(100vh - 57px)}
 /* Sidebar */
 .sidebar{width:240px;background:#ffffff;border-right:1px solid #f1f5f9;overflow-y:auto;display:flex;flex-direction:column;flex-shrink:0;box-shadow:0 8px 30px rgba(0,0,0,0.005)}
@@ -92,6 +96,15 @@ tr:hover td{background:#f8fafc}
   table{display:block;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}
   select{width:100%!important;max-width:100%}
   .main [style*="display:flex"]{flex-wrap:wrap}
+}
+#vqContent {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+}
+@media print {
+  body { display: none !important; }
 }
 </style>
 </head>
@@ -303,9 +316,17 @@ let sessions=[],archives=[],users=[],assignments=[];
 
 window.addEventListener('DOMContentLoaded',async()=>{
   const u=getUser();
-  if(!u||u.role!=='qp_admin'){location.href='/qp-portal/index.html';return;}
+  if(!u||u.role!=='qp_admin'){location.href='./index.html';return;}
   document.getElementById('nav').innerHTML=navBar('qp_admin','Admin Dashboard');
   document.getElementById('dashGreeting').textContent='Welcome back, '+u.name;
+
+  // SECURE: Disable copy & contextmenu on view questions panel
+  const vqContent = document.getElementById('vqContent');
+  if (vqContent) {
+    vqContent.addEventListener('contextmenu', e => e.preventDefault());
+    vqContent.addEventListener('copy', e => e.preventDefault());
+  }
+
   await Promise.all([loadSessions(),loadArchives(),loadUsers(),loadAssignments()]);
   loadDashboard();
 });

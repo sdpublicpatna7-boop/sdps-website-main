@@ -46,10 +46,17 @@ function stdLabel(cn){
 const SUBJECTS = ["English","Hindi","Mathematics","Science","Social Science","Computer","Sanskrit","Environmental Studies","General Knowledge","Art & Craft","Physical Education","Music","Drawing"];
 const EXAM_TYPES = ["F.A.-I","F.A.-II","F.A.-III","F.A.-IV","S.A.-I","S.A.-II"];
 const QUESTION_TYPES = {
-  MCQ:"Multiple Choice (MCQ)", FIB:"Fill in the Blanks", TrueFalse:"True / False",
-  Assertion:"Assertion & Reason", Short:"Short Answer", Long:"Long Answer / Essay",
-  Grammar:"Grammar Exercise", Poem:"Poem / Creative Writing",
-  Map:"Map / Picture Marking", Puzzle:"Word Puzzle / Rearrange", Comprehension:"Comprehension"
+  MCQ:"📝 MCQ (Multiple Choice Options)", 
+  FIB:"✏️ Fill in Blanks (Use ___ for blank line)", 
+  TrueFalse:"✅ True / False",
+  Assertion:"🧠 Assertion & Reason (Reason goes in Option A)", 
+  Short:"✍️ Short Answer (Provides 3 lines)", 
+  Long:"✍️ Long Answer / Essay (Provides 6 lines)",
+  Grammar:"⚙️ Grammar Exercise", 
+  Poem:"📖 Poem / Creative Writing",
+  Map:"🗺️ Map / Picture Marking", 
+  Puzzle:"🧩 Word Puzzle / Rearrange", 
+  Comprehension:"📖 Comprehension Passage"
 };
 const STATUS_META = {
   draft:          {label:"Draft",            color:"#6b7280", bg:"#6b728015", icon:"✏️"},
@@ -66,7 +73,7 @@ function getUser(){ try{ return JSON.parse(localStorage.getItem('qp_user')); }ca
 function logout(){
   fetch(`${API}/api/qp/logout`, {method:'POST', credentials:'include'})
     .catch(()=>{})
-    .finally(()=>{ localStorage.removeItem('qp_token'); localStorage.removeItem('qp_user'); location.href='/qp-portal/index.html'; });
+    .finally(()=>{ localStorage.removeItem('qp_token'); localStorage.removeItem('qp_user'); location.href='index.html'; });
 }
 
 // Friendly handling when the session/token has expired (vs. an explicit logout).
@@ -75,7 +82,7 @@ function sessionExpired(){
   localStorage.removeItem('qp_token');
   localStorage.removeItem('qp_user');
   fetch(`${API}/api/qp/logout`, {method:'POST', credentials:'include'}).catch(()=>{});
-  setTimeout(()=>{ location.href='/qp-portal/index.html'; }, 1600);
+  setTimeout(()=>{ location.href='index.html'; }, 1600);
 }
 
 async function apiFetch(path, opts={}){
@@ -91,7 +98,17 @@ async function apiFetch(path, opts={}){
     const base = bases[i];
     let r;
     try{
-      r = await fetch(`${base}/api/qp${path}`, {...opts, credentials:'include', headers});
+      const isLocal = base.includes('localhost') || base.includes('10.0.2.2');
+      const timeout = isLocal ? 1500 : 8000;
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeout);
+      r = await fetch(`${base}/api/qp${path}`, {
+        ...opts, 
+        credentials: 'include', 
+        headers,
+        signal: controller.signal
+      });
+      clearTimeout(id);
     }catch(e){
       // Network/CORS failure — try the next configured base, if any.
       if (i < bases.length - 1) continue;
@@ -198,4 +215,27 @@ function navBar(role,pageName){
     } catch (e) { /* ignore */ }
   };
   setInterval(ping, 12 * 60 * 1000);
+})();
+
+/* Native mobile status bar and splash screen handling */
+(function initQpNativeMobile() {
+  const init = () => {
+    if (window.Capacitor && window.Capacitor.Plugins) {
+      const { StatusBar, SplashScreen } = window.Capacitor.Plugins;
+      if (StatusBar) {
+        StatusBar.setStyle({ style: 'DARK' }).catch(() => {});
+        StatusBar.setBackgroundColor({ color: '#090d16' }).catch(() => {});
+      }
+      if (SplashScreen) {
+        setTimeout(() => {
+          SplashScreen.hide().catch(() => {});
+        }, 300);
+      }
+    }
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 })();

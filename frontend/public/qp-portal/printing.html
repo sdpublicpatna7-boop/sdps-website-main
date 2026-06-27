@@ -129,7 +129,7 @@ let allAssignments=[],currentA=null;
 
 window.addEventListener('DOMContentLoaded',async()=>{
   const u=getUser();
-  if(!u||u.role!=='printing_head'){location.href='/qp-portal/index.html';return;}
+  if(!u||u.role!=='printing_head'){location.href='./index.html';return;}
   document.getElementById('nav').innerHTML=navBar('printing_head','Print Queue');
   const archives=await apiFetch('/archives')||[];
   const sel=document.getElementById('archiveFilter');

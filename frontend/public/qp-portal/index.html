@@ -5,8 +5,12 @@
 <title>QP Portal — S.D. Public School</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:#090d16;overflow-x:hidden;position:relative}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+body{font-family:'Inter',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:#090d16;overflow-x:hidden;position:relative;user-select:none;-webkit-user-select:none}
+input,textarea,[contenteditable="true"]{user-select:text!important;-webkit-user-select:text!important}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.25)}
 body::before{content:'';position:fixed;inset:0;background:linear-gradient(135deg,#090d16 0%,#0c1630 50%,#090d16 100%);z-index:-2}
 .orb {position:absolute;border-radius:50%;filter:blur(90px);z-index:-1;pointer-events:none}
 .orb-1 {top:-100px;right:-100px;width:350px;height:350px;background:rgba(199,161,91,0.07)}
@@ -34,6 +38,25 @@ body::before{content:'';position:fixed;inset:0;background:linear-gradient(135deg
 .linkbtn{display:block;width:100%;text-align:center;background:none;border:none;color:#94a3b8;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;padding:12px 0 0;transition:color 0.2s}
 .linkbtn:hover{color:#fff}
 .hint{font-size:11px;color:#94a3b8;margin:-4px 0 12px;line-height:1.6;background:rgba(255,255,255,0.02);border-left:3px solid #f87d0e;padding:10px 12px;border-radius:0 8px 8px 0;border-top:1px solid rgba(255,255,255,0.04);border-right:1px solid rgba(255,255,255,0.04);border-bottom:1px solid rgba(255,255,255,0.04)}
+
+@media (max-width: 600px) {
+  body { padding: 0 !important; background: #090d16 !important; }
+  .card {
+    max-width: 100% !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    border-radius: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: none !important;
+    padding: 30px 20px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+  }
+}
 </style>
 </head>
 <body>
@@ -124,7 +147,18 @@ async function apiPost(path, body){
   for(let i=0;i<bases.length;i++){
     let r;
     try{
-      r=await fetch(`${bases[i]}/api/qp${path}`,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      const isLocal = bases[i].includes('localhost') || bases[i].includes('10.0.2.2');
+      const timeout = isLocal ? 1500 : 8000;
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeout);
+      r=await fetch(`${bases[i]}/api/qp${path}`,{
+        method:'POST',
+        credentials:'include',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(body),
+        signal: controller.signal
+      });
+      clearTimeout(id);
     }catch(e){ if(i<bases.length-1) continue; throw new Error('__net__'); }
     sessionStorage.setItem('qp_api_base', bases[i]);
     const d=await r.json().catch(()=>({}));
@@ -137,7 +171,7 @@ function finishLogin(d){
   localStorage.setItem('qp_token',d.access_token);
   localStorage.setItem('qp_user',JSON.stringify(d.user));
   const dest=ROLE_MAP[d.user.role];
-  if(dest) location.href='/qp-portal/'+dest; else showErr('Unknown role: '+d.user.role);
+  if(dest) location.href='./'+dest; else showErr('Unknown role: '+d.user.role);
 }
 function withBtn(id,fn){ const b=document.getElementById(id); const t=b.textContent; b.disabled=true;b.textContent='Please wait…';
   return Promise.resolve().then(fn).catch(e=>{ if(e&&e.message==='__net__') showErr('Cannot connect to server. Make sure the backend is running.'); else showErr('Something went wrong. Try again.'); }).finally(()=>{b.disabled=false;b.textContent=t;}); }
@@ -196,7 +230,7 @@ document.addEventListener('keydown',e=>{
 // Auto-redirect if already signed in.
 try{
   const u=JSON.parse(localStorage.getItem('qp_user')||'{}');
-  if(u&&u.role&&ROLE_MAP[u.role]) location.href='/qp-portal/'+ROLE_MAP[u.role];
+  if(u&&u.role&&ROLE_MAP[u.role]) location.href='./'+ROLE_MAP[u.role];
 }catch(e){}
 </script>
 </body>

@@ -5,8 +5,12 @@
 <title>Teacher — QP Portal</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',sans-serif;background:#090d16;color:#e2e8f0;min-height:100vh;display:flex;flex-direction:column;overflow:hidden;position:relative}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+body{font-family:'Inter',sans-serif;background:#090d16;color:#e2e8f0;min-height:100vh;display:flex;flex-direction:column;overflow:hidden;position:relative;user-select:none;-webkit-user-select:none}
+input,textarea,[contenteditable="true"]{user-select:text!important;-webkit-user-select:text!important}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.25)}
 body::before{content:'';position:fixed;inset:0;background:linear-gradient(135deg,#090d16 0%,#0c1630 50%,#090d16 100%);z-index:-2}
 .orb {position:absolute;border-radius:50%;filter:blur(90px);z-index:-1;pointer-events:none}
 .orb-1 {top:-100px;right:-100px;width:350px;height:350px;background:rgba(59,130,246,0.06)}
@@ -115,25 +119,39 @@ canvas{border:1.5px solid rgba(255,255,255,0.1);border-radius:10px;cursor:crossh
 
 /* ── MOBILE RESPONSIVE ── */
 @media (max-width: 768px) {
-  body { overflow: auto; height: auto; }
-  .shell { flex-direction: column; height: auto; overflow: auto; }
-  .left-panel { width: 100%; min-width: 0; max-height: none; overflow-y: visible; border-right: none; border-bottom: 1px solid #1e293b; padding-bottom: 72px; }
-  /* Editor shows by default; the floating button toggles to the A4 preview */
-  .preview-panel { display: none; }
-  body.show-preview .left-panel { display: none; }
-  body.show-preview { background: #1e293b; }
-  body.show-preview .preview-panel { display: block; height: auto; min-height: 100vh; overflow: visible; padding: 14px 12px 96px; }
-  .mobile-preview-toggle { display: flex; }
+  body { overflow: hidden; height: 100vh; }
+  .shell { flex-direction: column; height: calc(100vh - 104px); overflow: hidden; }
+  #nav { display: none !important; }
+  .mobile-header { display: flex !important; }
+  .mobile-nav { display: flex !important; }
+  
+  .left-panel { width: 100%; min-width: 0; flex: 1; overflow-y: auto; border-right: none; border-bottom: none; padding-bottom: 80px; }
+  .preview-panel { display: none; width: 100%; flex: 1; overflow-y: auto; padding: 14px 12px 80px; }
+  
+  /* Tabs toggling */
+  body.show-editor-tab .left-panel { display: flex !important; }
+  body.show-editor-tab .left-panel #builderPanel { display: flex !important; }
+  body.show-editor-tab .left-panel #aiSec { display: none !important; }
+  body.show-editor-tab .preview-panel { display: none !important; }
+  
+  body.show-preview-tab .left-panel { display: none !important; }
+  body.show-preview-tab .preview-panel { display: flex !important; }
+  
+  body.show-ai-tab .left-panel { display: flex !important; }
+  body.show-ai-tab .left-panel #builderPanel { display: flex !important; }
+  body.show-ai-tab .left-panel #builderPanel > :not(#aiSec) { display: none !important; }
+  body.show-ai-tab .left-panel #assignmentSelector,
+  body.show-ai-tab .left-panel #welcomeBanner,
+  body.show-ai-tab .left-panel .sb-head { display: none !important; }
+  body.show-ai-tab .left-panel #aiSec { display: block !important; }
+  body.show-ai-tab .preview-panel { display: none !important; }
+
   .row2 { grid-template-columns: 1fr; }
-  /* A4 fits mobile width and grows to its full content height */
   .a4 { width: 100%; min-width: 0; min-height: auto; transform: none; margin: 8px auto 16px; }
   .a4-inner { padding: 18px 16px; }
-  /* Drawing modal */
   .draw-box { width: 95vw; padding: 12px; }
   #drawCanvas { width: 100%; height: 220px; }
-  /* Buttons */
   .btn-sm { padding: 6px 10px; font-size: 10px; }
-  /* AI panel */
   .ai-panel { padding: 8px; }
 }
 @media (max-width: 480px) {
@@ -142,26 +160,211 @@ canvas{border:1.5px solid rgba(255,255,255,0.1);border-radius:10px;cursor:crossh
   .q-block-head select { min-width: 0; font-size: 10px; }
   .actions .btn-submit, .actions .btn-save { font-size: 11px; padding: 8px; }
 }
-/* ── DESKTOP scroll fix ──
-   The fixed-height split-panel layout traps the mouse wheel. On desktop we let
-   the whole page scroll normally (editor flows in the document) and keep the
-   A4 preview pinned in view with position:sticky. */
+/* ── DESKTOP scroll fix ── */
 @media (min-width: 769px) {
   body { overflow-y: auto; height: auto; }
   .shell { height: auto; min-height: 0; overflow: visible; align-items: flex-start; }
   .left-panel { display: block; height: auto; max-height: none; min-height: 0; overflow: visible; overscroll-behavior: auto; }
   .preview-panel { position: sticky; top: 0; align-self: flex-start; height: calc(100vh - 56px); overflow-y: auto; }
 }
-</style>
 
-<!-- Mobile preview toggle -->
+/* ── SECURE ANTI-LEAK STYLES ── */
+.a4 {
+  position: relative;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+}
+.a4::before {
+  content: 'CONFIDENTIAL - SDPS QP PORTAL';
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-30deg);
+  font-size: 3.2rem;
+  font-weight: 900;
+  color: rgba(0, 0, 0, 0.02);
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 10;
+}
+.a4::after {
+  content: 'CONFIDENTIAL - SDPS QP PORTAL';
+  position: absolute;
+  top: 70%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-30deg);
+  font-size: 3.2rem;
+  font-weight: 900;
+  color: rgba(0, 0, 0, 0.02);
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 10;
+}
+.preview-panel {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+@media print {
+  body { display: none !important; }
+}
+
+/* ── WELCOME BANNER & MOBILE FORMATTING BAR ── */
+.welcome-banner {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  border-radius: 16px;
+  padding: 20px;
+  margin: 16px 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+.welcome-banner h2 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 8px;
+  letter-spacing: -0.2px;
+}
+.welcome-banner p {
+  font-size: 11.5px;
+  color: #94a3b8;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+.welcome-banner ol {
+  font-size: 11px;
+  color: #cbd5e1;
+  padding-left: 16px;
+  line-height: 1.8;
+}
+
+.formatting-toolbar {
+  display: none;
+  position: fixed;
+  bottom: 56px;
+  left: 0;
+  right: 0;
+  height: 44px;
+  background: #0f172a;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 180;
+  align-items: center;
+  padding: 0 8px;
+  box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.25);
+}
+.toolbar-scroll {
+  display: flex;
+  overflow-x: auto;
+  gap: 8px;
+  padding: 0 4px;
+  flex: 1;
+  height: 100%;
+  align-items: center;
+}
+.toolbar-scroll::-webkit-scrollbar { display: none; }
+.tool-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  padding: 5px 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.tool-btn:active {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: #3b82f6;
+  color: #fff;
+}
+
+/* Mobile Bottom Navigation */
+.mobile-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: #090d16;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 190;
+  justify-content: space-around;
+  align-items: center;
+  box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.3);
+}
+.tab-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-family: 'Inter', sans-serif;
+  font-size: 10.5px;
+  font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  flex: 1;
+  height: 100%;
+  justify-content: center;
+  transition: color 0.15s;
+}
+.tab-btn.active {
+  color: #60a5fa;
+}
+.tab-icon {
+  font-size: 16px;
+}
+
+/* Mobile Header */
+.mobile-header {
+  display: none;
+  height: 48px;
+  background: #0d1527;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0 16px;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 200;
+  flex-shrink: 0;
+  font-family: 'Outfit', sans-serif;
+}
+.mobile-header span {
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.mobile-header button {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+</style>
 </head>
-<body>
+<body class="show-editor-tab">
 <div class="orb orb-1"></div>
 <div class="orb orb-2"></div>
+<div class="mobile-header">
+  <span>SDPS QP Builder</span>
+  <button onclick="logout()">Sign Out ➡️</button>
+</div>
 <div id="nav"></div>
 <div id="notify" class="notify"></div>
-<button class="mobile-preview-toggle" id="mobilePreviewToggle" onclick="toggleMobilePreview()">👁 Preview Paper</button>
 
 <div class="shell">
 <!-- LEFT PANEL -->
@@ -169,6 +372,18 @@ canvas{border:1.5px solid rgba(255,255,255,0.1);border-radius:10px;cursor:crossh
   <div class="sb-head">
     <h2 id="sbTitle">Select Assignment</h2>
     <div style="font-size:9px;color:#64748b" id="statusBadgeSmall"></div>
+  </div>
+
+  <!-- Onboarding welcome banner -->
+  <div class="welcome-banner" id="welcomeBanner">
+    <h2>Welcome to SDPS QP Builder</h2>
+    <p>Create exam papers securely. Your session auto-saves drafts to the cloud.</p>
+    <ol>
+      <li>Select an active assignment from the list below.</li>
+      <li>Set paper details and write your questions.</li>
+      <li>Preview the final A4 output layout.</li>
+      <li>Submit draft for reviewer approval.</li>
+    </ol>
   </div>
 
   <!-- Assignment selector -->
@@ -209,7 +424,7 @@ canvas{border:1.5px solid rgba(255,255,255,0.1);border-radius:10px;cursor:crossh
     </div>
 
     <!-- AI Assist -->
-    <div class="sb-sec">
+    <div class="sb-sec" id="aiSec">
       <h3>🤖 AI Assist</h3>
       <div class="field"><label>Topic / Instruction</label>
         <input id="aiPrompt" placeholder="e.g. 5 MCQ on water cycle Class V" style="width:100%"/>
@@ -241,11 +456,40 @@ canvas{border:1.5px solid rgba(255,255,255,0.1);border-radius:10px;cursor:crossh
       ← Select an assignment to start building
     </div>
   </div>
-  <div style="display:flex;gap:12px;margin-top:18px">
-    <button onclick="printPDF()" style="background:rgba(59, 130, 246, 0.15);border:1px solid rgba(59, 130, 246, 0.25);color:#93c5fd;border-radius:10px;padding:10px 20px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all 0.2s;outline:none" onmouseover="this.style.background='rgba(59, 130, 246, 0.25)';this.style.borderColor='rgba(59, 130, 246, 0.35)';this.style.transform='translateY(-1px)'" onmouseout="this.style.background='rgba(59, 130, 246, 0.15)';this.style.borderColor='rgba(59, 130, 246, 0.25)';this.style.transform='none'">⬇ Save PDF</button>
-    <button onclick="printBooklet()" style="background:rgba(139, 92, 246, 0.15);border:1px solid rgba(139, 92, 246, 0.25);color:#d8b4fe;border-radius:10px;padding:10px 20px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all 0.2s;outline:none" onmouseover="this.style.background='rgba(139, 92, 246, 0.25)';this.style.borderColor='rgba(139, 92, 246, 0.35)';this.style.transform='translateY(-1px)'" onmouseout="this.style.background='rgba(139, 92, 246, 0.15)';this.style.borderColor='rgba(139, 92, 246, 0.25)';this.style.transform='none'">📖 Booklet PDF</button>
-  </div>
 </div>
+</div>
+
+<!-- Mobile Bottom Navigation Tab Bar -->
+<div class="mobile-nav" id="mobileNav">
+  <button onclick="switchMobileTab('editor')" id="tabEditor" class="tab-btn active"><span class="tab-icon">📝</span><span>Editor</span></button>
+  <button onclick="switchMobileTab('preview')" id="tabPreview" class="tab-btn"><span class="tab-icon">👁️</span><span>A4 Preview</span></button>
+  <button onclick="switchMobileTab('ai')" id="tabAI" class="tab-btn"><span class="tab-icon">🤖</span><span>AI Assist</span></button>
+</div>
+
+<!-- Floating Keyboard Formatting/Math Toolbar -->
+<div class="formatting-toolbar" id="formattingToolbar">
+  <div style="font-size:8px;font-weight:800;color:#64748b;padding:0 6px;border-right:1px solid rgba(255,255,255,0.1);height:100%;display:flex;align-items:center;letter-spacing:0.04em">TOOL</div>
+  <div class="toolbar-scroll">
+    <button type="button" class="tool-btn" onclick="insertFormat('**')"><b>B</b></button>
+    <button type="button" class="tool-btn" onclick="insertFormat('<u>')"><u>U</u></button>
+    <button type="button" class="tool-btn" onclick="insertFormat('______')">Blank</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('√')">√</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('π')">π</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('÷')">÷</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('×')">×</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('±')">±</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('²')">²</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('³')">³</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('∑')">∑</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('Δ')">Δ</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('θ')">θ</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('α')">α</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('β')">β</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('λ')">λ</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('∞')">∞</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('≈')">≈</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('≠')">≠</button>
+  </div>
 </div>
 
 <!-- DRAWING MODAL -->
@@ -282,13 +526,96 @@ const ROMAN=['i','ii','iii','iv','v','vi','vii','viii','ix','x','xi','xii','xiii
 let sections=[], secCount=0, currentAssignment=null, currentDrawTarget=null;
 let drawTool='pen', drawHistory=[], isDrawing=false, startX=0, startY=0, snapshot=null;
 
+let lastFocusedInput = null;
+
 window.addEventListener('DOMContentLoaded', async()=>{
   const u=getUser();
-  if(!u||u.role!=='teacher'){location.href='/qp-portal/index.html';return;}
+  if(!u||u.role!=='teacher'){location.href='./index.html';return;}
   document.getElementById('nav').innerHTML=navBar('Teacher','Question Paper Builder');
   await loadMyAssignments();
   startAutoSave();
+
+  // SECURE: Disable copy & contextmenu on A4 preview
+  const paperEl = document.getElementById('a4paper');
+  if (paperEl) {
+    paperEl.addEventListener('contextmenu', e => e.preventDefault());
+    paperEl.addEventListener('copy', e => e.preventDefault());
+  }
+
+  // Mobile: Track active input for symbols formatting toolbar
+  document.addEventListener('focusin', (e)=>{
+    if(e.target.tagName==='INPUT' || e.target.tagName==='TEXTAREA'){
+      lastFocusedInput = e.target;
+      document.getElementById('formattingToolbar').style.display='flex';
+    }
+  });
+  document.addEventListener('click', (e)=>{
+    if(!e.target.closest('.formatting-toolbar') && !e.target.closest('input') && !e.target.closest('textarea')){
+      document.getElementById('formattingToolbar').style.display='none';
+    }
+  });
 });
+
+// ── Mobile Bottom Navigation Tab Switching ──
+function switchMobileTab(tab) {
+  document.body.classList.remove('show-editor-tab', 'show-preview-tab', 'show-ai-tab');
+  document.getElementById('tabEditor').classList.remove('active');
+  document.getElementById('tabPreview').classList.remove('active');
+  document.getElementById('tabAI').classList.remove('active');
+  
+  if (tab === 'editor') {
+    document.body.classList.add('show-editor-tab');
+    document.getElementById('tabEditor').classList.add('active');
+  } else if (tab === 'preview') {
+    document.body.classList.add('show-preview-tab');
+    document.getElementById('tabPreview').classList.add('active');
+    try { render(); } catch(e) {}
+  } else if (tab === 'ai') {
+    document.body.classList.add('show-ai-tab');
+    document.getElementById('tabAI').classList.add('active');
+  }
+  window.scrollTo(0,0);
+}
+
+// ── MS Word Style Formatting Helpers ──
+function insertSymbol(sym) {
+  if (!lastFocusedInput) return;
+  const input = lastFocusedInput;
+  const start = input.selectionStart || 0;
+  const end = input.selectionEnd || 0;
+  const text = input.value;
+  input.value = text.substring(0, start) + sym + text.substring(end);
+  input.selectionStart = input.selectionEnd = start + sym.length;
+  input.focus();
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+function insertFormat(wrapper) {
+  if (!lastFocusedInput) return;
+  const input = lastFocusedInput;
+  const start = input.selectionStart || 0;
+  const end = input.selectionEnd || 0;
+  const text = input.value;
+  const selectedText = text.substring(start, end);
+  
+  let newText = '';
+  let cursorOffset = 0;
+  if (wrapper === '**') {
+    newText = '**' + selectedText + '**';
+    cursorOffset = selectedText ? newText.length : 2;
+  } else if (wrapper === '<u>') {
+    newText = '<u>' + selectedText + '</u>';
+    cursorOffset = selectedText ? newText.length : 3;
+  } else {
+    newText = wrapper;
+    cursorOffset = wrapper.length;
+  }
+  
+  input.value = text.substring(0, start) + newText + text.substring(end);
+  input.selectionStart = input.selectionEnd = start + cursorOffset;
+  input.focus();
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+}
 
 // ── Assignments ────────────────────────────────────────────────────────────
 async function loadMyAssignments(){
@@ -310,6 +637,7 @@ async function loadMyAssignments(){
 async function selectAssignment(a){
   currentAssignment=a;
   document.getElementById('assignmentSelector').style.display='none';
+  document.getElementById('welcomeBanner').style.display='none'; // Hide welcome banner on selection
   const bp=document.getElementById('builderPanel');
   bp.style.display='flex';bp.style.flexDirection='column';
   document.getElementById('sbTitle').textContent=`${a.class_name} · ${a.subject}`;
@@ -321,6 +649,10 @@ async function selectAssignment(a){
   notify('','');
   if(a.status!=='draft'){
     notify(`This paper is "${STATUS_LABELS[a.status]}". Contact admin to unlock for editing.`,'warn');
+  }
+  // Check if there is a rejection reason to display as a red alert banner
+  if(a.rejection_reason){
+    notify(`⚠️ Rejection Feedback: "${a.rejection_reason}"`,'error');
   }
 }
 
@@ -398,18 +730,24 @@ function renderQField(s,q,qi,editable){
 }
 
 // ── Data mutations ─────────────────────────────────────────────────────────
-function addSection(){ secCount++; sections.push({id:secCount,type:'MCQ',instruction:'',marks:'',qItems:[]}); renderSidebar();render(); }
-function removeSection(id){ sections=sections.filter(s=>s.id!==id);renderSidebar();render(); }
-function updateSection(id,k,v){ const s=sections.find(s=>s.id===id);if(s){s[k]=v;if(k==='type')renderSidebar();render();} }
-function addQuestion(sid){ const s=sections.find(s=>s.id===sid);if(s){s.qItems.push({id:Date.now()+Math.random(),question:'',marks:1,options:['','',''],sub_questions:[],image_url:'',image_data:''});renderSidebar();render();} }
-function removeQuestion(sid,qid){ const s=sections.find(s=>s.id===sid);if(s){s.qItems=s.qItems.filter(q=>q.id!=qid);renderSidebar();render();} }
-function updateQ(sid,qid,k,v){ const s=sections.find(s=>s.id===sid);if(!s)return;const q=s.qItems.find(q=>q.id==qid);if(q){q[k]=v;if(k==='question')return;render();} }
-function updateOpt(sid,qid,i,v){ const s=sections.find(s=>s.id===sid);if(!s)return;const q=s.qItems.find(q=>q.id==qid);if(q){q.options[i]=v;render();} }
-function addOpt(sid,qid){ const s=sections.find(s=>s.id===sid);if(!s)return;const q=s.qItems.find(q=>q.id==qid);if(q){q.options.push('');renderSidebar();render();} }
-function removeOpt(sid,qid,i){ const s=sections.find(s=>s.id===sid);if(!s)return;const q=s.qItems.find(q=>q.id==qid);if(q){q.options.splice(i,1);renderSidebar();render();} }
-function addSubQ(sid,qid){ const s=sections.find(s=>s.id===sid);if(!s)return;const q=s.qItems.find(q=>q.id==qid);if(q){q.sub_questions.push({text:'',marks:0});renderSidebar();render();} }
-function updateSubQ(sid,qid,i,v){ const s=sections.find(s=>s.id===sid);if(!s)return;const q=s.qItems.find(q=>q.id==qid);if(q){q.sub_questions[i]={text:v,marks:0};render();} }
-function removeSubQ(sid,qid,i){ const s=sections.find(s=>s.id===sid);if(!s)return;const q=s.qItems.find(q=>q.id==qid);if(q){q.sub_questions.splice(i,1);renderSidebar();render();} }
+function markUnsaved(){
+  if(currentAssignment && currentAssignment.status==='draft'){
+    hasUnsavedChanges=true;
+    document.getElementById('autoSaveLabel').innerHTML='⚠️ Unsaved changes';
+  }
+}
+function addSection(){ secCount++; sections.push({id:secCount,type:'MCQ',instruction:'',marks:'',qItems:[]}); renderSidebar();render(); markUnsaved(); }
+function removeSection(id){ sections=sections.filter(s=>s.id!==id);renderSidebar();render(); markUnsaved(); }
+function updateSection(id,k,v){ const s=sections.find(s=>s.id===id);if(s){s[k]=v;if(k==='type')renderSidebar();render(); markUnsaved();} }
+function addQuestion(sid){ const s=sections.find(s=>s.id===sid);if(s){s.qItems.push({id:Date.now()+Math.random(),question:'',marks:1,options:['','',''],sub_questions:[],image_url:'',image_data:''});renderSidebar();render(); markUnsaved();} }
+function removeQuestion(sid,qid){ const s=sections.find(s=>s.id===sid);if(s){s.qItems=s.qItems.filter(q=>q.id!=qid);renderSidebar();render(); markUnsaved();} }
+function updateQ(sid,qid,k,v){ const s=sections.find(s=>s.id===sid);if(!s)return;const q=s.qItems.find(q=>q.id==qid);if(q){q[k]=v;if(k==='question')return;render(); markUnsaved();} }
+function updateOpt(sid,qid,i,v){ const s=sections.find(s=>s.id===sid);if(!s)return;const q=s.qItems.find(q=>q.id==qid);if(q){q.options[i]=v;render(); markUnsaved();} }
+function addOpt(sid,qid){ const s=sections.find(s=>s.id===sid);if(!s)return;const q=s.qItems.find(q=>q.id==qid);if(q){q.options.push('');renderSidebar();render(); markUnsaved();} }
+function removeOpt(sid,qid,i){ const s=sections.find(s=>s.id===sid);if(!s)return;const q=s.qItems.find(q=>q.id==qid);if(q){q.options.splice(i,1);renderSidebar();render(); markUnsaved();} }
+function addSubQ(sid,qid){ const s=sections.find(s=>s.id===sid);if(!s)return;const q=s.qItems.find(q=>q.id==qid);if(q){q.sub_questions.push({text:'',marks:0});renderSidebar();render(); markUnsaved();} }
+function updateSubQ(sid,qid,i,v){ const s=sections.find(s=>s.id===sid);if(!s)return;const q=s.qItems.find(q=>q.id==qid);if(q){q.sub_questions[i]={text:v,marks:0};render(); markUnsaved();} }
+function removeSubQ(sid,qid,i){ const s=sections.find(s=>s.id===sid);if(!s)return;const q=s.qItems.find(q=>q.id==qid);if(q){q.sub_questions.splice(i,1);renderSidebar();render(); markUnsaved();} }
 
 // ── Image Upload ────────────────────────────────────────────────────────────
 function openImageUpload(sid,qid){
@@ -657,16 +995,30 @@ function buildPaperPayload(){
   };
 }
 
+let hasUnsavedChanges = false;
+
+window.addEventListener('beforeunload', (e) => {
+  if (hasUnsavedChanges) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
 async function savePaper(){
   if(!currentAssignment)return toast('No assignment selected','error');
   if(currentAssignment.status!=='draft')return toast('Paper is locked','error');
+  document.getElementById('autoSaveLabel').innerHTML = '⏳ Saving draft...';
   try{
     await apiFetch(`/papers/${currentAssignment.id}`,{method:'PUT',body:JSON.stringify(buildPaperPayload())});
+    hasUnsavedChanges = false;
     const t=new Date().toLocaleTimeString();
-    document.getElementById('autoSaveLabel').textContent=`Last saved: ${t}`;
+    document.getElementById('autoSaveLabel').innerHTML = `✅ All changes saved to cloud (${t})`;
     notify('Paper saved successfully','success');
     setTimeout(()=>notify('',''),3000);
-  }catch(e){toast('Save failed: '+e.message,'error');}
+  }catch(e){
+    document.getElementById('autoSaveLabel').innerHTML = '<span style="color:#ef4444">⚠️ Save failed. Check connection.</span>';
+    toast('Save failed: '+e.message,'error');
+  }
 }
 
 async function submitPaper(){
@@ -676,6 +1028,7 @@ async function submitPaper(){
   await savePaper();
   try{
     await apiFetch(`/assignments/${currentAssignment.id}/submit`,{method:'POST'});
+    hasUnsavedChanges = false;
     currentAssignment.status='submitted';
     document.getElementById('statusBadgeSmall').innerHTML=statusBadge('submitted');
     notify('Paper submitted for review ✓','success');
@@ -689,11 +1042,15 @@ async function submitPaper(){
 function startAutoSave(){
   setInterval(async()=>{
     if(!currentAssignment||currentAssignment.status!=='draft')return;
+    document.getElementById('autoSaveLabel').innerHTML = '⏳ Auto-saving...';
     try{
       await apiFetch(`/papers/${currentAssignment.id}`,{method:'PUT',body:JSON.stringify(buildPaperPayload())});
+      hasUnsavedChanges = false;
       const t=new Date().toLocaleTimeString();
-      document.getElementById('autoSaveLabel').textContent=`Auto-saved: ${t}`;
-    }catch(e){}
+      document.getElementById('autoSaveLabel').innerHTML = `✅ Auto-saved to Cloud (${t})`;
+    }catch(e){
+      document.getElementById('autoSaveLabel').innerHTML = '<span style="color:#ef4444">⚠️ Auto-save failed.</span>';
+    }
   }, 60000);
 }
 
