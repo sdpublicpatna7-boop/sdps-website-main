@@ -31,17 +31,71 @@
         <div class="login-err" id="login-err"></div>
 
         <form id="login-form">
-          <div class="field">
-            <label for="login-username">Username or Email</label>
-            <input type="text" id="login-username" placeholder="Enter your email" required autocomplete="username"/>
+          <!-- Step 1: Username input -->
+          <div class="login-step active" id="step-username">
+            <div class="field">
+              <label for="login-username">Username or Email</label>
+              <input type="text" id="login-username" placeholder="Enter your username" required autocomplete="username"/>
+            </div>
+            <button type="button" class="btn-primary" id="btn-next-username">
+              <span>Next</span>
+            </button>
           </div>
-          <div class="field">
-            <label for="login-password">Password</label>
-            <input type="password" id="login-password" placeholder="Enter password" required autocomplete="current-password"/>
+
+          <!-- Step 2: Regular password input -->
+          <div class="login-step" id="step-password" style="display: none;">
+            <div class="field">
+              <label for="login-password">Password</label>
+              <input type="password" id="login-password" placeholder="Enter password" autocomplete="current-password"/>
+            </div>
+            <button type="button" class="btn-primary" id="btn-submit-login" style="margin-bottom: 12px;">
+              <span>Sign In</span>
+            </button>
+            <div style="display: flex; justify-content: space-between; font-size: 12px;">
+              <a href="#" id="link-forgot-pw" style="color: var(--primary); text-decoration: none; font-weight: 600;">Forgot Password?</a>
+              <a href="#" class="link-back-username" style="color: var(--text-muted); text-decoration: none;">← Change User</a>
+            </div>
           </div>
-          <button type="submit" class="btn-primary" id="login-submit">
-            <span>Sign In</span>
-          </button>
+
+          <!-- Step 3: First login OTP setup -->
+          <div class="login-step" id="step-otp-setup" style="display: none;">
+            <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.5;">This is your first login. Enter the verification code sent to your registered WhatsApp and choose a password.</p>
+            <div class="field">
+              <label for="setup-otp">WhatsApp Verification Code</label>
+              <input type="text" id="setup-otp" placeholder="6-digit code" inputmode="numeric"/>
+            </div>
+            <div class="field">
+              <label for="setup-new-password">Choose Password</label>
+              <input type="password" id="setup-new-password" placeholder="Min 8 chars · 1 upper · 1 digit"/>
+            </div>
+            <button type="button" class="btn-primary" id="btn-submit-setup" style="margin-bottom: 12px;">
+              <span>Set Password & Sign In</span>
+            </button>
+            <div style="display: flex; justify-content: space-between; font-size: 12px;">
+              <a href="#" id="link-resend-setup-otp" style="color: var(--primary); text-decoration: none; font-weight: 600;">Resend Code</a>
+              <a href="#" class="link-back-username" style="color: var(--text-muted); text-decoration: none;">← Change User</a>
+            </div>
+          </div>
+
+          <!-- Step 4: Forgot password OTP reset -->
+          <div class="login-step" id="step-forgot-pw" style="display: none;">
+            <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.5;">Enter the password reset code sent to your WhatsApp and choose a new password.</p>
+            <div class="field">
+              <label for="forgot-otp">WhatsApp Verification Code</label>
+              <input type="text" id="forgot-otp" placeholder="6-digit code" inputmode="numeric"/>
+            </div>
+            <div class="field">
+              <label for="forgot-new-password">New Password</label>
+              <input type="password" id="forgot-new-password" placeholder="Min 8 chars · 1 upper · 1 digit"/>
+            </div>
+            <button type="button" class="btn-primary" id="btn-submit-forgot" style="margin-bottom: 12px;">
+              <span>Reset Password & Sign In</span>
+            </button>
+            <div style="display: flex; justify-content: space-between; font-size: 12px;">
+              <a href="#" id="link-resend-forgot-otp" style="color: var(--primary); text-decoration: none; font-weight: 600;">Resend Code</a>
+              <a href="#" class="link-back-username" style="color: var(--text-muted); text-decoration: none;">← Change User</a>
+            </div>
+          </div>
         </form>
       </div>
     </div>

@@ -89,54 +89,184 @@ function setupConnectionIndicator() {
 }
 
 // ── USER LOGIN FLOW ──
+let activeUsername = '';
+
+function showLoginStep(stepId) {
+  document.querySelectorAll('.login-step').forEach(s => {
+    s.style.display = (s.id === stepId) ? 'block' : 'none';
+  });
+  document.getElementById('login-err').style.display = 'none';
+}
+
 function setupLoginForm() {
-  const form = document.getElementById('login-form');
   const errDiv = document.getElementById('login-err');
   
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    errDiv.style.display = 'none';
-    
-    const username = document.getElementById('login-username').value.trim();
-    const password = document.getElementById('login-password').value;
-    const submitBtn = document.getElementById('login-submit');
-    
-    const origText = submitBtn.innerHTML;
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<div class="spinner"></div> <span>Connecting...</span>';
-    
+  function showErr(msg) {
+    errDiv.textContent = msg;
+    errDiv.style.display = 'block';
+  }
+
+  async function withLoading(btnId, fn) {
+    const btn = document.getElementById(btnId);
+    const origText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner"></div> <span>Please wait...</span>';
     try {
-      // Step 1: Check username
-      const userCheck = await apiFetch(`/check-user`, {
+      await fn();
+    } catch (err) {
+      showErr(err.message || 'Action failed. Try again.');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = origText;
+    }
+  }
+
+  // Back actions
+  document.querySelectorAll('.link-back-username').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      showLoginStep('step-username');
+    });
+  });
+
+  // Step 1: Next Username
+  document.getElementById('btn-next-username').addEventListener('click', () => {
+    const usernameInput = document.getElementById('login-username').value.trim();
+    if (!usernameInput) {
+      showErr('Please enter your username.');
+      return;
+    }
+    
+    withLoading('btn-next-username', async () => {
+      const check = await apiFetch(`/check-user`, {
         method: 'POST',
-        body: JSON.stringify({ username })
+        body: JSON.stringify({ username: usernameInput })
       });
       
-      if (!userCheck) {
-        throw new Error('User check failed. Username not found.');
+      if (!check) throw new Error('Account check failed.');
+      
+      activeUsername = usernameInput;
+      
+      if (check.first_login) {
+        showLoginStep('step-otp-setup');
+        toast('OTP sent to WhatsApp!', 'info');
+      } else {
+        showLoginStep('step-password');
       }
-      
-      // Step 2: Perform password verification
-      const loginRes = await apiFetch(`/login`, {
+    });
+  });
+
+  // Step 2: Password Login
+  document.getElementById('btn-submit-login').addEventListener('click', () => {
+    const password = document.getElementById('login-password').value;
+    if (!password) {
+      showErr('Please enter your password.');
+      return;
+    }
+    
+    withLoading('btn-submit-login', async () => {
+      const res = await apiFetch(`/login`, {
         method: 'POST',
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ username: activeUsername, password })
       });
       
-      if (loginRes && loginRes.access_token) {
-        localStorage.setItem('qp_token', loginRes.access_token);
-        localStorage.setItem('qp_user', JSON.stringify(loginRes.user));
-        state.user = loginRes.user;
+      if (res && res.access_token) {
+        localStorage.setItem('qp_token', res.access_token);
+        localStorage.setItem('qp_user', JSON.stringify(res.user));
+        state.user = res.user;
         loginSuccess();
       } else {
-        throw new Error('Verification failed. Invalid password.');
+        throw new Error('Authentication failed.');
       }
-    } catch (err) {
-      errDiv.textContent = err.message || 'Verification failed. Try again.';
-      errDiv.style.display = 'block';
-    } finally {
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = origText;
+    });
+  });
+
+  // Forgot password link trigger
+  document.getElementById('link-forgot-pw').addEventListener('click', (e) => {
+    e.preventDefault();
+    withLoading('btn-submit-login', async () => {
+      const res = await apiFetch('/staff/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ username: activeUsername })
+      });
+      
+      toast('Reset code sent to WhatsApp!', 'info');
+      showLoginStep('step-forgot-pw');
+    });
+  });
+
+  // Step 3: First Login Setup Verify
+  document.getElementById('btn-submit-setup').addEventListener('click', () => {
+    const otp = document.getElementById('setup-otp').value.trim();
+    const new_password = document.getElementById('setup-new-password').value;
+    
+    if (!otp || !new_password) {
+      showErr('Verification code and new password are required.');
+      return;
     }
+    
+    withLoading('btn-submit-setup', async () => {
+      const res = await apiFetch('/staff/set-password', {
+        method: 'POST',
+        body: JSON.stringify({ username: activeUsername, otp, new_password })
+      });
+      
+      if (res && res.access_token) {
+        localStorage.setItem('qp_token', res.access_token);
+        localStorage.setItem('qp_user', JSON.stringify(res.user));
+        state.user = res.user;
+        loginSuccess();
+      } else {
+        throw new Error('Verification failed.');
+      }
+    });
+  });
+
+  // Resend OTP setup
+  document.getElementById('link-resend-setup-otp').addEventListener('click', (e) => {
+    e.preventDefault();
+    apiFetch('/staff/resend-otp', {
+      method: 'POST',
+      body: JSON.stringify({ username: activeUsername })
+    }).then(() => toast('OTP resent to WhatsApp!', 'success'))
+      .catch(err => toast(err.message || 'Resend failed', 'error'));
+  });
+
+  // Step 4: Forgot Password Verify Reset
+  document.getElementById('btn-submit-forgot').addEventListener('click', () => {
+    const otp = document.getElementById('forgot-otp').value.trim();
+    const new_password = document.getElementById('forgot-new-password').value;
+    
+    if (!otp || !new_password) {
+      showErr('Verification code and new password are required.');
+      return;
+    }
+    
+    withLoading('btn-submit-forgot', async () => {
+      const res = await apiFetch('/staff/reset-forgotten-password', {
+        method: 'POST',
+        body: JSON.stringify({ username: activeUsername, otp, new_password })
+      });
+      
+      if (res && res.access_token) {
+        localStorage.setItem('qp_token', res.access_token);
+        localStorage.setItem('qp_user', JSON.stringify(res.user));
+        state.user = res.user;
+        loginSuccess();
+      } else {
+        throw new Error('Reset failed.');
+      }
+    });
+  });
+
+  // Resend OTP forgot
+  document.getElementById('link-resend-forgot-otp').addEventListener('click', (e) => {
+    e.preventDefault();
+    apiFetch('/staff/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ username: activeUsername })
+    }).then(() => toast('Reset OTP resent to WhatsApp!', 'success'))
+      .catch(err => toast(err.message || 'Resend failed', 'error'));
   });
 }
 

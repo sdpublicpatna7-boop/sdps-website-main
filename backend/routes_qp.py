@@ -303,6 +303,44 @@ async def staff_set_password(request: Request, response: Response, payload: Staf
     return {"access_token": token, "token_type": "bearer", "user": _user_public(user)}
 
 
+@qp_router.post("/staff/forgot-password")
+async def staff_forgot_password(request: Request, payload: StaffUsernamePayload):
+    username = payload.username.strip()
+    user = await db.qp_users.find_one({"username": username}, {"_id": 0})
+    if not user:
+        raise HTTPException(404, "Account not found.")
+    if not user.get("phone"):
+        raise HTTPException(400, "No phone number on file for password reset.")
+    res = await _send_otp(user, "password_reset")
+    if not res.get("success"):
+        raise HTTPException(503, "Could not send the OTP on WhatsApp. Contact QP Admin.")
+    return {"message": "Reset code sent to WhatsApp."}
+
+
+@qp_router.post("/staff/reset-forgotten-password")
+async def staff_reset_forgotten_password(request: Request, response: Response, payload: StaffSetPwPayload):
+    username = payload.username.strip()
+    user = await db.qp_users.find_one({"username": username}, {"_id": 0})
+    if not user:
+        raise HTTPException(404, "Account not found.")
+    phone = user.get("phone")
+    if not phone:
+        raise HTTPException(400, "No phone number on file.")
+    ok, msg = await _verify_otp(phone, payload.otp)
+    if not ok:
+        raise HTTPException(400, msg)
+    pw = payload.new_password or ""
+    if len(pw) < 8 or not any(c.isupper() for c in pw) or not any(c.isdigit() for c in pw):
+        raise HTTPException(400, "Password must be at least 8 characters with an uppercase letter and a digit.")
+    await db.qp_users.update_one({"id": user["id"]},
+                                 {"$set": {"password_hash": pwd_ctx.hash(pw), "password_set": True}})
+    await db.qp_otps.delete_one({"phone": phone})
+    jti = await _start_session(user, request)
+    token = _make_token(user, jti)
+    set_auth_cookie(response, token, QP_COOKIE_NAME, QP_JWT_EXP_H)
+    return {"access_token": token, "token_type": "bearer", "user": _user_public(user)}
+
+
 @qp_router.post("/staff/resend-otp")
 @limiter.limit("5/minute")
 async def staff_resend_otp(request: Request, payload: StaffUsernamePayload):
