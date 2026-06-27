@@ -182,16 +182,18 @@ async function loadAssignments() {
     
     container.innerHTML = list.map(a => {
       const isTeacher = (state.user.role === 'teacher');
+      const isAdmin = (state.user.role === 'qp_admin');
       let actionLabel = '👁️ Preview';
       let actionClass = '';
       
-      if (isTeacher && (a.status === 'draft')) {
+      if (isAdmin) {
+        actionLabel = '✏️ Edit Paper';
+        actionClass = 'btn-primary-card';
+      } else if (isTeacher && (a.status === 'draft')) {
         actionLabel = '✏️ Edit Paper';
         actionClass = 'btn-primary-card';
       } else if (state.user.role === 'incharge' && a.status === 'submitted') {
         actionLabel = '🛡️ Review';
-      } else if (state.user.role === 'qp_admin') {
-        actionLabel = '🛠️ Manage';
       }
       
       return `
@@ -249,6 +251,10 @@ async function selectPaper(id) {
     submitBtn.style.display = 'none';
   }
   
+  // Toggle add button based on editability
+  const isEditable = (match.status === 'draft' || state.user.role === 'qp_admin');
+  document.getElementById('btn-add-question').style.display = isEditable ? 'block' : 'none';
+  
   // Load questions data
   await loadQuestions();
   
@@ -296,8 +302,8 @@ async function loadQuestions() {
         </div>
       ` : '';
       
-      const isDraft = (state.currentAssignment.status === 'draft');
-      const actionHtml = isDraft ? `
+      const isEditable = (state.currentAssignment.status === 'draft' || state.user.role === 'qp_admin');
+      const actionHtml = isEditable ? `
         <div class="q-card-actions">
           <button class="btn-icon" onclick="editQuestion(${idx})">✏️</button>
           <button class="btn-icon" onclick="deleteQuestion(${idx})">🗑️</button>
@@ -591,7 +597,7 @@ async function triggerAIGenerator() {
   
   const origText = genBtn.innerHTML;
   genBtn.disabled = true;
-  genBtn.innerHTML = '<div class="spinner"></div> <span>Gemini is thinking...</span>';
+  genBtn.innerHTML = '<div class="spinner"></div> <span>Claude is thinking...</span>';
   
   // Format prompt instructions matching backend prompt structure
   const prompt = `Generate ${count} school exam questions for ${state.currentAssignment ? state.currentAssignment.class_name : 'Class VIII'} students on the topic "${topic}". The question types must be strictly "${type}". Return a clean JSON array with fields: question_text, type, marks, options.`;
@@ -644,7 +650,11 @@ async function addAIQuestion(idx) {
     toast('Select a paper in the Papers tab first', 'warn');
     return;
   }
-  
+  const isEditable = (state.currentAssignment.status === 'draft' || state.user.role === 'qp_admin');
+  if (!isEditable) {
+    toast('This paper is submitted and cannot be modified.', 'warn');
+    return;
+  }
   const q = state.aiQuestions[idx];
   
   // Add to local state paper list
