@@ -13,6 +13,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     private func makeScreenSecure() {
+        #if !targetEnvironment(simulator)
         DispatchQueue.main.async {
             if let window = self.window {
                 let secureTextField = UITextField()
@@ -22,6 +23,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                 secureTextField.layer.sublayers?.first?.addSublayer(window.layer)
             }
         }
+        #endif
     }
 
     func applicationWillResignActive(_ application: UIApplication) {
