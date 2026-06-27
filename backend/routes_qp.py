@@ -807,6 +807,37 @@ async def delete_archive(aid: str, u: QPTokenData = Depends(_require("qp_admin")
     return {"deleted": aid}
 
 
+async def _create_notification(user_id: str, title: str, message: str, type_: str, assignment_id: str = ""):
+    notif_id = f"notif_{generate_otp(10)}"
+    await db.qp_notifications.insert_one({
+        "id": notif_id,
+        "user_id": user_id,
+        "title": title,
+        "message": message,
+        "type": type_,
+        "assignment_id": assignment_id,
+        "is_read": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+
+
+@qp_router.get("/notifications")
+async def list_notifications(u: QPTokenData = Depends(_current_user)):
+    items = await db.qp_notifications.find({"user_id": u.sub}, {"_id": 0}).to_list(100)
+    items.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+    return items
+
+
+@qp_router.post("/notifications/mark-read")
+async def mark_notifications_read(payload: Dict[str, Any] = Body({}), u: QPTokenData = Depends(_current_user)):
+    notif_id = payload.get("id")
+    if notif_id:
+        await db.qp_notifications.update_one({"id": notif_id, "user_id": u.sub}, {"$set": {"is_read": True}})
+    else:
+        await db.qp_notifications.update_many({"user_id": u.sub}, {"$set": {"is_read": True}})
+    return {"status": "ok"}
+
+
 # ── Assignments ────────────────────────────────────────────────────────────
 @qp_router.get("/assignments")
 async def list_assignments(u: QPTokenData = Depends(_current_user)):
@@ -857,6 +888,13 @@ async def create_assignment(payload: Dict[str, Any] = Body(...), u: QPTokenData 
         teacher_name=teacher["name"],
     ).model_dump()
     await db.qp_assignments.insert_one(a.copy())
+    await _create_notification(
+        user_id=teacher["id"],
+        title="New Assignment Assigned",
+        message=f"You have been assigned to prepare the {a['subject']} paper for {a['class_name']}.",
+        type_="assignment_assigned",
+        assignment_id=a["id"]
+    )
     a.pop("_id", None)
     return a
 
@@ -885,6 +923,26 @@ async def submit_paper(aid: str, u: QPTokenData = Depends(_require("teacher"))):
         "status": "submitted", "submitted_at": now_iso(),
         "rejection_reason": "", "rejected_by": "", "rejected_at": ""
     }})
+    # Notifications for matching incharges
+    incharges = await db.qp_users.find({"role": "incharge", "incharge_classes": a["class_name"]}).to_list(100)
+    for ic in incharges:
+        await _create_notification(
+            user_id=ic["id"],
+            title="Paper Submitted for Review",
+            message=f"{a['teacher_name']} submitted the {a['subject']} paper for {a['class_name']}.",
+            type_="paper_submitted",
+            assignment_id=aid
+        )
+    # Notifications for admins
+    admins = await db.qp_users.find({"role": "qp_admin"}).to_list(100)
+    for adm in admins:
+        await _create_notification(
+            user_id=adm["id"],
+            title="Paper Submitted",
+            message=f"{a['teacher_name']} submitted the {a['subject']} paper for {a['class_name']}.",
+            type_="paper_submitted",
+            assignment_id=aid
+        )
     return {"status": "submitted"}
 
 @qp_router.post("/assignments/{aid}/incharge-review")
@@ -906,14 +964,41 @@ async def incharge_review(aid: str, payload: Dict[str, Any] = Body({}), u: QPTok
         await db.qp_assignments.update_one({"id": aid}, {"$set": {
             "status": "incharge_approved", "incharge_reviewed_at": now_iso()
         }})
+        # Notify teacher
+        await _create_notification(
+            user_id=a["teacher_id"],
+            title="Incharge Review: Approved",
+            message=f"Your {a['subject']} paper for {a['class_name']} was approved by the Incharge.",
+            type_="paper_approved",
+            assignment_id=aid
+        )
+        # Notify admins
+        admins = await db.qp_users.find({"role": "qp_admin"}).to_list(100)
+        for adm in admins:
+            await _create_notification(
+                user_id=adm["id"],
+                title="Paper IC Approved",
+                message=f"The {a['subject']} paper for {a['class_name']} was approved by the Incharge.",
+                type_="paper_approved",
+                assignment_id=aid
+            )
         return {"status": "incharge_approved"}
     elif action == "reject":
+        reason = payload.get("reason", "Needs revision")
         await db.qp_assignments.update_one({"id": aid}, {"$set": {
             "status": "draft",
-            "rejection_reason": payload.get("reason", "Needs revision"),
+            "rejection_reason": reason,
             "rejected_by": "incharge",
             "rejected_at": now_iso(),
         }})
+        # Notify teacher
+        await _create_notification(
+            user_id=a["teacher_id"],
+            title="Paper Rejected by Incharge",
+            message=f"Your {a['subject']} paper for {a['class_name']} was rejected. Reason: {reason}",
+            type_="paper_rejected",
+            assignment_id=aid
+        )
         return {"status": "draft", "rejected": True}
     raise HTTPException(400, "action must be 'approve' or 'reject'")
 
@@ -928,15 +1013,32 @@ async def admin_action(aid: str, payload: Dict[str, Any] = Body(...), u: QPToken
         await db.qp_assignments.update_one({"id": aid}, {"$set": {
             "status": "approved", "admin_approved_at": now_iso()
         }})
+        # Notify teacher
+        await _create_notification(
+            user_id=a["teacher_id"],
+            title="Paper Approved by Admin",
+            message=f"Congratulations! Your {a['subject']} paper for {a['class_name']} has been approved by the Admin.",
+            type_="paper_approved",
+            assignment_id=aid
+        )
         return {"status": "approved"}
     elif action == "reject":
         target_status = payload.get("reject_to", "draft")  # "draft" or "submitted"
+        reason = payload.get("reason", "Needs revision")
         await db.qp_assignments.update_one({"id": aid}, {"$set": {
             "status": target_status,
-            "rejection_reason": payload.get("reason", "Needs revision"),
+            "rejection_reason": reason,
             "rejected_by": "admin",
             "rejected_at": now_iso(),
         }})
+        # Notify teacher
+        await _create_notification(
+            user_id=a["teacher_id"],
+            title="Paper Rejected by Admin",
+            message=f"Your {a['subject']} paper for {a['class_name']} was rejected by the Admin. Reason: {reason}",
+            type_="paper_rejected",
+            assignment_id=aid
+        )
         return {"status": target_status, "rejected": True}
     elif action == "send_to_print":
         if a["status"] != "approved":
@@ -944,6 +1046,24 @@ async def admin_action(aid: str, payload: Dict[str, Any] = Body(...), u: QPToken
         await db.qp_assignments.update_one({"id": aid}, {"$set": {
             "status": "printing", "sent_to_print_at": now_iso()
         }})
+        # Notify teacher
+        await _create_notification(
+            user_id=a["teacher_id"],
+            title="Paper Sent to Print",
+            message=f"Your {a['subject']} paper for {a['class_name']} has been sent to the print queue.",
+            type_="paper_printing",
+            assignment_id=aid
+        )
+        # Notify printing heads
+        printers = await db.qp_users.find({"role": "printing_head"}).to_list(100)
+        for ph in printers:
+            await _create_notification(
+                user_id=ph["id"],
+                title="New Paper to Print",
+                message=f"The {a['subject']} paper for {a['class_name']} is ready in the queue.",
+                type_="paper_printing",
+                assignment_id=aid
+            )
         return {"status": "printing"}
     raise HTTPException(400, "action must be 'approve', 'reject', or 'send_to_print'")
 

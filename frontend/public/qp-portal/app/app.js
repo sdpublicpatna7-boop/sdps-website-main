@@ -279,6 +279,12 @@ function loginSuccess() {
                     state.user.role === 'printing_head' ? 'Print Head' : 'Teacher';
   document.getElementById('header-user-role').textContent = roleLabel;
   
+  // Set up notifications
+  setupNotificationEvents();
+  fetchNotifications();
+  if (state.notifInterval) clearInterval(state.notifInterval);
+  state.notifInterval = setInterval(fetchNotifications, 20000);
+  
   // Show assignments lists
   showView('papers');
 }
@@ -814,3 +820,142 @@ function loadSettings() {
   
   document.getElementById('settings-api-base').textContent = API;
 }
+
+// ── NOTIFICATIONS MANAGER ──
+state.notifications = [];
+state.notifInterval = null;
+
+function setupNotificationEvents() {
+  const toggleBtn = document.getElementById('btn-toggle-notifs');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      document.getElementById('notif-modal-backdrop').style.display = 'flex';
+      renderNotifications();
+    });
+  }
+  
+  const closeBtn = document.getElementById('btn-close-notifs');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      document.getElementById('notif-modal-backdrop').style.display = 'none';
+    });
+  }
+  
+  const backdrop = document.getElementById('notif-modal-backdrop');
+  if (backdrop) {
+    backdrop.addEventListener('click', (e) => {
+      if (e.target.id === 'notif-modal-backdrop') {
+        backdrop.style.display = 'none';
+      }
+    });
+  }
+
+  const markAllBtn = document.getElementById('btn-mark-all-read');
+  if (markAllBtn) {
+    markAllBtn.addEventListener('click', async () => {
+      try {
+        await apiFetch('/notifications/mark-read', { method: 'POST' });
+        toast('All notifications marked as read', 'success');
+        await fetchNotifications();
+        renderNotifications();
+      } catch (err) {
+        toast('Failed to mark read', 'error');
+      }
+    });
+  }
+}
+
+async function fetchNotifications() {
+  if (!state.user) return;
+  try {
+    const list = await apiFetch('/notifications') || [];
+    
+    // Check if there are new unread notifications to alert user via toast
+    const newUnreadCount = list.filter(n => !n.is_read).length;
+    const oldUnreadCount = state.notifications.filter(n => !n.is_read).length;
+    if (newUnreadCount > oldUnreadCount) {
+      toast('You have new notifications!', 'info');
+    }
+    
+    state.notifications = list;
+    
+    // Update Badge
+    const badge = document.getElementById('notif-unread-count');
+    if (badge) {
+      if (newUnreadCount > 0) {
+        badge.textContent = newUnreadCount;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+  } catch (err) {
+    console.error('Failed to fetch notifications', err);
+  }
+}
+
+function renderNotifications() {
+  const container = document.getElementById('notifs-container');
+  if (!container) return;
+  if (state.notifications.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state" style="padding: 40px 20px; text-align: center; color: var(--text-muted);">
+        <p>No notifications yet</p>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = state.notifications.map(n => {
+    const timeStr = formatRelativeTime(n.created_at);
+    return `
+      <div class="notif-item ${n.is_read ? '' : 'unread'}" onclick="handleNotifTap('${n.id}')">
+        <div class="notif-header-row">
+          <span class="notif-item-title">${esc(n.title)}</span>
+          <span class="notif-item-time">${timeStr}</span>
+        </div>
+        <p class="notif-item-msg">${esc(n.message)}</p>
+        ${n.is_read ? '' : `
+          <div class="notif-action-row">
+            <button class="btn-notif-action" onclick="event.stopPropagation(); markOneNotifRead('${n.id}')">Mark Read</button>
+          </div>
+        `}
+      </div>
+    `;
+  }).join('');
+}
+
+async function markOneNotifRead(id) {
+  try {
+    await apiFetch('/notifications/mark-read', {
+      method: 'POST',
+      body: JSON.stringify({ id })
+    });
+    await fetchNotifications();
+    renderNotifications();
+  } catch (err) {
+    toast('Error marking notification read', 'error');
+  }
+}
+window.markOneNotifRead = markOneNotifRead;
+
+function handleNotifTap(id) {
+  markOneNotifRead(id);
+}
+window.handleNotifTap = handleNotifTap;
+
+function formatRelativeTime(isoStr) {
+  if (!isoStr) return '';
+  const date = new Date(isoStr);
+  const diffMs = Date.now() - date.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHr / 24);
+  
+  if (diffSec < 60) return 'Just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHr < 24) return `${diffHr}h ago`;
+  return `${diffDay}d ago`;
+}
+

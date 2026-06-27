@@ -66,6 +66,10 @@ function logout(){
     .finally(()=>{ 
       localStorage.removeItem('qp_token'); 
       localStorage.removeItem('qp_user'); 
+      if (window.state && window.state.notifInterval) {
+        clearInterval(window.state.notifInterval);
+        window.state.notifInterval = null;
+      }
       if (window.showView) window.showView('login');
     });
 }
@@ -74,6 +78,10 @@ function sessionExpired(){
   try{ toast('Your session expired. Please sign in again.', 'warn'); }catch(e){}
   localStorage.removeItem('qp_token');
   localStorage.removeItem('qp_user');
+  if (window.state && window.state.notifInterval) {
+    clearInterval(window.state.notifInterval);
+    window.state.notifInterval = null;
+  }
   fetch(`${API}/api/qp/logout`, {method:'POST', credentials:'include'}).catch(()=>{});
   setTimeout(()=>{ 
     if (window.showView) window.showView('login');
