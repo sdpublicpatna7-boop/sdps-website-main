@@ -4,7 +4,7 @@ import api from "../../lib/api";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import {
-  BarChart3, Users, Trophy, Plus, Trash2, Pencil,
+  BarChart3, Users, Trophy, Plus, Upload, Trash2, Pencil,
   ShieldCheck, FileSpreadsheet, Crown, Award, Sparkles, X, Save, Settings, ListOrdered,
   RotateCcw, AlertTriangle, GraduationCap, BookOpen, Download,
   SlidersHorizontal, Minus, Wand2, Tv2
