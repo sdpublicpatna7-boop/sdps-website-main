@@ -1,21 +1,83 @@
 import { useEffect, useState } from "react";
 import api from "../../lib/api";
-import { Crown, Vote, Trophy } from "lucide-react";
+import { Crown, Vote, Trophy, X, Clock } from "lucide-react";
 
 const BACKEND = process.env.REACT_APP_BACKEND_URL;
 function fullUrl(u) { return u?.startsWith("http") ? u : `${BACKEND}${u}`; }
+
+const CountdownCard = ({ value, label }) => (
+  <div className="bg-brand-paper/85 rounded-xl border border-black/5 p-3 text-center shadow-sm">
+    <div className="font-headline text-2xl font-black text-brand-blue tabular-nums">{String(value).padStart(2, '0')}</div>
+    <div className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 mt-1">{label}</div>
+  </div>
+);
 
 export default function StudentCouncil() {
   const [tab, setTab] = useState("profiles");
   const [profiles, setProfiles] = useState([]);
   const [posters, setPosters] = useState([]);
   const [results, setResults] = useState([]);
+  const [electionStatus, setElectionStatus] = useState("loading");
+  const [remaining, setRemaining] = useState(0);
+  const [publishAt, setPublishAt] = useState(null);
+  const [showPopup, setShowPopup] = useState(true);
 
   useEffect(() => {
     api.get("/council/profiles").then(r => setProfiles(r.data || [])).catch(() => {});
     api.get("/council/posters").then(r => setPosters(r.data || [])).catch(() => {});
     api.get("/council/results").then(r => setResults(r.data || [])).catch(() => {});
+
+    // Check live results countdown
+    api.get("/elections/public-results").then(r => {
+      const d = r.data;
+      if (d.status === "countdown") {
+        setElectionStatus("countdown");
+        setRemaining(d.remaining_seconds);
+        setPublishAt(d.publish_at);
+      } else if (d.status === "live") {
+        setElectionStatus("live");
+        setTab("results"); // Switch directly to results tab since results are published!
+        
+        // Compile the live results
+        const compiled = [];
+        (d.posts || []).forEach(post => {
+          const candidates = d.by_post?.[post.key] || [];
+          const sorted = [...candidates].sort((a, b) => b.votes - a.votes);
+          if (sorted.length > 0) {
+            compiled.push({
+              id: post.key,
+              year: "2026-27",
+              position: post.title,
+              winner: sorted[0].name,
+              runner_up: sorted[1] ? sorted[1].name : "-",
+              votes: sorted[0].votes
+            });
+          }
+        });
+        if (compiled.length > 0) {
+          setResults(compiled);
+        }
+      } else {
+        setElectionStatus("sealed");
+      }
+    }).catch(() => {
+      setElectionStatus("sealed");
+    });
   }, []);
+
+  useEffect(() => {
+    if (electionStatus !== "countdown" || remaining <= 0) return;
+    const id = setInterval(() => {
+      setRemaining(prev => {
+        if (prev <= 1) {
+          window.location.reload();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [electionStatus, remaining]);
 
   return (
     <>
@@ -110,6 +172,45 @@ export default function StudentCouncil() {
           </div>
         )}
       </div>
+
+      {electionStatus === "countdown" && showPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="relative bg-white/90 backdrop-blur border border-brand-gold/40 rounded-3xl p-8 max-w-lg w-full text-center shadow-2xl overflow-hidden">
+            <div className="absolute -top-24 -left-20 w-48 h-48 bg-brand-blue/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-24 -right-20 w-48 h-48 bg-brand-orange/10 rounded-full blur-3xl pointer-events-none" />
+            
+            <button 
+              onClick={() => setShowPopup(false)}
+              className="absolute top-4 right-4 p-2 rounded-full hover:bg-black/5 text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#F4D571] to-[#B9892B] flex items-center justify-center mx-auto mb-6 shadow-lg shadow-brand-gold/25 animate-bounce">
+              <Trophy className="w-8 h-8 text-white" />
+            </div>
+
+            <div className="overline mb-3 text-brand-orange">Student Council Elections</div>
+            <h3 className="font-headline text-3xl font-black text-brand-ink mb-3 tracking-tight">
+              Results Declaration
+            </h3>
+            <p className="text-sm text-brand-ink/70 mb-8 max-w-xs mx-auto">
+              The official polling data is being compiled. The results will be revealed in:
+            </p>
+
+            <div className="grid grid-cols-4 gap-3 mb-8">
+              <CountdownCard value={Math.floor(remaining / 86400)} label="Days" />
+              <CountdownCard value={Math.floor((remaining % 86400) / 3600)} label="Hours" />
+              <CountdownCard value={Math.floor((remaining % 3600) / 60)} label="Mins" />
+              <CountdownCard value={remaining % 60} label="Secs" />
+            </div>
+
+            <div className="text-xs text-slate-400 tracking-wider">
+              Scheduled Date: {publishAt ? new Date(publishAt).toLocaleString() : ""}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
