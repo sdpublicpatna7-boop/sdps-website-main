@@ -88,7 +88,330 @@ function sessionExpired(){
   }, 1600);
 }
 
+// Initialize Supabase if configuration is set
+const useSupabase = window.QP_CONFIG && window.QP_CONFIG.SUPABASE_URL && window.QP_CONFIG.SUPABASE_URL !== "https://your-project-id.supabase.co";
+let supabase = null;
+if (useSupabase) {
+  supabase = window.supabase.createClient(window.QP_CONFIG.SUPABASE_URL, window.QP_CONFIG.SUPABASE_ANON_KEY);
+}
+
+async function apiFetchSupabase(path, opts={}) {
+  const body = opts.body ? JSON.parse(opts.body) : {};
+  const esc = (str) => (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  
+  // 1. Check User
+  if (path === '/check-user') {
+    const { data, error } = await supabase.from('qp_profiles').select('password_set').eq('username', body.username).maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!data) throw new Error('Account not found.');
+    return { first_login: !data.password_set };
+  }
+  
+  // 2. Login
+  if (path === '/login') {
+    const { data: profile, error: pErr } = await supabase.from('qp_profiles').select('email, name, role, phone').eq('username', body.username).maybeSingle();
+    if (pErr || !profile) throw new Error('Account not found.');
+    
+    const email = profile.email || body.username;
+    const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
+      email: email,
+      password: body.password
+    });
+    if (authErr) throw new Error(authErr.message);
+    
+    return {
+      access_token: authData.session.access_token,
+      user: {
+        id: authData.user.id,
+        username: body.username,
+        name: profile.name,
+        role: profile.role,
+        email: email,
+        phone: profile.phone || ''
+      }
+    };
+  }
+  
+  // 3. Forgot Password / Resend OTP
+  if (path === '/staff/forgot-password' || path === '/staff/resend-otp') {
+    const action = path.includes('forgot-password') ? 'forgot-password' : 'resend-otp';
+    const { data, error } = await supabase.functions.invoke('auth-handler', {
+      body: { action, username: body.username }
+    });
+    if (error) throw new Error(error.message);
+    return data;
+  }
+  
+  // 4. Set Password / Reset Password
+  if (path === '/staff/set-password' || path === '/staff/reset-forgotten-password') {
+    const action = path.includes('set-password') ? 'set-password' : 'reset-forgotten-password';
+    const { data, error } = await supabase.functions.invoke('auth-handler', {
+      body: { action, username: body.username, otp: body.otp, new_password: body.new_password }
+    });
+    if (error) throw new Error(error.message);
+    
+    // Automatically sign in
+    const { data: profile } = await supabase.from('qp_profiles').select('email, name, role, phone').eq('username', body.username).single();
+    const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
+      email: profile.email,
+      password: body.new_password
+    });
+    if (authErr) throw new Error(authErr.message);
+    
+    return {
+      access_token: authData.session.access_token,
+      user: {
+        id: authData.user.id,
+        username: body.username,
+        name: profile.name,
+        role: profile.role,
+        email: profile.email,
+        phone: profile.phone || ''
+      }
+    };
+  }
+  
+  // 5. Fetch Assignments
+  if (path === '/assignments') {
+    const user = getUser();
+    let query = supabase.from('qp_assignments').select('*');
+    if (user.role === 'teacher') {
+      query = query.eq('teacher_id', user.id);
+    } else if (user.role === 'incharge') {
+      const { data: profile } = await supabase.from('qp_profiles').select('incharge_classes').eq('id', user.id).single();
+      query = query.in('class_name', profile.incharge_classes || []);
+    } else if (user.role === 'printing_head') {
+      query = query.in('status', ['approved', 'printing']);
+    }
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
+    return data || [];
+  }
+  
+  // 6. Papers Sync & Fetch
+  if (path.startsWith('/papers/')) {
+    const assignmentId = path.split('/')[2];
+    if (opts.method === 'PUT') {
+      const { error } = await supabase.from('qp_papers').upsert({
+        id: `paper_${assignmentId}`,
+        assignment_id: assignmentId,
+        questions: body.questions || [],
+        sections: body.sections || [],
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'assignment_id' });
+      if (error) throw new Error(error.message);
+      return { status: "saved" };
+    } else {
+      const { data, error } = await supabase.from('qp_papers').select('*').eq('assignment_id', assignmentId).maybeSingle();
+      if (error) throw new Error(error.message);
+      return data || { questions: [], sections: [] };
+    }
+  }
+  
+  // 7. Submit Paper
+  if (path.endsWith('/submit')) {
+    const aid = path.split('/')[2];
+    const { error } = await supabase.from('qp_assignments').update({
+      status: 'submitted',
+      submitted_at: new Date().toISOString()
+    }).eq('id', aid);
+    if (error) throw new Error(error.message);
+    
+    // Notifications
+    const { data: ass } = await supabase.from('qp_assignments').select('*').eq('id', aid).single();
+    const { data: incharges } = await supabase.from('qp_profiles').select('id').eq('role', 'incharge').contains('incharge_classes', [ass.class_name]);
+    for (let ic of (incharges || [])) {
+      await supabase.from('qp_notifications').insert({
+        id: `notif_${Math.random().toString(36).substring(2, 11)}`,
+        user_id: ic.id,
+        title: "Paper Submitted for Review",
+        message: `${ass.teacher_name} submitted the ${ass.subject} paper for ${ass.class_name}.`,
+        type: "paper_submitted",
+        assignment_id: aid,
+        is_read: false
+      });
+    }
+    const { data: admins } = await supabase.from('qp_profiles').select('id').eq('role', 'qp_admin');
+    for (let adm of (admins || [])) {
+      await supabase.from('qp_notifications').insert({
+        id: `notif_${Math.random().toString(36).substring(2, 11)}`,
+        user_id: adm.id,
+        title: "Paper Submitted",
+        message: `${ass.teacher_name} submitted the ${ass.subject} paper for ${ass.class_name}.`,
+        type: "paper_submitted",
+        assignment_id: aid,
+        is_read: false
+      });
+    }
+    return { status: "submitted" };
+  }
+  
+  // 8. Incharge review
+  if (path.endsWith('/incharge-review')) {
+    const aid = path.split('/')[2];
+    const status = body.action === 'approve' ? 'incharge_approved' : 'draft';
+    const updatePayload = { status };
+    if (body.action === 'reject') {
+      updatePayload.rejection_reason = body.reason || 'Needs revision';
+      updatePayload.rejected_by = 'incharge';
+      updatePayload.rejected_at = new Date().toISOString();
+    }
+    const { error } = await supabase.from('qp_assignments').update(updatePayload).eq('id', aid);
+    if (error) throw new Error(error.message);
+    
+    const { data: ass } = await supabase.from('qp_assignments').select('*').eq('id', aid).single();
+    if (body.action === 'approve') {
+      await supabase.from('qp_notifications').insert({
+        id: `notif_${Math.random().toString(36).substring(2, 11)}`,
+        user_id: ass.teacher_id,
+        title: "Incharge Review: Approved",
+        message: `Your ${ass.subject} paper for ${ass.class_name} was approved by the Incharge.`,
+        type: "paper_approved",
+        assignment_id: aid,
+        is_read: false
+      });
+      const { data: admins } = await supabase.from('qp_profiles').select('id').eq('role', 'qp_admin');
+      for (let adm of (admins || [])) {
+        await supabase.from('qp_notifications').insert({
+          id: `notif_${Math.random().toString(36).substring(2, 11)}`,
+          user_id: adm.id,
+          title: "Paper IC Approved",
+          message: `The ${ass.subject} paper for ${ass.class_name} was approved by the Incharge.`,
+          type: "paper_approved",
+          assignment_id: aid,
+          is_read: false
+        });
+      }
+    } else {
+      await supabase.from('qp_notifications').insert({
+        id: `notif_${Math.random().toString(36).substring(2, 11)}`,
+        user_id: ass.teacher_id,
+        title: "Paper Rejected by Incharge",
+        message: `Your ${ass.subject} paper for ${ass.class_name} was rejected. Reason: ${body.reason}`,
+        type: "paper_rejected",
+        assignment_id: aid,
+        is_read: false
+      });
+    }
+    return { status };
+  }
+  
+  // 9. Admin review action
+  if (path.endsWith('/admin-action')) {
+    const aid = path.split('/')[2];
+    let status = 'approved';
+    const updatePayload = {};
+    if (body.action === 'approve') {
+      status = 'approved';
+      updatePayload.status = 'approved';
+    } else if (body.action === 'reject') {
+      status = body.reject_to || 'draft';
+      updatePayload.status = status;
+      updatePayload.rejection_reason = body.reason || 'Needs revision';
+      updatePayload.rejected_by = 'admin';
+      updatePayload.rejected_at = new Date().toISOString();
+    } else if (body.action === 'send_to_print') {
+      status = 'printing';
+      updatePayload.status = 'printing';
+    }
+    const { error } = await supabase.from('qp_assignments').update(updatePayload).eq('id', aid);
+    if (error) throw new Error(error.message);
+    
+    const { data: ass } = await supabase.from('qp_assignments').select('*').eq('id', aid).single();
+    if (body.action === 'approve') {
+      await supabase.from('qp_notifications').insert({
+        id: `notif_${Math.random().toString(36).substring(2, 11)}`,
+        user_id: ass.teacher_id,
+        title: "Paper Approved by Admin",
+        message: `Congratulations! Your ${ass.subject} paper for ${ass.class_name} has been approved by the Admin.`,
+        type: "paper_approved",
+        assignment_id: aid,
+        is_read: false
+      });
+    } else if (body.action === 'reject') {
+      await supabase.from('qp_notifications').insert({
+        id: `notif_${Math.random().toString(36).substring(2, 11)}`,
+        user_id: ass.teacher_id,
+        title: "Paper Rejected by Admin",
+        message: `Your ${ass.subject} paper for ${ass.class_name} was rejected by the Admin. Reason: ${body.reason}`,
+        type: "paper_rejected",
+        assignment_id: aid,
+        is_read: false
+      });
+    } else if (body.action === 'send_to_print') {
+      await supabase.from('qp_notifications').insert({
+        id: `notif_${Math.random().toString(36).substring(2, 11)}`,
+        user_id: ass.teacher_id,
+        title: "Paper Sent to Print",
+        message: `Your ${ass.subject} paper for ${ass.class_name} has been sent to the print queue.`,
+        type: "paper_printing",
+        assignment_id: aid,
+        is_read: false
+      });
+      const { data: printers } = await supabase.from('qp_profiles').select('id').eq('role', 'printing_head');
+      for (let ph of (printers || [])) {
+        await supabase.from('qp_notifications').insert({
+          id: `notif_${Math.random().toString(36).substring(2, 11)}`,
+          user_id: ph.id,
+          title: "New Paper to Print",
+          message: `The ${ass.subject} paper for ${ass.class_name} is ready in the queue.`,
+          type: "paper_printing",
+          assignment_id: aid,
+          is_read: false
+        });
+      }
+    }
+    return { status };
+  }
+  
+  // 10. Fetch notifications
+  if (path === '/notifications') {
+    const user = getUser();
+    const { data, error } = await supabase.from('qp_notifications').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
+    if (error) throw new Error(error.message);
+    return data || [];
+  }
+  
+  // 11. Mark notifications read
+  if (path === '/notifications/mark-read') {
+    const user = getUser();
+    if (body.id) {
+      await supabase.from('qp_notifications').update({ is_read: true }).eq('id', body.id).eq('user_id', user.id);
+    } else {
+      await supabase.from('qp_notifications').update({ is_read: true }).eq('user_id', user.id);
+    }
+    return { status: "ok" };
+  }
+  
+  // 12. Claude Fable 5 AI Generator
+  if (path === '/ai') {
+    const { data, error } = await supabase.functions.invoke('generate-questions', {
+      body: { prompt: body.prompt }
+    });
+    if (error) throw new Error(error.message);
+    try {
+      return JSON.parse(data.text);
+    } catch(e) {
+      const match = data.text.match(/\[[\s\S]*\]/);
+      if (match) return JSON.parse(match[0]);
+      throw new Error("Failed to parse structured JSON from AI output.");
+    }
+  }
+  
+  // 13. Logout
+  if (path === '/logout') {
+    await supabase.auth.signOut();
+    return { status: "ok" };
+  }
+  
+  throw new Error(`Unsupported Supabase Route: ${path}`);
+}
+
 async function apiFetch(path, opts={}){
+  if (useSupabase) {
+    return await apiFetchSupabase(path, opts);
+  }
+
   const token = getToken();
   const isFormData = opts.body instanceof FormData;
   const headers={
