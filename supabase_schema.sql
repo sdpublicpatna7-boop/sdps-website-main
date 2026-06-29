@@ -179,3 +179,294 @@ create policy "Users can read and update their own notifications" on public.qp_n
 
 create policy "Admins can manage all notifications" on public.qp_notifications
   for all using (public.is_qp_admin());
+
+-- =============================================================================
+-- PUBLIC WEBSITE TABLES
+-- =============================================================================
+
+-- 7. News & Notices Table
+create table if not exists public.site_news (
+  id text primary key,
+  title text not null,
+  content text not null,
+  date date default current_date not null,
+  category text not null check (category in ('news', 'notice', 'event')),
+  attachment_url text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.site_news enable row level security;
+
+-- 8. Gallery Table
+create table if not exists public.site_gallery (
+  id text primary key,
+  title text not null,
+  image_url text not null,
+  category text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.site_gallery enable row level security;
+
+-- 9. Videos Table
+create table if not exists public.site_videos (
+  id text primary key,
+  title text not null,
+  youtube_id text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.site_videos enable row level security;
+
+-- 10. Calendar Events Table
+create table if not exists public.site_calendar (
+  id text primary key,
+  title text not null,
+  start_date timestamp with time zone not null,
+  end_date timestamp with time zone not null,
+  color text default '#3b82f6',
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.site_calendar enable row level security;
+
+-- 11. Holidays Table
+create table if not exists public.site_holidays (
+  id text primary key,
+  title text not null,
+  date date not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.site_holidays enable row level security;
+
+-- 12. Student Council Profiles Table
+create table if not exists public.site_council_profiles (
+  id text primary key,
+  name text not null,
+  post text not null,
+  class_name text not null,
+  image_url text,
+  votes integer default 0 not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.site_council_profiles enable row level security;
+
+create table if not exists public.site_council_posters (
+  id text primary key,
+  candidate_name text not null,
+  post text not null,
+  image_url text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.site_council_posters enable row level security;
+
+create table if not exists public.site_council_results (
+  id text primary key,
+  candidate_name text not null,
+  post text not null,
+  votes integer not null,
+  is_winner boolean default false not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.site_council_results enable row level security;
+
+-- 13. Admissions Enquiry Table
+create table if not exists public.admission_enquiries (
+  id text primary key,
+  parent_name text not null,
+  phone text not null,
+  email text not null,
+  child_name text not null,
+  child_class text not null,
+  message text,
+  status text default 'pending' check (status in ('pending', 'contacted', 'resolved')),
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.admission_enquiries enable row level security;
+
+-- 14. Admissions Application Table
+create table if not exists public.admission_applications (
+  id text primary key,
+  student_name text not null,
+  father_name text not null,
+  mother_name text not null,
+  dob date not null,
+  class_applied text not null,
+  email text not null,
+  phone text not null,
+  address text not null,
+  status text default 'pending' check (status in ('pending', 'approved', 'rejected')),
+  payment_status text default 'unpaid' check (payment_status in ('unpaid', 'paid')),
+  payment_id text,
+  order_id text,
+  amount_inr integer default 500 not null,
+  receipt_sent boolean default false not null,
+  receipt_url text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.admission_applications enable row level security;
+
+-- 15. Career Applications Table
+create table if not exists public.career_applications (
+  id text primary key,
+  name text not null,
+  email text not null,
+  phone text not null,
+  post text not null,
+  resume_url text not null,
+  experience text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.career_applications enable row level security;
+
+-- 16. Alumni Members Table
+create table if not exists public.alumni_members (
+  id text primary key,
+  name text not null,
+  email text unique not null,
+  phone text,
+  batch_year integer not null,
+  current_occupation text,
+  location text,
+  approved boolean default false not null,
+  payment_status text default 'unpaid' check (payment_status in ('unpaid', 'paid')),
+  payment_id text,
+  order_id text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.alumni_members enable row level security;
+
+create table if not exists public.alumni_meets (
+  id text primary key,
+  title text not null,
+  date date not null,
+  location text not null,
+  description text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.alumni_meets enable row level security;
+
+-- 17. Transfer Certificate (TC) Records Table
+create table if not exists public.tc_records (
+  id text primary key,
+  student_name text not null,
+  admission_no text not null,
+  issue_date date not null,
+  status text default 'active' check (status in ('active', 'cancelled')),
+  file_url text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.tc_records enable row level security;
+
+-- 18. Testimonials Table
+create table if not exists public.site_testimonials (
+  id text primary key,
+  author text not null,
+  role text default 'Parent' not null,
+  content text not null,
+  rating integer default 5 not null check (rating >= 1 and rating <= 5),
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.site_testimonials enable row level security;
+
+-- 19. Legal Pages Table
+create table if not exists public.site_legal_pages (
+  id text primary key,
+  title text not null,
+  content text not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.site_legal_pages enable row level security;
+
+-- 20. Annual Exam Papers Table
+create table if not exists public.site_exam_papers (
+  id text primary key,
+  title text not null,
+  class_name text not null,
+  subject text not null,
+  file_url text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.site_exam_papers enable row level security;
+
+-- 21. Holiday Homework Table
+create table if not exists public.site_holiday_homework (
+  id text primary key,
+  title text not null,
+  class_name text not null,
+  subject text not null,
+  file_url text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.site_holiday_homework enable row level security;
+
+-- 22. Site Settings Table
+create table if not exists public.site_settings (
+  key text primary key,
+  value jsonb not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.site_settings enable row level security;
+
+-- =============================================================================
+-- PUBLIC WEBSITE RLS SECURITY POLICIES
+-- =============================================================================
+
+-- ── READ FOR EVERYONE, WRITE FOR ADMINS POLICIES ──
+create policy "Anyone can read news" on public.site_news for select using (true);
+create policy "Admins can manage news" on public.site_news for all using (public.is_qp_admin());
+
+create policy "Anyone can read gallery" on public.site_gallery for select using (true);
+create policy "Admins can manage gallery" on public.site_gallery for all using (public.is_qp_admin());
+
+create policy "Anyone can read videos" on public.site_videos for select using (true);
+create policy "Admins can manage videos" on public.site_videos for all using (public.is_qp_admin());
+
+create policy "Anyone can read calendar" on public.site_calendar for select using (true);
+create policy "Admins can manage calendar" on public.site_calendar for all using (public.is_qp_admin());
+
+create policy "Anyone can read holidays" on public.site_holidays for select using (true);
+create policy "Admins can manage holidays" on public.site_holidays for all using (public.is_qp_admin());
+
+create policy "Anyone can read council profiles" on public.site_council_profiles for select using (true);
+create policy "Admins can manage council profiles" on public.site_council_profiles for all using (public.is_qp_admin());
+
+create policy "Anyone can read council posters" on public.site_council_posters for select using (true);
+create policy "Admins can manage council posters" on public.site_council_posters for all using (public.is_qp_admin());
+
+create policy "Anyone can read council results" on public.site_council_results for select using (true);
+create policy "Admins can manage council results" on public.site_council_results for all using (public.is_qp_admin());
+
+create policy "Anyone can read approved alumni" on public.alumni_members for select using (approved = true or public.is_qp_admin());
+create policy "Admins can manage alumni" on public.alumni_members for all using (public.is_qp_admin());
+
+create policy "Anyone can read alumni meets" on public.alumni_meets for select using (true);
+create policy "Admins can manage alumni meets" on public.alumni_meets for all using (public.is_qp_admin());
+
+create policy "Anyone can read testimonials" on public.site_testimonials for select using (true);
+create policy "Admins can manage testimonials" on public.site_testimonials for all using (public.is_qp_admin());
+
+create policy "Anyone can read legal pages" on public.site_legal_pages for select using (true);
+create policy "Admins can manage legal pages" on public.site_legal_pages for all using (public.is_qp_admin());
+
+create policy "Anyone can view TCs" on public.tc_records for select using (true);
+create policy "Admins can manage TCs" on public.tc_records for all using (public.is_qp_admin());
+
+create policy "Anyone can read exam papers" on public.site_exam_papers for select using (true);
+create policy "Admins can manage exam papers" on public.site_exam_papers for all using (public.is_qp_admin());
+
+create policy "Anyone can read holiday homework" on public.site_holiday_homework for select using (true);
+create policy "Admins can manage holiday homework" on public.site_holiday_homework for all using (public.is_qp_admin());
+
+create policy "Anyone can read site settings" on public.site_settings for select using (true);
+create policy "Admins can manage site settings" on public.site_settings for all using (public.is_qp_admin());
+
+-- ── WRITE/INSERT BY PUBLIC, READ/MANAGE BY ADMIN POLICIES ──
+create policy "Public can submit admission enquiries" on public.admission_enquiries for insert with check (true);
+create policy "Admins can manage enquiries" on public.admission_enquiries for all using (public.is_qp_admin());
+
+create policy "Public can submit admission applications" on public.admission_applications for insert with check (true);
+create policy "Public can view their own application status" on public.admission_applications for select using (true);
+create policy "Admins can manage applications" on public.admission_applications for all using (public.is_qp_admin());
+
+create policy "Public can apply for careers" on public.career_applications for insert with check (true);
+create policy "Admins can manage career applications" on public.career_applications for all using (public.is_qp_admin());
+
+create policy "Public can register for alumni" on public.alumni_members for insert with check (true);
+

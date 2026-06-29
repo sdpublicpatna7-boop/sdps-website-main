@@ -1,37 +1,44 @@
-# Walkthrough: Supabase Migration
+# Walkthrough: Whole Website Supabase Migration
 
-We have successfully migrated the Question Paper Portal database, user authentication rules, and AI generation tasks to a serverless **Supabase** backend architecture, leaving only the stateful WhatsApp Baileys service running on Render.
+We have successfully migrated the entire S.D. Public School website backend and database (including Admissions, Gallery, News, Payments, and Chatbot) from Render and MongoDB to **Supabase** (Postgres + Serverless Edge Functions).
+
+The only stateful service remaining on Render is the Baileys WhatsApp microservice.
 
 ---
 
 ## Changes Implemented
 
-### 1. Database Schema (`supabase_schema.sql`)
-Created a PostgreSQL schema script setting up:
-* `qp_profiles`: maps user credentials, roles (`teacher`, `incharge`, `printing_head`, `qp_admin`), phone numbers, and oversaw classes.
-* `qp_archives`: exam session years.
-* `qp_assignments`: teacher paper assignments.
-* `qp_papers`: stores JSONB dynamic sections and questions.
-* `qp_notifications`: stores user notifications.
-* `qp_otps`: holds temporary WhatsApp reset security tokens.
-* **RLS Policies**: Restricts access based on user role (e.g. teachers can only read/edit their own papers; incharges review oversee classes).
+### 1. Unified Database Schema (`supabase_schema.sql`)
+Extended the SQL database schema script to create all public site tables:
+* `site_news`: stores announcements, news, circulars, and notices.
+* `site_gallery` & `site_videos`: photo and video gallery items.
+* `site_calendar` & `site_holidays`: school events calendar.
+* `site_council_profiles`, `site_posters` & `site_results`: student election metrics.
+* `admission_enquiries` & `admission_applications`: tracks parent inquiries and student applications.
+* `career_applications`: stores candidate resume file attachments.
+* `alumni_members` & `alumni_meets`: directory of verified school graduates.
+* `tc_records`: verifies school transfer certificates.
+* `site_testimonials`, `site_legal_pages` & `site_settings`: web config data.
+* **RLS Policies**: Implemented read-only permissions for public tables and write restrictions for authenticated admin accounts.
 
 ---
 
-### 2. Deno Serverless Edge Functions
-Implemented Deno microservices:
-* `generate-questions`: Handles Claude Fable 5 AI completion requests securely using a server-side Groq completion endpoint.
-* `auth-handler`: Manages phone number validations, generates verification tokens, triggers OTP WhatsApp text messages via your Render Baileys microservice, verifies user input, and securely updates passwords inside `auth.users`.
+### 2. Deno Serverless Edge Functions (`supabase/functions/`)
+Added 5 serverless functions:
+* `generate-questions`: Handles Claude AI question paper helper generations using Groq completions.
+* `auth-handler`: Manages staff OTP creation, resets, and passwords securely.
+* `chat-assistant`: Grounds the school chatbot (Sal AI) with notices and event updates via Postgres, and queries Groq.
+* `razorpay-payments`: Creates and verifies Razorpay orders for admissions and alumni registration fees.
+* `pdf-receipt`: Sends registration HTML email receipts to parents using MailerCloud.
 
 ---
 
-### 3. Frontend Client Integration
-* **Library Integration**: Loaded the official `@supabase/supabase-js` library inside `index.html`.
-* **API Adapter**: Implemented a complete Supabase translation handler `apiFetchSupabase` inside `qp-common-mobile.js`. If `SUPABASE_URL` is set in `config.js`, the app intercepts all server requests and executes them directly on the Supabase database.
-* **Fallback Compatibility**: If no Supabase credentials are set, the app seamlessly falls back to hitting the FastAPI Render server (zero breaking changes for current deployments).
+### 3. React Frontend Axios Adapter (`frontend/src/lib/api.js`)
+* **Axios Custom Adapter**: Configured a custom adapter in the central Axios client. If `REACT_APP_SUPABASE_URL` is set, Axios intercepts all GET/POST requests and queries Supabase directly instead of hitting the FastAPI server.
+* **Compatibility**: If no Supabase environment keys are provided, Axios defaults back to the Render FastAPI server. This ensures 100% backward-compatibility.
 
 ---
 
 ## Verification Results
-1. React production bundles compiled successfully.
-2. Android Gradle compiler successfully assembled target debug APKs (`BUILD SUCCESSFUL`).
+1. React production bundles built successfully (`Compiled successfully`).
+2. Android Gradle compilation compiled successfully (`BUILD SUCCESSFUL`).

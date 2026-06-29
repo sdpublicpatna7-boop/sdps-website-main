@@ -1,9 +1,14 @@
 import axios from "axios";
+import { createClient } from "@supabase/supabase-js";
 
-// Candidate backend bases, in priority order. The app uses the first that
-// responds and "pins" it for the session, so if the primary (e.g. a custom
-// domain) is down or not yet set up, requests automatically fall back to the
-// secondary (e.g. the Render URL).
+// Check if Supabase should be active
+const useSupabase = process.env.REACT_APP_SUPABASE_URL && process.env.REACT_APP_SUPABASE_URL !== "";
+let supabase = null;
+if (useSupabase) {
+  supabase = createClient(process.env.REACT_APP_SUPABASE_URL, process.env.REACT_APP_SUPABASE_ANON_KEY);
+}
+
+// Candidate backend bases, in priority order
 const RAW_BASES = [
   process.env.REACT_APP_BACKEND_URL,
   process.env.REACT_APP_BACKEND_FALLBACK,
@@ -11,7 +16,6 @@ const RAW_BASES = [
   .filter(Boolean)
   .map((s) => s.replace(/\/+$/, ""));
 
-// De-duplicate while preserving order.
 const BASES = RAW_BASES.filter((v, i, a) => a.indexOf(v) === i);
 const DEFAULT_BASE = BASES[0] || "";
 
@@ -30,10 +34,8 @@ function orderedBases() {
   return p ? [p, ...list.filter((b) => b !== p)] : list;
 }
 
-// Kept for backwards compatibility with any `import { API }` usage.
 export const API = `${DEFAULT_BASE}/api`;
 
-// In-memory auth token fallback initialized from localStorage to persist sessions on page refresh.
 let inMemoryToken = null;
 try {
   inMemoryToken = localStorage.getItem("sdps_admin_token") || null;
@@ -50,11 +52,212 @@ export function setAuthToken(token) {
   } catch (e) {}
 }
 
-const api = axios.create({ withCredentials: true });
+// ─────────────────────────────────────────────────────────────────────────────
+// SUPABASE CLIENT DATABASE TRANSLATION ROUTER (Axios Adapter)
+// ─────────────────────────────────────────────────────────────────────────────
+async function handleSupabaseRequest(config) {
+  const path = config.url.replace(/^\/?api\/?/, "").replace(/^\//, "");
+  const method = (config.method || "get").toLowerCase();
+  const data = config.data ? (typeof config.data === "string" ? JSON.parse(config.data) : config.data) : {};
+
+  let supabaseData = null;
+  let supabaseError = null;
+
+  // 1. News & Notices
+  if (path === "news" || path.startsWith("news/")) {
+    if (method === "get") {
+      if (path.includes("/")) {
+        const id = path.split("/")[1];
+        const { data: item, error } = await supabase.from("site_news").select("*").eq("id", id).maybeSingle();
+        supabaseData = item; supabaseError = error;
+      } else {
+        const { data: list, error } = await supabase.from("site_news").select("*").order("date", { ascending: false });
+        supabaseData = list; supabaseError = error;
+      }
+    } else if (method === "post") {
+      const { data: ins, error } = await supabase.from("site_news").insert(data).select().single();
+      supabaseData = ins; supabaseError = error;
+    } else if (method === "delete") {
+      const id = path.split("/")[1];
+      const { error } = await supabase.from("site_news").delete().eq("id", id);
+      supabaseData = { success: true }; supabaseError = error;
+    }
+  }
+
+  // 2. Notices Only
+  else if (path === "notices") {
+    const { data: list, error } = await supabase.from("site_news").select("*").eq("category", "notice").order("date", { ascending: false });
+    supabaseData = list; supabaseError = error;
+  }
+
+  // 3. Gallery
+  else if (path === "gallery" || path.startsWith("gallery/")) {
+    if (method === "get") {
+      const { data: list, error } = await supabase.from("site_gallery").select("*").order("created_at", { ascending: false });
+      supabaseData = list; supabaseError = error;
+    } else if (method === "post") {
+      const { data: ins, error } = await supabase.from("site_gallery").insert(data).select().single();
+      supabaseData = ins; supabaseError = error;
+    }
+  }
+
+  // 4. Videos
+  else if (path === "videos") {
+    const { data: list, error } = await supabase.from("site_videos").select("*").order("created_at", { ascending: false });
+    supabaseData = list; supabaseError = error;
+  }
+
+  // 5. Calendar
+  else if (path === "calendar") {
+    const { data: list, error } = await supabase.from("site_calendar").select("*");
+    supabaseData = list; supabaseError = error;
+  }
+
+  // 6. Holidays
+  else if (path === "holidays") {
+    const { data: list, error } = await supabase.from("site_holidays").select("*").order("date");
+    supabaseData = list; supabaseError = error;
+  }
+
+  // 7. Admissions
+  else if (path === "admission/enquiry") {
+    const { data: ins, error } = await supabase.from("admission_enquiries").insert(data).select().single();
+    supabaseData = ins; supabaseError = error;
+  } 
+  else if (path === "admission/apply") {
+    const { data: ins, error } = await supabase.from("admission_applications").insert(data).select().single();
+    supabaseData = ins; supabaseError = error;
+  }
+  else if (path === "admissions") {
+    const { data: list, error } = await supabase.from("admission_applications").select("*").order("created_at", { ascending: false });
+    supabaseData = list; supabaseError = error;
+  }
+
+  // 8. Career
+  else if (path === "career/apply") {
+    const { data: ins, error } = await supabase.from("career_applications").insert(data).select().single();
+    supabaseData = ins; supabaseError = error;
+  }
+  else if (path === "career-applications") {
+    const { data: list, error } = await supabase.from("career_applications").select("*").order("created_at", { ascending: false });
+    supabaseData = list; supabaseError = error;
+  }
+
+  // 9. Alumni
+  else if (path === "alumni/register") {
+    const { data: ins, error } = await supabase.from("alumni_members").insert(data).select().single();
+    supabaseData = ins; supabaseError = error;
+  }
+  else if (path === "alumni-members") {
+    const { data: list, error } = await supabase.from("alumni_members").select("*").order("created_at", { ascending: false });
+    supabaseData = list; supabaseError = error;
+  }
+  else if (path === "alumni/meets") {
+    const { data: list, error } = await supabase.from("alumni_meets").select("*").order("date", { ascending: false });
+    supabaseData = list; supabaseError = error;
+  }
+
+  // 10. Testimonials
+  else if (path === "testimonials") {
+    const { data: list, error } = await supabase.from("site_testimonials").select("*").order("created_at", { ascending: false });
+    supabaseData = list; supabaseError = error;
+  }
+
+  // 11. Transfer Certificates (TC)
+  else if (path === "tc-records" || path === "tc/download") {
+    if (method === "get") {
+      const { data: list, error } = await supabase.from("tc_records").select("*").order("issue_date", { ascending: false });
+      supabaseData = list; supabaseError = error;
+    } else if (method === "post") {
+      if (path === "tc/download") {
+        const { data: item, error } = await supabase.from("tc_records").select("*").eq("admission_no", data.admission_no).eq("status", "active").maybeSingle();
+        supabaseData = item; supabaseError = error;
+      } else {
+        const { data: ins, error } = await supabase.from("tc_records").insert(data).select().single();
+        supabaseData = ins; supabaseError = error;
+      }
+    }
+  }
+
+  // 12. Legal Pages
+  else if (path.startsWith("legal/")) {
+    const pageId = path.split("/")[1];
+    const { data: page, error } = await supabase.from("site_legal_pages").select("*").eq("id", pageId).maybeSingle();
+    supabaseData = page; supabaseError = error;
+  }
+
+  // 13. Site Settings
+  else if (path === "site-settings") {
+    const { data: settings, error } = await supabase.from("site_settings").select("*");
+    if (settings) {
+      // Map back to key-value object
+      const mapped = {};
+      settings.forEach(s => mapped[s.key] = s.value);
+      supabaseData = mapped;
+    }
+    supabaseError = error;
+  }
+
+  // 14. Chat Assistant (Gemini)
+  else if (path === "assistant/chat") {
+    const { data: res, error } = await supabase.functions.invoke("chat-assistant", {
+      body: { message: data.message }
+    });
+    supabaseData = res; supabaseError = error;
+  }
+
+  // 15. Razorpay Orders & Verification
+  else if (path.endsWith("/create-order") || path.endsWith("/payment-confirm") || path.endsWith("/verify-payment")) {
+    const action = path.split("/").pop();
+    const { data: res, error } = await supabase.functions.invoke("razorpay-payments", {
+      body: { action, ...data }
+    });
+    supabaseData = res; supabaseError = error;
+  }
+
+  if (supabaseError) {
+    throw new Error(supabaseError.message);
+  }
+
+  return {
+    data: supabaseData,
+    status: 200,
+    statusText: "OK",
+    headers: {},
+    config
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AXIOS CLIENT CONSTRUCT
+// ─────────────────────────────────────────────────────────────────────────────
+const api = axios.create({
+  withCredentials: true,
+  adapter: async (config) => {
+    if (useSupabase) {
+      try {
+        return await handleSupabaseRequest(config);
+      } catch (err) {
+        return Promise.reject({
+          message: err.message,
+          response: {
+            status: 400,
+            data: { detail: err.message }
+          },
+          config
+        });
+      }
+    }
+    
+    // Default Axios fallback
+    const defaultAdapter = axios.defaults.adapter;
+    const adapter = axios.getAdapter ? axios.getAdapter(defaultAdapter) : defaultAdapter;
+    return adapter(config);
+  }
+});
 
 api.interceptors.request.use((config) => {
   if (inMemoryToken) config.headers.Authorization = `Bearer ${inMemoryToken}`;
-  // Set the base only if a previous interceptor/retry hasn't already chosen one.
   if (!config.baseURL) {
     config.baseURL = `${orderedBases()[0]}/api`;
   }
@@ -63,7 +266,6 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (res) => {
-    // Remember the base that worked for the rest of the session.
     try {
       const used = (res.config.baseURL || "").replace(/\/api$/, "");
       if (used) sessionStorage.setItem("sdps_api_base", used);
@@ -74,8 +276,6 @@ api.interceptors.response.use(
   },
   async (err) => {
     const config = err.config || {};
-
-    // Network/CORS failure (no HTTP response) → try the next configured base.
     if (!err.response && config && !config.__noRetry) {
       config.__tried = config.__tried || [];
       const current = (config.baseURL || "").replace(/\/api$/, "");
