@@ -22,7 +22,7 @@ export default function KheloPatna() {
 
   const [gallery, setGallery] = useState([]);
   useEffect(() => {
-    api.get("/khelo-patna-gallery").then(r => setGallery(r.data)).catch(() => {});
+    api.get("/khelo-patna-gallery").then(r => setGallery(r.data || [])).catch(() => {});
   }, []);
 
   return (
