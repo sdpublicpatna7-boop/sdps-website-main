@@ -431,6 +431,71 @@ create table if not exists public.birthday_students (
 );
 alter table public.birthday_students enable row level security;
 
+-- 24. Election Posts
+create table if not exists public.election_posts (
+  key text primary key,
+  title text not null,
+  order_index integer not null default 0
+);
+alter table public.election_posts enable row level security;
+
+-- 25. Election Voters
+create table if not exists public.election_voters (
+  admission_no text primary key,
+  name text not null,
+  role text default 'student' not null,
+  father_name text,
+  class_name text,
+  subject text,
+  designation text,
+  already_voted boolean default false not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.election_voters enable row level security;
+
+-- 26. Election Candidates
+create table if not exists public.election_candidates (
+  id uuid primary key default gen_random_uuid(),
+  post_key text references public.election_posts(key) on delete cascade not null,
+  name text not null,
+  photo text,
+  symbol text,
+  symbol_image text,
+  adjustment integer default 0 not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.election_candidates enable row level security;
+
+-- 27. Election Votes
+create table if not exists public.election_votes (
+  id serial primary key,
+  voter_admission_no text references public.election_voters(admission_no) on delete cascade unique,
+  selections jsonb not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.election_votes enable row level security;
+
+-- 28. Election Settings
+create table if not exists public.election_settings (
+  key text primary key,
+  value text not null
+);
+alter table public.election_settings enable row level security;
+
+-- 29. Election Results Archive
+create table if not exists public.election_results_archive (
+  id uuid primary key default gen_random_uuid(),
+  session_name text not null,
+  post_key text not null,
+  post_title text not null,
+  candidate_name text not null,
+  candidate_symbol text,
+  votes_count integer not null default 0,
+  is_winner boolean default false not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.election_results_archive enable row level security;
+
 -- =============================================================================
 -- PUBLIC WEBSITE RLS SECURITY POLICIES
 -- =============================================================================
@@ -478,6 +543,18 @@ drop policy if exists "Admins can manage career applications" on public.career_a
 drop policy if exists "Public can register for alumni" on public.alumni_members;
 drop policy if exists "Admins can manage birthday students" on public.birthday_students;
 drop policy if exists "Anyone authenticated can view birthday students" on public.birthday_students;
+drop policy if exists "Anyone can view election posts" on public.election_posts;
+drop policy if exists "Admins can manage election posts" on public.election_posts;
+drop policy if exists "Voters can view their own details" on public.election_voters;
+drop policy if exists "Admins can manage election voters" on public.election_voters;
+drop policy if exists "Anyone can view election candidates" on public.election_candidates;
+drop policy if exists "Admins can manage election candidates" on public.election_candidates;
+drop policy if exists "Admins can view election votes" on public.election_votes;
+drop policy if exists "Anyone can view election settings" on public.election_settings;
+drop policy if exists "Admins can manage election settings" on public.election_settings;
+drop policy if exists "Anyone can view election results archive" on public.election_results_archive;
+drop policy if exists "Admins can manage election results archive" on public.election_results_archive;
+
 
 -- ── READ FOR EVERYONE, WRITE FOR ADMINS POLICIES ──
 create policy "Anyone can read news" on public.site_news for select using (true);
@@ -543,5 +620,24 @@ create policy "Public can register for alumni" on public.alumni_members for inse
 
 create policy "Admins can manage birthday students" on public.birthday_students for all using (public.is_qp_admin());
 create policy "Anyone authenticated can view birthday students" on public.birthday_students for select using (auth.role() = 'authenticated');
+
+-- ── ELECTION POLICIES ──
+create policy "Anyone can view election posts" on public.election_posts for select using (true);
+create policy "Admins can manage election posts" on public.election_posts for all using (public.is_qp_admin());
+
+create policy "Voters can view their own details" on public.election_voters for select using (true);
+create policy "Admins can manage election voters" on public.election_voters for all using (public.is_qp_admin());
+
+create policy "Anyone can view election candidates" on public.election_candidates for select using (true);
+create policy "Admins can manage election candidates" on public.election_candidates for all using (public.is_qp_admin());
+
+create policy "Admins can view election votes" on public.election_votes for select using (public.is_qp_admin());
+
+create policy "Anyone can view election settings" on public.election_settings for select using (true);
+create policy "Admins can manage election settings" on public.election_settings for all using (public.is_qp_admin());
+
+create policy "Anyone can view election results archive" on public.election_results_archive for select using (true);
+create policy "Admins can manage election results archive" on public.election_results_archive for all using (public.is_qp_admin());
+
 
 
