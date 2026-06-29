@@ -3,6 +3,7 @@ import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "@/lib/auth";
+import { VoteProvider } from "@/context/VoteContext";
 
 import PublicLayout from "@/components/layout/PublicLayout";
 
@@ -42,6 +43,15 @@ const AdminLayout = lazy(() => import("@/components/admin/AdminLayout"));
 const AdminLogin = lazy(() => import("@/pages/admin/AuthPages").then(module => ({ default: module.AdminLogin })));
 const AdminForgotPassword = lazy(() => import("@/pages/admin/AuthPages").then(module => ({ default: module.AdminForgotPassword })));
 const AdminDashboard = lazy(() => import("@/pages/admin/Dashboard"));
+
+// Lazy-loaded Elections Pages
+const ElectionAuth = lazy(() => import("@/pages/elections/AuthPage"));
+const ElectionConfirm = lazy(() => import("@/pages/elections/ConfirmPage"));
+const ElectionVote = lazy(() => import("@/pages/elections/VotePage"));
+const ElectionThankYou = lazy(() => import("@/pages/elections/ThankYouPage"));
+const AdminElections = lazy(() => import("@/pages/admin/AdminElections"));
+
+
 
 // CrudPages
 const AdminNews = lazy(() => import("@/pages/admin/crud/AdminNews"));
@@ -108,6 +118,12 @@ function App() {
         <AuthProvider>
           <BrowserRouter>
             <Routes>
+              {/* Kiosk Elections Portal (no header/footer layout) */}
+              <Route path="/elections" element={<VoteProvider><Suspense fallback={<div>Loading...</div>}><ElectionAuth /></Suspense></VoteProvider>} />
+              <Route path="/elections/confirm" element={<VoteProvider><Suspense fallback={<div>Loading...</div>}><ElectionConfirm /></Suspense></VoteProvider>} />
+              <Route path="/elections/vote" element={<VoteProvider><Suspense fallback={<div>Loading...</div>}><ElectionVote /></Suspense></VoteProvider>} />
+              <Route path="/elections/thank-you" element={<VoteProvider><Suspense fallback={<div>Loading...</div>}><ElectionThankYou /></Suspense></VoteProvider>} />
+
               {/* Public */}
               <Route element={<PublicLayout />}>
                 <Route path="/" element={<Home />} />
@@ -148,6 +164,7 @@ function App() {
               {/* Admin (protected) */}
               <Route path="/admin" element={<Suspense fallback={<AdminLoading />}><AdminLayout /></Suspense>}>
                 <Route index element={<AdminDashboard />} />
+                <Route path="elections" element={<Suspense fallback={<AdminLoading />}><AdminElections /></Suspense>} />
                 <Route path="news" element={<AdminNews />} />
                 <Route path="notices" element={<AdminNotices />} />
                 <Route path="gallery" element={<AdminGallery />} />
