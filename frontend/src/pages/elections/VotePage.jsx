@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { KioskShell } from "../../components/KioskShell";
 import { useVote } from "../../context/VoteContext";
-import { photoUrl } from "../../lib/api";
-import { getElectionPosts, getElectionCandidates, castVote } from "../../lib/api_elections";
+import { getElectionPosts, getElectionCandidates, castVote, photoUrl } from "../../lib/api_elections";
 import { toast } from "sonner";
 import { Check, ArrowRight, ArrowLeft, Award } from "lucide-react";
 

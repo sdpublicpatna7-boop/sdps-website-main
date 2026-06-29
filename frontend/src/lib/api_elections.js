@@ -108,3 +108,10 @@ export const getElectionArchiveResults = async (sessionName) => {
   // Local fallback returns mock or empty
   return [];
 };
+
+export const photoUrl = (photo) => {
+  if (!photo) return null;
+  if (/^(https?:|data:)/i.test(photo)) return photo;
+  if (photo.startsWith("/")) return `${BACKEND_URL}${photo}`;
+  return photo;
+};
