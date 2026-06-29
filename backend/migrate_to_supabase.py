@@ -54,7 +54,7 @@ print(f"Found {len(mongo_users)} users in MongoDB.")
 user_mapping = {} # maps MongoDB username to Supabase uuid
 
 for u in mongo_users:
-    username = u.get("username")
+    username = u.get("username") or u.get("email", "").split("@")[0] or u.get("id")
     email = u.get("email") or f"{username}@sdpublic.org"
     name = u.get("name", username)
     phone = u.get("phone", "")
