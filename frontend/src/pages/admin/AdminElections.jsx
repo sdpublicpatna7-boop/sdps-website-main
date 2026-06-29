@@ -602,7 +602,7 @@ const CategoriesTab = ({ posts, onChange }) => {
   const create = async () => {
     if (!title.trim()) return;
     try {
-      const key = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/(^_+|+$)/g, "");
+      const key = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/(^_+|_+$)/g, "");
       await api.post("/elections/admin/posts", {
         key,
         title: title.trim(),
