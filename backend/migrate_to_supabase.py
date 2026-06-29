@@ -31,6 +31,11 @@ print(f"Connecting to MongoDB: {MONGO_URL} (Database: {DB_NAME})")
 mongo_client = MongoClient(MONGO_URL)
 db = mongo_client[DB_NAME]
 
+def clean_date(val):
+    if val == "" or val is None:
+        return None
+    return val
+
 headers = {
     "apikey": SUPABASE_KEY,
     "Authorization": f"Bearer {SUPABASE_KEY}",
@@ -77,10 +82,10 @@ for u in mongo_users:
             }
         }
         r_auth = requests.post(auth_url, json=auth_payload, headers=headers)
-        if r_auth.status_code == 201:
+        if r_auth.status_code in [200, 201]:
             auth_res = r_auth.json()
             user_id = auth_res["id"]
-            print(f"Created Auth User for {username}. ID: {user_id}")
+            print(f"Created/Resolved Auth User for {username}. ID: {user_id}")
         else:
             # Maybe email already registered in Auth
             print(f"Auth creation returned code {r_auth.status_code} for {username}. Attempting profile link...")
@@ -158,10 +163,10 @@ for a in mongo_assignments:
         "teacher_id": t_uuid,
         "teacher_name": a.get("teacher_name"),
         "status": a.get("status", "draft"),
-        "submitted_at": a.get("submitted_at"),
+        "submitted_at": clean_date(a.get("submitted_at")),
         "rejection_reason": a.get("rejection_reason"),
         "rejected_by": a.get("rejected_by"),
-        "rejected_at": a.get("rejected_at")
+        "rejected_at": clean_date(a.get("rejected_at"))
     }
     r = requests.post(f"{SUPABASE_URL}/rest/v1/qp_assignments", json=payload, headers=headers)
     if r.status_code not in [200, 201]:
@@ -186,7 +191,7 @@ for p in mongo_papers:
         "assignment_id": assignment_id,
         "questions": p.get("questions", []),
         "sections": p.get("sections", []),
-        "updated_at": p.get("updated_at")
+        "updated_at": clean_date(p.get("updated_at"))
     }
     r = requests.post(f"{SUPABASE_URL}/rest/v1/qp_papers", json=payload, headers=headers)
     if r.status_code not in [200, 201]:
@@ -218,7 +223,7 @@ for n in mongo_notifications:
         "type": n.get("type"),
         "assignment_id": n.get("assignment_id"),
         "is_read": n.get("is_read", False),
-        "created_at": n.get("created_at")
+        "created_at": clean_date(n.get("created_at"))
     }
     r = requests.post(f"{SUPABASE_URL}/rest/v1/qp_notifications", json=payload, headers=headers)
     if r.status_code not in [200, 201]:
