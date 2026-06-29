@@ -1,117 +1,82 @@
-// API Client adapter for School Elections (Supabase + Local FastAPI fallback)
-import { supabase } from "./api";
-import axios from "axios";
+import api from "./api";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
-const localApi = axios.create({ baseURL: BACKEND_URL.replace(/\/+$/, "") + "/api" });
-
+// Public Endpoints
 export const getElectionSettings = async () => {
-  if (supabase) {
-    const { data } = await supabase.from("election_settings").select("*");
-    const settings = {};
-    if (data) {
-      data.forEach(d => { settings[d.key] = d.value; });
-    }
-    return settings;
-  }
-  const { data } = await localApi.get("/settings");
-  // Normalize settings map
-  const settings = {};
-  if (Array.isArray(data)) {
-    data.forEach(d => { settings[d.key] = d.value; });
-  } else if (data && typeof data === "object") {
-    return data;
-  }
-  return settings;
+  const { data } = await api.get("/elections/settings");
+  return data;
 };
 
 export const getVoterDetails = async (admissionNo) => {
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("election_voters")
-      .select("*")
-      .eq("admission_no", admissionNo)
-      .single();
-    if (error || !data) throw new Error("Voter not found in database.");
-    return {
-      admission_no: data.admission_no,
-      name: data.name,
-      role: data.role,
-      has_voted: data.already_voted,
-      class_name: data.class_name,
-      father_name: data.father_name
-    };
-  }
-  const { data } = await localApi.get(`/users/${admissionNo}`);
+  const { data } = await api.get(`/elections/voters/${admissionNo}`);
+  return data;
+};
+
+export const getElectionStats = async () => {
+  const { data } = await api.get("/elections/stats");
   return data;
 };
 
 export const getElectionPosts = async () => {
-  if (supabase) {
-    const { data } = await supabase
-      .from("election_posts")
-      .select("*")
-      .order("order_index", { ascending: true });
-    // Map to the frontend expectations (posts need key, title, order)
-    return (data || []).map(p => ({
-      key: p.key,
-      title: p.title,
-      order: p.order_index
-    }));
-  }
-  const { data } = await localApi.get("/posts");
-  return data;
+  const { data } = await api.get("/elections/bootstrap");
+  return data.posts || [];
 };
 
 export const getElectionCandidates = async () => {
-  if (supabase) {
-    const { data } = await supabase
-      .from("election_candidates")
-      .select("*");
-    // Map database properties (post_key -> post)
-    return (data || []).map(c => ({
-      id: c.id,
-      post: c.post_key,
-      name: c.name,
-      photo: c.photo,
-      symbol: c.symbol,
-      symbol_image: c.symbol_image,
-      adjustment: c.adjustment
-    }));
-  }
-  const { data } = await localApi.get("/candidates");
-  return data;
+  const { data } = await api.get("/elections/bootstrap");
+  return data.candidates || [];
 };
 
 export const castVote = async (admissionNo, selections) => {
-  if (supabase) {
-    const { data, error } = await supabase.functions.invoke("election-vote", {
-      body: { admission_no: admissionNo, selections }
-    });
-    if (error || (data && data.error)) {
-      throw new Error(data?.error || error?.message || "Failed to cast vote.");
-    }
-    return data;
-  }
-  const { data } = await localApi.post("/ballot", { admission_no: admissionNo, selections });
+  const { data } = await api.post("/elections/vote", { admission_no: admissionNo, selections });
   return data;
-};
-
-export const getElectionArchiveResults = async (sessionName) => {
-  if (supabase) {
-    const { data } = await supabase
-      .from("election_results_archive")
-      .select("*")
-      .eq("session_name", sessionName);
-    return data || [];
-  }
-  // Local fallback returns mock or empty
-  return [];
 };
 
 export const photoUrl = (photo) => {
   if (!photo) return null;
   if (/^(https?:|data:)/i.test(photo)) return photo;
-  if (photo.startsWith("/")) return `${BACKEND_URL}${photo}`;
+  const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
+  if (photo.startsWith("/")) return `${BACKEND_URL.replace(/\/+$/, "")}${photo}`;
   return photo;
+};
+
+// Admin Endpoints
+export const saveElectionSetting = async (key, value) => {
+  const { data } = await api.post(`/elections/settings/${key}`, { value });
+  return data;
+};
+
+export const createElectionPost = async (key, title, orderIndex) => {
+  const { data } = await api.post("/elections/posts", { key, title, order_index: orderIndex });
+  return data;
+};
+
+export const deleteElectionPost = async (key) => {
+  const { data } = await api.delete(`/elections/posts/${key}`);
+  return data;
+};
+
+export const nominateCandidate = async (name, postKey, symbol, photo = "", symbolImage = "") => {
+  const { data } = await api.post("/elections/candidates", {
+    name,
+    post_key: postKey,
+    symbol,
+    photo,
+    symbol_image: symbolImage
+  });
+  return data;
+};
+
+export const deleteCandidate = async (id) => {
+  const { data } = await api.delete(`/elections/candidates/${id}`);
+  return data;
+};
+
+export const uploadVotersRoster = async (votersList) => {
+  const { data } = await api.post("/elections/voters/upload", votersList);
+  return data;
+};
+
+export const archiveElectionResults = async (archiveRows) => {
+  const { data } = await api.post("/elections/archive", archiveRows);
+  return data;
 };

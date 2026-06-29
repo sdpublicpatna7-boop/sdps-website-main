@@ -10,8 +10,8 @@ export default function Declaration() {
 
   useEffect(() => {
     if (!localStorage.getItem("sdps_admin_token")) { navigate("/admin/login"); return; }
-    api.get("/admin/stats").then(({ data }) => setData(data)).catch(() => navigate("/admin/login"));
-    api.get("/settings").then(({ data }) => setLogo(data?.school_logo || "")).catch(() => {});
+    api.get("/elections/results").then(({ data }) => setData(data)).catch(() => navigate("/admin/login"));
+    api.get("/elections/settings").then(({ data }) => setLogo(data?.school_logo || "")).catch(() => {});
   }, [navigate]);
 
   return (

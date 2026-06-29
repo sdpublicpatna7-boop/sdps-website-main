@@ -1,11 +1,23 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/api";
 import { toast } from "sonner";
 import { 
   Vote, Upload, Users, Plus, Trash2, Edit2, Play, Square, 
   Archive, FileText, CheckCircle2, ChevronRight, RefreshCw 
 } from "lucide-react";
 import * as XLSX from "xlsx";
+import {
+  getElectionSettings,
+  getElectionStats,
+  getElectionPosts,
+  getElectionCandidates,
+  saveElectionSetting,
+  createElectionPost,
+  deleteElectionPost,
+  nominateCandidate,
+  deleteCandidate,
+  uploadVotersRoster,
+  archiveElectionResults
+} from "../../lib/api_elections";
 
 export default function AdminElections() {
   const [votersCount, setVotersCount] = useState(0);
@@ -29,31 +41,20 @@ export default function AdminElections() {
     setLoading(true);
     try {
       // 1. Get voters count
-      const { count: vCount } = await supabase
-        .from("election_voters")
-        .select("*", { count: "exact", head: true });
-      setVotersCount(vCount || 0);
+      const stats = await getElectionStats();
+      setVotersCount(stats?.voters_count || 0);
 
       // 2. Get posts
-      const { data: postsData } = await supabase
-        .from("election_posts")
-        .select("*")
-        .order("order_index", { ascending: true });
+      const postsData = await getElectionPosts();
       setPosts(postsData || []);
 
       // 3. Get candidates
-      const { data: candsData } = await supabase
-        .from("election_candidates")
-        .select("*");
+      const candsData = await getElectionCandidates();
       setCandidates(candsData || []);
 
       // 4. Get settings
-      const { data: openSetting } = await supabase
-        .from("election_settings")
-        .select("value")
-        .eq("key", "election_open")
-        .single();
-      setElectionOpen(openSetting?.value === "true");
+      const settings = await getElectionSettings();
+      setElectionOpen(settings?.election_open === "true");
 
     } catch (e) {
       console.error(e);
@@ -65,11 +66,7 @@ export default function AdminElections() {
 
   const toggleElection = async (status) => {
     try {
-      const { error } = await supabase
-        .from("election_settings")
-        .upsert({ key: "election_open", value: String(status) });
-
-      if (error) throw error;
+      await saveElectionSetting("election_open", String(status));
       setElectionOpen(status);
       toast.success(status ? "Election is now LIVE!" : "Election is now CLOSED.");
     } catch (e) {
@@ -83,14 +80,11 @@ export default function AdminElections() {
       return;
     }
     try {
-      const { error } = await supabase
-        .from("election_posts")
-        .insert({
-          key: newPostKey.trim().toLowerCase(),
-          title: newPostTitle.trim(),
-          order_index: posts.length + 1
-        });
-      if (error) throw error;
+      await createElectionPost(
+        newPostKey.trim().toLowerCase(),
+        newPostTitle.trim(),
+        posts.length + 1
+      );
       toast.success("Post created!");
       setNewPostKey("");
       setNewPostTitle("");
@@ -102,11 +96,7 @@ export default function AdminElections() {
 
   const handleDeletePost = async (key) => {
     try {
-      const { error } = await supabase
-        .from("election_posts")
-        .delete()
-        .eq("key", key);
-      if (error) throw error;
+      await deleteElectionPost(key);
       toast.success("Post deleted!");
       fetchStats();
     } catch (e) {
@@ -120,31 +110,24 @@ export default function AdminElections() {
       return;
     }
     try {
-      const { error } = await supabase
-        .from("election_candidates")
-        .insert({
-          name: candForm.name.trim(),
-          post_key: candForm.post,
-          symbol: candForm.symbol.trim(),
-          photo: candForm.photo,
-          symbol_image: candForm.symbol_image
-        });
-      if (error) throw error;
+      await nominateCandidate(
+        candForm.name.trim(),
+        candForm.post,
+        candForm.symbol.trim(),
+        candForm.photo,
+        candForm.symbol_image
+      );
       toast.success("Candidate created successfully!");
       setCandForm({ name: "", post: "", symbol: "", photo: "", symbol_image: "" });
       fetchStats();
     } catch (e) {
-      toast.error("Failed to create candidate.");
+      toast.error("Failed to nominate candidate.");
     }
   };
 
   const handleDeleteCandidate = async (id) => {
     try {
-      const { error } = await supabase
-        .from("election_candidates")
-        .delete()
-        .eq("id", id);
-      if (error) throw error;
+      await deleteCandidate(id);
       toast.success("Candidate deleted!");
       fetchStats();
     } catch (e) {
@@ -182,15 +165,7 @@ export default function AdminElections() {
           father_name: item.father_name ? String(item.father_name) : null
         })).filter(v => v.admission_no);
 
-        // Delete existing voters
-        await supabase.from("election_voters").delete().neq("admission_no", "");
-
-        // Insert new voters in chunks of 100
-        for (let i = 0; i < voters.length; i += 100) {
-          const chunk = voters.slice(i, i + 100);
-          const { error } = await supabase.from("election_voters").insert(chunk);
-          if (error) throw error;
-        }
+        await uploadVotersRoster(voters);
 
         toast.success(`Successfully uploaded ${voters.length} voters!`);
         fetchStats();
@@ -209,66 +184,10 @@ export default function AdminElections() {
     if (!confirm("Are you sure you want to end this election and archive the results? This will clear all casted votes!")) return;
 
     try {
-      // 1. Fetch all votes
-      const { data: votes } = await supabase.from("election_votes").select("selections");
-      
-      // Calculate totals
-      const count = {}; // post_key -> candidate_id -> count
-      (votes || []).forEach(v => {
-        const selections = v.selections || {};
-        Object.entries(selections).forEach(([postKey, candId]) => {
-          if (!count[postKey]) count[postKey] = {};
-          count[postKey][candId] = (count[postKey][candId] || 0) + 1;
-        });
-      });
-
-      // Insert into results archive
-      const archiveRows = [];
-      
-      for (const post of posts) {
-        const postCands = candidates.filter(c => c.post_key === post.key);
-        const postCounts = count[post.key] || {};
-        
-        // Find winner
-        let maxVotes = -1;
-        let winnerId = null;
-        postCands.forEach(c => {
-          const votesForCand = postCounts[c.id] || 0;
-          if (votesForCand > maxVotes) {
-            maxVotes = votesForCand;
-            winnerId = c.id;
-          }
-        });
-
-        postCands.forEach(c => {
-          archiveRows.push({
-            session_name: sessionName,
-            post_key: post.key,
-            post_title: post.title,
-            candidate_name: c.name,
-            candidate_symbol: c.symbol,
-            votes_count: postCounts[c.id] || 0,
-            is_winner: c.id === winnerId && maxVotes > 0
-          });
-        });
-      }
-
-      if (archiveRows.length > 0) {
-        const { error: insErr } = await supabase.from("election_results_archive").insert(archiveRows);
-        if (insErr) throw insErr;
-      }
-
-      // Clear votes and reset voters voted flag
-      await supabase.from("election_votes").delete().neq("id", 0);
-      await supabase.from("election_voters").update({ already_voted: false }).neq("admission_no", "");
-      
-      // Close election
-      await supabase.from("election_settings").upsert({ key: "election_open", value: "false" });
+      await archiveElectionResults(sessionName);
       setElectionOpen(false);
-
       toast.success("Results compiled and published to the archive successfully!");
       fetchStats();
-
     } catch (e) {
       console.error(e);
       toast.error("Failed to compile and publish results.");

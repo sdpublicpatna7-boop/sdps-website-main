@@ -11,7 +11,7 @@ export default function NoticeBoard() {
     let active = true;
     const load = async () => {
       try {
-        const { data: d } = await api.get("/board");
+        const { data: d } = await api.get("/elections/board");
         if (!active) return;
         setData(d);
         setPulse(true);

@@ -28,7 +28,7 @@ export default function LiveResults() {
 
       try {
 
-        const { data: d } = await api.get("/results");
+        const { data: d } = await api.get("/elections/results");
 
         if (!active) return;
 
