@@ -76,10 +76,10 @@ export default function Home() {
   const [playingVideoId, setPlayingVideoId] = useState(null);
 
   useEffect(() => {
-    api.get("/news?limit=4").then((r) => setNews(r.data)).catch(() => {});
-    api.get("/calendar").then((r) => setCalendar(r.data.slice(0, 6))).catch(() => {});
+    api.get("/news?limit=4").then((r) => setNews(r.data || [])).catch(() => {});
+    api.get("/calendar").then((r) => setCalendar((r.data || []).slice(0, 6))).catch(() => {});
     api.get("/testimonials")
-      .then((r) => setTestimonials(r.data))
+      .then((r) => setTestimonials(r.data || []))
       .catch((e) => console.error("Error loading testimonials:", e));
   }, []);
 

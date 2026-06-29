@@ -6,7 +6,7 @@ function fullUrl(u) { return u?.startsWith("http") ? u : `${BACKEND}${u}`; }
 
 export function NewsList() {
   const [news, setNews] = useState([]);
-  useEffect(() => { api.get("/news").then(r => setNews(r.data)).catch(() => {}); }, []);
+  useEffect(() => { api.get("/news").then(r => setNews(r.data || [])).catch(() => {}); }, []);
   return (
     <>
       <section className="bg-hero-grad py-16">
@@ -32,7 +32,7 @@ export function NewsList() {
 
 export function NoticesList() {
   const [items, setItems] = useState([]);
-  useEffect(() => { api.get("/notices").then(r => setItems(r.data)).catch(() => {}); }, []);
+  useEffect(() => { api.get("/notices").then(r => setItems(r.data || [])).catch(() => {}); }, []);
   return (
     <>
       <section className="bg-hero-grad py-16">
@@ -64,8 +64,8 @@ export function CalendarPage() {
   const [events, setEvents] = useState([]);
   const [holidays, setHolidays] = useState([]);
   useEffect(() => {
-    api.get("/calendar").then(r => setEvents(r.data)).catch(() => {});
-    api.get("/holidays").then(r => setHolidays(r.data)).catch(() => {});
+    api.get("/calendar").then(r => setEvents(r.data || [])).catch(() => {});
+    api.get("/holidays").then(r => setHolidays(r.data || [])).catch(() => {});
   }, []);
   return (
     <>

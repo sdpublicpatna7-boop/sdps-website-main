@@ -16,7 +16,7 @@ export default function Gallery() {
   const [filter, setFilter] = useState("all");
 
   useEffect(() => {
-    api.get("/gallery").then((r) => setItems(r.data)).catch(() => {});
+    api.get("/gallery").then((r) => setItems(r.data || [])).catch(() => {});
   }, []);
 
   const cats = Array.from(new Set(items.map((i) => i.category || "general")));

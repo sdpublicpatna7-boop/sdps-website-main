@@ -19,7 +19,7 @@ function getThumb(item) {
 export default function Videos() {
   const [items, setItems] = useState([]);
   useEffect(() => {
-    api.get("/videos").then((r) => setItems(r.data)).catch(() => {});
+    api.get("/videos").then((r) => setItems(r.data || [])).catch(() => {});
   }, []);
 
   const platformIcon = (p) => {
