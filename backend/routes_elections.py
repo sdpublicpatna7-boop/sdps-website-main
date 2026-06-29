@@ -1,7 +1,7 @@
 import os
 import logging
 from typing import Dict, List, Any, Optional
-from fastapi import APIRouter, HTTPException, Request, status, UploadFile, File
+from fastapi import APIRouter, HTTPException, Request, status, UploadFile, File, Depends
 from pydantic import BaseModel
 import httpx
 
