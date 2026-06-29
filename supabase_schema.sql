@@ -118,48 +118,6 @@ drop policy if exists "Incharges can read submitted papers for classes they over
 drop policy if exists "Printing heads can read approved papers" on public.qp_papers;
 drop policy if exists "Users can read and update their own notifications" on public.qp_notifications;
 drop policy if exists "Admins can manage all notifications" on public.qp_notifications;
-drop policy if exists "Anyone can read news" on public.site_news;
-drop policy if exists "Admins can manage news" on public.site_news;
-drop policy if exists "Anyone can read gallery" on public.site_gallery;
-drop policy if exists "Admins can manage gallery" on public.site_gallery;
-drop policy if exists "Anyone can read videos" on public.site_videos;
-drop policy if exists "Admins can manage videos" on public.site_videos;
-drop policy if exists "Anyone can read calendar" on public.site_calendar;
-drop policy if exists "Admins can manage calendar" on public.site_calendar;
-drop policy if exists "Anyone can read holidays" on public.site_holidays;
-drop policy if exists "Admins can manage holidays" on public.site_holidays;
-drop policy if exists "Anyone can read council profiles" on public.site_council_profiles;
-drop policy if exists "Admins can manage council profiles" on public.site_council_profiles;
-drop policy if exists "Anyone can read council posters" on public.site_council_posters;
-drop policy if exists "Admins can manage council posters" on public.site_council_posters;
-drop policy if exists "Anyone can read council results" on public.site_council_results;
-drop policy if exists "Admins can manage council results" on public.site_council_results;
-drop policy if exists "Anyone can read approved alumni" on public.alumni_members;
-drop policy if exists "Admins can manage alumni" on public.alumni_members;
-drop policy if exists "Anyone can read alumni meets" on public.alumni_meets;
-drop policy if exists "Admins can manage alumni meets" on public.alumni_meets;
-drop policy if exists "Anyone can read testimonials" on public.site_testimonials;
-drop policy if exists "Admins can manage testimonials" on public.site_testimonials;
-drop policy if exists "Anyone can read legal pages" on public.site_legal_pages;
-drop policy if exists "Admins can manage legal pages" on public.site_legal_pages;
-drop policy if exists "Anyone can view TCs" on public.tc_records;
-drop policy if exists "Admins can manage TCs" on public.tc_records;
-drop policy if exists "Anyone can read exam papers" on public.site_exam_papers;
-drop policy if exists "Admins can manage exam papers" on public.site_exam_papers;
-drop policy if exists "Anyone can read holiday homework" on public.site_holiday_homework;
-drop policy if exists "Admins can manage holiday homework" on public.site_holiday_homework;
-drop policy if exists "Anyone can read site settings" on public.site_settings;
-drop policy if exists "Admins can manage site settings" on public.site_settings;
-drop policy if exists "Public can submit admission enquiries" on public.admission_enquiries;
-drop policy if exists "Admins can manage enquiries" on public.admission_enquiries;
-drop policy if exists "Public can submit admission applications" on public.admission_applications;
-drop policy if exists "Public can view their own application status" on public.admission_applications;
-drop policy if exists "Admins can manage applications" on public.admission_applications;
-drop policy if exists "Public can apply for careers" on public.career_applications;
-drop policy if exists "Admins can manage career applications" on public.career_applications;
-drop policy if exists "Public can register for alumni" on public.alumni_members;
-drop policy if exists "Admins can manage birthday students" on public.birthday_students;
-drop policy if exists "Anyone authenticated can view birthday students" on public.birthday_students;
 
 -- ── PROFILES POLICIES ──
 create policy "Users can view their own profile" on public.qp_profiles
@@ -461,9 +419,65 @@ create table if not exists public.site_settings (
 );
 alter table public.site_settings enable row level security;
 
+-- 23. Birthday Students Table
+create table if not exists public.birthday_students (
+  id text primary key,
+  student_name text not null,
+  class_name text not null,
+  dob date not null,
+  phone text,
+  email text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.birthday_students enable row level security;
+
 -- =============================================================================
 -- PUBLIC WEBSITE RLS SECURITY POLICIES
 -- =============================================================================
+
+-- ── DROP EXISTING PUBLIC POLICIES (allows clean re-runs) ──
+drop policy if exists "Anyone can read news" on public.site_news;
+drop policy if exists "Admins can manage news" on public.site_news;
+drop policy if exists "Anyone can read gallery" on public.site_gallery;
+drop policy if exists "Admins can manage gallery" on public.site_gallery;
+drop policy if exists "Anyone can read videos" on public.site_videos;
+drop policy if exists "Admins can manage videos" on public.site_videos;
+drop policy if exists "Anyone can read calendar" on public.site_calendar;
+drop policy if exists "Admins can manage calendar" on public.site_calendar;
+drop policy if exists "Anyone can read holidays" on public.site_holidays;
+drop policy if exists "Admins can manage holidays" on public.site_holidays;
+drop policy if exists "Anyone can read council profiles" on public.site_council_profiles;
+drop policy if exists "Admins can manage council profiles" on public.site_council_profiles;
+drop policy if exists "Anyone can read council posters" on public.site_council_posters;
+drop policy if exists "Admins can manage council posters" on public.site_council_posters;
+drop policy if exists "Anyone can read council results" on public.site_council_results;
+drop policy if exists "Admins can manage council results" on public.site_council_results;
+drop policy if exists "Anyone can read approved alumni" on public.alumni_members;
+drop policy if exists "Admins can manage alumni" on public.alumni_members;
+drop policy if exists "Anyone can read alumni meets" on public.alumni_meets;
+drop policy if exists "Admins can manage alumni meets" on public.alumni_meets;
+drop policy if exists "Anyone can read testimonials" on public.site_testimonials;
+drop policy if exists "Admins can manage testimonials" on public.site_testimonials;
+drop policy if exists "Anyone can read legal pages" on public.site_legal_pages;
+drop policy if exists "Admins can manage legal pages" on public.site_legal_pages;
+drop policy if exists "Anyone can view TCs" on public.tc_records;
+drop policy if exists "Admins can manage TCs" on public.tc_records;
+drop policy if exists "Anyone can read exam papers" on public.site_exam_papers;
+drop policy if exists "Admins can manage exam papers" on public.site_exam_papers;
+drop policy if exists "Anyone can read holiday homework" on public.site_holiday_homework;
+drop policy if exists "Admins can manage holiday homework" on public.site_holiday_homework;
+drop policy if exists "Anyone can read site settings" on public.site_settings;
+drop policy if exists "Admins can manage site settings" on public.site_settings;
+drop policy if exists "Public can submit admission enquiries" on public.admission_enquiries;
+drop policy if exists "Admins can manage enquiries" on public.admission_enquiries;
+drop policy if exists "Public can submit admission applications" on public.admission_applications;
+drop policy if exists "Public can view their own application status" on public.admission_applications;
+drop policy if exists "Admins can manage applications" on public.admission_applications;
+drop policy if exists "Public can apply for careers" on public.career_applications;
+drop policy if exists "Admins can manage career applications" on public.career_applications;
+drop policy if exists "Public can register for alumni" on public.alumni_members;
+drop policy if exists "Admins can manage birthday students" on public.birthday_students;
+drop policy if exists "Anyone authenticated can view birthday students" on public.birthday_students;
 
 -- ── READ FOR EVERYONE, WRITE FOR ADMINS POLICIES ──
 create policy "Anyone can read news" on public.site_news for select using (true);
@@ -527,17 +541,6 @@ create policy "Admins can manage career applications" on public.career_applicati
 
 create policy "Public can register for alumni" on public.alumni_members for insert with check (true);
 
--- 23. Birthday Students Table
-create table if not exists public.birthday_students (
-  id text primary key,
-  student_name text not null,
-  class_name text not null,
-  dob date not null,
-  phone text,
-  email text,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
-alter table public.birthday_students enable row level security;
 create policy "Admins can manage birthday students" on public.birthday_students for all using (public.is_qp_admin());
 create policy "Anyone authenticated can view birthday students" on public.birthday_students for select using (auth.role() = 'authenticated');
 
