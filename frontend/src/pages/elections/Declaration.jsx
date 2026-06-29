@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { api } from "../lib/api";
+import api from "../../lib/api";
 import { Crown, Printer, ArrowLeft, Award } from "lucide-react";
 
 export default function Declaration() {
