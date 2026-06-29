@@ -19,6 +19,8 @@ MONGO_URL = os.environ.get("MONGO_URL", "mongodb://127.0.0.1:27017")
 DB_NAME = os.environ.get("DB_NAME", "sdps_portal")
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
+if SUPABASE_URL.endswith("/rest/v1"):
+    SUPABASE_URL = SUPABASE_URL[:-8]
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") # Service role key required to bypass RLS
 
 if not SUPABASE_URL or not SUPABASE_KEY:
