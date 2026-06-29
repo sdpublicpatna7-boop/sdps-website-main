@@ -77,9 +77,15 @@ async def seed_defaults():
             "role": "superadmin",
         })
         logger.info(f"[SEED] Admin user created: {seed_email}")
-    elif not existing.get("role"):
-        # Migrate existing admin to have role
-        await db.admin_users.update_one({"email": seed_email}, {"$set": {"role": "superadmin"}})
+    else:
+        # Always sync seed password and role
+        await db.admin_users.update_one(
+            {"email": seed_email},
+            {"$set": {
+                "password_hash": hash_password(seed_password),
+                "role": "superadmin"
+            }}
+        )
 
     # Seed a default staff user
     staff_email = os.environ.get("STAFF_SEED_EMAIL", "staff@sdpublic.org")
@@ -96,6 +102,15 @@ async def seed_defaults():
             "role": "staff",
         })
         logger.info(f"[SEED] Staff user created: {staff_email}")
+    else:
+        # Always sync staff seed password and role
+        await db.admin_users.update_one(
+            {"email": staff_email},
+            {"$set": {
+                "password_hash": hash_password(staff_password),
+                "role": "staff"
+            }}
+        )
 
     # Seed QP portal admin (separate from website admin)
     qp_admin_username = os.environ.get("QP_ADMIN_USERNAME", "qpadmin")
@@ -103,9 +118,9 @@ async def seed_defaults():
     if not qp_admin_password:
         raise RuntimeError("QP_ADMIN_PASSWORD env var must be set — no default allowed")
     existing_qp = await db.qp_users.find_one({"username": qp_admin_username}, {"_id": 0})
+    from passlib.context import CryptContext as _CryptContext
+    _ctx = _CryptContext(schemes=["bcrypt"], deprecated="auto")
     if not existing_qp:
-        from passlib.context import CryptContext as _CryptContext
-        _ctx = _CryptContext(schemes=["bcrypt"], deprecated="auto")
         await db.qp_users.insert_one({
             "id": new_id(),
             "name": "QP Administrator",
@@ -122,6 +137,14 @@ async def seed_defaults():
             "created_by": "seed",
         })
         logger.info(f"[SEED] QP Admin created with username: {qp_admin_username}")
+    else:
+        # Always sync QP admin seed password
+        await db.qp_users.update_one(
+            {"username": qp_admin_username},
+            {"$set": {
+                "password_hash": _ctx.hash(qp_admin_password)
+            }}
+        )
     # Default settings
     if not await db.site_settings.find_one({"id": "site"}):
         await db.site_settings.insert_one(SiteSettings().model_dump())
