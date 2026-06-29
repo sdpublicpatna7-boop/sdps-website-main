@@ -235,21 +235,28 @@ const api = axios.create({
   withCredentials: true,
   adapter: async (config) => {
     if (useSupabase) {
-      try {
-        return await handleSupabaseRequest(config);
-      } catch (err) {
-        return Promise.reject({
-          message: err.message,
-          response: {
-            status: 400,
-            data: { detail: err.message }
-          },
-          config
-        });
+      // Routes handled natively by the FastAPI backend — bypass Supabase adapter
+      const url = config.url || "";
+      const isBackendRoute = /^\/?api\/(elections|auth|admin|upload|whatsapp|fee-reminder|birthday)/.test(url)
+        || /\/(elections|auth|admin|upload|whatsapp|fee-reminder|birthday)/.test(url);
+
+      if (!isBackendRoute) {
+        try {
+          return await handleSupabaseRequest(config);
+        } catch (err) {
+          return Promise.reject({
+            message: err.message,
+            response: {
+              status: 400,
+              data: { detail: err.message }
+            },
+            config
+          });
+        }
       }
     }
     
-    // Default Axios fallback
+    // Default Axios fallback (backend server)
     const defaultAdapter = axios.defaults.adapter;
     const adapter = axios.getAdapter ? axios.getAdapter(defaultAdapter) : defaultAdapter;
     return adapter(config);
