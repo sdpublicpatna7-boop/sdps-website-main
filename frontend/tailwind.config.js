@@ -61,6 +61,7 @@ module.exports = {
         headline: ["Outfit", "sans-serif"],
         legacy: ['"Cormorant Garamond"', "serif"],
         playful: ["Fredoka", "sans-serif"],
+        display: ["Fraunces", "serif"],
       },
       keyframes: {
         "accordion-down": { from: { height: "0" }, to: { height: "var(--radix-accordion-content-height)" } },

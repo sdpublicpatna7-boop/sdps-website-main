@@ -271,3 +271,184 @@ code {
     }
 }
 
+/* ==========================================================================
+   Election Kiosk Portal Styles
+   ========================================================================== */
+
+:root {
+    --sdps-blue: #0F3C8A;
+    --sdps-blue-deep: #0A2A66;
+    --sdps-blue-soft: #4A78D6;
+    --sdps-gold: #D4AF37;
+    --sdps-gold-soft: #F3E5AB;
+    --sdps-ink: #0A1128;
+    --sdps-muted: #5C6A82;
+}
+
+/* Display serif for election headlines */
+.font-display {
+    font-family: 'Fraunces', serif;
+    font-feature-settings: 'ss01' on;
+    letter-spacing: -0.01em;
+}
+
+/* 3D gradient kiosk background */
+.kiosk-bg {
+    position: relative;
+    background:
+        radial-gradient(circle at 12% 18%, rgba(15, 60, 138, 0.10) 0%, transparent 55%),
+        radial-gradient(circle at 88% 78%, rgba(212, 175, 55, 0.18) 0%, transparent 55%),
+        radial-gradient(circle at 50% 50%, rgba(74, 120, 214, 0.06) 0%, transparent 70%),
+        linear-gradient(180deg, #FFFFFF 0%, #EEF3FB 60%, #E2EAFA 100%);
+    overflow: hidden;
+}
+
+/* Floating ambient orbs */
+.orb {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(72px);
+    opacity: 0.55;
+    pointer-events: none;
+    animation: orb-float 14s ease-in-out infinite;
+}
+.orb.b { background: var(--sdps-blue); }
+.orb.g { background: var(--sdps-gold); }
+.orb.s { background: var(--sdps-blue-soft); }
+
+@keyframes orb-float {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(20px, -28px) scale(1.08); }
+}
+
+/* Glassmorphic card */
+.glass {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(22px) saturate(160%);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow:
+        0 1px 0 rgba(255,255,255,0.9) inset,
+        0 18px 50px -12px rgba(15, 60, 138, 0.20),
+        0 4px 14px -4px rgba(15, 60, 138, 0.10);
+}
+
+/* Gold gradient text */
+.gold-text {
+    background: linear-gradient(135deg, #8a6212 0%, #B9892B 30%, #D4AF37 55%, #8a6212 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter:
+        drop-shadow(0 1px 0 rgba(255,255,255,0.6))
+        drop-shadow(0 2px 0 rgba(122, 86, 19, 0.45))
+        drop-shadow(0 8px 18px rgba(212, 175, 55, 0.35));
+}
+
+/* Blue 3D heading text */
+.hero-3d {
+    color: #0A2A66;
+    background: linear-gradient(180deg, #1c4cb0 0%, #0F3C8A 50%, #07204f 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter:
+        drop-shadow(0 1px 0 rgba(255,255,255,0.7))
+        drop-shadow(0 2px 0 rgba(15, 60, 138, 0.25))
+        drop-shadow(0 10px 22px rgba(15, 60, 138, 0.30));
+}
+
+/* Primary 3D CTA button */
+.btn-primary-3d {
+    background: linear-gradient(180deg, #1A55B6 0%, #0F3C8A 100%);
+    color: #fff;
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.35),
+        0 14px 30px -10px rgba(15, 60, 138, 0.55),
+        0 4px 10px -2px rgba(15, 60, 138, 0.35);
+    transition: transform 180ms ease, box-shadow 180ms ease;
+}
+.btn-primary-3d:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 18px 36px -10px rgba(15, 60, 138, 0.60);
+}
+.btn-primary-3d:active { transform: translateY(0); }
+
+/* Gold 3D button */
+.btn-gold-3d {
+    background: linear-gradient(180deg, #F4D571 0%, #D4AF37 60%, #B9892B 100%);
+    color: #1A1A1A;
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.55),
+        0 12px 28px -8px rgba(212, 175, 55, 0.55),
+        0 4px 10px -2px rgba(212, 175, 55, 0.30);
+    transition: transform 180ms ease, box-shadow 180ms ease;
+}
+.btn-gold-3d:hover { transform: translateY(-2px); }
+
+/* Candidate selection card */
+.candidate-card {
+    transition: transform 280ms cubic-bezier(.2,.8,.2,1), box-shadow 280ms ease, border-color 200ms ease;
+    border: 2px solid rgba(15, 60, 138, 0.08);
+    background: rgba(255,255,255,0.78);
+    backdrop-filter: blur(18px);
+}
+.candidate-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 28px 60px -16px rgba(15, 60, 138, 0.30);
+}
+.candidate-card.selected {
+    border-color: var(--sdps-gold);
+    box-shadow:
+        0 0 0 6px rgba(212, 175, 55, 0.20),
+        0 28px 60px -10px rgba(212, 175, 55, 0.45);
+    transform: translateY(-6px);
+    background: linear-gradient(135deg, #FFFDF5 0%, #FFFFFF 100%);
+}
+
+/* Step pill indicator */
+.step-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    background: rgba(15, 60, 138, 0.08);
+    color: var(--sdps-blue);
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    font-size: 11px;
+    text-transform: uppercase;
+}
+
+/* Stagger reveal animations */
+@keyframes rise-in {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.rise { animation: rise-in 600ms cubic-bezier(.2,.8,.2,1) both; }
+.delay-1 { animation-delay: 80ms; }
+.delay-2 { animation-delay: 160ms; }
+.delay-3 { animation-delay: 240ms; }
+.delay-4 { animation-delay: 320ms; }
+
+/* Confetti animation */
+@keyframes confetti-fall {
+    0% { transform: translate3d(var(--x,0), -10vh, 0) rotate(0); opacity: 1; }
+    100% { transform: translate3d(var(--x,0), 110vh, 0) rotate(720deg); opacity: 0.9; }
+}
+.confetti-piece {
+    position: absolute;
+    top: 0;
+    width: 10px;
+    height: 16px;
+    border-radius: 2px;
+    animation: confetti-fall linear forwards;
+    pointer-events: none;
+}
+
+/* Election text selection */
+.kiosk-bg ::selection {
+    background: rgba(212,175,55,0.35);
+    color: var(--sdps-ink);
+}
