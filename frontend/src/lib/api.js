@@ -2,11 +2,8 @@ import axios from "axios";
 import { createClient } from "@supabase/supabase-js";
 
 // Check if Supabase should be active
-const useSupabase = process.env.REACT_APP_SUPABASE_URL && process.env.REACT_APP_SUPABASE_URL !== "";
+const useSupabase = false;
 export let supabase = null;
-if (useSupabase) {
-  supabase = createClient(process.env.REACT_APP_SUPABASE_URL, process.env.REACT_APP_SUPABASE_ANON_KEY);
-}
 
 // Candidate backend bases, in priority order
 const RAW_BASES = [

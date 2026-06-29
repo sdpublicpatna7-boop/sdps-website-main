@@ -1,6 +1,5 @@
 import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
-import * as XLSX from "xlsx";
 import api from "../../lib/api";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
@@ -724,70 +723,32 @@ const UsersTab = ({ role, users, onChange }) => {
     if (!f) return;
     setUploading(true);
     try {
-      const reader = new FileReader();
-      reader.onload = async (evt) => {
-        try {
-          const bstr = evt.target.result;
-          const wb = XLSX.read(bstr, { type: "binary" });
-          const wsname = wb.SheetNames[0];
-          const ws = wb.Sheets[wsname];
-          const parsedData = XLSX.utils.sheet_to_json(ws, { defval: "" });
-
-          // Map columns to expected keys
-          const voters = parsedData.map(row => ({
-            admission_no: String(row.admission_no || row.Admission_No || row.admissionNo || "").trim(),
-            name: String(row.name || row.Name || "").trim(),
-            role: role,
-            already_voted: false,
-            father_name: String(row.father_name || row.Father_Name || "").trim(),
-            class_name: String(row.class_name || row.Class_Name || "").trim(),
-            subject: String(row.subject || row.Subject || "").trim(),
-            designation: String(row.designation || row.Designation || "").trim()
-          })).filter(v => v.admission_no && v.name);
-
-          if (voters.length === 0) {
-            toast.error("No valid voters found in sheet.");
-            setUploading(false);
-            return;
-          }
-
-          const { data } = await api.post(`/elections/admin/users/upload?role=${role}`, voters);
-          toast.success(`Imported · ${data.inserted} new, ${data.updated} updated`);
-          onChange();
-        } catch (err) {
-          toast.error(err?.message || "Upload failed");
-        } finally {
-          setUploading(false);
-          if (fileRef.current) fileRef.current.value = "";
-        }
-      };
-      reader.readAsBinaryString(f);
+      const fd = new FormData();
+      fd.append("file", f);
+      const { data } = await api.post(`/elections/admin/users/upload?role=${role}`, fd, { headers: { "Content-Type": "multipart/form-data" } });
+      toast.success(`Imported · ${data.inserted} new, ${data.updated} updated`);
+      onChange();
     } catch (err) {
-      toast.error(err?.message || "Upload failed");
+      toast.error(err?.response?.data?.detail || "Upload failed");
+    } finally {
       setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
     }
   };
 
-  const downloadTemplate = () => {
+  const downloadTemplate = async () => {
     try {
-      const wb = XLSX.utils.book_new();
-      let data = [];
-      if (role === "student") {
-        data = [
-          ["admission_no", "name", "father_name", "class_name"],
-          ["SDPSS001", "John Doe", "Richard Doe", "Class XII-A"]
-        ];
-      } else {
-        data = [
-          ["admission_no", "name", "subject", "designation"],
-          ["SDPSE001", "Jane Smith", "Mathematics", "Senior PGT"]
-        ];
-      }
-      const ws = XLSX.utils.aoa_to_sheet(data);
-      XLSX.utils.book_append_sheet(wb, ws, "Template");
-      XLSX.writeFile(wb, `sdps_${role}_template.xlsx`);
-    } catch (err) {
-      console.error(err);
+      const token = localStorage.getItem("sdps_admin_token");
+      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL || ""}/api/elections/admin/template/${role}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `sdps_${role}_template.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
       toast.error("Failed to download template");
     }
   };
