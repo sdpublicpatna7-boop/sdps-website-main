@@ -157,6 +157,97 @@ async function handleSupabaseRequest(config) {
     supabaseData = list; supabaseError = error;
   }
 
+  // 9b. Student Council (Profiles, Posters, and Election Results)
+  else if (path === "council/profiles") {
+    const { data: list, error } = await supabase.from("site_council_profiles").select("*");
+    if (list) {
+      supabaseData = list.map(p => ({
+        id: p.id,
+        name: p.name,
+        position: p.post,
+        photo_url: p.image_url,
+        is_captain: p.post ? p.post.toLowerCase().includes("captain") : false,
+        house: p.class_name,
+        year: "2026-27",
+        bio: ""
+      }));
+    }
+    supabaseError = error;
+  }
+  else if (path === "council/posters") {
+    const { data: list, error } = await supabase.from("site_council_posters").select("*");
+    if (list) {
+      supabaseData = list.map(p => ({
+        id: p.id,
+        candidate_name: p.candidate_name,
+        position: p.post,
+        poster_url: p.image_url,
+        year: "2026-27",
+        bio: ""
+      }));
+    }
+    supabaseError = error;
+  }
+  else if (path === "council/results") {
+    const { data: list, error: err1 } = await supabase.from("site_council_results").select("*");
+    if (list && list.length > 0) {
+      const groupedRows = {};
+      list.forEach(row => {
+        const key = `2026-27_${row.post}`;
+        if (!groupedRows[key]) groupedRows[key] = [];
+        groupedRows[key].push(row);
+      });
+
+      const compiledResults = [];
+      Object.keys(groupedRows).forEach(key => {
+        const rows = groupedRows[key];
+        rows.sort((a, b) => b.votes - a.votes);
+        const winnerRow = rows.find(r => r.is_winner) || rows[0];
+        const runnerUpRow = rows.find(r => r !== winnerRow) || null;
+
+        compiledResults.push({
+          id: key,
+          year: "2026-27",
+          position: winnerRow.post,
+          winner: winnerRow.candidate_name,
+          runner_up: runnerUpRow ? runnerUpRow.candidate_name : "-",
+          votes: winnerRow.votes
+        });
+      });
+      supabaseData = compiledResults;
+      supabaseError = err1;
+    } else {
+      const { data: archiveList, error: err2 } = await supabase.from("election_results_archive").select("*");
+      if (archiveList) {
+        const groupedRows = {};
+        archiveList.forEach(row => {
+          const key = `${row.session_name}_${row.post_title}`;
+          if (!groupedRows[key]) groupedRows[key] = [];
+          groupedRows[key].push(row);
+        });
+
+        const compiledResults = [];
+        Object.keys(groupedRows).forEach(key => {
+          const rows = groupedRows[key];
+          rows.sort((a, b) => b.votes_count - a.votes_count);
+          const winnerRow = rows.find(r => r.is_winner) || rows[0];
+          const runnerUpRow = rows.find(r => r !== winnerRow) || null;
+
+          compiledResults.push({
+            id: key,
+            year: winnerRow.session_name,
+            position: winnerRow.post_title,
+            winner: winnerRow.candidate_name,
+            runner_up: runnerUpRow ? runnerUpRow.candidate_name : "-",
+            votes: winnerRow.votes_count
+          });
+        });
+        supabaseData = compiledResults;
+      }
+      supabaseError = err2;
+    }
+  }
+
   // 10. Testimonials
   else if (path === "testimonials") {
     const { data: list, error } = await supabase.from("site_testimonials").select("*").order("created_at", { ascending: false });
