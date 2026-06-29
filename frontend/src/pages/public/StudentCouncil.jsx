@@ -12,8 +12,64 @@ const CountdownCard = ({ value, label }) => (
   </div>
 );
 
+const ConfettiShower = () => {
+  const colors = ["#f59e0b", "#3b82f6", "#ef4444", "#10b981", "#8b5cf6", "#ec4899"];
+  const particles = Array.from({ length: 80 }).map((_, i) => ({
+    id: i,
+    left: `${Math.random() * 100}%`,
+    delay: `${Math.random() * 4}s`,
+    duration: `${3 + Math.random() * 3}s`,
+    size: `${6 + Math.random() * 8}px`,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    rotate: `${Math.random() * 360}deg`
+  }));
+
+  return (
+    <div className="fixed inset-0 pointer-events-none z-40 overflow-hidden">
+      {particles.map(p => (
+        <div
+          key={p.id}
+          className="absolute rounded-sm animate-fall"
+          style={{
+            left: p.left,
+            width: p.size,
+            height: p.size,
+            backgroundColor: p.color,
+            animationDelay: p.delay,
+            animationDuration: p.duration,
+            transform: `rotate(${p.rotate})`,
+            opacity: 0.8
+          }}
+        />
+      ))}
+      <style>{`
+        @keyframes fall {
+          0% {
+            top: -20px;
+            transform: rotate(0deg) translateX(0);
+            opacity: 1;
+          }
+          50% {
+            transform: rotate(180deg) translateX(20px);
+          }
+          100% {
+            top: 105vh;
+            transform: rotate(360deg) translateX(-20px);
+            opacity: 0;
+          }
+        }
+        .animate-fall {
+          animation-name: fall;
+          animation-iteration-count: infinite;
+          animation-timing-function: linear;
+        }
+      `}</style>
+    </div>
+  );
+};
+
 export default function StudentCouncil() {
-  const [tab, setTab] = useState("profiles");
+  const [tab, setTab] = useState("results"); // Default to Results tab!
   const [profiles, setProfiles] = useState([]);
   const [posters, setPosters] = useState([]);
   const [results, setResults] = useState([]);
@@ -34,6 +90,7 @@ export default function StudentCouncil() {
         setElectionStatus("countdown");
         setRemaining(d.remaining_seconds);
         setPublishAt(d.publish_at);
+        setTab("profiles"); // Keep profiles default if countdown is active
       } else if (d.status === "live") {
         setElectionStatus("live");
         setTab("results"); // Switch directly to results tab since results are published!
@@ -49,8 +106,13 @@ export default function StudentCouncil() {
               year: "2026-27",
               position: post.title,
               winner: sorted[0].name,
+              winner_photo: sorted[0].photo,
+              winner_symbol: sorted[0].symbol,
               runner_up: sorted[1] ? sorted[1].name : "-",
-              votes: sorted[0].votes
+              runner_up_photo: sorted[1] ? sorted[1].photo : null,
+              runner_up_symbol: sorted[1] ? sorted[1].symbol : "",
+              votes: sorted[0].votes,
+              runner_up_votes: sorted[1] ? sorted[1].votes : 0
             });
           }
         });
@@ -144,34 +206,113 @@ export default function StudentCouncil() {
         )}
 
         {tab === "results" && (
-          <div className="bg-white rounded-2xl border border-black/5 overflow-hidden">
-            {results.length === 0 ? <div className="text-center text-brand-ink/60 py-10 italic">No results published yet.</div> : (
-              <table className="w-full text-sm">
-                <thead className="bg-brand-blue/5 text-brand-ink/70 uppercase text-xs tracking-wider">
-                  <tr>
-                    <th className="text-left py-3 px-4">Year</th>
-                    <th className="text-left py-3 px-4">Position</th>
-                    <th className="text-left py-3 px-4">Winner</th>
-                    <th className="text-left py-3 px-4">Runner-Up</th>
-                    <th className="text-left py-3 px-4">Votes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {results.map(r => (
-                    <tr key={r.id} className="border-t border-black/5">
-                      <td className="py-3 px-4 font-headline font-semibold">{r.year}</td>
-                      <td className="py-3 px-4">{r.position}</td>
-                      <td className="py-3 px-4 text-brand-blue font-semibold">{r.winner}</td>
-                      <td className="py-3 px-4">{r.runner_up || "-"}</td>
-                      <td className="py-3 px-4">{r.votes ?? "-"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <div>
+            {results.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-black/5 p-10 text-center text-brand-ink/50 italic">
+                No results published yet. Check back during declaration!
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {results.map((r, i) => {
+                  const getCandidatePhoto = (photo) => {
+                    if (!photo) return null;
+                    if (photo.startsWith("data:") || photo.startsWith("http")) return photo;
+                    return fullUrl(photo);
+                  };
+                  const winnerPhoto = getCandidatePhoto(r.winner_photo);
+                  const runnerUpPhoto = getCandidatePhoto(r.runner_up_photo);
+                  const totalVotes = (r.votes || 0) + (r.runner_up_votes || 0);
+                  const winnerPct = totalVotes > 0 ? Math.round((r.votes / totalVotes) * 100) : 0;
+                  const runnerUpPct = totalVotes > 0 ? Math.round((r.runner_up_votes / totalVotes) * 100) : 0;
+
+                  return (
+                    <div key={r.id || i} className="relative bg-white rounded-3xl border border-black/5 overflow-hidden shadow-sm hover:shadow-lg transition-all flex flex-col beam-card" data-testid={`result-card-${r.id}`}>
+                      <div className="bg-gradient-to-r from-brand-blue to-brand-blue-light text-white px-5 py-3.5 flex items-center justify-between">
+                        <span className="font-headline font-bold text-sm tracking-wide">{r.position}</span>
+                        <span className="text-[10px] uppercase tracking-widest font-black bg-white/20 px-2 py-0.5 rounded-full">{r.year}</span>
+                      </div>
+
+                      <div className="p-6 flex-1 flex flex-col justify-between space-y-6">
+                        <div className="text-center relative">
+                          <div className="relative w-24 h-24 mx-auto mb-3">
+                            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10 w-8 h-8 rounded-full bg-amber-400 flex items-center justify-center border-2 border-white shadow-md animate-bounce" style={{ animationDuration: '2s' }}>
+                              <Crown className="w-4 h-4 text-white" />
+                            </div>
+                            <div className="w-full h-full rounded-full ring-4 ring-amber-400 overflow-hidden bg-gradient-to-br from-amber-100 to-amber-50 shadow-inner">
+                              {winnerPhoto ? (
+                                <img src={winnerPhoto} alt={r.winner} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-3xl font-headline font-bold text-amber-600 bg-amber-100">
+                                  {r.winner?.[0]}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="font-headline font-black text-brand-ink text-lg leading-tight flex items-center justify-center gap-1.5">
+                            {r.winner}
+                          </div>
+                          {r.winner_symbol && (
+                            <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Symbol: {r.winner_symbol}</div>
+                          )}
+                          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-extrabold mt-2.5">
+                            🏆 {r.votes} Votes ({winnerPct}%)
+                          </div>
+                        </div>
+
+                        <div className="border-t border-black/5" />
+
+                        {r.runner_up && r.runner_up !== "-" ? (
+                          <div className="flex items-center gap-3.5 bg-slate-50/50 rounded-2xl p-3 border border-black/[0.02]">
+                            <div className="relative w-12 h-12 shrink-0">
+                              <div className="w-full h-full rounded-full ring-2 ring-slate-300 overflow-hidden bg-slate-100">
+                                {runnerUpPhoto ? (
+                                  <img src={runnerUpPhoto} alt={r.runner_up} className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-lg font-headline font-bold text-slate-500 bg-slate-200">
+                                    {r.runner_up?.[0]}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs text-slate-400 uppercase tracking-widest font-extrabold">Runner-Up</div>
+                              <div className="font-headline font-bold text-sm text-slate-700 truncate">{r.runner_up}</div>
+                              {r.runner_up_symbol && (
+                                <div className="text-[9px] text-slate-400">Symbol: {r.runner_up_symbol}</div>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              <div className="text-sm font-black text-slate-600 tabular-nums">{r.runner_up_votes || 0}</div>
+                              <div className="text-[9px] font-bold text-slate-400">Votes ({runnerUpPct}%)</div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center text-xs text-slate-400 italic">No opposition candidate.</div>
+                        )}
+
+                        {r.runner_up && r.runner_up !== "-" && (
+                          <div className="space-y-1">
+                            <div className="h-2 rounded-full bg-slate-100 flex overflow-hidden">
+                              <div className="bg-gradient-to-r from-amber-400 to-amber-500 h-full rounded-full" style={{ width: `${winnerPct}%` }} />
+                              <div className="bg-slate-300 h-full rounded-full" style={{ width: `${runnerUpPct}%` }} />
+                            </div>
+                            <div className="flex justify-between text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                              <span>Winner ({winnerPct}%)</span>
+                              <span>Runner-Up ({runnerUpPct}%)</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         )}
       </div>
+
+      {electionStatus === "live" && <ConfettiShower />}
 
       {electionStatus === "countdown" && showPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">

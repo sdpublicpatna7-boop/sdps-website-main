@@ -189,6 +189,16 @@ async function handleSupabaseRequest(config) {
     supabaseError = error;
   }
   else if (path === "council/results") {
+    const { data: candidates } = await supabase.from("election_candidates").select("*");
+    const findPhoto = (name) => {
+      const c = (candidates || []).find(x => x.name.toLowerCase() === name.toLowerCase());
+      return c ? c.photo : null;
+    };
+    const findSymbol = (name) => {
+      const c = (candidates || []).find(x => x.name.toLowerCase() === name.toLowerCase());
+      return c ? c.symbol : "";
+    };
+
     const { data: list, error: err1 } = await supabase.from("site_council_results").select("*");
     if (list && list.length > 0) {
       const groupedRows = {};
@@ -210,8 +220,13 @@ async function handleSupabaseRequest(config) {
           year: "2026-27",
           position: winnerRow.post,
           winner: winnerRow.candidate_name,
+          winner_photo: findPhoto(winnerRow.candidate_name),
+          winner_symbol: findSymbol(winnerRow.candidate_name),
           runner_up: runnerUpRow ? runnerUpRow.candidate_name : "-",
-          votes: winnerRow.votes
+          runner_up_photo: runnerUpRow ? findPhoto(runnerUpRow.candidate_name) : null,
+          runner_up_symbol: runnerUpRow ? findSymbol(runnerUpRow.candidate_name) : "",
+          votes: winnerRow.votes,
+          runner_up_votes: runnerUpRow ? runnerUpRow.votes : 0
         });
       });
       supabaseData = compiledResults;
@@ -238,8 +253,13 @@ async function handleSupabaseRequest(config) {
             year: winnerRow.session_name,
             position: winnerRow.post_title,
             winner: winnerRow.candidate_name,
+            winner_photo: findPhoto(winnerRow.candidate_name),
+            winner_symbol: winnerRow.candidate_symbol || findSymbol(winnerRow.candidate_name),
             runner_up: runnerUpRow ? runnerUpRow.candidate_name : "-",
-            votes: winnerRow.votes_count
+            runner_up_photo: runnerUpRow ? findPhoto(runnerUpRow.candidate_name) : null,
+            runner_up_symbol: runnerUpRow ? runnerUpRow.candidate_symbol || findSymbol(runnerUpRow.candidate_name) : "",
+            votes: winnerRow.votes_count,
+            runner_up_votes: runnerUpRow ? runnerUpRow.votes_count : 0
           });
         });
         supabaseData = compiledResults;
