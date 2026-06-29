@@ -366,7 +366,7 @@ async def archive_results(session_name: str = "2026-27"):
             
         # 4. Reset voter flag
         r_reset = await client.patch(
-            f"{SUPABASE_URL}/rest/v1/election_voters",
+            f"{SUPABASE_URL}/rest/v1/election_voters?already_voted=eq.true",
             json={"already_voted": False},
             headers=headers
         )
@@ -888,7 +888,7 @@ async def reset_votes_only(admin = Depends(get_current_admin)):
 
         # Reset voters flag
         await client.patch(
-            f"{SUPABASE_URL}/rest/v1/election_voters",
+            f"{SUPABASE_URL}/rest/v1/election_voters?already_voted=eq.true",
             json={"already_voted": False},
             headers=headers
         )
