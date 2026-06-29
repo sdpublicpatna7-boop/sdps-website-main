@@ -587,35 +587,438 @@ async def public_results():
                 "total_voted": len(votes),
             }
 
-        # If no live votes but archive exists, return from archive
-        if archive:
-            archive_posts = {}
-            for row in archive:
-                pk = row["post_key"]
-                if pk not in archive_posts:
-                    archive_posts[pk] = {"key": pk, "title": row["post_title"], "candidates": []}
-                archive_posts[pk]["candidates"].append({
-                    "name": row["candidate_name"],
-                    "symbol": row.get("candidate_symbol", ""),
-                    "votes": row["votes_count"],
-                    "is_winner": row["is_winner"]
-                })
-
-            by_post = {}
-            post_list = []
-            for pk, info in archive_posts.items():
-                post_list.append({"key": pk, "title": info["title"]})
-                sorted_cands = sorted(info["candidates"], key=lambda x: x["votes"], reverse=True)
-                by_post[pk] = sorted_cands
-
-            return {
-                "status": "live",
-                "source": "archive",
-                "posts": post_list,
-                "by_post": by_post,
-                "winners": {pk: (by_post[pk][0] if by_post[pk] else None) for pk in by_post},
-                "total_voted": sum(c["votes"] for cands in by_post.values() for c in cands) // max(1, len(by_post)),
-            }
-
         return {"status": "sealed", "message": "No results available."}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# EXACT SAME CONTROL PANEL ADMIN ENDPOINTS
+# ─────────────────────────────────────────────────────────────────────────────
+
+@elections_router.get("/admin/stats")
+async def get_admin_stats(admin = Depends(get_current_admin)):
+    await check_supabase()
+    async with httpx.AsyncClient() as client:
+        r_posts = await client.get(f"{SUPABASE_URL}/rest/v1/election_posts?order=order_index.asc", headers=headers)
+        r_cands = await client.get(f"{SUPABASE_URL}/rest/v1/election_candidates", headers=headers)
+        r_voters = await client.get(f"{SUPABASE_URL}/rest/v1/election_voters", headers=headers)
+        r_votes = await client.get(f"{SUPABASE_URL}/rest/v1/election_votes", headers=headers)
+
+        if r_posts.status_code != 200 or r_cands.status_code != 200 or r_voters.status_code != 200 or r_votes.status_code != 200:
+            raise HTTPException(status_code=500, detail="Failed to fetch stats source tables.")
+
+        posts = r_posts.json()
+        candidates = r_cands.json()
+        voters = r_voters.json()
+        votes = r_votes.json()
+
+        total_users = len(voters)
+        total_voted = len(votes)
+        total_students = sum(1 for v in voters if v.get("role") == "student")
+        total_teachers = sum(1 for v in voters if v.get("role") == "teacher")
+        voted_students = sum(1 for v in voters if v.get("already_voted") and v.get("role") == "student")
+        voted_teachers = sum(1 for v in voters if v.get("already_voted") and v.get("role") == "teacher")
+        turnout_pct = round((total_voted / total_users * 100), 1) if total_users else 0
+
+        # Class breakdown
+        class_groups = {}
+        for u in voters:
+            if u.get("role") == "student":
+                cls = u.get("class_name") or "Unassigned"
+                g = class_groups.setdefault(cls, {"class_name": cls, "total": 0, "voted": 0})
+                g["total"] += 1
+                if u.get("already_voted"):
+                    g["voted"] += 1
+        class_breakdown = sorted(class_groups.values(), key=lambda x: x["class_name"])
+
+        # Candidate vote counting
+        counts = {}
+        for v in votes:
+            sel = v.get("selections") or {}
+            for cid in sel.values():
+                counts[cid] = counts.get(cid, 0) + 1
+
+        by_post = {p["key"]: [] for p in posts}
+        for c in candidates:
+            adj = int(c.get("adjustment") or 0)
+            entry = {
+                "candidate_id": c["id"],
+                "name": c["name"],
+                "photo": c.get("photo", ""),
+                "symbol": c.get("symbol", ""),
+                "votes": counts.get(c["id"], 0) + adj,
+                "real_votes": counts.get(c["id"], 0),
+                "adjustment": adj
+            }
+            if c["post_key"] in by_post:
+                by_post[c["post_key"]].append(entry)
+
+        for k in by_post:
+            by_post[k].sort(key=lambda x: x["votes"], reverse=True)
+
+        winners = {p["key"]: (by_post[p["key"]][0] if by_post[p["key"]] else None) for p in posts}
+
+        # Voters/votes mapping
+        voter_map = {v["admission_no"]: v for v in voters}
+        candidate_map = {c["id"]: c for c in candidates}
+        votes_list = []
+        for vt in votes:
+            adm = vt.get("voter_admission_no")
+            v_obj = voter_map.get(adm, {})
+            sel_names = {}
+            for pk, cid in (vt.get("selections") or {}).items():
+                sel_names[pk] = candidate_map.get(cid, {}).get("name", "Unknown")
+            votes_list.append({
+                "id": vt["id"],
+                "admission_no": adm,
+                "voter_name": v_obj.get("name", "Unknown"),
+                "selections": vt.get("selections", {}),
+                "selection_names": sel_names
+            })
+
+        return {
+            "total_users": total_users,
+            "total_voted": total_voted,
+            "turnout_pct": turnout_pct,
+            "total_students": total_students,
+            "total_teachers": total_teachers,
+            "voted_students": voted_students,
+            "voted_teachers": voted_teachers,
+            "class_breakdown": class_breakdown,
+            "by_post": by_post,
+            "winners": winners,
+            "votes": votes_list
+        }
+
+@elections_router.get("/candidates")
+async def get_candidates_list(post: Optional[str] = None):
+    await check_supabase()
+    async with httpx.AsyncClient() as client:
+        url = f"{SUPABASE_URL}/rest/v1/election_candidates"
+        if post:
+            url += f"?post_key=eq.{post}"
+        r = await client.get(url, headers=headers)
+        if r.status_code != 200:
+            raise HTTPException(status_code=500, detail="Failed to fetch candidates.")
+        return [{
+            "id": c["id"],
+            "post": c["post_key"],
+            "name": c["name"],
+            "photo": c.get("photo", ""),
+            "symbol": c.get("symbol", ""),
+            "symbol_image": c.get("symbol_image", ""),
+            "adjustment": c.get("adjustment", 0)
+        } for c in r.json()]
+
+@elections_router.get("/admin/users")
+async def list_users(admin = Depends(get_current_admin)):
+    await check_supabase()
+    async with httpx.AsyncClient() as client:
+        r = await client.get(f"{SUPABASE_URL}/rest/v1/election_voters?order=admission_no.asc", headers=headers)
+        if r.status_code != 200:
+            raise HTTPException(status_code=500, detail="Failed to fetch voters.")
+        
+        voters = []
+        for v in r.json():
+            voters.append({
+                "admission_no": v["admission_no"],
+                "name": v["name"],
+                "role": v["role"],
+                "has_voted": v.get("already_voted", False),
+                "father_name": v.get("father_name", ""),
+                "class_name": v.get("class_name", ""),
+                "subject": v.get("subject", ""),
+                "designation": v.get("designation", "")
+            })
+        return voters
+
+@elections_router.delete("/admin/users/{admission_no}")
+async def delete_user(admission_no: str, admin = Depends(get_current_admin)):
+    await check_supabase()
+    async with httpx.AsyncClient() as client:
+        r = await client.delete(
+            f"{SUPABASE_URL}/rest/v1/election_voters?admission_no=eq.{admission_no}",
+            headers=headers
+        )
+        if r.status_code not in [200, 204]:
+            raise HTTPException(status_code=500, detail="Failed to delete voter.")
+        return {"success": True}
+
+@elections_router.put("/admin/posts/{key}")
+async def update_post_admin(key: str, payload: PostCreatePayload, admin = Depends(get_current_admin)):
+    await check_supabase()
+    async with httpx.AsyncClient() as client:
+        r = await client.patch(
+            f"{SUPABASE_URL}/rest/v1/election_posts?key=eq.{key}",
+            json={"title": payload.title, "order_index": payload.order_index},
+            headers=headers
+        )
+        if r.status_code not in [200, 204]:
+            logger.error(f"Failed to update post: {r.text}")
+            raise HTTPException(status_code=500, detail="Failed to update position.")
+        return {"success": True}
+
+@elections_router.delete("/admin/posts/{key}")
+async def delete_post_admin(key: str, admin = Depends(get_current_admin)):
+    await check_supabase()
+    async with httpx.AsyncClient() as client:
+        r = await client.delete(
+            f"{SUPABASE_URL}/rest/v1/election_posts?key=eq.{key}",
+            headers=headers
+        )
+        if r.status_code not in [200, 204]:
+            logger.error(f"Failed to delete post: {r.text}")
+            raise HTTPException(status_code=500, detail="Failed to delete position.")
+        return {"success": True}
+
+@elections_router.post("/admin/posts")
+async def create_post_admin(payload: PostCreatePayload, admin = Depends(get_current_admin)):
+    return await create_post(payload)
+
+@elections_router.post("/admin/candidates")
+async def create_candidate_admin(payload: CandidateCreatePayload, admin = Depends(get_current_admin)):
+    return await create_candidate(payload)
+
+class CandidateUpdateAdminPayload(BaseModel):
+    name: str
+    symbol: str
+    photo: Optional[str] = ""
+    symbol_image: Optional[str] = ""
+    adjustment: Optional[int] = 0
+    post_key: Optional[str] = None
+
+@elections_router.put("/admin/candidates/{cid}")
+async def update_candidate_admin(cid: str, payload: CandidateUpdateAdminPayload, admin = Depends(get_current_admin)):
+    await check_supabase()
+    async with httpx.AsyncClient() as client:
+        update_data = {
+            "name": payload.name,
+            "symbol": payload.symbol,
+            "photo": payload.photo,
+            "symbol_image": payload.symbol_image,
+            "adjustment": payload.adjustment
+        }
+        if payload.post_key:
+            update_data["post_key"] = payload.post_key
+            
+        r = await client.patch(
+            f"{SUPABASE_URL}/rest/v1/election_candidates?id=eq.{cid}",
+            json=update_data,
+            headers=headers
+        )
+        if r.status_code not in [200, 204]:
+            logger.error(f"Failed to update candidate: {r.text}")
+            raise HTTPException(status_code=500, detail="Failed to update candidate.")
+        return {"success": True}
+
+@elections_router.delete("/admin/candidates/{cid}")
+async def delete_candidate_admin(cid: str, admin = Depends(get_current_admin)):
+    return await delete_candidate(cid)
+
+class VoteUpdatePayload(BaseModel):
+    selections: Dict[str, str]
+
+@elections_router.put("/admin/votes/{vote_id}")
+async def update_vote(vote_id: int, payload: VoteUpdatePayload, admin = Depends(get_current_admin)):
+    await check_supabase()
+    async with httpx.AsyncClient() as client:
+        r = await client.patch(
+            f"{SUPABASE_URL}/rest/v1/election_votes?id=eq.{vote_id}",
+            json={"selections": payload.selections},
+            headers=headers
+        )
+        if r.status_code not in [200, 204]:
+            logger.error(f"Failed to update vote: {r.text}")
+            raise HTTPException(status_code=500, detail="Failed to update ballot selections.")
+        return {"success": True}
+
+@elections_router.delete("/admin/votes/{vote_id}")
+async def delete_vote(vote_id: int, admin = Depends(get_current_admin)):
+    await check_supabase()
+    async with httpx.AsyncClient() as client:
+        # Find the voter admission no first to reset their flag
+        r_vote = await client.get(
+            f"{SUPABASE_URL}/rest/v1/election_votes?id=eq.{vote_id}",
+            headers=headers
+        )
+        if r_vote.status_code != 200 or not r_vote.json():
+            raise HTTPException(status_code=404, detail="Ballot not found.")
+        
+        adm = r_vote.json()[0].get("voter_admission_no")
+        
+        # Delete vote
+        r_del = await client.delete(
+            f"{SUPABASE_URL}/rest/v1/election_votes?id=eq.{vote_id}",
+            headers=headers
+        )
+        if r_del.status_code not in [200, 204]:
+            logger.error(f"Failed to delete vote: {r_del.text}")
+            raise HTTPException(status_code=500, detail="Failed to delete ballot.")
+        
+        # Reset voter flag
+        if adm:
+            await client.patch(
+                f"{SUPABASE_URL}/rest/v1/election_voters?admission_no=eq.{adm}",
+                json={"already_voted": False},
+                headers=headers
+            )
+            
+        return {"success": True}
+
+@elections_router.get("/admin/settings")
+async def get_settings_admin(admin = Depends(get_current_admin)):
+    return await get_settings()
+
+@elections_router.put("/admin/settings/{key}")
+async def update_settings_admin(key: str, payload: SettingUpdatePayload, admin = Depends(get_current_admin)):
+    return await update_settings(key, payload)
+
+@elections_router.post("/admin/reset/votes")
+async def reset_votes_only(admin = Depends(get_current_admin)):
+    await check_supabase()
+    async with httpx.AsyncClient() as client:
+        # Get count of votes first
+        r_votes = await client.get(f"{SUPABASE_URL}/rest/v1/election_votes", headers={**headers, "Prefer": "count=exact", "Range": "0-0"})
+        ch = r_votes.headers.get("content-range")
+        deleted_count = int(ch.split("/")[-1]) if ch and "/" in ch else 0
+
+        # Delete all votes
+        r_del = await client.delete(f"{SUPABASE_URL}/rest/v1/election_votes", headers=headers)
+        if r_del.status_code not in [200, 204]:
+            raise HTTPException(status_code=500, detail="Failed to clear votes.")
+
+        # Reset voters flag
+        await client.patch(
+            f"{SUPABASE_URL}/rest/v1/election_voters",
+            json={"already_voted": False},
+            headers=headers
+        )
+        return {"success": True, "deleted_votes": deleted_count}
+
+@elections_router.post("/admin/reset/all")
+async def reset_everything(admin = Depends(get_current_admin)):
+    await check_supabase()
+    async with httpx.AsyncClient() as client:
+        r_votes = await client.get(f"{SUPABASE_URL}/rest/v1/election_votes", headers={**headers, "Prefer": "count=exact", "Range": "0-0"})
+        ch_votes = r_votes.headers.get("content-range")
+        del_votes = int(ch_votes.split("/")[-1]) if ch_votes and "/" in ch_votes else 0
+
+        r_cands = await client.get(f"{SUPABASE_URL}/rest/v1/election_candidates", headers={**headers, "Prefer": "count=exact", "Range": "0-0"})
+        ch_cands = r_cands.headers.get("content-range")
+        del_cands = int(ch_cands.split("/")[-1]) if ch_cands and "/" in ch_cands else 0
+
+        r_voters = await client.get(f"{SUPABASE_URL}/rest/v1/election_voters", headers={**headers, "Prefer": "count=exact", "Range": "0-0"})
+        ch_voters = r_voters.headers.get("content-range")
+        del_voters = int(ch_voters.split("/")[-1]) if ch_voters and "/" in ch_voters else 0
+
+        await client.delete(f"{SUPABASE_URL}/rest/v1/election_votes", headers=headers)
+        await client.delete(f"{SUPABASE_URL}/rest/v1/election_candidates", headers=headers)
+        await client.delete(f"{SUPABASE_URL}/rest/v1/election_voters", headers=headers)
+
+        return {
+            "success": True,
+            "deleted_votes": del_votes,
+            "deleted_candidates": del_cands,
+            "deleted_users": del_voters
+        }
+
+@elections_router.get("/admin/template/{role}")
+async def get_excel_template(role: str, admin = Depends(get_current_admin)):
+    import io
+    from openpyxl import Workbook
+    from fastapi.responses import StreamingResponse
+
+    wb = Workbook()
+    ws = wb.active
+    
+    if role == "student":
+        ws.append(["admission_no", "name", "father_name", "class_name"])
+        ws.append(["SDPSS001", "John Doe", "Richard Doe", "Class XII-A"])
+    else:
+        ws.append(["admission_no", "name", "subject", "designation"])
+        ws.append(["SDPSE001", "Jane Smith", "Mathematics", "Senior PGT"])
+        
+    out = io.BytesIO()
+    wb.save(out)
+    out.seek(0)
+    
+    return StreamingResponse(
+        out,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=sdps_{role}_template.xlsx"}
+    )
+
+@elections_router.post("/admin/users/upload")
+async def upload_users_admin(role: str, file: UploadFile = File(...), admin = Depends(get_current_admin)):
+    import io
+    import openpyxl
+    
+    content = await file.read()
+    wb = openpyxl.load_workbook(io.BytesIO(content))
+    ws = wb.active
+    
+    headers_row = [cell.value for cell in ws[1]]
+    
+    required = ["admission_no", "name"]
+    for req in required:
+        if req not in headers_row:
+            raise HTTPException(status_code=400, detail=f"Missing required column: {req}")
+            
+    voters = []
+    for r_idx in range(2, ws.max_row + 1):
+        row_vals = [cell.value for cell in ws[r_idx]]
+        if not any(row_vals):
+            continue
+            
+        row_dict = dict(zip(headers_row, row_vals))
+        
+        adm = str(row_dict.get("admission_no") or "").strip()
+        name = str(row_dict.get("name") or "").strip()
+        
+        if not adm or not name:
+            continue
+            
+        voters.append({
+            "admission_no": adm,
+            "name": name,
+            "role": role,
+            "father_name": str(row_dict.get("father_name") or "").strip() if "father_name" in row_dict else None,
+            "class_name": str(row_dict.get("class_name") or "").strip() if "class_name" in row_dict else None,
+            "subject": str(row_dict.get("subject") or "").strip() if "subject" in row_dict else None,
+            "designation": str(row_dict.get("designation") or "").strip() if "designation" in row_dict else None,
+            "already_voted": False
+        })
+        
+    if not voters:
+        raise HTTPException(status_code=400, detail="No valid voter records found.")
+        
+    await check_supabase()
+    async with httpx.AsyncClient() as client:
+        inserted = 0
+        updated = 0
+        
+        r_existing = await client.get(
+            f"{SUPABASE_URL}/rest/v1/election_voters?select=admission_no",
+            headers=headers
+        )
+        existing_adms = {x["admission_no"] for x in r_existing.json()} if r_existing.status_code == 200 else set()
+        
+        for i in range(0, len(voters), 100):
+            chunk = voters[i:i+100]
+            r_ins = await client.post(
+                f"{SUPABASE_URL}/rest/v1/election_voters",
+                json=chunk,
+                headers={**headers, "Prefer": "resolution=merge-duplicates"}
+            )
+            if r_ins.status_code not in [200, 201, 204]:
+                logger.error(f"Bulk insert error: {r_ins.text}")
+                raise HTTPException(status_code=500, detail="Failed to upload voter roster.")
+                
+            for v in chunk:
+                if v["admission_no"] in existing_adms:
+                    updated += 1
+                else:
+                    inserted += 1
+                    
+        return {"inserted": inserted, "updated": updated}
+
 
