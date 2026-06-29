@@ -235,5 +235,136 @@ for n in mongo_notifications:
     else:
         print(f"Migrated Notification: {notif_id}")
 
-print("\n🎉 Migration Completed Successfully!")
+# ─────────────────────────────────────────────────────────────────────────────
+# 6. MIGRATE PUBLIC SITE TABLES
+# ─────────────────────────────────────────────────────────────────────────────
+print("\n--- 6. Migrating Public Website Tables ---")
+
+# A. Admission Enquiries
+enq_col = db["admission_enquiries"]
+for item in enq_col.find({}):
+    payload = {
+        "id": item.get("id"),
+        "parent_name": item.get("parent_name"),
+        "phone": item.get("phone"),
+        "email": item.get("email"),
+        "child_name": item.get("child_name"),
+        "child_class": item.get("child_class"),
+        "message": item.get("message"),
+        "status": item.get("status", "pending")
+    }
+    requests.post(f"{SUPABASE_URL}/rest/v1/admission_enquiries", json=payload, headers=headers)
+
+# B. Alumni Members
+alumni_col = db["alumni_members"]
+for item in alumni_col.find({}):
+    payload = {
+        "id": item.get("id"),
+        "name": item.get("name"),
+        "email": item.get("email"),
+        "phone": item.get("phone"),
+        "batch_year": int(item.get("batch_year", 2000)),
+        "current_occupation": item.get("current_occupation"),
+        "location": item.get("location"),
+        "approved": item.get("approved", False),
+        "payment_status": item.get("payment_status", "unpaid"),
+        "payment_id": item.get("payment_id"),
+        "order_id": item.get("order_id")
+    }
+    requests.post(f"{SUPABASE_URL}/rest/v1/alumni_members", json=payload, headers=headers)
+
+# C. Career Applications
+career_col = db["career_applications"]
+for item in career_col.find({}):
+    payload = {
+        "id": item.get("id"),
+        "name": item.get("name"),
+        "email": item.get("email"),
+        "phone": item.get("phone"),
+        "post": item.get("post"),
+        "resume_url": item.get("resume_url"),
+        "experience": item.get("experience")
+    }
+    requests.post(f"{SUPABASE_URL}/rest/v1/career_applications", json=payload, headers=headers)
+
+# D. Legal Pages
+legal_col = db["legal_pages"]
+for item in legal_col.find({}):
+    payload = {
+        "id": item.get("id"),
+        "title": item.get("title"),
+        "content": item.get("content")
+    }
+    requests.post(f"{SUPABASE_URL}/rest/v1/site_legal_pages", json=payload, headers=headers)
+
+# E. Notices / News
+news_col = db["notices"]
+for item in news_col.find({}):
+    payload = {
+        "id": item.get("id"),
+        "title": item.get("title"),
+        "content": item.get("content"),
+        "date": clean_date(item.get("date")),
+        "category": item.get("category", "notice"),
+        "attachment_url": item.get("attachment_url")
+    }
+    requests.post(f"{SUPABASE_URL}/rest/v1/site_news", json=payload, headers=headers)
+
+# F. TC Records
+tc_col = db["tc_records"]
+for item in tc_col.find({}):
+    payload = {
+        "id": item.get("id"),
+        "student_name": item.get("student_name"),
+        "admission_no": item.get("admission_no"),
+        "issue_date": clean_date(item.get("issue_date")),
+        "status": item.get("status", "active"),
+        "file_url": item.get("file_url")
+    }
+    requests.post(f"{SUPABASE_URL}/rest/v1/tc_records", json=payload, headers=headers)
+
+# G. Videos
+video_col = db["videos"]
+for item in video_col.find({}):
+    payload = {
+        "id": item.get("id"),
+        "title": item.get("title"),
+        "youtube_id": item.get("youtube_id")
+    }
+    requests.post(f"{SUPABASE_URL}/rest/v1/site_videos", json=payload, headers=headers)
+
+# H. Settings (site_settings, popup_settings, alumni_settings, birthday_settings)
+settings_map = {
+    "site_settings": "site_settings",
+    "popup_settings": "popup",
+    "alumni_settings": "alumni",
+    "birthday_settings": "birthday"
+}
+for col_name, key_name in settings_map.items():
+    col = db[col_name]
+    doc = col.find_one({})
+    if doc:
+        doc.pop("_id", None)
+        payload = {
+            "key": key_name,
+            "value": doc
+        }
+        requests.post(f"{SUPABASE_URL}/rest/v1/site_settings", json=payload, headers=headers)
+
+# I. Birthday Students (1.1K documents)
+bday_col = db["birthday_students"]
+bday_docs = list(bday_col.find({}))
+print(f"Migrating {len(bday_docs)} birthday students...")
+for item in bday_docs:
+    payload = {
+        "id": item.get("id"),
+        "student_name": item.get("student_name"),
+        "class_name": item.get("class_name"),
+        "dob": clean_date(item.get("dob")),
+        "phone": item.get("phone"),
+        "email": item.get("email")
+    }
+    requests.post(f"{SUPABASE_URL}/rest/v1/birthday_students", json=payload, headers=headers)
+
+print("\n🎉 Whole Database Migration Completed Successfully!")
 mongo_client.close()

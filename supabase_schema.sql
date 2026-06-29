@@ -470,3 +470,18 @@ create policy "Admins can manage career applications" on public.career_applicati
 
 create policy "Public can register for alumni" on public.alumni_members for insert with check (true);
 
+-- 23. Birthday Students Table
+create table if not exists public.birthday_students (
+  id text primary key,
+  student_name text not null,
+  class_name text not null,
+  dob date not null,
+  phone text,
+  email text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.birthday_students enable row level security;
+create policy "Admins can manage birthday students" on public.birthday_students for all using (public.is_qp_admin());
+create policy "Anyone authenticated can view birthday students" on public.birthday_students for select using (auth.role() = 'authenticated');
+
+
