@@ -12,9 +12,9 @@ export default function StudentCouncil() {
   const [results, setResults] = useState([]);
 
   useEffect(() => {
-    api.get("/council/profiles").then(r => setProfiles(r.data)).catch(() => {});
-    api.get("/council/posters").then(r => setPosters(r.data)).catch(() => {});
-    api.get("/council/results").then(r => setResults(r.data)).catch(() => {});
+    api.get("/council/profiles").then(r => setProfiles(r.data || [])).catch(() => {});
+    api.get("/council/posters").then(r => setPosters(r.data || [])).catch(() => {});
+    api.get("/council/results").then(r => setResults(r.data || [])).catch(() => {});
   }, []);
 
   return (
