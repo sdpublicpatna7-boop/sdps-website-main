@@ -9,7 +9,7 @@ export function AdminApplications() {
   useEffect(() => {
     api
       .get("/admin/admissions")
-      .then((r) => setItems(r.data))
+      .then((r) => setItems(r.data || []))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);

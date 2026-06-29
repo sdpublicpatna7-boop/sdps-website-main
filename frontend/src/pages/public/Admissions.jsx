@@ -26,7 +26,7 @@ export function AdmissionEnquiry() {
   const [done, setDone] = useState(false);
 
   useEffect(() => {
-    api.get("/admission/enquiry-questions").then((r) => setQuestions(r.data)).catch(() => {});
+    api.get("/admission/enquiry-questions").then((r) => setQuestions(r.data || [])).catch(() => {});
   }, []);
 
   const submit = async (e) => {

@@ -10,7 +10,7 @@ export function AdminCareerApps() {
   useEffect(() => {
     api
       .get("/admin/career-applications")
-      .then((r) => setItems(r.data))
+      .then((r) => setItems(r.data || []))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
