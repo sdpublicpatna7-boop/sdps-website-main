@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
-import { api } from "../lib/api";
+import { getElectionSettings } from "../lib/api_elections";
 
 export const KioskShell = ({ children }) => {
   const [logo, setLogo] = useState("");
 
   useEffect(() => {
-    api.get("/settings").then(({ data }) => setLogo(data?.school_logo || "")).catch(() => {});
+    getElectionSettings().then((settings) => setLogo(settings?.school_logo || "")).catch(() => {});
   }, []);
 
   return (
