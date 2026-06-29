@@ -76,7 +76,18 @@ export const uploadVotersRoster = async (votersList) => {
   return data;
 };
 
-export const archiveElectionResults = async (archiveRows) => {
-  const { data } = await api.post("/elections/archive", archiveRows);
+export const archiveElectionResults = async (sessionName) => {
+  const { data } = await api.post("/elections/archive", null, { params: { session_name: sessionName } });
   return data;
 };
+
+export const getPublicResults = async () => {
+  const { data } = await api.get("/elections/public-results");
+  return data;
+};
+
+export const scheduleResultsPublish = async (isoTime) => {
+  const { data } = await api.post("/elections/settings/results_publish_time", { value: isoTime });
+  return data;
+};
+

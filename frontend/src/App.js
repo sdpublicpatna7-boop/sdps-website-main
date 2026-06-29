@@ -49,7 +49,10 @@ const ElectionAuth = lazy(() => import("@/pages/elections/AuthPage"));
 const ElectionConfirm = lazy(() => import("@/pages/elections/ConfirmPage"));
 const ElectionVote = lazy(() => import("@/pages/elections/VotePage"));
 const ElectionThankYou = lazy(() => import("@/pages/elections/ThankYouPage"));
+const ElectionPublicResults = lazy(() => import("@/pages/elections/LiveResults"));
 const AdminElections = lazy(() => import("@/pages/admin/AdminElections"));
+const AdminElectionsResults = lazy(() => import("@/pages/admin/AdminElectionsResults"));
+const AdminElectionsScheduler = lazy(() => import("@/pages/admin/AdminElectionsScheduler"));
 
 
 
@@ -123,6 +126,7 @@ function App() {
               <Route path="/elections/confirm" element={<VoteProvider><Suspense fallback={<div>Loading...</div>}><ElectionConfirm /></Suspense></VoteProvider>} />
               <Route path="/elections/vote" element={<VoteProvider><Suspense fallback={<div>Loading...</div>}><ElectionVote /></Suspense></VoteProvider>} />
               <Route path="/elections/thank-you" element={<VoteProvider><Suspense fallback={<div>Loading...</div>}><ElectionThankYou /></Suspense></VoteProvider>} />
+              <Route path="/elections/results" element={<Suspense fallback={<div>Loading...</div>}><ElectionPublicResults /></Suspense>} />
 
               {/* Public */}
               <Route element={<PublicLayout />}>
@@ -165,6 +169,8 @@ function App() {
               <Route path="/admin" element={<Suspense fallback={<AdminLoading />}><AdminLayout /></Suspense>}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="elections" element={<Suspense fallback={<AdminLoading />}><AdminElections /></Suspense>} />
+                <Route path="elections/results" element={<Suspense fallback={<AdminLoading />}><AdminElectionsResults /></Suspense>} />
+                <Route path="elections/scheduler" element={<Suspense fallback={<AdminLoading />}><AdminElectionsScheduler /></Suspense>} />
                 <Route path="news" element={<AdminNews />} />
                 <Route path="notices" element={<AdminNotices />} />
                 <Route path="gallery" element={<AdminGallery />} />

@@ -485,3 +485,137 @@ async def get_results(admin = Depends(get_current_admin)):
             "total_users": total_users,
             "turnout_pct": round((len(votes) / total_users * 100), 1) if total_users else 0
         }
+
+
+@elections_router.post("/settings/results_publish_time")
+async def set_results_publish_time(payload: Dict[str, Any], admin = Depends(get_current_admin)):
+    """Schedule when results become public. payload = {value: ISO datetime string or empty string to clear}"""
+    await check_supabase()
+    async with httpx.AsyncClient() as client:
+        r = await client.post(
+            f"{SUPABASE_URL}/rest/v1/election_settings",
+            json={"key": "results_publish_time", "value": payload.get("value", "")},
+            headers={**headers, "Prefer": "resolution=merge-duplicates"}
+        )
+        if r.status_code not in [200, 201, 204]:
+            logger.error(f"Failed to set results_publish_time: {r.text}")
+            raise HTTPException(status_code=500, detail="Failed to save schedule.")
+        return {"success": True}
+
+
+@elections_router.get("/public-results")
+async def public_results():
+    """Public endpoint: returns results only if publish time has passed, otherwise returns countdown."""
+    from datetime import datetime, timezone
+    await check_supabase()
+    async with httpx.AsyncClient() as client:
+        # 1. Check publish time setting
+        r_time = await client.get(
+            f"{SUPABASE_URL}/rest/v1/election_settings?key=eq.results_publish_time",
+            headers=headers
+        )
+        publish_time_str = ""
+        if r_time.status_code == 200 and r_time.json():
+            publish_time_str = r_time.json()[0].get("value", "")
+
+        if not publish_time_str:
+            return {"status": "sealed", "message": "Results have not been scheduled for release yet."}
+
+        try:
+            publish_dt = datetime.fromisoformat(publish_time_str.replace("Z", "+00:00"))
+        except Exception:
+            return {"status": "sealed", "message": "Invalid publish time configured."}
+
+        now = datetime.now(timezone.utc)
+        if now < publish_dt:
+            remaining = (publish_dt - now).total_seconds()
+            return {
+                "status": "countdown",
+                "publish_at": publish_time_str,
+                "remaining_seconds": max(0, int(remaining)),
+                "message": "Results will be published soon."
+            }
+
+        # 2. Time has passed — return full results (no auth required)
+        r_posts = await client.get(f"{SUPABASE_URL}/rest/v1/election_posts?order=order_index.asc", headers=headers)
+        r_cands = await client.get(f"{SUPABASE_URL}/rest/v1/election_candidates", headers=headers)
+        r_votes = await client.get(f"{SUPABASE_URL}/rest/v1/election_votes", headers=headers)
+
+        if r_posts.status_code != 200 or r_cands.status_code != 200 or r_votes.status_code != 200:
+            raise HTTPException(status_code=500, detail="Failed to compile results.")
+
+        posts = r_posts.json()
+        candidates = r_cands.json()
+        votes = r_votes.json()
+
+        # Also check archive for this session
+        r_archive = await client.get(
+            f"{SUPABASE_URL}/rest/v1/election_results_archive?order=id.desc&limit=100",
+            headers=headers
+        )
+        archive = r_archive.json() if r_archive.status_code == 200 else []
+
+        # If there are live votes, compute from votes
+        if votes:
+            counts = {}
+            for v in votes:
+                sel = v.get("selections") or {}
+                for cid in sel.values():
+                    counts[cid] = counts.get(cid, 0) + 1
+
+            by_post = {p["key"]: [] for p in posts}
+            for c in candidates:
+                adj = int(c.get("adjustment") or 0)
+                entry = {
+                    "candidate_id": c["id"],
+                    "name": c["name"],
+                    "photo": c.get("photo", ""),
+                    "symbol": c.get("symbol", ""),
+                    "votes": counts.get(c["id"], 0) + adj
+                }
+                if c["post_key"] in by_post:
+                    by_post[c["post_key"]].append(entry)
+
+            for k in by_post:
+                by_post[k].sort(key=lambda x: x["votes"], reverse=True)
+
+            return {
+                "status": "live",
+                "posts": [{"key": p["key"], "title": p["title"], "order": p["order_index"]} for p in posts],
+                "by_post": by_post,
+                "winners": {p["key"]: (by_post[p["key"]][0] if by_post[p["key"]] else None) for p in posts},
+                "total_voted": len(votes),
+            }
+
+        # If no live votes but archive exists, return from archive
+        if archive:
+            archive_posts = {}
+            for row in archive:
+                pk = row["post_key"]
+                if pk not in archive_posts:
+                    archive_posts[pk] = {"key": pk, "title": row["post_title"], "candidates": []}
+                archive_posts[pk]["candidates"].append({
+                    "name": row["candidate_name"],
+                    "symbol": row.get("candidate_symbol", ""),
+                    "votes": row["votes_count"],
+                    "is_winner": row["is_winner"]
+                })
+
+            by_post = {}
+            post_list = []
+            for pk, info in archive_posts.items():
+                post_list.append({"key": pk, "title": info["title"]})
+                sorted_cands = sorted(info["candidates"], key=lambda x: x["votes"], reverse=True)
+                by_post[pk] = sorted_cands
+
+            return {
+                "status": "live",
+                "source": "archive",
+                "posts": post_list,
+                "by_post": by_post,
+                "winners": {pk: (by_post[pk][0] if by_post[pk] else None) for pk in by_post},
+                "total_voted": sum(c["votes"] for cands in by_post.values() for c in cands) // max(1, len(by_post)),
+            }
+
+        return {"status": "sealed", "message": "No results available."}
+
