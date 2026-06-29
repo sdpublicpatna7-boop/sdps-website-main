@@ -88,14 +88,18 @@ for u in mongo_users:
             print(f"Created/Resolved Auth User for {username}. ID: {user_id}")
         else:
             # Maybe email already registered in Auth
-            print(f"Auth creation returned code {r_auth.status_code} for {username}. Attempting profile link...")
-            # Search auth.users by email to get their ID
-            search_url = f"{SUPABASE_URL}/rest/v1/qp_profiles?email=eq.{email}&select=id"
-            r_search = requests.get(search_url, headers=headers)
-            search_res = r_search.json()
-            if isinstance(search_res, list) and len(search_res) > 0:
-                user_id = search_res[0]["id"]
-            else:
+            print(f"Auth creation returned code {r_auth.status_code} for {username}. Resolving Auth ID...")
+            # Query the GoTrue Auth Admin users list to find matching user UUID
+            list_url = f"{SUPABASE_URL}/auth/v1/admin/users"
+            r_list = requests.get(list_url, headers=headers)
+            if r_list.status_code == 200:
+                users_data = r_list.json().get("users", [])
+                for usr in users_data:
+                    if usr.get("email") == email:
+                        user_id = usr.get("id")
+                        print(f"Resolved existing Auth User ID: {user_id}")
+                        break
+            if not user_id:
                 print(f"Could not resolve Auth User ID for {username}. Response: {r_auth.text}")
                 continue
 
