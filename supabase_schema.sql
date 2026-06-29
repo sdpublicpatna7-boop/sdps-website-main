@@ -104,6 +104,63 @@ begin
 end;
 $$ language plpgsql;
 
+-- ── DROP EXISTING POLICIES (allows re-running this script repeatedly without errors) ──
+drop policy if exists "Users can view their own profile" on public.qp_profiles;
+drop policy if exists "Admins have full access to profiles" on public.qp_profiles;
+drop policy if exists "Anyone authenticated can view open archives" on public.qp_archives;
+drop policy if exists "Admins have full access to archives" on public.qp_archives;
+drop policy if exists "Teachers can view their own assignments" on public.qp_assignments;
+drop policy if exists "Incharges can view assignments for classes they oversee" on public.qp_assignments;
+drop policy if exists "Printing heads can view approved/printing assignments" on public.qp_assignments;
+drop policy if exists "Admins have full access to assignments" on public.qp_assignments;
+drop policy if exists "Teachers can read and update their draft papers" on public.qp_papers;
+drop policy if exists "Incharges can read submitted papers for classes they oversee" on public.qp_papers;
+drop policy if exists "Printing heads can read approved papers" on public.qp_papers;
+drop policy if exists "Users can read and update their own notifications" on public.qp_notifications;
+drop policy if exists "Admins can manage all notifications" on public.qp_notifications;
+drop policy if exists "Anyone can read news" on public.site_news;
+drop policy if exists "Admins can manage news" on public.site_news;
+drop policy if exists "Anyone can read gallery" on public.site_gallery;
+drop policy if exists "Admins can manage gallery" on public.site_gallery;
+drop policy if exists "Anyone can read videos" on public.site_videos;
+drop policy if exists "Admins can manage videos" on public.site_videos;
+drop policy if exists "Anyone can read calendar" on public.site_calendar;
+drop policy if exists "Admins can manage calendar" on public.site_calendar;
+drop policy if exists "Anyone can read holidays" on public.site_holidays;
+drop policy if exists "Admins can manage holidays" on public.site_holidays;
+drop policy if exists "Anyone can read council profiles" on public.site_council_profiles;
+drop policy if exists "Admins can manage council profiles" on public.site_council_profiles;
+drop policy if exists "Anyone can read council posters" on public.site_council_posters;
+drop policy if exists "Admins can manage council posters" on public.site_council_posters;
+drop policy if exists "Anyone can read council results" on public.site_council_results;
+drop policy if exists "Admins can manage council results" on public.site_council_results;
+drop policy if exists "Anyone can read approved alumni" on public.alumni_members;
+drop policy if exists "Admins can manage alumni" on public.alumni_members;
+drop policy if exists "Anyone can read alumni meets" on public.alumni_meets;
+drop policy if exists "Admins can manage alumni meets" on public.alumni_meets;
+drop policy if exists "Anyone can read testimonials" on public.site_testimonials;
+drop policy if exists "Admins can manage testimonials" on public.site_testimonials;
+drop policy if exists "Anyone can read legal pages" on public.site_legal_pages;
+drop policy if exists "Admins can manage legal pages" on public.site_legal_pages;
+drop policy if exists "Anyone can view TCs" on public.tc_records;
+drop policy if exists "Admins can manage TCs" on public.tc_records;
+drop policy if exists "Anyone can read exam papers" on public.site_exam_papers;
+drop policy if exists "Admins can manage exam papers" on public.site_exam_papers;
+drop policy if exists "Anyone can read holiday homework" on public.site_holiday_homework;
+drop policy if exists "Admins can manage holiday homework" on public.site_holiday_homework;
+drop policy if exists "Anyone can read site settings" on public.site_settings;
+drop policy if exists "Admins can manage site settings" on public.site_settings;
+drop policy if exists "Public can submit admission enquiries" on public.admission_enquiries;
+drop policy if exists "Admins can manage enquiries" on public.admission_enquiries;
+drop policy if exists "Public can submit admission applications" on public.admission_applications;
+drop policy if exists "Public can view their own application status" on public.admission_applications;
+drop policy if exists "Admins can manage applications" on public.admission_applications;
+drop policy if exists "Public can apply for careers" on public.career_applications;
+drop policy if exists "Admins can manage career applications" on public.career_applications;
+drop policy if exists "Public can register for alumni" on public.alumni_members;
+drop policy if exists "Admins can manage birthday students" on public.birthday_students;
+drop policy if exists "Anyone authenticated can view birthday students" on public.birthday_students;
+
 -- ── PROFILES POLICIES ──
 create policy "Users can view their own profile" on public.qp_profiles
   for select using (auth.uid() = id or public.is_qp_admin());
