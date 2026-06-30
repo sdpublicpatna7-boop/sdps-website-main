@@ -6,7 +6,7 @@ import httpx
 from typing import List, Optional
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException, Form, File, UploadFile, Body, Request
+from fastapi import APIRouter, HTTPException, Form, File, UploadFile, Body, Request, Response
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import razorpay
@@ -1257,6 +1257,27 @@ async def get_public_linktree():
         "settings": settings,
         "links": links
     }
+
+
+@public_router.get("/linktree/contact.vcf")
+async def download_contact_vcard():
+    vcard_content = (
+        "BEGIN:VCARD\n"
+        "VERSION:3.0\n"
+        "FN:S.D. PUBLIC SCHOOL\n"
+        "ORG:S.D. PUBLIC SCHOOL\n"
+        "TEL;TYPE=WORK,VOICE:9955190262\n"
+        "EMAIL;TYPE=PREF,INTERNET:sdpublicpatna7@gmail.com\n"
+        "ADR;TYPE=WORK:;;Maurya Colony Near R.O.B Kumhrar Biscoman Golambar,, Gulzarbagh Road, 07, Patna;Patna;Bihar;800007;India\n"
+        "END:VCARD"
+    )
+    return Response(
+        content=vcard_content,
+        media_type="text/vcard",
+        headers={
+            "Content-Disposition": "attachment; filename=\"sdps_contact.vcf\""
+        }
+    )
 
 
 

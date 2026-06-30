@@ -33,7 +33,7 @@ from routes_admin import admin_router, init_db as init_admin, limiter as admin_l
 from routes_qp import qp_router, init_db as init_qp, limiter as qp_limiter
 from routes_whatsapp import wa_router
 from auth import hash_password
-from models import SiteSettings, PopupSettings, AlumniSettings, new_id, LinktreeSettings
+from models import SiteSettings, PopupSettings, AlumniSettings, new_id, LinktreeSettings, LinktreeLink
 
 
 # ── Keep-alive: stop Render free services from idling out (spin down ~15 min) ──
@@ -154,6 +154,75 @@ async def seed_defaults():
         await db.alumni_settings.insert_one(AlumniSettings().model_dump())
     if not await db.linktree_settings.find_one({"id": "branding"}):
         await db.linktree_settings.insert_one(LinktreeSettings().model_dump())
+    
+    if await db.linktree_links.count_documents({}) == 0:
+        default_links = [
+            {
+                "id": new_id(),
+                "title": "Admission Enquiry",
+                "url": "https://www.sdpublic.org/admission-enquiry",
+                "group_header": "Enquiry Link",
+                "order": 0,
+                "is_active": True
+            },
+            {
+                "id": new_id(),
+                "title": "Digital Prospectus",
+                "url": "https://drive.google.com/file/d/1nBbND2dzSEoXHHSiRcB0LSIpoKOZpYfV/preview",
+                "group_header": "Enquiry Link",
+                "order": 1,
+                "is_active": True
+            },
+            {
+                "id": new_id(),
+                "title": "School Website",
+                "url": "https://www.sdpublic.org/",
+                "group_header": "Website | Contact | Location",
+                "order": 2,
+                "is_active": True
+            },
+            {
+                "id": new_id(),
+                "title": "Save Our Contact (S.D. PUBLIC SCHOOL)",
+                "url": "/api/linktree/contact.vcf",
+                "group_header": "Website | Contact | Location",
+                "order": 3,
+                "is_active": True
+            },
+            {
+                "id": new_id(),
+                "title": "Maps Location (Maurya Colony Near R.O.B)",
+                "url": "https://share.google/7XGnpc6Hmm5GNMVI2",
+                "group_header": "Website | Contact | Location",
+                "order": 4,
+                "is_active": True
+            },
+            {
+                "id": new_id(),
+                "title": "WhatsApp Channel",
+                "url": "https://www.whatsapp.com/channel/0029Va9I42OHAdNdlyFyN33W",
+                "group_header": "Website | Contact | Location",
+                "order": 5,
+                "is_active": True
+            },
+            {
+                "id": new_id(),
+                "title": "Rate Us On Maps Junior Block",
+                "url": "https://g.page/r/CSsuvLEE-jFyEBM/review",
+                "group_header": "Feedback",
+                "order": 6,
+                "is_active": True
+            },
+            {
+                "id": new_id(),
+                "title": "Rate Us On Maps Senior Block",
+                "url": "https://g.page/r/CZYmWdJoPAPaEBM/review",
+                "group_header": "Feedback",
+                "order": 7,
+                "is_active": True
+            }
+        ]
+        await db.linktree_links.insert_many(default_links)
 
 
 @asynccontextmanager

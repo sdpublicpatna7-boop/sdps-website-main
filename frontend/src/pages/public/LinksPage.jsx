@@ -4,7 +4,7 @@ import {
   Instagram, Facebook, Youtube, Mail, Play, ArrowUpRight
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import api from "../../lib/api";
+import api, { API } from "../../lib/api";
 
 export default function LinksPage() {
   const [data, setData] = useState(null);
@@ -90,6 +90,14 @@ export default function LinksPage() {
 
   const isLight = settings.theme === "light";
 
+  const getHref = (url) => {
+    if (url.startsWith("/api/")) {
+      const base = (API || "").replace(/\/api$/, "");
+      return `${base}${url}`;
+    }
+    return url;
+  };
+
   return (
     <div className={`min-h-screen font-sans relative overflow-hidden flex flex-col justify-between py-12 px-4 select-none transition-colors duration-500 ${
       isLight ? "bg-gradient-to-tr from-violet-100 via-slate-50 to-emerald-50 text-slate-800" : "bg-slate-950 text-slate-100"
@@ -173,7 +181,7 @@ export default function LinksPage() {
                   return (
                     <a
                       key={item.id}
-                      href={item.url}
+                      href={getHref(item.url)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className={`flex items-center justify-between p-4.5 rounded-2xl border transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl group relative overflow-hidden ${
