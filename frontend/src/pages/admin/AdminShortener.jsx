@@ -128,63 +128,61 @@ export default function AdminShortener() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
-              <Link2 className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">Link Shortener & Analytics</h1>
-              <p className="text-sm text-slate-500">Shorten, share, and track engagement of school portal links</p>
-            </div>
+      {/* Header Card */}
+      <div className="bg-white border border-slate-200/60 rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.01)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in fade-in duration-300">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 via-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-blue-500/15 transform hover:rotate-6 transition-transform duration-300 shrink-0">
+            <Link2 className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Link Shortener & Analytics</h1>
+            <p className="text-sm font-semibold text-slate-500">Create, manage, and inspect engagement of shortened portal redirects</p>
           </div>
         </div>
       </div>
 
-      {/* Grid: Create link form + Links List */}
+      {/* Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Left Side: Create Form */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-5 h-fit lg:sticky lg:top-6">
-          <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-            <Plus className="w-4 h-4 text-blue-500" />
+        {/* Left Side: Premium Form Card */}
+        <div className="bg-white rounded-3xl p-6.5 border border-slate-200/60 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-5 h-fit lg:sticky lg:top-6 animate-in slide-in-from-left-4 duration-300">
+          <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
+            <Plus className="w-4.5 h-4.5 text-blue-600" />
             Shorten a New Link
           </h2>
 
-          <form onSubmit={handleCreate} className="space-y-4">
+          <form onSubmit={handleCreate} className="space-y-5">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Link Title / Label</label>
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Link Title / Label</label>
               <input
                 type="text"
                 placeholder="e.g. Admission Circular 2026-27"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50 font-medium text-sm"
+                className="w-full px-4 py-3.5 border border-slate-200/80 rounded-2xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/15 focus:border-blue-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]"
                 required
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Original Long URL</label>
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Original Long URL</label>
               <input
                 type="url"
                 placeholder="https://drive.google.com/file/d/..."
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50 font-medium text-sm"
+                className="w-full px-4 py-3.5 border border-slate-200/80 rounded-2xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/15 focus:border-blue-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]"
                 required
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
                 <span>Custom Alias (Optional)</span>
-                <span className="text-[10px] text-slate-400 normal-case font-normal">alphanumeric only</span>
+                <span className="text-[10px] text-slate-400 normal-case font-semibold">alphanumeric only</span>
               </label>
               <div className="relative flex items-center">
-                <span className="absolute left-4 text-slate-400 text-sm font-semibold border-r border-slate-200 pr-2 select-none">
+                <span className="absolute left-4 text-slate-400 text-sm font-bold border-r border-slate-200 pr-3.5 select-none">
                   /s/
                 </span>
                 <input
@@ -192,10 +190,10 @@ export default function AdminShortener() {
                   placeholder="admission2026"
                   value={customCode}
                   onChange={(e) => setCustomCode(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50 font-medium text-sm"
+                  className="w-full pl-14 pr-4 py-3.5 border border-slate-200/80 rounded-2xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/15 focus:border-blue-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]"
                 />
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">
+              <p className="text-[10px] font-medium text-slate-400 leading-relaxed mt-1">
                 Leave blank to automatically generate a random 6-character code (e.g. <code>/s/z9f4k2</code>).
               </p>
             </div>
@@ -203,15 +201,15 @@ export default function AdminShortener() {
             <button
               type="submit"
               disabled={creating}
-              className="w-full py-3 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-sm hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md shadow-blue-500/10 flex items-center justify-center gap-2 disabled:opacity-55"
+              className="w-full py-3.5 px-6 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:from-blue-700 hover:to-violet-700 text-white rounded-2xl font-bold text-sm shadow-md shadow-blue-500/15 hover:shadow-lg hover:shadow-blue-500/25 transform hover:scale-[1.01] active:scale-99 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-55"
             >
               {creating ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" /> Shortening...
+                  <Loader2 className="w-4.5 h-4.5 animate-spin" /> Shortening...
                 </>
               ) : (
                 <>
-                  Shorten URL <ArrowRight className="w-4 h-4" />
+                  Shorten URL <ArrowRight className="w-4.5 h-4.5" />
                 </>
               )}
             </button>
@@ -219,29 +217,29 @@ export default function AdminShortener() {
         </div>
 
         {/* Right Side: Links List */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-4 animate-in slide-in-from-bottom-4 duration-300">
           
           {/* Search bar */}
-          <div className="relative">
-            <Search className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" />
+          <div className="relative shadow-[0_2px_8px_rgba(0,0,0,0.01)] hover:shadow-md hover:shadow-slate-100 transition-all duration-300 rounded-2xl">
+            <Search className="absolute left-4 top-4.5 w-5 h-5 text-slate-400" />
             <input
               type="text"
               placeholder="Search shortened links by title, code, or original URL..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-2xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/10 bg-white font-medium shadow-sm text-sm"
+              className="w-full pl-12 pr-4 py-4 border border-slate-200/80 rounded-2xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/10 bg-white font-semibold text-sm shadow-sm"
             />
           </div>
 
           {/* Links Grid */}
           {filteredLinks.length === 0 ? (
-            <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center text-slate-400 space-y-3 shadow-sm">
-              <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto text-slate-300">
-                <Link2 className="w-6 h-6" />
+            <div className="bg-white rounded-3xl border border-slate-200/60 p-12 text-center text-slate-400 space-y-3 shadow-sm">
+              <div className="w-12 h-12 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-350 shadow-inner">
+                <Link2 className="w-5.5 h-5.5" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-slate-700">No short links found</p>
-                <p className="text-xs mt-1">Shorten a new link using the panel on the left.</p>
+                <p className="text-sm font-bold text-slate-700">No short links found</p>
+                <p className="text-xs text-slate-400 mt-1">Shorten a new link using the panel on the left.</p>
               </div>
             </div>
           ) : (
@@ -249,24 +247,24 @@ export default function AdminShortener() {
               {filteredLinks.map((link) => (
                 <div
                   key={link.id}
-                  className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 group"
+                  className="bg-white border border-slate-150 rounded-3xl p-5.5 shadow-[0_4px_12px_rgba(0,0,0,0.01)] hover:shadow-[0_12px_28px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 transition-all duration-300 flex flex-col md:flex-row md:items-center justify-between gap-4 group"
                 >
-                  <div className="space-y-1.5 min-w-0 flex-1">
+                  <div className="space-y-2 min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-slate-900 truncate">{link.title}</span>
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-50 border border-slate-200 text-slate-500 text-xs font-semibold font-mono">
+                      <span className="font-extrabold text-slate-900 text-sm md:text-base truncate">{link.title}</span>
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-indigo-50 border border-indigo-100/60 text-indigo-600 text-xs font-bold font-mono">
                         /s/{link.code}
                       </span>
                     </div>
                     
-                    <p className="text-xs text-slate-400 truncate flex items-center gap-1 font-medium">
-                      <ExternalLink className="w-3.5 h-3.5" />
+                    <p className="text-xs text-slate-400 truncate flex items-center gap-1.5 font-semibold">
+                      <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
                       Original: <a href={link.url} target="_blank" rel="noopener noreferrer" className="hover:underline text-blue-600 hover:text-blue-700">{link.url}</a>
                     </p>
 
-                    <div className="flex items-center gap-3 text-[11px] text-slate-400 pt-1">
+                    <div className="flex items-center gap-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider pt-0.5">
                       <span className="flex items-center gap-1">
-                        <Calendar className="w-3.5 h-3.5" />
+                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
                         {new Date(link.created_at).toLocaleDateString()}
                       </span>
                       <span>•</span>
@@ -275,16 +273,16 @@ export default function AdminShortener() {
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
-                    {/* Click Indicator */}
-                    <div className="px-3.5 py-2 bg-blue-50 border border-blue-100 rounded-2xl text-center min-w-[70px]">
-                      <div className="text-sm font-black text-blue-600 tabular-nums">{link.clicks_count}</div>
-                      <div className="text-[9px] uppercase tracking-wider font-bold text-blue-400">Clicks</div>
+                    {/* Click Indicator (Popping Emerald color) */}
+                    <div className="px-3.5 py-2.5 bg-emerald-50 border border-emerald-100 rounded-2xl text-center min-w-[72px] shadow-[inset_0_1px_2px_rgba(16,185,129,0.05)]">
+                      <div className="text-sm font-black text-emerald-600 tabular-nums">{link.clicks_count}</div>
+                      <div className="text-[9px] uppercase tracking-wider font-extrabold text-emerald-400 mt-0.5">Clicks</div>
                     </div>
 
                     {/* Quick actions */}
                     <button
                       onClick={() => copyToClipboard(link.code, link.id)}
-                      className="p-2 hover:bg-slate-50 border border-slate-200 rounded-xl text-slate-600 hover:text-slate-900 transition-colors shadow-sm bg-white"
+                      className="p-2.5 hover:bg-slate-50 border border-slate-200/80 hover:border-slate-350 rounded-xl text-slate-650 hover:text-slate-900 transition-colors shadow-sm bg-white active:scale-95"
                       title="Copy short link"
                     >
                       {copiedId === link.id ? <Check className="w-4.5 h-4.5 text-green-600" /> : <Copy className="w-4.5 h-4.5" />}
@@ -292,7 +290,7 @@ export default function AdminShortener() {
 
                     <button
                       onClick={() => fetchAnalytics(link)}
-                      className="p-2 hover:bg-blue-50 border border-blue-200 rounded-xl text-blue-600 hover:text-blue-700 transition-colors shadow-sm bg-white"
+                      className="p-2.5 hover:bg-blue-50 border border-blue-200 rounded-xl text-blue-600 hover:text-blue-750 transition-colors shadow-sm bg-white active:scale-95"
                       title="View Detailed Analytics"
                     >
                       <BarChart3 className="w-4.5 h-4.5" />
@@ -300,7 +298,7 @@ export default function AdminShortener() {
 
                     <button
                       onClick={() => handleDelete(link.id)}
-                      className="p-2 hover:bg-red-50 border border-red-200 rounded-xl text-red-500 hover:text-red-600 transition-colors shadow-sm bg-white"
+                      className="p-2.5 hover:bg-red-50 border border-red-200 rounded-xl text-red-500 hover:text-red-750 transition-colors shadow-sm bg-white active:scale-95"
                       title="Delete link"
                     >
                       <Trash2 className="w-4.5 h-4.5" />
@@ -315,10 +313,10 @@ export default function AdminShortener() {
 
       {/* Analytics Modal Drawer */}
       {selectedLink && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-end animate-in fade-in duration-200">
-          <div className="bg-slate-50 w-full max-w-4xl h-full shadow-2xl p-6 md:p-8 flex flex-col space-y-6 overflow-y-auto animate-in slide-in-from-right duration-300">
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-end animate-in fade-in duration-200">
+          <div className="bg-slate-50 w-full max-w-4xl h-full shadow-2xl flex flex-col border-l border-slate-200/80 animate-in slide-in-from-right duration-300">
             
-            {/* Modal Header */}
+            {/* Modal Header */}/}
             <div className="flex items-center justify-between border-b border-slate-200 pb-5 shrink-0">
               <div className="space-y-1">
                 <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">

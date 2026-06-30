@@ -230,166 +230,210 @@ export default function AdminLinktree() {
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg">
-              <Award className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">Linktree landing page Builder</h1>
-              <p className="text-sm text-slate-500">Design your school links portal and manage active redirects</p>
-            </div>
+      {/* Header Card */}
+      <div className="bg-white border border-slate-200/60 rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.01)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in fade-in duration-300">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/15 transform hover:rotate-6 transition-transform duration-300 shrink-0">
+            <Award className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Linktree Landing Page Builder</h1>
+            <p className="text-sm font-semibold text-slate-500">Design your school links portal and manage active custom redirects</p>
           </div>
         </div>
         <a
           href="/links"
           target="_blank"
-          className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-all shadow-sm shrink-0"
+          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-650 text-white rounded-xl font-bold text-sm shadow hover:from-blue-700 hover:to-indigo-700 hover:scale-[1.02] active:scale-95 transition-all shrink-0"
         >
-          <Eye className="w-4 h-4" /> View Live Page
+          <Eye className="w-4.5 h-4.5" /> View Live Page
         </a>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Left Card: Profile Branding */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm h-fit space-y-5">
-          <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-violet-500" />
-            Branding Customizer
+        {/* Left Card: Profile Branding (Premium Overhaul) */}
+        <div className="bg-white rounded-3xl p-6.5 border border-slate-200/60 shadow-[0_4px_24px_rgba(0,0,0,0.02)] h-fit space-y-6 animate-in slide-in-from-left-4 duration-300">
+          <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
+            <Sparkles className="w-4.5 h-4.5 text-violet-655" />
+            Customize Profile Landing
           </h2>
 
-          <form onSubmit={handleSaveSettings} className="space-y-4">
-            
-            {/* Avatar Upload */}
-            <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Profile Logo / Avatar</label>
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden flex items-center justify-center p-1 relative shrink-0">
-                  {settings.logo_url ? (
-                    <img
-                      src={settings.logo_url.startsWith("http") ? settings.logo_url : `${process.env.REACT_APP_BACKEND_URL || ""}${settings.logo_url}`}
-                      alt="Logo preview"
-                      className="w-full h-full object-cover rounded-xl"
-                    />
-                  ) : (
-                    <Award className="w-6 h-6 text-slate-300" />
-                  )}
-                  {uploadingLogo && (
-                    <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center">
-                      <Loader2 className="w-5 h-5 text-white animate-spin" />
-                    </div>
-                  )}
-                </div>
-                <label className="flex items-center gap-2 px-4 py-2 border border-slate-200 hover:bg-slate-50 rounded-xl font-bold text-xs text-slate-700 cursor-pointer transition shadow-sm">
-                  <Upload className="w-3.5 h-3.5" /> Upload File
-                  <input type="file" onChange={handleLogoUpload} className="hidden" accept="image/*" />
+          <div className="border-t border-slate-100/80 pt-5 space-y-5">
+            {/* Logo Image Upload layout */}
+            <div className="flex items-center gap-4 bg-slate-50/50 p-4 border border-slate-200/60 rounded-2xl shadow-inner">
+              <div className="w-16 h-16 rounded-full bg-white border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 shadow-sm relative group">
+                {settings.logo_url ? (
+                  <img src={settings.logo_url} alt="Logo" className="w-full h-full object-contain p-1" />
+                ) : (
+                  <span className="text-xs font-bold text-slate-400">No Image</span>
+                )}
+                {uploadingLogo && (
+                  <div className="absolute inset-0 bg-slate-900/60 flex items-center justify-center">
+                    <Loader2 className="w-4 h-4 text-white animate-spin" />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 space-y-1">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">School Emblem Logo</span>
+                <label className="block">
+                  <span className="sr-only">Choose logo file</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                    disabled={uploadingLogo}
+                    className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer"
+                  />
                 </label>
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Profile Title</label>
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Profile Title</label>
               <input
                 type="text"
                 placeholder="School Title"
                 value={settings.profile_title}
                 onChange={(e) => handleSettingsChange("profile_title", e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-slate-50 font-medium text-sm"
+                className="w-full px-4 py-3 border border-slate-200/85 rounded-2xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/15 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]"
                 required
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Profile Handle</label>
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Profile Handle</label>
               <input
                 type="text"
                 placeholder="e.g. @Sdps_patna"
                 value={settings.profile_handle || ""}
                 onChange={(e) => handleSettingsChange("profile_handle", e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-slate-50 font-medium text-sm"
+                className="w-full px-4 py-3 border border-slate-200/85 rounded-2xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/15 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Profile Bio</label>
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Profile Bio</label>
               <textarea
                 rows={3}
                 placeholder="Enter a brief bio..."
                 value={settings.profile_bio}
                 onChange={(e) => handleSettingsChange("profile_bio", e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-slate-50 font-medium text-sm resize-none"
+                className="w-full px-4 py-3 border border-slate-200/85 rounded-2xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/15 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-sm resize-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Theme Style</label>
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Theme Style</label>
               <select
                 value={settings.theme || "light"}
                 onChange={(e) => handleSettingsChange("theme", e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-slate-50 font-medium text-sm"
+                className="w-full px-4 py-3 border border-slate-200/85 rounded-2xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/15 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]"
               >
-                <option value="light">Premium Light Gradient Glass</option>
-                <option value="dark">Premium Dark Glass</option>
+                <option value="light">🌅 Glassmorphic Light Theme</option>
+                <option value="dark">🌌 Midnight Dark Theme</option>
               </select>
             </div>
 
-            <div className="border-t border-slate-100 pt-4 space-y-3">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
-                <Globe className="w-3.5 h-3.5 text-slate-400" /> Social Links (URLs)
-              </h3>
-              
-              {["instagram", "facebook", "youtube", "whatsapp", "playstore"].map(net => (
-                <div key={net} className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase text-slate-400">{net}</label>
-                  <input
-                    type="text"
-                    placeholder={`https://${net}.com/...`}
-                    value={settings[net] || ""}
-                    onChange={(e) => handleSettingsChange(net, e.target.value)}
-                    className="w-full px-4 py-2 border border-slate-200 rounded-xl text-slate-850 focus:outline-none focus:ring-2 focus:ring-blue-500/10 bg-slate-50 font-mono text-xs"
-                  />
-                </div>
-              ))}
+            {/* Socials Divider Header */}
+            <div className="pt-2">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block border-b border-slate-100 pb-2">Social Channels Outlets</span>
+            </div>
 
+            <div className="grid grid-cols-2 gap-3.5">
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase text-slate-400">Email Address</label>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Instagram</span>
+                <input
+                  type="url"
+                  placeholder="https://..."
+                  value={settings.instagram}
+                  onChange={(e) => handleSettingsChange("instagram", e.target.value)}
+                  className="w-full px-3 py-2.5 border border-slate-200/80 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-xs shadow-inner"
+                />
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Facebook</span>
+                <input
+                  type="url"
+                  placeholder="https://..."
+                  value={settings.facebook}
+                  onChange={(e) => handleSettingsChange("facebook", e.target.value)}
+                  className="w-full px-3 py-2.5 border border-slate-200/80 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-xs shadow-inner"
+                />
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">YouTube</span>
+                <input
+                  type="url"
+                  placeholder="https://..."
+                  value={settings.youtube}
+                  onChange={(e) => handleSettingsChange("youtube", e.target.value)}
+                  className="w-full px-3 py-2.5 border border-slate-200/80 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-xs shadow-inner"
+                />
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">WhatsApp Link</span>
+                <input
+                  type="url"
+                  placeholder="https://..."
+                  value={settings.whatsapp}
+                  onChange={(e) => handleSettingsChange("whatsapp", e.target.value)}
+                  className="w-full px-3 py-2.5 border border-slate-200/80 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-xs shadow-inner"
+                />
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Play Store App</span>
+                <input
+                  type="url"
+                  placeholder="https://..."
+                  value={settings.playstore}
+                  onChange={(e) => handleSettingsChange("playstore", e.target.value)}
+                  className="w-full px-3 py-2.5 border border-slate-200/80 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-xs shadow-inner"
+                />
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">School Email</span>
                 <input
                   type="email"
-                  placeholder="info@sdpublic.org"
-                  value={settings.email || ""}
+                  placeholder="sdpublic@..."
+                  value={settings.email}
                   onChange={(e) => handleSettingsChange("email", e.target.value)}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-xl text-slate-850 focus:outline-none focus:ring-2 focus:ring-blue-500/10 bg-slate-50 font-mono text-xs"
+                  className="w-full px-3 py-2.5 border border-slate-200/80 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-xs shadow-inner"
                 />
               </div>
             </div>
 
             <button
-              type="submit"
+              onClick={handleSaveSettings}
               disabled={savingSettings}
-              className="w-full py-2.5 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-sm hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md shadow-blue-500/10 flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-3.5 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-650 text-white rounded-2xl font-bold text-sm shadow-md shadow-violet-500/15 hover:shadow-lg transform hover:scale-[1.01] active:scale-99 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-60"
             >
-              {savingSettings ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              Save Branding
+              {savingSettings ? (
+                <>
+                  <Loader2 className="w-4.5 h-4.5 animate-spin" /> Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4.5 h-4.5" /> Save Branding Settings
+                </>
+              )}
             </button>
-          </form>
+          </div>
         </div>
 
-        {/* Right Card: Links management */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <LayoutGrid className="w-4 h-4 text-violet-500" />
+        {/* Right Card: Links management (Premium Overhaul) */}
+        <div className="lg:col-span-2 space-y-4 animate-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-white rounded-3xl p-6.5 border border-slate-200/60 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-100/80 pb-4">
+              <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                <LayoutGrid className="w-4.5 h-4.5 text-violet-500" />
                 Manage Profile Links
               </h2>
               <button
                 onClick={() => openLinkModal()}
-                className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-xs hover:from-blue-700 hover:to-indigo-700 transition-all shadow-sm"
+                className="flex items-center gap-1.5 px-4.5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-xs hover:from-blue-700 hover:to-indigo-700 transform hover:scale-[1.02] active:scale-95 transition-all shadow shadow-blue-500/10"
               >
-                <Plus className="w-3.5 h-3.5" /> Add Link
+                <Plus className="w-4 h-4" /> Add Link Outlet
               </button>
             </div>
 
@@ -404,82 +448,82 @@ export default function AdminLinktree() {
                 {links.map((link, idx) => (
                   <div
                     key={link.id}
-                    className="flex items-center justify-between p-4.5 border border-slate-200 rounded-2xl hover:bg-slate-50/50 transition-all gap-4 group"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between p-5 border border-slate-150 rounded-3xl hover:bg-slate-50/30 transition-all duration-300 gap-4 group bg-white shadow-sm hover:shadow-[0_8px_20px_rgba(0,0,0,0.02)]"
                   >
                     {/* Link Info */}
-                    <div className="min-w-0 flex-1 space-y-1">
+                    <div className="min-w-0 flex-1 space-y-1.5">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-slate-900 text-sm">{link.title}</span>
+                        <span className="font-extrabold text-slate-900 text-sm md:text-base">{link.title}</span>
                         {link.group_header && (
-                          <span className="px-2 py-0.5 rounded-full bg-violet-50 border border-violet-100 text-violet-600 text-[10px] font-bold">
+                          <span className="px-2.5 py-0.5 rounded-xl bg-violet-50 border border-violet-100/60 text-violet-600 text-[10px] font-bold uppercase tracking-wider">
                             📂 {link.group_header}
                           </span>
                         )}
-                        <span className="px-2 py-0.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-[10px] font-bold">
+                        <span className="px-2.5 py-0.5 rounded-xl bg-blue-50 border border-blue-100/60 text-blue-600 text-[10px] font-bold uppercase tracking-wider">
                           📈 {link.clicks_count || 0} clicks
                         </span>
                       </div>
                       <p className="text-xs text-slate-400 truncate font-mono">
-                        <a href={link.url} target="_blank" rel="noopener noreferrer" className="hover:underline text-blue-600">{link.url}</a>
+                        <a href={link.url} target="_blank" rel="noopener noreferrer" className="hover:underline text-blue-600 font-semibold">{link.url}</a>
                       </p>
                     </div>
 
                     {/* Actions and Sorting */}
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                       {/* Toggle status */}
                       <button
                         onClick={() => handleToggleActive(link)}
-                        className={`p-1.5 rounded-xl border transition-colors shadow-sm ${
+                        className={`p-2.5 rounded-xl border transition-all duration-300 shadow-sm active:scale-95 ${
                           link.is_active
                             ? "bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100"
-                            : "bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100"
+                            : "bg-slate-50 border-slate-200/80 text-slate-450 hover:bg-slate-100"
                         }`}
                         title={link.is_active ? "Link is Active (Click to Hide)" : "Link is Hidden (Click to Show)"}
                       >
-                        {link.is_active ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                        {link.is_active ? <Eye className="w-4.5 h-4.5" /> : <EyeOff className="w-4.5 h-4.5" />}
                       </button>
 
                       {/* Analytics button */}
                       <button
                         onClick={() => fetchLinkAnalytics(link)}
-                        className="p-1.5 hover:bg-violet-50 border border-violet-200 rounded-xl text-violet-600 hover:text-violet-750 shadow-sm bg-white"
+                        className="p-2.5 hover:bg-violet-50 border border-slate-200 rounded-xl text-violet-600 hover:text-violet-755 transition-all shadow-sm bg-white active:scale-95"
                         title="View Detailed Analytics"
                       >
-                        <BarChart3 className="w-4 h-4" />
+                        <BarChart3 className="w-4.5 h-4.5" />
                       </button>
 
                       {/* Sorting buttons */}
                       <button
                         onClick={() => handleMove(idx, -1)}
                         disabled={idx === 0}
-                        className="p-1.5 hover:bg-slate-100 border border-slate-200 rounded-xl text-slate-500 disabled:opacity-40 shadow-sm"
+                        className="p-2.5 hover:bg-slate-50 border border-slate-200 rounded-xl text-slate-500 transition-all shadow-sm disabled:opacity-40 bg-white active:scale-95"
                         title="Move Up"
                       >
-                        <ArrowUp className="w-4 h-4" />
+                        <ArrowUp className="w-4.5 h-4.5" />
                       </button>
                       <button
                         onClick={() => handleMove(idx, 1)}
                         disabled={idx === links.length - 1}
-                        className="p-1.5 hover:bg-slate-100 border border-slate-200 rounded-xl text-slate-500 disabled:opacity-40 shadow-sm"
+                        className="p-2.5 hover:bg-slate-50 border border-slate-200 rounded-xl text-slate-500 transition-all shadow-sm disabled:opacity-40 bg-white active:scale-95"
                         title="Move Down"
                       >
-                        <ArrowDown className="w-4 h-4" />
+                        <ArrowDown className="w-4.5 h-4.5" />
                       </button>
 
                       <button
                         onClick={() => openLinkModal(link)}
-                        className="p-1.5 hover:bg-blue-50 border border-blue-200 rounded-xl text-blue-600 shadow-sm"
+                        className="p-2.5 hover:bg-blue-50 border border-slate-200 rounded-xl text-blue-600 hover:text-blue-755 transition-all shadow-sm bg-white active:scale-95"
                         title="Edit link details"
                       >
-                        <Edit2 className="w-4 h-4" />
+                        <Edit2 className="w-4.5 h-4.5" />
                       </button>
 
                       <button
                         onClick={() => handleDeleteLink(link.id)}
-                        className="p-1.5 hover:bg-red-50 border border-red-200 rounded-xl text-red-500 shadow-sm"
+                        className="p-2.5 hover:bg-red-50 border border-slate-200 rounded-xl text-red-500 hover:text-red-755 transition-all shadow-sm bg-white active:scale-95"
                         title="Delete link"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-4.5 h-4.5" />
                       </button>
                     </div>
                   </div>

@@ -98,35 +98,37 @@ export default function AdminElectionsScheduler() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg">
-          <CalendarClock className="w-5 h-5 text-white" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Results Publish Scheduler</h1>
-          <p className="text-sm text-slate-500">Schedule when election results become publicly visible</p>
+      {/* Header Card */}
+      <div className="bg-white border border-slate-200/60 rounded-3xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.01)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in fade-in duration-300">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-650 flex items-center justify-center shadow-lg shadow-violet-500/15 transform hover:rotate-6 transition-transform duration-300 shrink-0">
+            <CalendarClock className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Results Publish Scheduler</h1>
+            <p className="text-sm font-semibold text-slate-500">Configure exact dates and times for election results release</p>
+          </div>
         </div>
       </div>
 
       {/* Current Status Card */}
-      <div className={`rounded-2xl border-2 p-6 ${
+      <div className={`rounded-3xl border-2 p-6.5 shadow-sm transition-all duration-300 animate-in slide-in-from-bottom-4 duration-300 ${
         isPublished
-          ? "bg-emerald-50 border-emerald-200"
+          ? "bg-emerald-50/50 border-emerald-200/60"
           : isPending
-          ? "bg-amber-50 border-amber-200"
-          : "bg-slate-50 border-slate-200"
+          ? "bg-amber-50/50 border-amber-200/60"
+          : "bg-slate-50 border-slate-200/60"
       }`}>
-        <div className="flex items-center gap-3 mb-3">
+        <div className="flex items-center gap-3 mb-3.5">
           {isPublished ? (
-            <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+            <CheckCircle2 className="w-6.5 h-6.5 text-emerald-600" />
           ) : isPending ? (
-            <Clock className="w-6 h-6 text-amber-600 animate-pulse" />
+            <Clock className="w-6.5 h-6.5 text-amber-600 animate-pulse" />
           ) : (
-            <AlertTriangle className="w-6 h-6 text-slate-400" />
+            <AlertTriangle className="w-6.5 h-6.5 text-slate-400" />
           )}
-          <span className={`text-lg font-bold ${
-            isPublished ? "text-emerald-700" : isPending ? "text-amber-700" : "text-slate-500"
+          <span className={`text-lg font-black tracking-tight ${
+            isPublished ? "text-emerald-800" : isPending ? "text-amber-800" : "text-slate-500"
           }`}>
             {isPublished
               ? "Results are LIVE"
@@ -137,73 +139,73 @@ export default function AdminElectionsScheduler() {
         </div>
 
         {isPublished && (
-          <p className="text-emerald-600 text-sm">
+          <p className="text-emerald-700 font-semibold text-sm">
             Published since {scheduledDate.toLocaleString()}
           </p>
         )}
 
         {isPending && (
-          <div>
-            <p className="text-amber-600 text-sm mb-4">
-              Scheduled for: <strong>{scheduledDate.toLocaleString()}</strong>
+          <div className="space-y-4">
+            <p className="text-amber-700 font-semibold text-sm">
+              Scheduled for: <strong className="font-bold text-slate-800">{scheduledDate.toLocaleString()}</strong>
             </p>
             <div className="flex items-center gap-4">
-              <div className="bg-white rounded-xl border border-amber-200 px-5 py-3 text-center shadow-sm">
-                <div className="text-3xl font-black text-amber-700 tabular-nums">{String(hours).padStart(2, "0")}</div>
-                <div className="text-[10px] uppercase tracking-wider font-bold text-amber-500 mt-0.5">Hours</div>
+              <div className="bg-white rounded-2xl border border-amber-200 px-5 py-3.5 text-center shadow-sm min-w-[80px]">
+                <div className="text-3xl font-black text-amber-700 tabular-nums leading-none">{String(hours).padStart(2, "0")}</div>
+                <div className="text-[9px] uppercase tracking-widest font-extrabold text-amber-500 mt-1.5">Hours</div>
               </div>
               <span className="text-2xl font-black text-amber-400">:</span>
-              <div className="bg-white rounded-xl border border-amber-200 px-5 py-3 text-center shadow-sm">
-                <div className="text-3xl font-black text-amber-700 tabular-nums">{String(minutes).padStart(2, "0")}</div>
-                <div className="text-[10px] uppercase tracking-wider font-bold text-amber-500 mt-0.5">Minutes</div>
+              <div className="bg-white rounded-2xl border border-amber-200 px-5 py-3.5 text-center shadow-sm min-w-[80px]">
+                <div className="text-3xl font-black text-amber-700 tabular-nums leading-none">{String(minutes).padStart(2, "0")}</div>
+                <div className="text-[9px] uppercase tracking-widest font-extrabold text-amber-500 mt-1.5">Minutes</div>
               </div>
               <span className="text-2xl font-black text-amber-400">:</span>
-              <div className="bg-white rounded-xl border border-amber-200 px-5 py-3 text-center shadow-sm">
-                <div className="text-3xl font-black text-amber-700 tabular-nums">{String(seconds).padStart(2, "0")}</div>
-                <div className="text-[10px] uppercase tracking-wider font-bold text-amber-500 mt-0.5">Seconds</div>
+              <div className="bg-white rounded-2xl border border-amber-200 px-5 py-3.5 text-center shadow-sm min-w-[80px]">
+                <div className="text-3xl font-black text-amber-700 tabular-nums leading-none">{String(seconds).padStart(2, "0")}</div>
+                <div className="text-[9px] uppercase tracking-widest font-extrabold text-amber-500 mt-1.5">Seconds</div>
               </div>
             </div>
           </div>
         )}
 
         {!currentSchedule && (
-          <p className="text-slate-400 text-sm">No publication schedule has been set. Results are hidden from the public.</p>
+          <p className="text-slate-500 font-semibold text-sm">No publication schedule has been set. Results are hidden from the public.</p>
         )}
       </div>
 
       {/* Schedule Form */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
-        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-          <CalendarClock className="w-5 h-5 text-violet-500" />
+      <div className="bg-white rounded-3xl border border-slate-200/60 shadow-[0_4px_24px_rgba(0,0,0,0.02)] p-6.5 space-y-5 animate-in slide-in-from-bottom-4 duration-300">
+        <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
+          <CalendarClock className="w-5 h-5 text-violet-555" />
           Set Publication Time
         </h2>
 
-        <div>
-          <label className="block text-sm font-medium text-slate-600 mb-1.5">Date & Time</label>
+        <div className="space-y-1.5">
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-400">Date & Time</label>
           <input
             type="datetime-local"
             value={publishTime}
             onChange={(e) => setPublishTime(e.target.value)}
-            className="w-full px-4 py-3 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent bg-slate-50 font-medium"
+            className="w-full px-4 py-3.5 border border-slate-200 rounded-2xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/15 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]"
           />
         </div>
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-3 pt-2">
           <button
             onClick={handleSchedule}
             disabled={saving}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl font-bold text-sm hover:from-violet-700 hover:to-purple-700 transition-all shadow-md disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-violet-600 to-purple-650 text-white rounded-2xl font-bold text-sm shadow-md hover:from-violet-700 hover:to-purple-700 transform hover:scale-[1.01] active:scale-99 transition-all disabled:opacity-50 shrink-0"
           >
-            <CalendarClock className="w-4 h-4" />
+            <CalendarClock className="w-4.5 h-4.5" />
             {saving ? "Saving..." : "Schedule Release"}
           </button>
 
           <button
             onClick={handlePublishNow}
             disabled={saving}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-bold text-sm hover:from-emerald-600 hover:to-emerald-700 transition-all shadow-md disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-550 text-white rounded-2xl font-bold text-sm shadow-md hover:from-emerald-655 hover:to-teal-655 transform hover:scale-[1.01] active:scale-99 transition-all disabled:opacity-50 shrink-0"
           >
-            <Rocket className="w-4 h-4" />
+            <Rocket className="w-4.5 h-4.5" />
             Publish Now
           </button>
 
@@ -211,9 +213,9 @@ export default function AdminElectionsScheduler() {
             <button
               onClick={handleClear}
               disabled={saving}
-              className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-red-200 text-red-600 rounded-xl font-bold text-sm hover:bg-red-50 transition-all disabled:opacity-50"
+              className="flex items-center gap-2 px-6 py-3.5 bg-white border border-red-200 text-red-600 rounded-2xl font-bold text-sm hover:bg-red-50/80 active:scale-95 transition-all disabled:opacity-50 shrink-0"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-4.5 h-4.5" />
               Clear Schedule
             </button>
           )}
