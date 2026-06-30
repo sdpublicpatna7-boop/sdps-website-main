@@ -1234,12 +1234,16 @@ async def get_linktree_settings(admin: TokenData = Depends(require_permission("s
     settings = await db.linktree_settings.find_one({"id": "branding"}, {"_id": 0})
     if not settings:
         settings = LinktreeSettings().model_dump()
+        
+    site_settings = await db.site_settings.find_one({"id": "site"}, {"logo_url": 1})
+    if site_settings and site_settings.get("logo_url"):
+        settings["logo_url"] = site_settings["logo_url"]
+        
     return settings
 
 
 @admin_router.post("/linktree/settings")
 async def save_linktree_settings(payload: LinktreeSettings, admin: TokenData = Depends(require_permission("site-settings"))):
-    # Ensure ID is fixed to branding
     doc = payload.model_dump()
     doc["id"] = "branding"
     await db.linktree_settings.update_one(
@@ -1247,6 +1251,15 @@ async def save_linktree_settings(payload: LinktreeSettings, admin: TokenData = D
         {"$set": doc},
         upsert=True
     )
+    
+    # Also update site settings logo_url to keep them connected
+    if payload.logo_url:
+        await db.site_settings.update_one(
+            {"id": "site"},
+            {"$set": {"logo_url": payload.logo_url}},
+            upsert=True
+        )
+        
     return doc
 
 

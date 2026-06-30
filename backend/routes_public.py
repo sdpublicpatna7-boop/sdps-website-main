@@ -1251,6 +1251,10 @@ async def get_public_linktree():
     if not settings:
         settings = LinktreeSettings().model_dump()
         
+    site_settings = await db.site_settings.find_one({"id": "site"}, {"logo_url": 1})
+    if site_settings and site_settings.get("logo_url"):
+        settings["logo_url"] = site_settings["logo_url"]
+        
     links = await db.linktree_links.find({"is_active": True}, {"_id": 0}).sort("order", 1).to_list(200)
     
     return {
