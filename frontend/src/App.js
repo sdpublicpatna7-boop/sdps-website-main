@@ -54,6 +54,8 @@ const ElectionBoard = lazy(() => import("@/pages/elections/NoticeBoard"));
 const AdminElections = lazy(() => import("@/pages/admin/AdminElections"));
 const AdminElectionsResults = lazy(() => import("@/pages/admin/AdminElectionsResults"));
 const AdminElectionsScheduler = lazy(() => import("@/pages/admin/AdminElectionsScheduler"));
+const ShortLinkRedirect = lazy(() => import("@/pages/ShortLinkRedirect"));
+const AdminShortener = lazy(() => import("@/pages/admin/AdminShortener"));
 
 
 
@@ -129,6 +131,7 @@ function App() {
               <Route path="/elections/thank-you" element={<VoteProvider><Suspense fallback={<div>Loading...</div>}><ElectionThankYou /></Suspense></VoteProvider>} />
               <Route path="/elections/results" element={<Suspense fallback={<div>Loading...</div>}><ElectionPublicResults /></Suspense>} />
               <Route path="/elections/board" element={<Suspense fallback={<div>Loading...</div>}><ElectionBoard /></Suspense>} />
+              <Route path="/s/:code" element={<Suspense fallback={<div>Loading...</div>}><ShortLinkRedirect /></Suspense>} />
 
               {/* Public */}
               <Route element={<PublicLayout />}>
@@ -170,6 +173,7 @@ function App() {
               {/* Admin (protected) */}
               <Route path="/admin" element={<Suspense fallback={<AdminLoading />}><AdminLayout /></Suspense>}>
                 <Route index element={<AdminDashboard />} />
+                <Route path="link-shortener" element={<Suspense fallback={<AdminLoading />}><AdminShortener /></Suspense>} />
                 <Route path="elections" element={<Suspense fallback={<AdminLoading />}><AdminElections /></Suspense>} />
                 <Route path="elections/results" element={<Suspense fallback={<AdminLoading />}><AdminElectionsResults /></Suspense>} />
                 <Route path="elections/scheduler" element={<Suspense fallback={<AdminLoading />}><AdminElectionsScheduler /></Suspense>} />

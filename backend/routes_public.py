@@ -21,7 +21,7 @@ from models import (
     PopupSettings, FeeVerifyRequest, SiteSettings,
     ContactMessage, now_iso, new_id,
     EligibilityRow, FeeStructureRow, HostelFeeRow, HostelGalleryItem,
-    AdministrationMember, LegalPage
+    AdministrationMember, LegalPage, ShortLinkClick
 )
 from email_service import send_email, render_template
 from sms_service import send_sms
@@ -1164,6 +1164,84 @@ async def generate_maps_review(payload: dict = Body(...)):
             await _mark_used(fb)
             return {"text": fb}
     return {"text": random.choice(fallbacks)}
+
+
+def _parse_user_agent(ua: str):
+    device = "Desktop"
+    browser = "Other"
+    os_name = "Other"
+    
+    ua_lower = ua.lower()
+    if "ipad" in ua_lower or "tablet" in ua_lower:
+        device = "Tablet"
+    elif "mobi" in ua_lower or "android" in ua_lower or "iphone" in ua_lower:
+        device = "Mobile"
+        
+    if "edg" in ua_lower:
+        browser = "Edge"
+    elif "opr" in ua_lower or "opera" in ua_lower:
+        browser = "Opera"
+    elif "chrome" in ua_lower:
+        browser = "Chrome"
+    elif "safari" in ua_lower and "chrome" not in ua_lower:
+        browser = "Safari"
+    elif "firefox" in ua_lower:
+        browser = "Firefox"
+        
+    if "windows" in ua_lower:
+        os_name = "Windows"
+    elif "macintosh" in ua_lower or "mac os" in ua_lower:
+        os_name = "macOS"
+    elif "android" in ua_lower:
+        os_name = "Android"
+    elif "iphone" in ua_lower or "ipad" in ua_lower or "ipod" in ua_lower:
+        os_name = "iOS"
+    elif "linux" in ua_lower:
+        os_name = "Linux"
+        
+    return device, browser, os_name
+
+
+@public_router.get("/s/{code}")
+async def resolve_short_link(code: str, request: Request):
+    link = await db.short_links.find_one({"code": code}, {"_id": 0})
+    if not link:
+        raise HTTPException(status_code=404, detail="Short link not found")
+        
+    await db.short_links.update_one(
+        {"code": code},
+        {"$inc": {"clicks_count": 1}}
+    )
+    
+    ip = request.client.host if request.client else "Unknown"
+    ua = request.headers.get("user-agent", "")
+    referrer = request.headers.get("referer", "")
+    country = request.headers.get("cf-ipcountry", "Unknown")
+    
+    device, browser, os_name = _parse_user_agent(ua)
+    
+    ref_domain = "Direct"
+    if referrer:
+        from urllib.parse import urlparse
+        try:
+            parsed_ref = urlparse(referrer)
+            ref_domain = parsed_ref.netloc.replace("www.", "") or "Direct"
+        except Exception:
+            pass
+            
+    click_log = ShortLinkClick(
+        link_code=code,
+        ip=ip,
+        user_agent=ua,
+        device=device,
+        browser=browser,
+        os=os_name,
+        referrer=ref_domain,
+        country=country
+    )
+    await db.short_link_clicks.insert_one(click_log.model_dump())
+    
+    return {"url": link["url"]}
 
 
 

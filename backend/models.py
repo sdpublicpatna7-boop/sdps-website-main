@@ -579,3 +579,33 @@ class Testimonial(BaseDoc):
     video_url: str = ""
     video_thumb_url: str = ""
     created_at: str = Field(default_factory=now_iso)
+
+
+# ---- Link Shortener ----
+class ShortLinkCreate(BaseDoc):
+    title: str
+    url: str
+    custom_code: Optional[str] = None
+
+
+class ShortLink(BaseDoc):
+    id: str = Field(default_factory=new_id)
+    code: str
+    title: str
+    url: str
+    created_at: str = Field(default_factory=now_iso)
+    created_by: str
+    clicks_count: int = 0
+
+
+class ShortLinkClick(BaseDoc):
+    id: str = Field(default_factory=new_id)
+    link_code: str
+    timestamp: str = Field(default_factory=now_iso)
+    ip: str
+    user_agent: str
+    browser: str
+    os: str
+    device: str
+    referrer: str
+    country: str

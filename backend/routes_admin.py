@@ -31,7 +31,8 @@ from models import (
     SiteSettings, now_iso, new_id, AdmissionEnquiry,
     EligibilityRow, FeeStructureRow, HostelFeeRow, HostelGalleryItem,
     AdministrationMember, LegalPage, ExamPaper, HolidayHomework, KheloPatnaPhoto,
-    Educator, GeneratedThumbnail, SalarySlip, SalaryCertificate, ExperienceCertificate, Testimonial
+    Educator, GeneratedThumbnail, SalarySlip, SalaryCertificate, ExperienceCertificate, Testimonial,
+    ShortLink, ShortLinkCreate
 )
 
 logger = logging.getLogger(__name__)
@@ -1081,3 +1082,128 @@ async def update_khelo_patna_photo(item_id: str, payload: Dict[str, Any] = Body(
 async def delete_khelo_patna_photo(item_id: str, admin: TokenData = Depends(require_permission("khelo-patna-gallery"))):
     await db.khelo_patna_gallery.delete_one({"id": item_id})
     return {"deleted": item_id}
+
+
+# ============= LINK SHORTENER =============
+
+@admin_router.get("/shortener")
+async def list_short_links(admin: TokenData = Depends(require_permission("site-settings"))):
+    items = await db.short_links.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return items
+
+
+@admin_router.post("/shortener")
+async def create_short_link(payload: ShortLinkCreate, admin: TokenData = Depends(require_permission("site-settings"))):
+    code = None
+    if payload.custom_code:
+        # Sanitize code (alphanumeric and lowercase only)
+        code = "".join(c for c in payload.custom_code.lower() if c.isalnum())
+        if not code:
+            raise HTTPException(status_code=400, detail="Invalid custom code alias")
+            
+        existing = await db.short_links.find_one({"code": code})
+        if existing:
+            raise HTTPException(status_code=400, detail="Custom short code is already in use")
+    else:
+        import random
+        import string
+        chars = string.ascii_lowercase + string.digits
+        for _ in range(20):
+            test_code = "".join(random.choice(chars) for _ in range(6))
+            existing = await db.short_links.find_one({"code": test_code})
+            if not existing:
+                code = test_code
+                break
+        if not code:
+            raise HTTPException(status_code=500, detail="Could not generate unique short code")
+
+    link = ShortLink(
+        code=code,
+        title=payload.title.strip(),
+        url=payload.url.strip(),
+        created_by=admin.email
+    )
+    await db.short_links.insert_one(link.model_dump())
+    return link
+
+
+@admin_router.delete("/shortener/{item_id}")
+async def delete_short_link(item_id: str, admin: TokenData = Depends(require_permission("site-settings"))):
+    link = await db.short_links.find_one({"id": item_id})
+    if not link:
+        raise HTTPException(status_code=404, detail="Short link not found")
+        
+    code = link["code"]
+    await db.short_links.delete_one({"id": item_id})
+    await db.short_link_clicks.delete_many({"link_code": code})
+    return {"deleted": item_id}
+
+
+@admin_router.get("/shortener/{item_id}/analytics")
+async def get_short_link_analytics(item_id: str, admin: TokenData = Depends(require_permission("site-settings"))):
+    link = await db.short_links.find_one({"id": item_id})
+    if not link:
+        raise HTTPException(status_code=404, detail="Short link not found")
+        
+    code = link["code"]
+    
+    # 1. Device Split
+    cursor = db.short_link_clicks.aggregate([
+        {"$match": {"link_code": code}},
+        {"$group": {"_id": "$device", "count": {"$sum": 1}}}
+    ])
+    devices = [{"name": item["_id"], "value": item["count"]} for item in await cursor.to_list(100)]
+    
+    # 2. OS Split
+    cursor = db.short_link_clicks.aggregate([
+        {"$match": {"link_code": code}},
+        {"$group": {"_id": "$os", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ])
+    oss = [{"name": item["_id"], "value": item["count"]} for item in await cursor.to_list(100)]
+    
+    # 3. Browser Split
+    cursor = db.short_link_clicks.aggregate([
+        {"$match": {"link_code": code}},
+        {"$group": {"_id": "$browser", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ])
+    browsers = [{"name": item["_id"], "value": item["count"]} for item in await cursor.to_list(100)]
+    
+    # 4. Country Split
+    cursor = db.short_link_clicks.aggregate([
+        {"$match": {"link_code": code}},
+        {"$group": {"_id": "$country", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 10}
+    ])
+    countries = [{"name": item["_id"], "value": item["count"]} for item in await cursor.to_list(100)]
+    
+    # 5. Referrer Split
+    cursor = db.short_link_clicks.aggregate([
+        {"$match": {"link_code": code}},
+        {"$group": {"_id": "$referrer", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 10}
+    ])
+    referrers = [{"name": item["_id"], "value": item["count"]} for item in await cursor.to_list(100)]
+    
+    # 6. Daily Trend (last 30 days)
+    # Get counts grouped by YYYY-MM-DD
+    cursor = db.short_link_clicks.aggregate([
+        {"$match": {"link_code": code}},
+        {"$project": {"date": {"$substr": ["$timestamp", 0, 10]}}},
+        {"$group": {"_id": "$date", "count": {"$sum": 1}}},
+        {"$sort": {"_id": 1}}
+    ])
+    daily = [{"date": item["_id"], "clicks": item["count"]} for item in await cursor.to_list(1000)]
+    
+    return {
+        "link": link,
+        "devices": devices,
+        "oss": oss,
+        "browsers": browsers,
+        "countries": countries,
+        "referrers": referrers,
+        "daily": daily
+    }
