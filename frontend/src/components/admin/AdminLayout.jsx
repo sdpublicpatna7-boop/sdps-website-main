@@ -68,6 +68,7 @@ const NAV_ITEMS = [
   { to: "/admin/birthday-greetings", label: "Birthday Greetings", icon: Cake, permission: "whatsapp" },
   { to: "/admin/site-settings", label: "Site Settings", icon: Settings, permission: "site-settings" },
   { to: "/admin/link-shortener", label: "Link Shortener", icon: LinkIcon, permission: "site-settings" },
+  { to: "/admin/linktree", label: "Linktree Builder", icon: Award, permission: "site-settings" },
   { to: "/admin/integration-keys", label: "Integration Keys", icon: Settings, role: "superadmin" },
   { section: "Google Review" },
   { to: "/admin/maps-review", label: "Google Review QR", icon: Star, permission: "google-reviews" },

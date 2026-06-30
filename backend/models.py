@@ -609,3 +609,26 @@ class ShortLinkClick(BaseDoc):
     device: str
     referrer: str
     country: str
+
+
+# ---- Linktree ----
+class LinktreeSettings(BaseDoc):
+    id: str = "branding"
+    profile_title: str = "S.D. Public School, Patna"
+    profile_bio: str = "Nurturing excellence and preparing students to thrive in every challenge."
+    logo_url: str = "/logo192.png"
+    instagram: str = ""
+    facebook: str = ""
+    youtube: str = ""
+    whatsapp: str = ""
+    playstore: str = ""
+    email: str = ""
+
+
+class LinktreeLink(BaseDoc):
+    id: str = Field(default_factory=new_id)
+    title: str
+    url: str
+    group_header: Optional[str] = ""
+    order: int = 0
+    is_active: bool = True

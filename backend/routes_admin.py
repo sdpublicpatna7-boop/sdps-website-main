@@ -32,7 +32,7 @@ from models import (
     EligibilityRow, FeeStructureRow, HostelFeeRow, HostelGalleryItem,
     AdministrationMember, LegalPage, ExamPaper, HolidayHomework, KheloPatnaPhoto,
     Educator, GeneratedThumbnail, SalarySlip, SalaryCertificate, ExperienceCertificate, Testimonial,
-    ShortLink, ShortLinkCreate
+    ShortLink, ShortLinkCreate, LinktreeSettings, LinktreeLink
 )
 
 logger = logging.getLogger(__name__)
@@ -1225,3 +1225,72 @@ async def get_short_link_analytics(item_id: str, admin: TokenData = Depends(requ
         "referrers": referrers,
         "daily": daily
     }
+
+
+# ============= LINKTREE CUSTOMIZER =============
+
+@admin_router.get("/linktree/settings")
+async def get_linktree_settings(admin: TokenData = Depends(require_permission("site-settings"))):
+    settings = await db.linktree_settings.find_one({"id": "branding"}, {"_id": 0})
+    if not settings:
+        settings = LinktreeSettings().model_dump()
+    return settings
+
+
+@admin_router.post("/linktree/settings")
+async def save_linktree_settings(payload: LinktreeSettings, admin: TokenData = Depends(require_permission("site-settings"))):
+    # Ensure ID is fixed to branding
+    doc = payload.model_dump()
+    doc["id"] = "branding"
+    await db.linktree_settings.update_one(
+        {"id": "branding"},
+        {"$set": doc},
+        upsert=True
+    )
+    return doc
+
+
+@admin_router.get("/linktree/links")
+async def list_linktree_links(admin: TokenData = Depends(require_permission("site-settings"))):
+    links = await db.linktree_links.find({}, {"_id": 0}).sort("order", 1).to_list(1000)
+    return links
+
+
+@admin_router.post("/linktree/links")
+async def create_linktree_link(payload: LinktreeLink, admin: TokenData = Depends(require_permission("site-settings"))):
+    # Calculate highest order index
+    highest = 0
+    cursor = db.linktree_links.find({}, {"order": 1}).sort("order", -1).limit(1)
+    results = await cursor.to_list(1)
+    if results:
+        highest = results[0].get("order", 0)
+
+    doc = payload.model_dump()
+    doc["order"] = highest + 1
+    await db.linktree_links.insert_one(doc)
+    return {k:v for k,v in doc.items() if k!="_id"}
+
+
+@admin_router.put("/linktree/links/{item_id}")
+async def update_linktree_link(item_id: str, payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(require_permission("site-settings"))):
+    # Exclude _id to avoid modification error
+    update = {k: v for k, v in payload.items() if k not in ["_id", "id"]}
+    await db.linktree_links.update_one({"id": item_id}, {"$set": update})
+    return await db.linktree_links.find_one({"id": item_id}, {"_id": 0})
+
+
+@admin_router.delete("/linktree/links/{item_id}")
+async def delete_linktree_link(item_id: str, admin: TokenData = Depends(require_permission("site-settings"))):
+    await db.linktree_links.delete_one({"id": item_id})
+    return {"deleted": item_id}
+
+
+@admin_router.post("/linktree/links/reorder")
+async def reorder_linktree_links(payload: List[str] = Body(...), admin: TokenData = Depends(require_permission("site-settings"))):
+    # payload is list of IDs in order
+    for idx, item_id in enumerate(payload):
+        await db.linktree_links.update_one(
+            {"id": item_id},
+            {"$set": {"order": idx}}
+        )
+    return {"status": "reordered"}

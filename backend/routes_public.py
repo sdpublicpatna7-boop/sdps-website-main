@@ -21,7 +21,7 @@ from models import (
     PopupSettings, FeeVerifyRequest, SiteSettings,
     ContactMessage, now_iso, new_id,
     EligibilityRow, FeeStructureRow, HostelFeeRow, HostelGalleryItem,
-    AdministrationMember, LegalPage, ShortLinkClick
+    AdministrationMember, LegalPage, ShortLinkClick, LinktreeSettings, LinktreeLink
 )
 from email_service import send_email, render_template
 from sms_service import send_sms
@@ -1243,6 +1243,20 @@ async def resolve_short_link(code: str, request: Request):
     await db.short_link_clicks.insert_one(click_log.model_dump())
     
     return {"url": link["url"]}
+
+
+@public_router.get("/linktree")
+async def get_public_linktree():
+    settings = await db.linktree_settings.find_one({"id": "branding"}, {"_id": 0})
+    if not settings:
+        settings = LinktreeSettings().model_dump()
+        
+    links = await db.linktree_links.find({"is_active": True}, {"_id": 0}).sort("order", 1).to_list(200)
+    
+    return {
+        "settings": settings,
+        "links": links
+    }
 
 
 

@@ -33,7 +33,7 @@ from routes_admin import admin_router, init_db as init_admin, limiter as admin_l
 from routes_qp import qp_router, init_db as init_qp, limiter as qp_limiter
 from routes_whatsapp import wa_router
 from auth import hash_password
-from models import SiteSettings, PopupSettings, AlumniSettings, new_id
+from models import SiteSettings, PopupSettings, AlumniSettings, new_id, LinktreeSettings
 
 
 # ── Keep-alive: stop Render free services from idling out (spin down ~15 min) ──
@@ -152,6 +152,8 @@ async def seed_defaults():
         await db.popup_settings.insert_one(PopupSettings().model_dump())
     if not await db.alumni_settings.find_one({"id": "alumni-settings"}):
         await db.alumni_settings.insert_one(AlumniSettings().model_dump())
+    if not await db.linktree_settings.find_one({"id": "branding"}):
+        await db.linktree_settings.insert_one(LinktreeSettings().model_dump())
 
 
 @asynccontextmanager
