@@ -88,15 +88,25 @@ export default function LinksPage() {
     return ArrowUpRight;
   };
 
+  const isLight = settings.theme === "light";
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans relative overflow-hidden flex flex-col justify-between py-12 px-4 select-none">
+    <div className={`min-h-screen font-sans relative overflow-hidden flex flex-col justify-between py-12 px-4 select-none transition-colors duration-500 ${
+      isLight ? "bg-gradient-to-tr from-violet-100 via-slate-50 to-emerald-50 text-slate-800" : "bg-slate-950 text-slate-100"
+    }`}>
       
       {/* CSS Floating Particles & Glows */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-3xl animate-pulse"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-600/10 rounded-full blur-3xl animate-pulse duration-4000"></div>
+      <div className={`absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full blur-3xl animate-pulse ${
+        isLight ? "bg-violet-400/20" : "bg-blue-600/10"
+      }`}></div>
+      <div className={`absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full blur-3xl animate-pulse duration-4000 ${
+        isLight ? "bg-emerald-400/20" : "bg-indigo-600/10"
+      }`}></div>
 
       {/* Floating schoolish icons in CSS */}
-      <div className="absolute inset-0 pointer-events-none opacity-20 overflow-hidden">
+      <div className={`absolute inset-0 pointer-events-none overflow-hidden transition-opacity duration-500 ${
+        isLight ? "opacity-30" : "opacity-20"
+      }`}>
         {/* Floating elements */}
         <div className="absolute top-10 left-[10%] text-2xl animate-bounce duration-3000">🎓</div>
         <div className="absolute top-[30%] right-[15%] text-2xl animate-bounce duration-5000">⭐</div>
@@ -107,8 +117,12 @@ export default function LinksPage() {
       <div className="max-w-xl w-full mx-auto space-y-8 z-10">
         
         {/* Profile Card */}
-        <div className="text-center space-y-4">
-          <div className="w-24 h-24 mx-auto rounded-3xl bg-white/[0.04] p-1 shadow-2xl shadow-indigo-500/5 border border-white/10 overflow-hidden flex items-center justify-center">
+        <div className="text-center space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className={`w-24 h-24 mx-auto rounded-3xl p-1 overflow-hidden flex items-center justify-center transition-all ${
+            isLight
+              ? "bg-white border border-slate-200/80 shadow-xl shadow-slate-200/50"
+              : "bg-white/[0.04] border border-white/10 shadow-2xl shadow-indigo-500/5"
+          }`}>
             {settings.logo_url ? (
               <img
                 src={settings.logo_url.startsWith("http") ? settings.logo_url : `${process.env.REACT_APP_BACKEND_URL || ""}${settings.logo_url}`}
@@ -120,25 +134,35 @@ export default function LinksPage() {
             )}
           </div>
           <div className="space-y-1.5 px-4">
-            <h1 className="text-2xl font-extrabold tracking-tight text-white">{settings.profile_title}</h1>
-            <p className="text-sm text-slate-400 leading-relaxed max-w-sm mx-auto font-medium">
+            <h1 className={`text-2xl font-extrabold tracking-tight transition-colors ${
+              isLight ? "text-slate-800" : "text-white"
+            }`}>{settings.profile_title}</h1>
+            <p className={`text-sm leading-relaxed max-w-sm mx-auto font-semibold transition-colors ${
+              isLight ? "text-slate-600" : "text-slate-400"
+            }`}>
               {settings.profile_bio}
             </p>
           </div>
         </div>
 
         {/* Links Group Section */}
-        <div className="space-y-6 px-1">
+        <div className="space-y-6 px-1 animate-in fade-in slide-in-from-bottom-4 duration-500">
           {Object.entries(groupedLinks).map(([groupName, groupItems]) => (
             <div key={groupName} className="space-y-3">
               {/* Category Divider Header */}
               {groupName !== "Links" && (
                 <div className="flex items-center gap-3 px-2">
-                  <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-white/10"></div>
-                  <span className="text-[10px] uppercase font-bold tracking-widest text-slate-500 select-none">
+                  <div className={`h-[1px] flex-1 ${
+                    isLight ? "bg-slate-200/70" : "bg-gradient-to-r from-transparent to-white/10"
+                  }`}></div>
+                  <span className={`text-[10px] uppercase font-bold tracking-widest select-none ${
+                    isLight ? "text-slate-400" : "text-slate-500"
+                  }`}>
                     {groupName}
                   </span>
-                  <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-white/10"></div>
+                  <div className={`h-[1px] flex-1 ${
+                    isLight ? "bg-slate-200/70" : "bg-gradient-to-l from-transparent to-white/10"
+                  }`}></div>
                 </div>
               )}
 
@@ -152,21 +176,33 @@ export default function LinksPage() {
                       href={item.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-between p-4.5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 hover:border-white/10 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl hover:shadow-indigo-500/[0.03] group relative overflow-hidden"
+                      className={`flex items-center justify-between p-4.5 rounded-2xl border transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl group relative overflow-hidden ${
+                        isLight
+                          ? "bg-white hover:bg-slate-50/80 border-slate-200/80 hover:border-violet-300 hover:shadow-indigo-500/[0.03]"
+                          : "bg-white/[0.03] hover:bg-white/[0.06] border-white/5 hover:border-white/10 hover:shadow-indigo-500/[0.03]"
+                      }`}
                     >
                       {/* Left border glow on hover */}
                       <div className="absolute top-0 bottom-0 left-0 w-[3px] bg-gradient-to-b from-blue-500 to-indigo-600 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300"></div>
 
                       <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/5 flex items-center justify-center text-slate-400 group-hover:text-indigo-400 transition-colors shrink-0">
+                        <div className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-colors shrink-0 ${
+                          isLight
+                            ? "bg-slate-50/80 border-slate-150 text-slate-500 group-hover:text-indigo-600"
+                            : "bg-white/[0.04] border-white/5 text-slate-400 group-hover:text-indigo-450"
+                        }`}>
                           <IconComponent className="w-5 h-5" />
                         </div>
-                        <span className="font-semibold text-sm md:text-base text-slate-200 group-hover:text-white truncate">
+                        <span className={`font-semibold text-sm md:text-base truncate ${
+                          isLight ? "text-slate-750 group-hover:text-slate-900" : "text-slate-200 group-hover:text-white"
+                        }`}>
                           {item.title}
                         </span>
                       </div>
                       
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 group-hover:text-slate-200 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center group-hover:translate-x-1 group-hover:-translate-y-1 transition-all ${
+                        isLight ? "text-slate-400 group-hover:text-slate-700" : "text-slate-500 group-hover:text-slate-200"
+                      }`}>
                         <ArrowUpRight className="w-4 h-4" />
                       </div>
                     </a>
@@ -188,7 +224,11 @@ export default function LinksPage() {
                   href={s.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`w-11 h-11 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-white/10 flex items-center justify-center text-slate-400 transition-all duration-300 transform hover:scale-115 hover:shadow-lg ${s.color}`}
+                  className={`w-11 h-11 rounded-2xl border flex items-center justify-center transition-all duration-300 transform hover:scale-115 hover:shadow-lg ${
+                    isLight
+                      ? "bg-white border-slate-200/80 text-slate-500 hover:border-violet-300"
+                      : "bg-white/[0.03] border-white/5 text-slate-400 hover:border-white/10"
+                  } ${s.color}`}
                 >
                   <IconComp className="w-5 h-5" />
                 </a>
@@ -200,8 +240,10 @@ export default function LinksPage() {
       </div>
 
       {/* Footer Branding */}
-      <div className="text-center pt-10 text-[10px] text-slate-600 font-bold uppercase tracking-widest z-10">
-        <a href="https://sdpublic.org" className="hover:text-slate-400 transition-colors">
+      <div className="text-center pt-10 text-[10px] font-bold uppercase tracking-widest z-10">
+        <a href="https://sdpublic.org" className={`transition-colors ${
+          isLight ? "text-slate-450 hover:text-slate-650" : "text-slate-650 hover:text-slate-400"
+        }`}>
           © S.D. Public School, Patna
         </a>
       </div>

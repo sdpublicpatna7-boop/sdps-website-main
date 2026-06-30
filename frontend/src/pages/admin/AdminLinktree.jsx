@@ -284,6 +284,18 @@ export default function AdminLinktree() {
               />
             </div>
 
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Theme Style</label>
+              <select
+                value={settings.theme || "light"}
+                onChange={(e) => handleSettingsChange("theme", e.target.value)}
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-slate-50 font-medium text-sm"
+              >
+                <option value="light">Premium Light Gradient Glass</option>
+                <option value="dark">Premium Dark Glass</option>
+              </select>
+            </div>
+
             <div className="border-t border-slate-100 pt-4 space-y-3">
               <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
                 <Globe className="w-3.5 h-3.5 text-slate-400" /> Social Links (URLs)

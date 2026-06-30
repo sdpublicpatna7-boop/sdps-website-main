@@ -617,6 +617,7 @@ class LinktreeSettings(BaseDoc):
     profile_title: str = "S.D. Public School, Patna"
     profile_bio: str = "Nurturing excellence and preparing students to thrive in every challenge."
     logo_url: str = "/logo192.png"
+    theme: str = "light"
     instagram: str = ""
     facebook: str = ""
     youtube: str = ""
