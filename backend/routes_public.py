@@ -1203,6 +1203,7 @@ def _parse_user_agent(ua: str):
 
 
 @public_router.get("/s/{code}")
+@limiter.limit("60/minute")
 async def resolve_short_link(code: str, request: Request):
     link = await db.short_links.find_one({"code": code}, {"_id": 0})
     if not link:

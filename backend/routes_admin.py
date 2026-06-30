@@ -1094,10 +1094,28 @@ async def list_short_links(admin: TokenData = Depends(require_permission("site-s
 
 @admin_router.post("/shortener")
 async def create_short_link(payload: ShortLinkCreate, admin: TokenData = Depends(require_permission("site-settings"))):
+    title_val = payload.title.strip()
+    url_val = payload.url.strip()
+    
+    if not title_val or not url_val:
+        raise HTTPException(status_code=400, detail="Title and URL cannot be empty")
+    if len(title_val) > 100:
+        raise HTTPException(status_code=400, detail="Title must be 100 characters or less")
+    if len(url_val) > 2048:
+        raise HTTPException(status_code=400, detail="URL must be 2048 characters or less")
+        
+    url_lower = url_val.lower()
+    if not (url_lower.startswith("http://") or url_lower.startswith("https://")):
+        raise HTTPException(status_code=400, detail="URL must start with http:// or https://")
+
     code = None
     if payload.custom_code:
+        custom_code_val = payload.custom_code.strip()
+        if len(custom_code_val) > 30:
+            raise HTTPException(status_code=400, detail="Custom code must be 30 characters or less")
+            
         # Sanitize code (alphanumeric and lowercase only)
-        code = "".join(c for c in payload.custom_code.lower() if c.isalnum())
+        code = "".join(c for c in custom_code_val.lower() if c.isalnum())
         if not code:
             raise HTTPException(status_code=400, detail="Invalid custom code alias")
             
@@ -1119,8 +1137,8 @@ async def create_short_link(payload: ShortLinkCreate, admin: TokenData = Depends
 
     link = ShortLink(
         code=code,
-        title=payload.title.strip(),
-        url=payload.url.strip(),
+        title=title_val,
+        url=url_val,
         created_by=admin.email
     )
     await db.short_links.insert_one(link.model_dump())
