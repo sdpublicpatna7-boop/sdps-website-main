@@ -1147,7 +1147,7 @@ async def create_short_link(payload: ShortLinkCreate, admin: TokenData = Depends
 
 @admin_router.delete("/shortener/{item_id}")
 async def delete_short_link(item_id: str, admin: TokenData = Depends(require_permission("site-settings"))):
-    link = await db.short_links.find_one({"id": item_id})
+    link = await db.short_links.find_one({"id": item_id}, {"_id": 0})
     if not link:
         raise HTTPException(status_code=404, detail="Short link not found")
         
@@ -1159,7 +1159,7 @@ async def delete_short_link(item_id: str, admin: TokenData = Depends(require_per
 
 @admin_router.get("/shortener/{item_id}/analytics")
 async def get_short_link_analytics(item_id: str, admin: TokenData = Depends(require_permission("site-settings"))):
-    link = await db.short_links.find_one({"id": item_id})
+    link = await db.short_links.find_one({"id": item_id}, {"_id": 0})
     if not link:
         raise HTTPException(status_code=404, detail="Short link not found")
         
