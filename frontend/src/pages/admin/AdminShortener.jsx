@@ -353,7 +353,7 @@ export default function AdminShortener() {
                     <div className="h-60 flex items-center justify-center text-slate-400 text-sm">No click logs logged in last 30 days.</div>
                   ) : (
                     <div className="h-60">
-                      <ResponsiveContainer width="100%" height="100%">
+                      <ResponsiveContainer width="100%" height={240}>
                         <AreaChart data={analytics.daily}>
                           <defs>
                             <linearGradient id="colorClicks" x1="0" y1="0" x2="0" y2="1">
@@ -387,7 +387,7 @@ export default function AdminShortener() {
                       <div className="h-48 flex items-center justify-center text-slate-400 text-xs">No data</div>
                     ) : (
                       <div className="h-48 relative flex items-center justify-center">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height={180}>
                           <PieChart>
                             <Pie
                               data={analytics.devices}
@@ -419,7 +419,7 @@ export default function AdminShortener() {
                       <div className="h-48 flex items-center justify-center text-slate-400 text-xs">No data</div>
                     ) : (
                       <div className="h-48">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height={180}>
                           <BarChart data={analytics.browsers} layout="vertical">
                             <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f8fafc" />
                             <XAxis type="number" stroke="#94a3b8" fontSize={10} tickLine={false} />
@@ -441,7 +441,7 @@ export default function AdminShortener() {
                       <div className="h-48 flex items-center justify-center text-slate-400 text-xs">No data</div>
                     ) : (
                       <div className="h-48">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height={180}>
                           <BarChart data={analytics.oss} layout="vertical">
                             <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f8fafc" />
                             <XAxis type="number" stroke="#94a3b8" fontSize={10} tickLine={false} />
