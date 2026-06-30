@@ -615,6 +615,7 @@ class ShortLinkClick(BaseDoc):
 class LinktreeSettings(BaseDoc):
     id: str = "branding"
     profile_title: str = "S.D. Public School, Patna"
+    profile_handle: str = "@Sdps_patna"
     profile_bio: str = "Nurturing excellence and preparing students to thrive in every challenge."
     logo_url: str = "/logo192.png"
     theme: str = "light"
@@ -633,3 +634,17 @@ class LinktreeLink(BaseDoc):
     group_header: Optional[str] = ""
     order: int = 0
     is_active: bool = True
+    clicks_count: int = 0
+
+
+class LinktreeClick(BaseDoc):
+    id: str = Field(default_factory=new_id)
+    link_id: str
+    timestamp: str = Field(default_factory=now_iso)
+    ip: str
+    user_agent: str
+    browser: str
+    os: str
+    device: str
+    referrer: str
+    country: str

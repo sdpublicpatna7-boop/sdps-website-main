@@ -7,7 +7,7 @@ from typing import List, Optional
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Form, File, UploadFile, Body, Request, Response
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import BaseModel
 import razorpay
 from slowapi import Limiter
@@ -21,7 +21,7 @@ from models import (
     PopupSettings, FeeVerifyRequest, SiteSettings,
     ContactMessage, now_iso, new_id,
     EligibilityRow, FeeStructureRow, HostelFeeRow, HostelGalleryItem,
-    AdministrationMember, LegalPage, ShortLinkClick, LinktreeSettings, LinktreeLink
+    AdministrationMember, LegalPage, ShortLinkClick, LinktreeSettings, LinktreeLink, LinktreeClick
 )
 from email_service import send_email, render_template
 from sms_service import send_sms
@@ -1282,6 +1282,49 @@ async def download_contact_vcard():
             "Content-Disposition": "attachment; filename=\"sdps_contact.vcf\""
         }
     )
+
+
+@public_router.get("/linktree/click/{link_id}")
+async def resolve_linktree_click(link_id: str, request: Request):
+    link = await db.linktree_links.find_one({"id": link_id}, {"_id": 0})
+    if not link:
+        raise HTTPException(status_code=404, detail="Link not found")
+        
+    await db.linktree_links.update_one(
+        {"id": link_id},
+        {"$inc": {"clicks_count": 1}}
+    )
+    
+    ip = request.client.host if request.client else "Unknown"
+    ua = request.headers.get("user-agent", "")
+    referrer = request.headers.get("referer", "")
+    country = request.headers.get("cf-ipcountry", "Unknown")
+    
+    device, browser, os_name = _parse_user_agent(ua)
+    
+    ref_domain = "Direct"
+    if referrer:
+        from urllib.parse import urlparse
+        try:
+            parsed_ref = urlparse(referrer)
+            ref_domain = parsed_ref.netloc.replace("www.", "") or "Direct"
+        except Exception:
+            pass
+            
+    click_log = LinktreeClick(
+        link_id=link_id,
+        ip=ip,
+        user_agent=ua,
+        device=device,
+        browser=browser,
+        os=os_name,
+        referrer=ref_domain,
+        country=country
+    )
+    await db.linktree_clicks.insert_one(click_log.model_dump())
+    
+    target_url = link["url"]
+    return RedirectResponse(url=target_url)
 
 
 

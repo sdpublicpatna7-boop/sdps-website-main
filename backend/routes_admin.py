@@ -32,7 +32,7 @@ from models import (
     EligibilityRow, FeeStructureRow, HostelFeeRow, HostelGalleryItem,
     AdministrationMember, LegalPage, ExamPaper, HolidayHomework, KheloPatnaPhoto,
     Educator, GeneratedThumbnail, SalarySlip, SalaryCertificate, ExperienceCertificate, Testimonial,
-    ShortLink, ShortLinkCreate, LinktreeSettings, LinktreeLink
+    ShortLink, ShortLinkCreate, LinktreeSettings, LinktreeLink, LinktreeClick
 )
 
 logger = logging.getLogger(__name__)
@@ -1307,3 +1307,64 @@ async def reorder_linktree_links(payload: List[str] = Body(...), admin: TokenDat
             {"$set": {"order": idx}}
         )
     return {"status": "reordered"}
+
+
+@admin_router.get("/linktree/links/{link_id}/analytics")
+async def get_linktree_link_analytics(link_id: str, admin: TokenData = Depends(require_permission("site-settings"))):
+    link = await db.linktree_links.find_one({"id": link_id}, {"_id": 0})
+    if not link:
+        raise HTTPException(status_code=404, detail="Link not found")
+        
+    cursor = db.linktree_clicks.aggregate([
+        {"$match": {"link_id": link_id}},
+        {"$group": {"_id": "$device", "count": {"$sum": 1}}}
+    ])
+    devices = [{"name": item["_id"], "value": item["count"]} for item in await cursor.to_list(100)]
+    
+    cursor = db.linktree_clicks.aggregate([
+        {"$match": {"link_id": link_id}},
+        {"$group": {"_id": "$os", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ])
+    oss = [{"name": item["_id"], "value": item["count"]} for item in await cursor.to_list(100)]
+    
+    cursor = db.linktree_clicks.aggregate([
+        {"$match": {"link_id": link_id}},
+        {"$group": {"_id": "$browser", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ])
+    browsers = [{"name": item["_id"], "value": item["count"]} for item in await cursor.to_list(100)]
+    
+    cursor = db.linktree_clicks.aggregate([
+        {"$match": {"link_id": link_id}},
+        {"$group": {"_id": "$country", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 10}
+    ])
+    countries = [{"name": item["_id"], "value": item["count"]} for item in await cursor.to_list(100)]
+    
+    cursor = db.linktree_clicks.aggregate([
+        {"$match": {"link_id": link_id}},
+        {"$group": {"_id": "$referrer", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 10}
+    ])
+    referrers = [{"name": item["_id"], "value": item["count"]} for item in await cursor.to_list(100)]
+    
+    cursor = db.linktree_clicks.aggregate([
+        {"$match": {"link_id": link_id}},
+        {"$project": {"date": {"$substr": ["$timestamp", 0, 10]}}},
+        {"$group": {"_id": "$date", "count": {"$sum": 1}}},
+        {"$sort": {"_id": 1}}
+    ])
+    daily = [{"date": item["_id"], "clicks": item["count"]} for item in await cursor.to_list(1000)]
+    
+    return {
+        "link": link,
+        "devices": devices,
+        "oss": oss,
+        "browsers": browsers,
+        "countries": countries,
+        "referrers": referrers,
+        "daily": daily
+    }
