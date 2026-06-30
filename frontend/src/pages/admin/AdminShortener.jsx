@@ -28,6 +28,7 @@ export default function AdminShortener() {
   const [selectedLink, setSelectedLink] = useState(null);
   const [analytics, setAnalytics] = useState(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState(null);
   const [copiedId, setCopiedId] = useState(null);
 
   const fetchLinks = async () => {
@@ -91,12 +92,13 @@ export default function AdminShortener() {
     setSelectedLink(link);
     setAnalyticsLoading(true);
     setAnalytics(null);
+    setAnalyticsError(null);
     try {
       const { data } = await api.get(`/admin/shortener/${link.id}/analytics`);
       setAnalytics(data);
-    } catch (e) {
-      toast.error("Failed to load analytics");
-      setSelectedLink(null);
+    } catch (err) {
+      console.error(err);
+      setAnalyticsError(err?.response?.data?.detail || err.message || "Failed to load analytics");
     } finally {
       setAnalyticsLoading(false);
     }
@@ -514,6 +516,14 @@ export default function AdminShortener() {
                   )}
                 </div>
 
+              </div>
+            ) : analyticsError ? (
+              <div className="flex-1 flex flex-col items-center justify-center space-y-3 text-red-500 animate-in fade-in duration-200">
+                <ShieldAlert className="w-10 h-10 text-red-400" />
+                <span className="text-sm font-bold">Failed to load analytics:</span>
+                <span className="text-xs bg-red-50 px-4 py-2.5 rounded-xl border border-red-100 max-w-md text-center text-red-700 font-mono font-semibold">
+                  {analyticsError}
+                </span>
               </div>
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center space-y-2 text-slate-400">
