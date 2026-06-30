@@ -193,6 +193,9 @@ export default function AdminShortener() {
                   className="w-full pl-12 pr-4 py-3 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50 font-medium text-sm"
                 />
               </div>
+              <p className="text-[11px] text-slate-400 mt-1">
+                Leave blank to automatically generate a random 6-character code (e.g. <code>/s/z9f4k2</code>).
+              </p>
             </div>
 
             <button
