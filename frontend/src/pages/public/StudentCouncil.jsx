@@ -438,11 +438,13 @@ export default function StudentCouncil() {
         
         // Compile the live results — preserve ALL candidates per post
         const compiled = [];
+        const dynamicProfiles = [];
         (d.posts || []).forEach(post => {
           const candidates = d.by_post?.[post.key] || [];
           const sorted = [...candidates].sort((a, b) => b.votes - a.votes);
           if (sorted.length > 0) {
             const total = sorted.reduce((sum, c) => sum + (c.votes || 0), 0);
+            const isAppointed = (d.appointed_post_keys || []).includes(post.key);
             compiled.push({
               id: post.key,
               year: "2026-27",
@@ -452,13 +454,41 @@ export default function StudentCouncil() {
               winner_symbol: sorted[0].symbol,
               winner_votes: sorted[0].votes,
               total_votes: total,
-              is_appointed: (d.appointed_post_keys || []).includes(post.key),
+              is_appointed: isAppointed,
               all_candidates: sorted, // ALL candidates with their votes!
             });
+
+            // If there's a winner (has votes, or is appointed), add them to dynamic profiles
+            if (sorted[0].votes > 0 || isAppointed) {
+              dynamicProfiles.push({
+                id: `election-${post.key}`,
+                name: sorted[0].name,
+                position: post.title,
+                photo_url: sorted[0].photo,
+                year: "2026-27",
+                role_type: isAppointed ? "Appointed by School Management" : "Elected",
+                is_captain: !post.title.toLowerCase().includes("vice") && !isAppointed,
+                order: post.order || 0
+              });
+            }
           }
         });
         if (compiled.length > 0) {
           setResults(compiled);
+        }
+        if (dynamicProfiles.length > 0) {
+          setProfiles(prev => {
+            const merged = [...prev];
+            dynamicProfiles.forEach(dp => {
+              const exists = prev.some(
+                sp => sp.name.toLowerCase() === dp.name.toLowerCase() && sp.position.toLowerCase() === dp.position.toLowerCase()
+              );
+              if (!exists) {
+                merged.push(dp);
+              }
+            });
+            return merged.sort((a, b) => (b.is_captain ? 1 : 0) - (a.is_captain ? 1 : 0));
+          });
         }
       } else {
         setElectionStatus("sealed");
