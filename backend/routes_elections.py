@@ -509,14 +509,23 @@ async def public_results():
     from datetime import datetime, timezone
     await check_supabase()
     async with httpx.AsyncClient() as client:
-        # 1. Check publish time setting
-        r_time = await client.get(
-            f"{SUPABASE_URL}/rest/v1/election_settings?key=eq.results_publish_time",
+        # 1. Check publish time and appointed post keys settings
+        r_settings = await client.get(
+            f"{SUPABASE_URL}/rest/v1/election_settings",
             headers=headers
         )
         publish_time_str = ""
-        if r_time.status_code == 200 and r_time.json():
-            publish_time_str = r_time.json()[0].get("value", "")
+        appointed_post_keys = []
+        if r_settings.status_code == 200 and r_settings.json():
+            import json
+            for s in r_settings.json():
+                if s.get("key") == "results_publish_time":
+                    publish_time_str = s.get("value", "")
+                elif s.get("key") == "appointed_post_keys":
+                    try:
+                        appointed_post_keys = json.loads(s.get("value", "[]"))
+                    except Exception:
+                        pass
 
         if not publish_time_str:
             return {"status": "sealed", "message": "Results have not been scheduled for release yet."}
@@ -585,6 +594,7 @@ async def public_results():
                 "by_post": by_post,
                 "winners": {p["key"]: (by_post[p["key"]][0] if by_post[p["key"]] else None) for p in posts},
                 "total_voted": len(votes),
+                "appointed_post_keys": appointed_post_keys,
             }
 
         return {"status": "sealed", "message": "No results available."}

@@ -165,7 +165,7 @@ export default function LiveResults() {
 
             <section className="space-y-8">
               {data.posts?.map(p => (
-                <PostBlock key={p.key} post={p} list={data.by_post?.[p.key] || []} />
+                <PostBlock key={p.key} post={p} list={data.by_post?.[p.key] || []} appointedKeys={data.appointed_post_keys || []} />
               ))}
             </section>
           </>
@@ -203,9 +203,10 @@ const KPI = ({ icon: Icon, label, value, accent }) => (
   </div>
 );
 
-const PostBlock = ({ post, list }) => {
+const PostBlock = ({ post, list, appointedKeys = [] }) => {
   const total = Math.max(1, list.reduce((s, x) => s + (x.votes || 0), 0));
   const sorted = [...list].sort((a, b) => (b.votes || 0) - (a.votes || 0));
+  const isPostAppointed = appointedKeys.includes(post.key);
 
   return (
     <div className="glass rounded-3xl p-7">
@@ -213,8 +214,8 @@ const PostBlock = ({ post, list }) => {
         <h2 className="font-display text-3xl md:text-4xl font-black hero-3d">{post.title}</h2>
         {sorted[0] && sorted[0].votes > 0 && (
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#F4D571] to-[#D4AF37] text-[#1a1a1a] text-sm font-bold shadow">
-            <Crown className="w-4 h-4" />
-            Winner: {sorted[0].name} ({sorted[0].votes} {sorted[0].votes === 1 ? 'vote' : 'votes'})
+            {isPostAppointed ? <Sparkles className="w-4 h-4 text-[#1a1a1a]" /> : <Crown className="w-4 h-4" />}
+            {isPostAppointed ? "Selected by Admin" : "Winner"}: {sorted[0].name} {!isPostAppointed && `(${sorted[0].votes} ${sorted[0].votes === 1 ? 'vote' : 'votes'})`}
           </div>
         )}
       </div>
@@ -240,24 +241,28 @@ const PostBlock = ({ post, list }) => {
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="font-bold truncate flex items-center gap-2">
                       {c.name}
-                      {isLeader && <Crown className="w-4 h-4 text-[color:var(--sdps-gold)]" />}
+                      {isLeader && (isPostAppointed ? <Sparkles className="w-4 h-4 text-[color:var(--sdps-gold)]" /> : <Crown className="w-4 h-4 text-[color:var(--sdps-gold)]" />)}
                     </div>
-                    <div className="text-sm font-bold tabular-nums">
-                      {c.votes || 0} {(c.votes || 0) === 1 ? 'vote' : 'votes'}
-                      <span className="text-[color:var(--sdps-muted)] font-medium"> · {pct}%</span>
+                    {!isPostAppointed && (
+                      <div className="text-sm font-bold tabular-nums">
+                        {c.votes || 0} {(c.votes || 0) === 1 ? 'vote' : 'votes'}
+                        <span className="text-[color:var(--sdps-muted)] font-medium"> · {pct}%</span>
+                      </div>
+                    )}
+                  </div>
+                  {!isPostAppointed && (
+                    <div className="h-3 rounded-full bg-blue-100 overflow-hidden">
+                      <div
+                        className="h-full transition-all duration-700"
+                        style={{
+                          width: `${pct}%`,
+                          background: isLeader
+                            ? "linear-gradient(90deg,#F4D571,#D4AF37)"
+                            : "linear-gradient(90deg,#0F3C8A,#4A78D6)"
+                        }}
+                      />
                     </div>
-                  </div>
-                  <div className="h-3 rounded-full bg-blue-100 overflow-hidden">
-                    <div
-                      className="h-full transition-all duration-700"
-                      style={{
-                        width: `${pct}%`,
-                        background: isLeader
-                          ? "linear-gradient(90deg,#F4D571,#D4AF37)"
-                          : "linear-gradient(90deg,#0F3C8A,#4A78D6)"
-                      }}
-                    />
-                  </div>
+                  )}
                 </div>
               </div>
             );

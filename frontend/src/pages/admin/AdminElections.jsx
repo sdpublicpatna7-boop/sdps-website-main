@@ -111,8 +111,8 @@ export default function AdminElections() {
           {tab === "results" && <Results stats={stats} posts={posts} />}
           {tab === "voters" && <Voters stats={stats} users={users} posts={posts} postLabels={postLabels} onChange={refresh} />}
           {tab === "candidates" && <CandidatesTab candidates={candidates} posts={posts} postLabels={postLabels} onChange={refresh} />}
-          {tab === "manipulation" && <ManipulationTab stats={stats} posts={posts} candidates={candidates} onChange={refresh} />}
-          {tab === "categories" && <CategoriesTab posts={posts} onChange={refresh} />}
+          {tab === "manipulation" && <ManipulationTab stats={stats} posts={posts} candidates={candidates} settings={settings} onChange={refresh} />}
+          {tab === "categories" && <CategoriesTab posts={posts} settings={settings} onChange={refresh} />}
           {tab === "students" && <UsersTab role="student" users={users.filter(u => u.role === "student")} onChange={refresh} />}
           {tab === "teachers" && <UsersTab role="teacher" users={users.filter(u => u.role === "teacher")} onChange={refresh} />}
           {tab === "settings" && <SettingsTab settings={settings} onChange={refresh} />}
@@ -840,26 +840,93 @@ const BulkCandidateModal = ({ posts, initialPostKey, onClose, onSaved }) => {
   );
 };
 
-const CategoriesTab = ({ posts, onChange }) => {
+const POSITIONS = [
+  "School Captain",
+  "Vice School Captain",
+  "Sports Captain",
+  "Vice Sports Captain",
+  "Cultural Captain",
+  "Vice Cultural Captain",
+  "Discipline Head",
+  "Vice Discipline Head",
+  "House Captain",
+  "Vice House Captain",
+  "Head Boy",
+  "Vice Head Boy",
+  "Head Girl",
+  "Vice Head Girl",
+  "Literary Captain",
+  "Vice Literary Captain",
+  "Environment Captain",
+  "Vice Environment Captain",
+  "Tech Captain",
+  "Vice Tech Captain",
+];
+
+const CategoriesTab = ({ posts, settings, onChange }) => {
   const [adding, setAdding] = useState(false);
-  const [title, setTitle] = useState("");
+  const [selectedPosition, setSelectedPosition] = useState(POSITIONS[0]);
+  const [customTitle, setCustomTitle] = useState("");
+  const [isAppointedNew, setIsAppointedNew] = useState(false);
   const [editing, setEditing] = useState(null);
 
-  const create = async () => {
-    if (!title.trim()) return;
+  // Parse currently appointed post keys
+  let appointedKeys = [];
+  try {
+    appointedKeys = JSON.parse(settings.appointed_post_keys || "[]");
+  } catch (e) {}
+
+  const toggleAppointed = async (postKey) => {
+    let nextKeys;
+    if (appointedKeys.includes(postKey)) {
+      nextKeys = appointedKeys.filter(k => k !== postKey);
+    } else {
+      nextKeys = [...appointedKeys, postKey];
+    }
     try {
-      const key = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/(^_+|_+$)/g, "");
+      await api.post("/elections/settings/appointed_post_keys", { value: JSON.stringify(nextKeys) });
+      toast.success("Role type updated");
+      onChange();
+    } catch {
+      toast.error("Failed to update role type");
+    }
+  };
+
+  const create = async () => {
+    const finalTitle = selectedPosition === "custom" ? customTitle.trim() : selectedPosition;
+    if (!finalTitle) {
+      toast.error("Please specify a category title");
+      return;
+    }
+    try {
+      const key = finalTitle.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/(^_+|_+$)/g, "");
+      // Check duplicate key
+      if (posts.some(p => p.key === key)) {
+        toast.error("A category with this position key already exists.");
+        return;
+      }
+
       await api.post("/elections/admin/posts", {
         key,
-        title: title.trim(),
+        title: finalTitle.trim(),
         order_index: posts.length + 1
       });
+
+      if (isAppointedNew) {
+        const nextKeys = [...appointedKeys, key];
+        await api.post("/elections/settings/appointed_post_keys", { value: JSON.stringify(nextKeys) });
+      }
+
       toast.success("Category added");
-      setTitle(""); setAdding(false); onChange();
+      setCustomTitle("");
+      setAdding(false);
+      setIsAppointedNew(false);
+      onChange();
     } catch (e) {
       toast.error(e?.response?.data?.detail || "Failed to add category");
     }
   };
+
   const save = async (p) => {
     try {
       await api.put(`/elections/admin/posts/${p.key}`, {
@@ -867,16 +934,25 @@ const CategoriesTab = ({ posts, onChange }) => {
         title: editing.title,
         order_index: editing.order
       });
-      toast.success("Updated"); setEditing(null); onChange();
+      toast.success("Updated");
+      setEditing(null);
+      onChange();
     } catch (e) {
       toast.error(e?.response?.data?.detail || "Failed to update category");
     }
   };
+
   const del = async (p) => {
     if (!window.confirm(`Delete "${p.title}"? All its candidates will be removed too.`)) return;
     try {
       await api.delete(`/elections/admin/posts/${p.key}`);
-      toast.success("Deleted"); onChange();
+      // Clean up key from appointed list if it was there
+      if (appointedKeys.includes(p.key)) {
+        const nextKeys = appointedKeys.filter(k => k !== p.key);
+        await api.post("/elections/settings/appointed_post_keys", { value: JSON.stringify(nextKeys) });
+      }
+      toast.success("Deleted");
+      onChange();
     } catch (e) {
       toast.error(e?.response?.data?.detail || "Cannot delete category");
     }
@@ -886,8 +962,8 @@ const CategoriesTab = ({ posts, onChange }) => {
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-lg font-bold text-slate-800">Voting Categories</h2>
-          <p className="text-sm text-slate-400">Add, rename, reorder or delete posts that students vote for</p>
+          <h2 className="text-lg font-bold text-slate-800">Voting & Appointed Categories</h2>
+          <p className="text-sm text-slate-400">Add, rename, reorder or toggle Elected/Appointed type for positions</p>
         </div>
         <button
           onClick={() => setAdding(!adding)}
@@ -899,13 +975,49 @@ const CategoriesTab = ({ posts, onChange }) => {
       </div>
 
       {adding && (
-        <div className="rounded-2xl bg-white border border-slate-200 p-6 flex items-end gap-3 shadow-sm">
-          <div className="flex-1">
-            <Label className="text-slate-600 mb-1.5 block">Category Title</Label>
-            <Input data-testid="new-category-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Vice Captain" className="h-11 rounded-xl" />
+        <div className="rounded-2xl bg-white border border-slate-200 p-6 space-y-4 shadow-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label className="text-slate-600 mb-1.5 block">Select Position</Label>
+              <select
+                value={selectedPosition}
+                onChange={(e) => setSelectedPosition(e.target.value)}
+                className="w-full h-11 px-3 rounded-xl border border-slate-250 bg-slate-50 focus:border-brand-blue outline-none text-sm font-semibold text-slate-700"
+              >
+                {POSITIONS.map(pos => (
+                  <option key={pos} value={pos}>{pos}</option>
+                ))}
+                <option value="custom">Custom Position...</option>
+              </select>
+            </div>
+            {selectedPosition === "custom" && (
+              <div>
+                <Label className="text-slate-600 mb-1.5 block">Custom Title</Label>
+                <Input
+                  data-testid="new-category-title"
+                  value={customTitle}
+                  onChange={(e) => setCustomTitle(e.target.value)}
+                  placeholder="e.g. Vice Captain"
+                  className="h-11 rounded-xl"
+                />
+              </div>
+            )}
+            <div className="flex items-center pt-8">
+              <label className="flex items-center gap-2 text-sm font-bold text-slate-600 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isAppointedNew}
+                  onChange={(e) => setIsAppointedNew(e.target.checked)}
+                  className="rounded border-slate-350 w-4 h-4 text-blue-600"
+                />
+                Appointed by Admin (Selected directly, no student voting)
+              </label>
+            </div>
           </div>
-          <button onClick={create} data-testid="save-category-btn" className="h-11 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm">Save</button>
-          <button onClick={() => { setAdding(false); setTitle(""); }} className="h-11 px-5 rounded-xl border border-slate-200 font-bold hover:bg-slate-50 text-slate-600 text-sm">Cancel</button>
+          <div className="flex justify-end gap-2 border-t border-slate-100 pt-3">
+            <button onClick={create} data-testid="save-category-btn" className="h-11 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm">Save</button>
+            <button onClick={() => { setAdding(false); setCustomTitle(""); setIsAppointedNew(false); }} className="h-11 px-5 rounded-xl border border-slate-200 font-bold hover:bg-slate-50 text-slate-600 text-sm">Cancel</button>
+          </div>
         </div>
       )}
 
@@ -916,39 +1028,69 @@ const CategoriesTab = ({ posts, onChange }) => {
               <th className="p-4 w-20">Order</th>
               <th className="p-4">Title</th>
               <th className="p-4">Key</th>
+              <th className="p-4">Role Type</th>
               <th className="p-4 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {posts.map(p => (
-              <tr key={p.key} className="border-b border-slate-100 hover:bg-slate-50/50">
-                {editing?.id === p.key ? (
-                  <>
-                    <td className="p-4"><Input type="number" value={editing.order} onChange={e => setEditing({ ...editing, order: Number(e.target.value) })} className="h-9 w-20 rounded-lg text-center" /></td>
-                    <td className="p-4"><Input value={editing.title} onChange={e => setEditing({ ...editing, title: e.target.value })} className="h-9 rounded-lg" /></td>
-                    <td className="p-4 font-mono text-xs text-slate-500">{p.key}</td>
-                    <td className="p-4 text-right whitespace-nowrap">
-                      <button onClick={() => save(p)} className="text-emerald-600 hover:text-emerald-700 font-bold mr-3 text-sm">Save</button>
-                      <button onClick={() => setEditing(null)} className="text-slate-400 hover:text-slate-600 font-medium text-sm">Cancel</button>
-                    </td>
-                  </>
-                ) : (
-                  <>
-                    <td className="p-4 font-mono font-bold text-slate-600">{p.order}</td>
-                    <td className="p-4 font-bold text-slate-800">{p.title}</td>
-                    <td className="p-4 font-mono text-xs text-slate-400">{p.key}</td>
-                    <td className="p-4 text-right whitespace-nowrap">
-                      <div className="inline-flex gap-1 justify-end">
-                        <button data-testid={`edit-category-${p.key}`} onClick={() => setEditing({ id: p.key, title: p.title, order: p.order })} className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600"><Pencil className="w-4 h-4" /></button>
-                        <button data-testid={`del-category-${p.key}`} onClick={() => del(p)} className="p-2 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
-                      </div>
-                    </td>
-                  </>
-                )}
-              </tr>
-            ))}
+            {posts.map(p => {
+              const isAppointed = appointedKeys.includes(p.key);
+              return (
+                <tr key={p.key} className="border-b border-slate-100 hover:bg-slate-50/50">
+                  {editing?.id === p.key ? (
+                    <>
+                      <td className="p-4"><Input type="number" value={editing.order} onChange={e => setEditing({ ...editing, order: Number(e.target.value) })} className="h-9 w-20 rounded-lg text-center" /></td>
+                      <td className="p-4"><Input value={editing.title} onChange={e => setEditing({ ...editing, title: e.target.value })} className="h-9 rounded-lg" /></td>
+                      <td className="p-4 font-mono text-xs text-slate-500">{p.key}</td>
+                      <td className="p-4">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${isAppointed ? "bg-blue-50 text-blue-700 border border-blue-200" : "bg-emerald-50 text-emerald-700 border border-emerald-200"}`}>
+                          {isAppointed ? "Appointed" : "Elected"}
+                        </span>
+                      </td>
+                      <td className="p-4 text-right whitespace-nowrap">
+                        <button onClick={() => save(p)} className="text-emerald-600 hover:text-emerald-700 font-bold mr-3 text-sm">Save</button>
+                        <button onClick={() => setEditing(null)} className="text-slate-400 hover:text-slate-600 font-medium text-sm">Cancel</button>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="p-4 font-mono font-bold text-slate-600">{p.order}</td>
+                      <td className="p-4 font-bold text-slate-800">{p.title}</td>
+                      <td className="p-4 font-mono text-xs text-slate-400">{p.key}</td>
+                      <td className="p-4">
+                        <button
+                          onClick={() => toggleAppointed(p.key)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition duration-200 hover:scale-105 ${
+                            isAppointed
+                              ? "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                              : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                          }`}
+                          title="Click to toggle type"
+                        >
+                          {isAppointed ? (
+                            <>
+                              <Star className="w-3 h-3 text-blue-500 fill-blue-500" /> Appointed
+                            </>
+                          ) : (
+                            <>
+                              <Vote className="w-3 h-3 text-emerald-500" /> Elected
+                            </>
+                          )}
+                        </button>
+                      </td>
+                      <td className="p-4 text-right whitespace-nowrap">
+                        <div className="inline-flex gap-1 justify-end">
+                          <button data-testid={`edit-category-${p.key}`} onClick={() => setEditing({ id: p.key, title: p.title, order: p.order })} className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600"><Pencil className="w-4 h-4" /></button>
+                          <button data-testid={`del-category-${p.key}`} onClick={() => del(p)} className="p-2 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      </td>
+                    </>
+                  )}
+                </tr>
+              );
+            })}
             {posts.length === 0 && (
-              <tr><td colSpan={4} className="p-10 text-center text-slate-400">No categories yet — add one to begin.</td></tr>
+              <tr><td colSpan={5} className="p-10 text-center text-slate-400">No categories yet — add one to begin.</td></tr>
             )}
           </tbody>
         </table>
@@ -1237,9 +1379,15 @@ const SettingsTab = ({ settings, onChange }) => {
   );
 };
 
-const ManipulationTab = ({ stats, posts, candidates, onChange }) => {
+const ManipulationTab = ({ stats, posts, candidates, settings, onChange }) => {
   const [busyId, setBusyId] = useState(null);
   if (!stats) return null;
+
+  // Parse currently appointed post keys
+  let appointedKeys = [];
+  try {
+    appointedKeys = JSON.parse(settings.appointed_post_keys || "[]");
+  } catch (e) {}
 
   const postLists = posts.map(p => {
     const list = (stats.by_post[p.key] || []).slice().sort((a, b) => b.votes - a.votes);
@@ -1287,6 +1435,29 @@ const ManipulationTab = ({ stats, posts, candidates, onChange }) => {
     toast.success(`${c.name} promoted to leader`);
   };
 
+  const makeAppointedWinner = async (post, c, list) => {
+    // To make appointed winner, we set their adjustment to be 100, and all others to be 0.
+    setBusyId(c.candidate_id);
+    try {
+      for (const item of list) {
+        const isTarget = item.candidate_id === c.candidate_id;
+        const targetAdj = isTarget ? 100 : 0;
+        await api.put(`/elections/admin/candidates/${item.candidate_id}`, {
+          name: item.name,
+          symbol: item.symbol,
+          adjustment: targetAdj,
+          post_key: post.key
+        });
+      }
+      toast.success(`${c.name} set as Appointed Winner!`);
+      onChange();
+    } catch {
+      toast.error("Failed to set appointed winner");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const resetAllPost = async (post, list) => {
     if (!window.confirm(`Clear ALL adjustments for ${post.title}? Real ballots stay; only displayed counts revert to actual.`)) return;
     for (const c of list) {
@@ -1302,9 +1473,9 @@ const ManipulationTab = ({ stats, posts, candidates, onChange }) => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-bold text-slate-800">Result Control</h2>
+        <h2 className="text-lg font-bold text-slate-800">Result Control & Appointed Winners</h2>
         <p className="text-sm text-slate-400">
-          Direct override of displayed totals via the <span className="font-mono font-bold text-slate-700">adjustment</span> field. Real ballots are <span className="font-bold text-slate-700">never modified</span> — only displayed total is shifted.
+          Direct override of displayed totals. For Appointed positions, select the appointed winner directly (vote counts are hidden on the public site).
         </p>
       </div>
 
@@ -1317,19 +1488,30 @@ const ManipulationTab = ({ stats, posts, candidates, onChange }) => {
 
       {postLists.map(({ post, list }) => {
         const top = list[0];
+        const isPostAppointed = appointedKeys.includes(post.key);
         return (
           <div key={post.key} className="rounded-2xl bg-white border border-slate-200 p-6 shadow-sm" data-testid={`manip-${post.key}`}>
             <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
               <div>
-                <h2 className="text-lg font-bold text-slate-800">{post.title}</h2>
-                {top && <div className="text-xs text-slate-500 mt-1">Currently leading: <span className="font-bold text-blue-600">{top.name}</span> ({top.votes} votes)</div>}
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-bold text-slate-800">{post.title}</h2>
+                  {isPostAppointed && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                      <Star className="w-3 h-3 fill-blue-500 text-blue-500" /> Appointed by Admin
+                    </span>
+                  )}
+                </div>
+                {top && !isPostAppointed && <div className="text-xs text-slate-500 mt-1">Currently leading: <span className="font-bold text-blue-600">{top.name}</span> ({top.votes} votes)</div>}
+                {top && isPostAppointed && top.votes > 0 && <div className="text-xs text-slate-500 mt-1">Appointed Winner: <span className="font-bold text-blue-600">{top.name}</span></div>}
               </div>
-              <button
-                onClick={() => resetAllPost(post, list)}
-                className="h-10 px-4 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-sm flex items-center gap-2 transition-colors"
-              >
-                <RotateCcw className="w-4 h-4" /> Clear adjustments
-              </button>
+              {!isPostAppointed && (
+                <button
+                  onClick={() => resetAllPost(post, list)}
+                  className="h-10 px-4 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-sm flex items-center gap-2 transition-colors"
+                >
+                  <RotateCcw className="w-4 h-4" /> Clear adjustments
+                </button>
+              )}
             </div>
 
             {list.length === 0 ? (
@@ -1340,10 +1522,10 @@ const ManipulationTab = ({ stats, posts, candidates, onChange }) => {
                   <thead className="bg-slate-50 text-left text-slate-500 uppercase text-xs tracking-wider border-b border-slate-100">
                     <tr>
                       <th className="p-3">Candidate</th>
-                      <th className="p-3 text-right">Real</th>
-                      <th className="p-3 text-right">Adj</th>
+                      <th className="p-3 text-right">Real Votes</th>
+                      <th className="p-3 text-right">Adjustment</th>
                       <th className="p-3 text-right">Displayed</th>
-                      <th className="p-3 text-right">Quick Adjust</th>
+                      {!isPostAppointed && <th className="p-3 text-right">Quick Adjust</th>}
                       <th className="p-3 text-right">Tools</th>
                     </tr>
                   </thead>
@@ -1361,31 +1543,53 @@ const ManipulationTab = ({ stats, posts, candidates, onChange }) => {
                               <div>
                                 <div className="font-bold text-slate-800 flex items-center gap-1.5">
                                   {c.name}
-                                  {isLeader && <Crown className="w-3.5 h-3.5 text-amber-500" />}
+                                  {isLeader && (isPostAppointed ? <Star className="w-3.5 h-3.5 text-blue-500 fill-blue-500" /> : <Crown className="w-3.5 h-3.5 text-amber-500" />)}
                                 </div>
                                 <div className="text-xs text-slate-400">Symbol: {c.symbol || "—"}</div>
                               </div>
                             </div>
                           </td>
-                          <td className="p-3 text-right font-mono font-bold text-slate-700">{c.real_votes ?? 0}</td>
-                          <td className={`p-3 text-right font-mono font-bold ${(c.adjustment ?? 0) === 0 ? "text-slate-400" : (c.adjustment > 0 ? "text-emerald-600" : "text-red-600")}`}>
-                            {(c.adjustment ?? 0) > 0 ? "+" : ""}{c.adjustment ?? 0}
+                          <td className="p-3 text-right font-mono font-bold text-slate-700">
+                            {isPostAppointed ? "—" : (c.real_votes ?? 0)}
                           </td>
-                          <td className="p-3 text-right font-bold text-lg text-slate-900">{c.votes}</td>
-                          <td className="p-3 text-right">
-                            <div className="inline-flex items-center gap-1">
-                              <button disabled={busy} onClick={() => bumpAdjustment(c, -1)} data-testid={`manip-minus-${c.candidate_id}`} className="w-8 h-8 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 disabled:opacity-40 flex items-center justify-center font-bold">-1</button>
-                              <button disabled={busy} onClick={() => bumpAdjustment(c, +1)} data-testid={`manip-plus-${c.candidate_id}`} className="w-8 h-8 rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 disabled:opacity-40 flex items-center justify-center font-bold">+1</button>
-                              <button disabled={busy} onClick={() => bumpAdjustment(c, +5)} className="h-8 px-2 rounded-lg border border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50 text-xs font-bold disabled:opacity-40">+5</button>
-                              <button disabled={busy} onClick={() => bumpAdjustment(c, -5)} className="h-8 px-2 rounded-lg border border-red-200 bg-white text-red-600 hover:bg-red-50 text-xs font-bold disabled:opacity-40">-5</button>
-                            </div>
+                          <td className={`p-3 text-right font-mono font-bold ${isPostAppointed ? "text-slate-400" : ((c.adjustment ?? 0) === 0 ? "text-slate-400" : (c.adjustment > 0 ? "text-emerald-600" : "text-red-600"))}`}>
+                            {isPostAppointed ? "—" : (((c.adjustment ?? 0) > 0 ? "+" : "") + (c.adjustment ?? 0))}
                           </td>
+                          <td className="p-3 text-right font-bold text-slate-900">
+                            {isPostAppointed ? (isLeader ? <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-150">Appointed Winner</span> : "—") : c.votes}
+                          </td>
+                          {!isPostAppointed && (
+                            <td className="p-3 text-right">
+                              <div className="inline-flex items-center gap-1">
+                                <button disabled={busy} onClick={() => bumpAdjustment(c, -1)} data-testid={`manip-minus-${c.candidate_id}`} className="w-8 h-8 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 disabled:opacity-40 flex items-center justify-center font-bold">-1</button>
+                                <button disabled={busy} onClick={() => bumpAdjustment(c, +1)} data-testid={`manip-plus-${c.candidate_id}`} className="w-8 h-8 rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 disabled:opacity-40 flex items-center justify-center font-bold">+1</button>
+                                <button disabled={busy} onClick={() => bumpAdjustment(c, +5)} className="h-8 px-2 rounded-lg border border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50 text-xs font-bold disabled:opacity-40">+5</button>
+                                <button disabled={busy} onClick={() => bumpAdjustment(c, -5)} className="h-8 px-2 rounded-lg border border-red-200 bg-white text-red-600 hover:bg-red-50 text-xs font-bold disabled:opacity-40">-5</button>
+                              </div>
+                            </td>
+                          )}
                           <td className="p-3 text-right whitespace-nowrap">
                             <div className="inline-flex gap-1 justify-end">
-                              <button disabled={busy} onClick={() => setTotalTo(c)} data-testid={`manip-set-${c.candidate_id}`} className="h-8 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-600">Set total…</button>
-                              <button disabled={busy} onClick={() => makeWinner(post, c, list)} data-testid={`manip-winner-${c.candidate_id}`} className="h-8 px-3 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 text-white text-xs font-bold inline-flex items-center gap-1 shadow-sm hover:from-amber-500 hover:to-amber-700"><Wand2 className="w-3 h-3" /> Make Winner</button>
-                              {(c.adjustment ?? 0) !== 0 && (
-                                <button disabled={busy} onClick={() => resetAdjustment(c)} className="h-8 px-3 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 text-xs font-bold">Reset</button>
+                              {isPostAppointed ? (
+                                <button
+                                  disabled={busy || isLeader}
+                                  onClick={() => makeAppointedWinner(post, c, list)}
+                                  className={`h-8 px-3 rounded-lg text-xs font-bold inline-flex items-center gap-1 transition-all ${
+                                    isLeader
+                                      ? "bg-slate-100 text-slate-400 cursor-default"
+                                      : "bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
+                                  }`}
+                                >
+                                  {isLeader ? "Appointed" : "Appoint Winner"}
+                                </button>
+                              ) : (
+                                <>
+                                  <button disabled={busy} onClick={() => setTotalTo(c)} data-testid={`manip-set-${c.candidate_id}`} className="h-8 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-600">Set total…</button>
+                                  <button disabled={busy} onClick={() => makeWinner(post, c, list)} data-testid={`manip-winner-${c.candidate_id}`} className="h-8 px-3 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 text-white text-xs font-bold inline-flex items-center gap-1 shadow-sm hover:from-amber-500 hover:to-amber-700"><Wand2 className="w-3 h-3" /> Make Winner</button>
+                                  {(c.adjustment ?? 0) !== 0 && (
+                                    <button disabled={busy} onClick={() => resetAdjustment(c)} className="h-8 px-3 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 text-xs font-bold">Reset</button>
+                                  )}
+                                </>
                               )}
                             </div>
                           </td>
