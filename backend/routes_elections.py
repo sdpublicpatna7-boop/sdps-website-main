@@ -508,6 +508,8 @@ async def set_results_publish_time(payload: Dict[str, Any], admin = Depends(get_
 async def public_results():
     """Public endpoint: returns results only if publish time has passed, otherwise returns countdown."""
     from datetime import datetime, timezone
+    import asyncio
+    import json
     await check_supabase()
     async with httpx.AsyncClient() as client:
         # 1. Check publish time and appointed post keys settings
@@ -518,7 +520,6 @@ async def public_results():
         publish_time_str = ""
         appointed_post_keys = []
         if r_settings.status_code == 200 and r_settings.json():
-            import json
             for s in r_settings.json():
                 if s.get("key") == "results_publish_time":
                     publish_time_str = s.get("value", "")
@@ -547,9 +548,14 @@ async def public_results():
             }
 
         # 2. Time has passed — return full results (no auth required)
-        r_posts = await client.get(f"{SUPABASE_URL}/rest/v1/election_posts?order=order_index.asc", headers=headers)
-        r_cands = await client.get(f"{SUPABASE_URL}/rest/v1/election_candidates", headers=headers)
-        r_votes = await client.get(f"{SUPABASE_URL}/rest/v1/election_votes", headers=headers)
+        # Fetch posts, candidates, votes, and archive concurrently
+        tasks = [
+            client.get(f"{SUPABASE_URL}/rest/v1/election_posts?order=order_index.asc", headers=headers),
+            client.get(f"{SUPABASE_URL}/rest/v1/election_candidates", headers=headers),
+            client.get(f"{SUPABASE_URL}/rest/v1/election_votes", headers=headers),
+            client.get(f"{SUPABASE_URL}/rest/v1/election_results_archive?order=id.desc&limit=100", headers=headers)
+        ]
+        r_posts, r_cands, r_votes, r_archive = await asyncio.gather(*tasks)
 
         if r_posts.status_code != 200 or r_cands.status_code != 200 or r_votes.status_code != 200:
             raise HTTPException(status_code=500, detail="Failed to compile results.")
@@ -557,12 +563,6 @@ async def public_results():
         posts = r_posts.json()
         candidates = r_cands.json()
         votes = r_votes.json()
-
-        # Also check archive for this session
-        r_archive = await client.get(
-            f"{SUPABASE_URL}/rest/v1/election_results_archive?order=id.desc&limit=100",
-            headers=headers
-        )
         archive = r_archive.json() if r_archive.status_code == 200 else []
 
         # If there are live votes, compute from votes
@@ -609,10 +609,14 @@ async def public_results():
 async def get_admin_stats(admin = Depends(get_current_admin)):
     await check_supabase()
     async with httpx.AsyncClient() as client:
-        r_posts = await client.get(f"{SUPABASE_URL}/rest/v1/election_posts?order=order_index.asc", headers=headers)
-        r_cands = await client.get(f"{SUPABASE_URL}/rest/v1/election_candidates", headers=headers)
-        r_voters = await client.get(f"{SUPABASE_URL}/rest/v1/election_voters", headers=headers)
-        r_votes = await client.get(f"{SUPABASE_URL}/rest/v1/election_votes", headers=headers)
+        import asyncio
+        tasks = [
+            client.get(f"{SUPABASE_URL}/rest/v1/election_posts?order=order_index.asc", headers=headers),
+            client.get(f"{SUPABASE_URL}/rest/v1/election_candidates", headers=headers),
+            client.get(f"{SUPABASE_URL}/rest/v1/election_voters", headers=headers),
+            client.get(f"{SUPABASE_URL}/rest/v1/election_votes", headers=headers)
+        ]
+        r_posts, r_cands, r_voters, r_votes = await asyncio.gather(*tasks)
 
         if r_posts.status_code != 200 or r_cands.status_code != 200 or r_voters.status_code != 200 or r_votes.status_code != 200:
             raise HTTPException(status_code=500, detail="Failed to fetch stats source tables.")
