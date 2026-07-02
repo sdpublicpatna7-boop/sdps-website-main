@@ -474,7 +474,7 @@ export function AdminElectionPosters() {
                 <button
                   type="submit"
                   disabled={singleSaving}
-                  className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-650 text-white rounded-xl font-bold text-sm hover:from-blue-700 hover:to-indigo-700 transition shadow-md shadow-blue-500/10 flex items-center justify-center gap-1.5 disabled:opacity-60"
+                  className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-sm hover:from-blue-700 hover:to-indigo-700 transition shadow-md shadow-blue-500/10 flex items-center justify-center gap-1.5 disabled:opacity-60"
                 >
                   {singleSaving && <Loader2 className="w-4 h-4 animate-spin" />}
                   {editing ? "Save Changes" : "Create Poster"}
@@ -621,7 +621,7 @@ export function AdminElectionPosters() {
                 type="button"
                 onClick={handleStartBulkUpload}
                 disabled={bulkUploading}
-                className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-650 text-white rounded-xl font-bold text-sm hover:from-blue-700 hover:to-indigo-700 transition shadow-md shadow-blue-500/10 flex items-center justify-center gap-1.5 disabled:opacity-60"
+                className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-sm hover:from-blue-700 hover:to-indigo-700 transition shadow-md shadow-blue-500/10 flex items-center justify-center gap-1.5 disabled:opacity-60"
               >
                 {bulkUploading ? (
                   <>
