@@ -47,7 +47,7 @@ export default function AdminElections() {
       ]);
       setStats(s.data);
       setUsers(u.data);
-      setCandidates(c.data.candidates || []);
+      setCandidates(Array.isArray(c.data) ? c.data : (c.data?.candidates || []));
       setPosts(p.data.posts || []);
       setSettings(st.data || {});
     } catch (err) {
