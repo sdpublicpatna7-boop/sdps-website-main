@@ -475,7 +475,7 @@ const CandidatesTab = ({ candidates, posts, postLabels, onChange }) => {
                       )}
                       <div className="mt-2 flex gap-1 justify-end">
                         <button onClick={() => setEditing(c)} className="p-1.5 rounded-lg hover:bg-slate-200/50 text-slate-500 hover:text-slate-700" title="Edit"><Pencil className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => remove(c.id)} data-testid={`del-candidate-${c.id}`} className="p-1.5 rounded-lg hover:bg-red-50 text-slate-500 hover:text-red-650" title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => remove(c.id)} data-testid={`del-candidate-${c.id}`} className="p-1.5 rounded-lg hover:bg-red-50 text-slate-500 hover:text-red-600" title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
                     </div>
                   </div>
@@ -560,7 +560,7 @@ const CandidateModal = ({ posts, initial, isNew, onClose, onSaved }) => {
             <Label className="text-slate-600 mb-1 block">Vote Adjustment <span className="text-xs font-normal text-slate-400">(added to displayed votes, can be negative)</span></Label>
             <Input data-testid="cand-adjustment-input" type="number" value={form.adjustment ?? 0} onChange={(e) => setForm({ ...form, adjustment: parseInt(e.target.value || "0", 10) })} placeholder="0" className="rounded-xl h-11" />
           </div>
-          <div><Label className="text-slate-650 mb-1 block">Photo URL</Label><Input data-testid="cand-photo-url-input" value={form.photo?.startsWith("data:") ? "" : (form.photo || "")} onChange={(e) => setForm({ ...form, photo: e.target.value })} placeholder="https://…" className="rounded-xl h-11" /></div>
+          <div><Label className="text-slate-600 mb-1 block">Photo URL</Label><Input data-testid="cand-photo-url-input" value={form.photo?.startsWith("data:") ? "" : (form.photo || "")} onChange={(e) => setForm({ ...form, photo: e.target.value })} placeholder="https://…" className="rounded-xl h-11" /></div>
           <div className="border border-dashed border-slate-200 rounded-xl p-4 bg-slate-50/50">
             <Label className="text-slate-600 mb-2 block font-bold">Or upload photo</Label>
             <input ref={fileRef} type="file" accept="image/*" onChange={onFile} data-testid="cand-photo-file-input" className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
@@ -573,7 +573,7 @@ const CandidateModal = ({ posts, initial, isNew, onClose, onSaved }) => {
           </div>
           {!isNew && (
             <div>
-              <Label className="text-slate-650 mb-1 block">Category</Label>
+              <Label className="text-slate-600 mb-1 block">Category</Label>
               <select value={form.post} onChange={(e) => setForm({ ...form, post: e.target.value })} className="h-10 w-full border border-slate-200 rounded-xl px-3 bg-slate-50 font-medium">
                 {posts.map(p => <option key={p.key} value={p.key}>{p.title}</option>)}
               </select>
@@ -790,7 +790,7 @@ const UsersTab = ({ role, users, onChange }) => {
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <Input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search..." data-testid={`${role}-search`} className="max-w-xs h-11 rounded-xl" />
-          <button onClick={downloadTemplate} data-testid={`download-${role}-template`} className="h-11 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 font-bold flex items-center gap-2 whitespace-nowrap text-slate-650 text-sm">
+          <button onClick={downloadTemplate} data-testid={`download-${role}-template`} className="h-11 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 font-bold flex items-center gap-2 whitespace-nowrap text-slate-600 text-sm">
             <Download className="w-4 h-4" /> Sample Excel
           </button>
           <input ref={fileRef} type="file" accept=".xlsx" onChange={upload} data-testid={`upload-${role}-input`} className="hidden" />
@@ -934,10 +934,10 @@ const SettingsTab = ({ settings, onChange }) => {
           >
             {open ? "Close Voting" : "Open Voting"}
           </button>
-          <Link to="/elections/results" target="_blank" className="h-11 px-5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 font-bold flex items-center gap-2 text-slate-650 text-sm">
+          <Link to="/elections/results" target="_blank" className="h-11 px-5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 font-bold flex items-center gap-2 text-slate-600 text-sm">
             <BarChart3 className="w-4 h-4" /> Open Live Results
           </Link>
-          <Link to="/elections/board" target="_blank" data-testid="board-link" className="h-11 px-5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 font-bold flex items-center gap-2 text-slate-650 text-sm">
+          <Link to="/elections/board" target="_blank" data-testid="board-link" className="h-11 px-5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 font-bold flex items-center gap-2 text-slate-600 text-sm">
             <Tv2 className="w-4 h-4" /> Notice Board
           </Link>
         </div>
@@ -952,11 +952,11 @@ const SettingsTab = ({ settings, onChange }) => {
           </div>
           <div className="flex-1 space-y-4 w-full">
             <div>
-              <Label className="text-slate-650 mb-1 block">Logo URL</Label>
+              <Label className="text-slate-600 mb-1 block">Logo URL</Label>
               <Input data-testid="logo-url-input" value={logo?.startsWith("data:") ? "" : (logo || "")} onChange={(e) => setLogo(e.target.value)} placeholder="https://…/logo.png" className="rounded-xl h-11" />
             </div>
             <div className="border border-dashed border-slate-200 rounded-xl p-4 bg-slate-50/50">
-              <Label className="text-slate-650 mb-2 block font-bold">Or upload file</Label>
+              <Label className="text-slate-600 mb-2 block font-bold">Or upload file</Label>
               <input ref={fileRef} type="file" accept="image/*" onChange={onFile} data-testid="logo-file-input" className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
             </div>
             <div className="flex gap-2">
@@ -976,10 +976,10 @@ const SettingsTab = ({ settings, onChange }) => {
 
       <div className="rounded-2xl border-2 border-red-200 bg-red-50/30 p-6">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center shadow-md shadow-red-250"><AlertTriangle className="w-5 h-5 text-white" /></div>
+          <div className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center shadow-md shadow-red-200"><AlertTriangle className="w-5 h-5 text-white" /></div>
           <h2 className="text-lg font-bold text-red-700">Danger Zone</h2>
         </div>
-        <p className="text-sm text-red-650/90 mb-4">These actions are immediate and permanent. Use only between elections or when resetting mock tests.</p>
+        <p className="text-sm text-red-600/90 mb-4">These actions are immediate and permanent. Use only between elections or when resetting mock tests.</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <button onClick={resetVotes} data-testid="reset-votes-btn" className="h-12 px-5 rounded-xl border-2 border-red-200 bg-white text-red-600 font-bold flex items-center justify-center gap-2 hover:bg-red-50 transition-colors text-sm">
             <RotateCcw className="w-4 h-4" /> Reset Votes Only
@@ -1124,24 +1124,24 @@ const ManipulationTab = ({ stats, posts, candidates, onChange }) => {
                             </div>
                           </td>
                           <td className="p-3 text-right font-mono font-bold text-slate-700">{c.real_votes ?? 0}</td>
-                          <td className={`p-3 text-right font-mono font-bold ${(c.adjustment ?? 0) === 0 ? "text-slate-400" : (c.adjustment > 0 ? "text-emerald-600" : "text-red-650")}`}>
+                          <td className={`p-3 text-right font-mono font-bold ${(c.adjustment ?? 0) === 0 ? "text-slate-400" : (c.adjustment > 0 ? "text-emerald-600" : "text-red-600")}`}>
                             {(c.adjustment ?? 0) > 0 ? "+" : ""}{c.adjustment ?? 0}
                           </td>
                           <td className="p-3 text-right font-bold text-lg text-slate-900">{c.votes}</td>
                           <td className="p-3 text-right">
                             <div className="inline-flex items-center gap-1">
-                              <button disabled={busy} onClick={() => bumpAdjustment(c, -1)} data-testid={`manip-minus-${c.candidate_id}`} className="w-8 h-8 rounded-lg border border-red-200 bg-red-50 hover:bg-red-155 text-red-600 disabled:opacity-40 flex items-center justify-center font-bold">-1</button>
-                              <button disabled={busy} onClick={() => bumpAdjustment(c, +1)} data-testid={`manip-plus-${c.candidate_id}`} className="w-8 h-8 rounded-lg border border-emerald-250 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 disabled:opacity-40 flex items-center justify-center font-bold">+1</button>
-                              <button disabled={busy} onClick={() => bumpAdjustment(c, +5)} className="h-8 px-2 rounded-lg border border-emerald-250 bg-white text-emerald-750 hover:bg-emerald-50 text-xs font-bold disabled:opacity-40">+5</button>
+                              <button disabled={busy} onClick={() => bumpAdjustment(c, -1)} data-testid={`manip-minus-${c.candidate_id}`} className="w-8 h-8 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 disabled:opacity-40 flex items-center justify-center font-bold">-1</button>
+                              <button disabled={busy} onClick={() => bumpAdjustment(c, +1)} data-testid={`manip-plus-${c.candidate_id}`} className="w-8 h-8 rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 disabled:opacity-40 flex items-center justify-center font-bold">+1</button>
+                              <button disabled={busy} onClick={() => bumpAdjustment(c, +5)} className="h-8 px-2 rounded-lg border border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50 text-xs font-bold disabled:opacity-40">+5</button>
                               <button disabled={busy} onClick={() => bumpAdjustment(c, -5)} className="h-8 px-2 rounded-lg border border-red-200 bg-white text-red-600 hover:bg-red-50 text-xs font-bold disabled:opacity-40">-5</button>
                             </div>
                           </td>
                           <td className="p-3 text-right whitespace-nowrap">
                             <div className="inline-flex gap-1 justify-end">
-                              <button disabled={busy} onClick={() => setTotalTo(c)} data-testid={`manip-set-${c.candidate_id}`} className="h-8 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-650">Set total…</button>
+                              <button disabled={busy} onClick={() => setTotalTo(c)} data-testid={`manip-set-${c.candidate_id}`} className="h-8 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-600">Set total…</button>
                               <button disabled={busy} onClick={() => makeWinner(post, c, list)} data-testid={`manip-winner-${c.candidate_id}`} className="h-8 px-3 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 text-white text-xs font-bold inline-flex items-center gap-1 shadow-sm hover:from-amber-500 hover:to-amber-700"><Wand2 className="w-3 h-3" /> Make Winner</button>
                               {(c.adjustment ?? 0) !== 0 && (
-                                <button disabled={busy} onClick={() => resetAdjustment(c)} className="h-8 px-3 rounded-lg border border-amber-300 bg-amber-50 text-amber-850 hover:bg-amber-100 text-xs font-bold">Reset</button>
+                                <button disabled={busy} onClick={() => resetAdjustment(c)} className="h-8 px-3 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 text-xs font-bold">Reset</button>
                               )}
                             </div>
                           </td>
