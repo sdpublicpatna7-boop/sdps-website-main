@@ -176,7 +176,7 @@ export default function AdminElectionsScheduler() {
       {/* Schedule Form */}
       <div className="bg-white rounded-3xl border border-slate-200/60 shadow-[0_4px_24px_rgba(0,0,0,0.02)] p-6.5 space-y-5 animate-in slide-in-from-bottom-4 duration-300">
         <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
-          <CalendarClock className="w-5 h-5 text-violet-555" />
+          <CalendarClock className="w-5 h-5 text-violet-600" />
           Set Publication Time
         </h2>
 
@@ -186,7 +186,7 @@ export default function AdminElectionsScheduler() {
             type="datetime-local"
             value={publishTime}
             onChange={(e) => setPublishTime(e.target.value)}
-            className="w-full px-4 py-3.5 border border-slate-200 rounded-2xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/15 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]"
+            className="w-full px-4 py-3.5 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/15 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]"
           />
         </div>
 
@@ -194,7 +194,7 @@ export default function AdminElectionsScheduler() {
           <button
             onClick={handleSchedule}
             disabled={saving}
-            className="flex items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-violet-600 to-purple-650 text-white rounded-2xl font-bold text-sm shadow-md hover:from-violet-700 hover:to-purple-700 transform hover:scale-[1.01] active:scale-99 transition-all disabled:opacity-50 shrink-0"
+            className="flex items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl font-bold text-sm shadow-md shadow-violet-500/10 hover:from-violet-700 hover:to-purple-700 transform hover:scale-[1.01] active:scale-99 transition-all disabled:opacity-50 shrink-0"
           >
             <CalendarClock className="w-4.5 h-4.5" />
             {saving ? "Saving..." : "Schedule Release"}
@@ -203,7 +203,7 @@ export default function AdminElectionsScheduler() {
           <button
             onClick={handlePublishNow}
             disabled={saving}
-            className="flex items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-550 text-white rounded-2xl font-bold text-sm shadow-md hover:from-emerald-655 hover:to-teal-655 transform hover:scale-[1.01] active:scale-99 transition-all disabled:opacity-50 shrink-0"
+            className="flex items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-bold text-sm shadow-md shadow-emerald-500/10 hover:from-emerald-600 hover:to-teal-700 transform hover:scale-[1.01] active:scale-99 transition-all disabled:opacity-50 shrink-0"
           >
             <Rocket className="w-4.5 h-4.5" />
             Publish Now
@@ -213,7 +213,7 @@ export default function AdminElectionsScheduler() {
             <button
               onClick={handleClear}
               disabled={saving}
-              className="flex items-center gap-2 px-6 py-3.5 bg-white border border-red-200 text-red-600 rounded-2xl font-bold text-sm hover:bg-red-50/80 active:scale-95 transition-all disabled:opacity-50 shrink-0"
+              className="flex items-center gap-2 px-6 py-3.5 bg-white border border-red-200 text-red-600 rounded-xl font-bold text-sm hover:bg-red-50/80 active:scale-95 transition-all disabled:opacity-50 shrink-0"
             >
               <Trash2 className="w-4.5 h-4.5" />
               Clear Schedule
