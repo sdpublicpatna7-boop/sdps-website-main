@@ -30,9 +30,8 @@ export function AdminElectionPosters() {
 
   // Bulk Modal State
   const [bulkOpen, setBulkOpen] = useState(false);
-  const [bulkPosition, setBulkPosition] = useState("");
   const [bulkYear, setBulkYear] = useState(new Date().getFullYear().toString());
-  const [bulkFiles, setBulkFiles] = useState([]); // [{ file, tempId, candidate_name, bio, status: 'idle'|'uploading'|'success'|'error', progress: 0 }]
+  const [bulkFiles, setBulkFiles] = useState([]); // [{ file, tempId, candidate_name, position, bio, status: 'idle'|'uploading'|'success'|'error', progress: 0 }]
   const [bulkUploading, setBulkUploading] = useState(false);
   const bulkFileRef = useRef(null);
 
@@ -139,6 +138,7 @@ export function AdminElectionPosters() {
         file,
         tempId: `${Date.now()}-${idx}-${Math.random()}`,
         candidate_name: cleanName,
+        position: "",
         bio: "",
         status: "idle",
         progress: 0
@@ -157,12 +157,15 @@ export function AdminElectionPosters() {
   };
 
   const handleStartBulkUpload = async () => {
-    if (bulkFiles.length === 0) {
-      toast.error("Please add at least one poster image file.");
+    const missingNames = bulkFiles.some(f => !f.candidate_name.trim());
+    if (missingNames) {
+      toast.error("Please enter a candidate name for all posters.");
       return;
     }
-    if (!bulkPosition.trim()) {
-      toast.error("Please specify the shared Position for these candidates.");
+
+    const missingPositions = bulkFiles.some(f => !f.position.trim());
+    if (missingPositions) {
+      toast.error("Please specify a position for all posters.");
       return;
     }
 
@@ -183,7 +186,7 @@ export function AdminElectionPosters() {
         // Step 2: Create the database entry
         const payload = {
           candidate_name: current.candidate_name.trim() || "Candidate",
-          position: bulkPosition.trim(),
+          position: current.position.trim(),
           year: bulkYear.trim(),
           poster_url: uploadRes.url,
           bio: current.bio.trim() || null
@@ -205,7 +208,6 @@ export function AdminElectionPosters() {
 
   const handleClearBulk = () => {
     setBulkFiles([]);
-    setBulkPosition("");
     setBulkYear(new Date().getFullYear().toString());
   };
 
@@ -504,19 +506,8 @@ export function AdminElectionPosters() {
 
             <div className="flex-1 overflow-y-auto space-y-4 pr-1.5">
               {/* Batch Configuration */}
-              <div className="grid grid-cols-2 gap-4 bg-slate-50/50 p-4 border border-slate-200/50 rounded-2xl">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Position / Post (Shared)</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. School Captain"
-                    value={bulkPosition}
-                    onChange={e => setBulkPosition(e.target.value)}
-                    disabled={bulkUploading}
-                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-slate-800 focus:outline-none bg-white font-semibold text-xs"
-                  />
-                </div>
-                <div className="space-y-1.5">
+              <div className="bg-slate-50/50 p-4 border border-slate-200/50 rounded-2xl">
+                <div className="space-y-1.5 max-w-xs">
                   <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Election Year</label>
                   <input
                     type="text"
@@ -566,7 +557,7 @@ export function AdminElectionPosters() {
                         <div className="w-10 h-10 rounded bg-slate-100 border shrink-0 flex items-center justify-center overflow-hidden">
                           <img src={URL.createObjectURL(item.file)} alt="Temp" className="w-full h-full object-cover" />
                         </div>
-                        <div className="flex-1 grid grid-cols-2 gap-2.5 min-w-0">
+                        <div className="flex-1 grid grid-cols-3 gap-2.5 min-w-0">
                           <div>
                             <input
                               type="text"
@@ -574,7 +565,17 @@ export function AdminElectionPosters() {
                               onChange={e => updateBulkFileField(item.tempId, "candidate_name", e.target.value)}
                               disabled={bulkUploading}
                               className="w-full px-2.5 py-1.5 border border-slate-200/80 rounded-lg text-slate-800 font-bold text-xs focus:outline-none focus:border-blue-500"
-                              placeholder="Candidate Name"
+                              placeholder="Candidate Name *"
+                            />
+                          </div>
+                          <div>
+                            <input
+                              type="text"
+                              value={item.position}
+                              onChange={e => updateBulkFileField(item.tempId, "position", e.target.value)}
+                              disabled={bulkUploading}
+                              className="w-full px-2.5 py-1.5 border border-slate-200/80 rounded-lg text-slate-800 font-bold text-xs focus:outline-none focus:border-blue-500"
+                              placeholder="Position / Post *"
                             />
                           </div>
                           <div>
