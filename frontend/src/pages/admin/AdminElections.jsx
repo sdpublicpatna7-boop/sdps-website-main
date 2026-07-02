@@ -1478,6 +1478,35 @@ const ManipulationTab = ({ stats, posts, candidates, settings, onChange }) => {
     appointedKeys = JSON.parse(settings.appointed_post_keys || "[]");
   } catch (e) {}
 
+  let viceCandidateIds = [];
+  try {
+    viceCandidateIds = JSON.parse(settings.vice_candidate_ids || "[]");
+  } catch (e) {}
+
+  const toggleVicePosition = async (cand) => {
+    setBusyId(cand.candidate_id);
+    let nextIds = [];
+    if (viceCandidateIds.includes(cand.candidate_id)) {
+      nextIds = viceCandidateIds.filter(id => id !== cand.candidate_id);
+    } else {
+      nextIds = [...viceCandidateIds, cand.candidate_id];
+    }
+    try {
+      await api.post("/elections/settings/vice_candidate_ids", { value: JSON.stringify(nextIds) });
+      toast.success("Vice position updated.");
+      onChange();
+    } catch {
+      toast.error("Failed to update vice position");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const isCaptainPost = (postKey) => {
+    const pk = (postKey || "").toLowerCase();
+    return pk === "head_boy" || pk === "sports_skipper" || pk === "cultural_head" || pk.includes("captain") || pk.includes("skipper") || pk.includes("head");
+  };
+
   const postLists = posts.map(p => {
     const list = (stats.by_post[p.key] || []).slice().sort((a, b) => b.votes - a.votes);
     return { post: p, list };
@@ -1550,82 +1579,7 @@ const ManipulationTab = ({ stats, posts, candidates, settings, onChange }) => {
     }
   };
 
-  const getVicePostInfo = (post) => {
-    if (post.key === "head_boy") {
-      return { key: "vice_head_boy", title: "Vice School Captain" };
-    }
-    if (post.key === "sports_skipper") {
-      return { key: "vice_sports_skipper", title: "Vice Sports Skipper" };
-    }
-    if (post.key === "cultural_head") {
-      return { key: "vice_cultural_head", title: "Vice Cultural Head" };
-    }
-    if (post.key.startsWith("vice_") || post.key === "d" || post.key === "discipline_head") return null;
-    return {
-      key: "vice_" + post.key,
-      title: "Vice " + post.title
-    };
-  };
 
-  const appointAsVice = async (captainPost, viceInfo, candidate) => {
-    setBusyId(candidate.candidate_id);
-    try {
-      const statsRes = await api.get("/elections/admin/stats");
-      const postsList = statsRes.data.posts || [];
-      
-      let targetVicePost = postsList.find(p => p.key === viceInfo.key);
-      if (!targetVicePost) {
-        if (!window.confirm(`The category "${viceInfo.title}" does not exist. Create it and nominate ${candidate.name}?`)) {
-          setBusyId(null);
-          return;
-        }
-        
-        await api.post("/elections/admin/posts", {
-          key: viceInfo.key,
-          title: viceInfo.title,
-          order_index: postsList.length + 1
-        });
-
-        let appointedKeys = [];
-        try {
-          appointedKeys = JSON.parse(settings.appointed_post_keys || "[]");
-        } catch (e) {}
-        if (!appointedKeys.includes(viceInfo.key)) {
-          const nextKeys = [...appointedKeys, viceInfo.key];
-          await api.post("/elections/settings/appointed_post_keys", { value: JSON.stringify(nextKeys) });
-        }
-      }
-
-      const viceCands = statsRes.data.by_post?.[viceInfo.key] || [];
-      const existing = viceCands.find(item => item.name.toLowerCase() === candidate.name.toLowerCase());
-
-      if (existing) {
-        toast.error(`${candidate.name} is already nominated under ${viceInfo.title}.`);
-        setBusyId(null);
-        return;
-      }
-
-      if (!window.confirm(`Nominate ${candidate.name} under ${viceInfo.title}?`)) {
-        setBusyId(null);
-        return;
-      }
-      
-      await api.post("/elections/admin/candidates", {
-        name: candidate.name,
-        post_key: viceInfo.key,
-        symbol: candidate.symbol || "",
-        photo: candidate.photo || ""
-      });
-      
-      toast.success(`${candidate.name} nominated under ${viceInfo.title}!`);
-      onChange();
-    } catch (e) {
-      console.error(e);
-      toast.error(e?.response?.data?.detail || "Failed to nominate under Vice Captain");
-    } finally {
-      setBusyId(null);
-    }
-  };
 
   const resetAllPost = async (post, list) => {
     if (!window.confirm(`Clear ALL adjustments for ${post.title}? Real ballots stay; only displayed counts revert to actual.`)) return;
@@ -1797,9 +1751,14 @@ const ManipulationTab = ({ stats, posts, candidates, settings, onChange }) => {
                                 {c.photo ? <img src={c.photo} alt="" className="w-full h-full object-cover" /> : null}
                               </div>
                               <div>
-                                <div className="font-bold text-slate-800 flex items-center gap-1.5">
+                                <div className="font-bold text-slate-800 flex items-center gap-1.5 flex-wrap">
                                   {c.name}
                                   {isLeader && (isPostAppointed ? <Star className="w-3.5 h-3.5 text-blue-500 fill-blue-500" /> : <Crown className="w-3.5 h-3.5 text-amber-500" />)}
+                                  {viceCandidateIds.includes(c.candidate_id) && (
+                                    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                                      <Award className="w-3 h-3 animate-pulse" /> Vice Position
+                                    </span>
+                                  )}
                                 </div>
                                 <div className="text-xs text-slate-400">Symbol: {c.symbol || "—"}</div>
                               </div>
@@ -1848,14 +1807,25 @@ const ManipulationTab = ({ stats, posts, candidates, settings, onChange }) => {
                                 </button>
                               ) : (
                                 <>
-                                  {viceInfo && (
+                                  {isCaptainPost(post.key) && (
                                     <button
                                       disabled={busy}
-                                      onClick={() => appointAsVice(post, viceInfo, c)}
-                                      className="h-8 px-3 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold shadow-sm"
-                                      title={`Nominate ${c.name} under ${viceInfo.title}`}
+                                      onClick={() => toggleVicePosition(c)}
+                                      className={`h-8 px-3 rounded-lg text-xs font-bold inline-flex items-center gap-1 transition-all ${
+                                        viceCandidateIds.includes(c.candidate_id)
+                                          ? "bg-red-50 text-red-700 border border-red-200 hover:bg-red-100/80"
+                                          : "bg-purple-600 text-white hover:bg-purple-700 shadow-sm"
+                                      }`}
                                     >
-                                      Nominate as Vice
+                                      {viceCandidateIds.includes(c.candidate_id) ? (
+                                        <>
+                                          <X className="w-3 h-3" /> Remove Vice
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Award className="w-3 h-3" /> Appoint Vice
+                                        </>
+                                      )}
                                     </button>
                                   )}
                                   <button disabled={busy} onClick={() => setTotalTo(c)} data-testid={`manip-set-${c.candidate_id}`} className="h-8 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-600">Set total…</button>

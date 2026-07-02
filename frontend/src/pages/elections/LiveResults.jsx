@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../../lib/api";
-import { Crown, Sparkles, Users, ShieldCheck, RefreshCw, Lock, Clock } from "lucide-react";
+import { Crown, Sparkles, Users, ShieldCheck, RefreshCw, Lock, Clock, Award } from "lucide-react";
 
 export default function LiveResults() {
   const [data, setData] = useState(null);
@@ -165,7 +165,7 @@ export default function LiveResults() {
 
             <section className="space-y-8">
               {data.posts?.map(p => (
-                <PostBlock key={p.key} post={p} list={data.by_post?.[p.key] || []} appointedKeys={data.appointed_post_keys || []} />
+                <PostBlock key={p.key} post={p} list={data.by_post?.[p.key] || []} appointedKeys={data.appointed_post_keys || []} viceCandidateIds={data.vice_candidate_ids || []} />
               ))}
             </section>
           </>
@@ -203,10 +203,11 @@ const KPI = ({ icon: Icon, label, value, accent }) => (
   </div>
 );
 
-const PostBlock = ({ post, list, appointedKeys = [] }) => {
+const PostBlock = ({ post, list, appointedKeys = [], viceCandidateIds = [] }) => {
   const total = Math.max(1, list.reduce((s, x) => s + (x.votes || 0), 0));
   const sorted = [...list].sort((a, b) => (b.votes || 0) - (a.votes || 0));
   const isPostAppointed = appointedKeys.includes(post.key);
+  const viceWinner = sorted.find(c => viceCandidateIds.includes(c.candidate_id));
 
   return (
     <div className="glass rounded-3xl p-7">
@@ -214,12 +215,13 @@ const PostBlock = ({ post, list, appointedKeys = [] }) => {
         <h2 className="font-display text-3xl md:text-4xl font-black hero-3d">{post.title}</h2>
         {sorted[0] && (sorted[0].votes || 0) > 0 && (() => {
           const maxVotes = sorted[0].votes || 0;
-          const winners = sorted.filter(c => (c.votes || 0) === maxVotes);
+          const winners = sorted.filter(c => (c.votes || 0) === maxVotes && !viceCandidateIds.includes(c.candidate_id));
           const winnersNames = winners.map(w => w.name).join(" & ");
+          const viceText = viceWinner ? ` · Vice: ${viceWinner.name}` : "";
           return (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#F4D571] to-[#D4AF37] text-[#1a1a1a] text-sm font-bold shadow">
               {isPostAppointed ? <Sparkles className="w-4 h-4 text-[#1a1a1a]" /> : <Crown className="w-4 h-4" />}
-              {isPostAppointed ? "Appointed by School Management" : "Winner"}: {winnersNames} {!isPostAppointed && `(${maxVotes} ${maxVotes === 1 ? 'vote' : 'votes'})`}
+              {isPostAppointed ? "Appointed Winner" : "Winner"}: {winnersNames}{viceText} {!isPostAppointed && `(${maxVotes} ${maxVotes === 1 ? 'vote' : 'votes'})`}
             </div>
           );
         })()}
@@ -231,7 +233,8 @@ const PostBlock = ({ post, list, appointedKeys = [] }) => {
           {sorted.map((c, i) => {
             const pct = Math.round(((c.votes || 0) / total) * 100);
             const maxVotes = sorted[0].votes || 0;
-            const isLeader = (c.votes || 0) > 0 && (c.votes || 0) === maxVotes;
+            const isLeader = (c.votes || 0) > 0 && (c.votes || 0) === maxVotes && !viceCandidateIds.includes(c.candidate_id);
+            const isVice = viceCandidateIds.includes(c.candidate_id);
             return (
               <div key={c.candidate_id || c.name} className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-blue-100">
@@ -248,6 +251,8 @@ const PostBlock = ({ post, list, appointedKeys = [] }) => {
                     <div className="font-bold truncate flex items-center gap-2">
                       {c.name}
                       {isLeader && (isPostAppointed ? <Sparkles className="w-4 h-4 text-[color:var(--sdps-gold)]" /> : <Crown className="w-4 h-4 text-[color:var(--sdps-gold)]" />)}
+                      {isVice && <Award className="w-4 h-4 text-purple-400 animate-pulse" />}
+                      {isVice && <span className="text-[10px] uppercase tracking-wider font-extrabold text-purple-400 bg-purple-950/25 px-2 py-0.5 rounded-full border border-purple-800/40">Vice</span>}
                     </div>
                     {!isPostAppointed && (
                       <div className="text-sm font-bold tabular-nums">

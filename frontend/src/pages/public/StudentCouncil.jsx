@@ -223,6 +223,9 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
             {winners.map((winner, wIdx) => {
               const winnerPhoto = winner?.photo ? (winner.photo.startsWith("data:") || winner.photo.startsWith("http") ? winner.photo : fullUrl(winner.photo)) : null;
               const winnerPct = totalVotes > 0 ? Math.round((winner.votes / totalVotes) * 100) : 0;
+              const isWinnerVice = winner.is_vice;
+              const isWinnerAppointed = isAppointed || isWinnerVice;
+
               return (
                 <div key={winner.candidate_id || wIdx} className={`flex items-center gap-6 ${winners.length > 1 && wIdx > 0 ? "pt-6 md:pt-0 md:pl-6" : ""}`}>
                   {/* Winner photo with crown / star */}
@@ -232,15 +235,27 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
                     <Star className="absolute -top-1 -right-3 w-4 h-4 text-amber-300 animate-sparkle" style={{ animationDelay: "0.8s" }} />
                     <Sparkles className="absolute -bottom-2 -left-3 w-4 h-4 text-amber-400/70 animate-sparkle" style={{ animationDelay: "1.6s" }} />
 
-                    {/* Crown / Star */}
+                    {/* Crown / Star / Award */}
                     <div className="absolute -top-5 left-1/2 -translate-x-1/2 z-20 animate-crown-float">
-                      <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${isAppointed ? "from-blue-400 to-blue-600" : "from-[#F4D571] to-[#B9892B]"} flex items-center justify-center shadow-lg border-2 border-white`}>
-                        {isAppointed ? <Star className="w-5 h-5 text-white fill-white" /> : <Crown className="w-5 h-5 text-white" />}
+                      <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${
+                        isWinnerVice
+                          ? "from-purple-400 to-purple-600"
+                          : isAppointed
+                            ? "from-blue-400 to-blue-600"
+                            : "from-[#F4D571] to-[#B9892B]"
+                      } flex items-center justify-center shadow-lg border-2 border-white`}>
+                        {isWinnerVice ? <Award className="w-5 h-5 text-white" /> : isAppointed ? <Star className="w-5 h-5 text-white fill-white" /> : <Crown className="w-5 h-5 text-white" />}
                       </div>
                     </div>
 
                     {/* Photo */}
-                    <div className={`w-24 h-24 rounded-2xl ring-[3px] ${isAppointed ? "ring-blue-400/50" : "ring-amber-400/50"} overflow-hidden bg-gradient-to-br from-amber-50 to-amber-100 shadow-lg animate-pulse-ring`}>
+                    <div className={`w-24 h-24 rounded-2xl ring-[3px] ${
+                      isWinnerVice
+                        ? "ring-purple-400/50"
+                        : isAppointed
+                          ? "ring-blue-400/50"
+                          : "ring-amber-400/50"
+                    } overflow-hidden bg-gradient-to-br from-amber-50 to-amber-100 shadow-lg animate-pulse-ring`}>
                       {winnerPhoto ? (
                         <img src={winnerPhoto} alt={winner.name} className="w-full h-full object-cover" />
                       ) : (
@@ -254,10 +269,28 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
                   {/* Winner info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      {isAppointed ? <Star className="w-4 h-4 text-blue-500 fill-blue-500" /> : <Trophy className="w-4 h-4 text-amber-500" />}
-                      <span className={`text-[10px] tracking-[0.3em] uppercase font-extrabold ${isAppointed ? "text-blue-600" : "text-amber-600"}`}>
-                        {isAppointed ? "Appointed by School Management" : "Winner"}
-                      </span>
+                      {isWinnerVice ? (
+                        <>
+                          <Award className="w-4 h-4 text-purple-500" />
+                          <span className="text-[10px] tracking-[0.3em] uppercase font-extrabold text-purple-600">
+                            Appointed Vice
+                          </span>
+                        </>
+                      ) : isAppointed ? (
+                        <>
+                          <Star className="w-4 h-4 text-blue-500 fill-blue-500" />
+                          <span className="text-[10px] tracking-[0.3em] uppercase font-extrabold text-blue-600">
+                            Appointed by School Management
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <Trophy className="w-4 h-4 text-amber-500" />
+                          <span className="text-[10px] tracking-[0.3em] uppercase font-extrabold text-amber-600">
+                            Winner
+                          </span>
+                        </>
+                      )}
                     </div>
                     <h4 className="font-headline text-2xl font-black text-slate-900 tracking-tight truncate">
                       {winner.name}
@@ -269,11 +302,18 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
                     )}
                     <div className="flex items-center gap-3 mt-3">
                       <div className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border shadow-sm ${
-                        isAppointed
-                          ? "bg-blue-50 border-blue-200/60 text-blue-700 font-extrabold text-sm"
-                          : "bg-gradient-to-r from-emerald-50 to-emerald-100/80 border border-emerald-200/60 text-emerald-700 text-sm font-extrabold"
+                        isWinnerVice
+                          ? "bg-purple-50 border-purple-200/60 text-purple-700 font-extrabold text-sm"
+                          : isAppointed
+                            ? "bg-blue-50 border-blue-200/60 text-blue-700 font-extrabold text-sm"
+                            : "bg-gradient-to-r from-emerald-50 to-emerald-100/80 border border-emerald-200/60 text-emerald-700 text-sm font-extrabold"
                       }`}>
-                        {isAppointed ? (
+                        {isWinnerVice ? (
+                          <>
+                            <Award className="w-3.5 h-3.5 text-purple-500" />
+                            Vice Captain
+                          </>
+                        ) : isAppointed ? (
                           <>
                             <Star className="w-3.5 h-3.5 fill-blue-500 text-blue-500" />
                             Appointed Winner
@@ -444,43 +484,79 @@ export default function StudentCouncil() {
         // Compile the live results — preserve ALL candidates per post
         const compiled = [];
         const dynamicProfiles = [];
+        const viceCandidateIds = d.vice_candidate_ids || [];
+
         (d.posts || []).forEach(post => {
           const candidates = d.by_post?.[post.key] || [];
           const sorted = [...candidates].sort((a, b) => b.votes - a.votes);
           if (sorted.length > 0) {
             const total = sorted.reduce((sum, c) => sum + (c.votes || 0), 0);
             const isAppointed = (d.appointed_post_keys || []).includes(post.key);
+
+            // Find Captain winner (highest votes who is NOT flagged as Vice)
+            const nonViceCands = sorted.filter(c => !viceCandidateIds.includes(c.candidate_id));
+            const captainWinner = nonViceCands[0] || sorted[0];
+
+            // Find Vice Captain winner(s) (candidates flagged in vice_candidate_ids under this post)
+            const viceWinners = sorted.filter(c => viceCandidateIds.includes(c.candidate_id));
+
+            // Compile the list of spotlight winners
+            const postWinners = [];
+            postWinners.push({
+              ...captainWinner,
+              is_vice: false
+            });
+            viceWinners.forEach(vw => {
+              postWinners.push({
+                ...vw,
+                is_vice: true
+              });
+            });
+
             compiled.push({
               id: post.key,
               year: "2026-27",
               position: post.title,
-              winner: sorted[0].name,
-              winner_photo: sorted[0].photo,
-              winner_symbol: sorted[0].symbol,
-              winner_votes: sorted[0].votes,
-              total_votes: total,
               is_appointed: isAppointed,
-              all_candidates: sorted, // ALL candidates with their votes!
+              all_candidates: sorted,
+              total_votes: total,
+              winners: postWinners // Store spotlight winners!
             });
 
-            // If there's a winner (has votes, or is appointed), add all of them to dynamic profiles
+            // If there's a winner, add them to dynamic profiles
             const maxVotes = sorted[0].votes || 0;
             const winners = maxVotes > 0 ? sorted.filter(c => c.votes === maxVotes) : [];
-            
-            // If it is appointed, let's grab all candidates with votes === 100
             const appointedWinners = isAppointed ? sorted.filter(c => c.votes === 100) : [];
             const finalWinners = isAppointed ? appointedWinners : winners;
 
             finalWinners.forEach((winner, wIdx) => {
+              // Only add if not flagged as Vice (since Vice will be added separately below)
+              if (!viceCandidateIds.includes(winner.candidate_id)) {
+                dynamicProfiles.push({
+                  id: `election-${post.key}-${winner.candidate_id || wIdx}`,
+                  name: winner.name,
+                  position: post.title,
+                  photo_url: winner.photo,
+                  year: "2026-27",
+                  role_type: isAppointed ? "Appointed by School Management" : "Elected",
+                  is_captain: !isAppointed,
+                  order: post.order || 0
+                });
+              }
+            });
+
+            // Add Vice winners to dynamic profiles
+            viceWinners.forEach((winner, wIdx) => {
               dynamicProfiles.push({
-                id: `election-${post.key}-${winner.candidate_id || wIdx}`,
+                id: `election-${post.key}-vice-${winner.candidate_id || wIdx}`,
                 name: winner.name,
-                position: post.title,
+                position: "Vice " + post.title,
                 photo_url: winner.photo,
                 year: "2026-27",
-                role_type: isAppointed ? "Appointed by School Management" : "Elected",
-                is_captain: !post.title.toLowerCase().includes("vice") && !isAppointed,
-                order: post.order || 0
+                role_type: "Appointed by School Management",
+                is_captain: false,
+                is_vice: true,
+                order: (post.order || 0) + 0.5
               });
             });
           }
@@ -677,7 +753,7 @@ export default function StudentCouncil() {
                     if (r.all_candidates && r.all_candidates.length > 0) {
                       const totalVotesInPost = r.all_candidates.reduce((s, c) => s + (c.votes || 0), 0);
                       const maxVotes = r.all_candidates[0].votes;
-                      const postWinners = maxVotes > 0 ? r.all_candidates.filter(c => c.votes === maxVotes) : [r.all_candidates[0]];
+                      const postWinners = r.winners || (maxVotes > 0 ? r.all_candidates.filter(c => c.votes === maxVotes) : [r.all_candidates[0]]);
                       return (
                         <WinnerSpotlight
                           key={r.id || i}

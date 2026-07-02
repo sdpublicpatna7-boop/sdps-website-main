@@ -519,6 +519,7 @@ async def public_results():
         )
         publish_time_str = ""
         appointed_post_keys = []
+        vice_candidate_ids = []
         if r_settings.status_code == 200 and r_settings.json():
             for s in r_settings.json():
                 if s.get("key") == "results_publish_time":
@@ -526,6 +527,11 @@ async def public_results():
                 elif s.get("key") == "appointed_post_keys":
                     try:
                         appointed_post_keys = json.loads(s.get("value", "[]"))
+                    except Exception:
+                        pass
+                elif s.get("key") == "vice_candidate_ids":
+                    try:
+                        vice_candidate_ids = json.loads(s.get("value", "[]"))
                     except Exception:
                         pass
 
@@ -596,6 +602,7 @@ async def public_results():
                 "winners": {p["key"]: (by_post[p["key"]][0] if by_post[p["key"]] else None) for p in posts},
                 "total_voted": len(votes),
                 "appointed_post_keys": appointed_post_keys,
+                "vice_candidate_ids": vice_candidate_ids,
             }
 
         return {"status": "sealed", "message": "No results available."}
