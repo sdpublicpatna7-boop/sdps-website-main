@@ -1459,55 +1459,33 @@ const ManipulationTab = ({ stats, posts, candidates, settings, onChange }) => {
   };
 
   const appointAsVice = async (captainPost, vicePost, candidate) => {
-    if (!window.confirm(`Nominate and appoint ${candidate.name} as ${vicePost.title}?`)) return;
+    // Check if already nominated in Vice category
+    const statsRes = await api.get("/elections/admin/stats");
+    const viceCands = statsRes.data.by_post?.[vicePost.key] || [];
+    const existing = viceCands.find(item => item.name.toLowerCase() === candidate.name.toLowerCase());
+
+    if (existing) {
+      toast.error(`${candidate.name} is already nominated under ${vicePost.title}.`);
+      return;
+    }
+
+    if (!window.confirm(`Nominate ${candidate.name} under ${vicePost.title}?`)) return;
     
     setBusyId(candidate.candidate_id);
     try {
-      // 1. Fetch current stats to get the most updated list of candidates for the Vice post
-      const statsRes = await api.get("/elections/admin/stats");
-      const viceCands = statsRes.data.by_post?.[vicePost.key] || [];
+      toast.message(`Nominating ${candidate.name} under ${vicePost.title}...`);
+      await api.post("/elections/admin/candidates", {
+        name: candidate.name,
+        post_key: vicePost.key,
+        symbol: candidate.symbol || "",
+        photo: candidate.photo || ""
+      });
       
-      let targetId = null;
-      const existing = viceCands.find(item => item.name.toLowerCase() === candidate.name.toLowerCase());
-      
-      if (existing) {
-        targetId = existing.candidate_id;
-      } else {
-        toast.message(`Nominating ${candidate.name} under ${vicePost.title}...`);
-        const { data } = await api.post("/elections/admin/candidates", {
-          name: candidate.name,
-          post_key: vicePost.key,
-          symbol: candidate.symbol || "",
-          photo: candidate.photo || ""
-        });
-        if (data && data.candidate) {
-          targetId = data.candidate.id;
-        } else {
-          throw new Error("Nomination failed. Could not fetch new candidate ID.");
-        }
-      }
-
-      // 2. Refresh stats again to get the candidate list including the new nomination if created
-      const freshStatsRes = await api.get("/elections/admin/stats");
-      const freshViceCands = freshStatsRes.data.by_post?.[vicePost.key] || [];
-      
-      // 3. Appoint them as winner (set their adjustment to 100, others to 0)
-      for (const item of freshViceCands) {
-        const isTarget = item.candidate_id === targetId;
-        const targetAdj = isTarget ? 100 : 0;
-        await api.put(`/elections/admin/candidates/${item.candidate_id}`, {
-          name: item.name,
-          symbol: item.symbol || "",
-          adjustment: targetAdj,
-          post_key: vicePost.key
-        });
-      }
-      
-      toast.success(`${candidate.name} appointed as ${vicePost.title}!`);
+      toast.success(`${candidate.name} nominated under ${vicePost.title}. You can now override their votes manually.`);
       onChange();
     } catch (e) {
       console.error(e);
-      toast.error(e?.response?.data?.detail || "Failed to appoint as Vice Captain");
+      toast.error(e?.response?.data?.detail || "Failed to nominate under Vice Captain");
     } finally {
       setBusyId(null);
     }
@@ -1646,9 +1624,9 @@ const ManipulationTab = ({ stats, posts, candidates, settings, onChange }) => {
                                       disabled={busy}
                                       onClick={() => appointAsVice(post, vicePost, c)}
                                       className="h-8 px-3 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold shadow-sm"
-                                      title={`Nominate and appoint ${c.name} as ${vicePost.title}`}
+                                      title={`Nominate ${c.name} under ${vicePost.title}`}
                                     >
-                                      Appoint as Vice
+                                      Nominate as Vice
                                     </button>
                                   )}
                                   <button disabled={busy} onClick={() => setTotalTo(c)} data-testid={`manip-set-${c.candidate_id}`} className="h-8 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-600">Set total…</button>
