@@ -3,7 +3,8 @@ import { toast } from "sonner";
 import {
   Award, Plus, Edit2, Trash2, ArrowUp, ArrowDown, Upload,
   Loader2, Globe, Save, HelpCircle, Eye, EyeOff, LayoutGrid, Sparkles,
-  BarChart3, Calendar, Smartphone, Chrome, ShieldAlert, X, Link2, MoreHorizontal
+  BarChart3, Calendar, Smartphone, Chrome, ShieldAlert, X, Link2,
+  Mail, MessageCircle, Play, Instagram, Facebook, Youtube, Copy, Check
 } from "lucide-react";
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -27,6 +28,10 @@ export default function AdminLinktree() {
   });
   const [links, setLinks] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Styling and tab states
+  const [activeTab, setActiveTab] = useState("branding"); // branding | socials
+  const [copiedLink, setCopiedLink] = useState(false);
 
   // Branding save states
   const [savingSettings, setSavingSettings] = useState(false);
@@ -81,12 +86,10 @@ export default function AdminLinktree() {
     fetchData();
   }, []);
 
-  // Handle setting input changes
   const handleSettingsChange = (key, val) => {
     setSettings(prev => ({ ...prev, [key]: val }));
   };
 
-  // Upload logo file
   const handleLogoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -106,7 +109,6 @@ export default function AdminLinktree() {
     }
   };
 
-  // Save branding settings
   const handleSaveSettings = async (e) => {
     e.preventDefault();
     setSavingSettings(true);
@@ -120,7 +122,6 @@ export default function AdminLinktree() {
     }
   };
 
-  // Open modal for new link or editing existing
   const openLinkModal = (link = null) => {
     if (link) {
       setEditingLink(link);
@@ -135,7 +136,6 @@ export default function AdminLinktree() {
     }
   };
 
-  // Save link (create or update)
   const handleSaveLink = async (e) => {
     e.preventDefault();
     if (!linkTitle.trim() || !linkUrl.trim()) {
@@ -169,7 +169,6 @@ export default function AdminLinktree() {
     }
   };
 
-  // Toggle active / inactive status
   const handleToggleActive = async (link) => {
     try {
       const updated = { ...link, is_active: !link.is_active };
@@ -181,7 +180,6 @@ export default function AdminLinktree() {
     }
   };
 
-  // Delete link
   const handleDeleteLink = async (id) => {
     if (!window.confirm("Are you sure you want to delete this link?")) return;
     try {
@@ -193,31 +191,54 @@ export default function AdminLinktree() {
     }
   };
 
-  // Reorder links (up/down)
   const handleMove = async (index, direction) => {
     const targetIndex = index + direction;
     if (targetIndex < 0 || targetIndex >= links.length) return;
 
     const list = [...links];
-    // Swap items
     const temp = list[index];
     list[index] = list[targetIndex];
     list[targetIndex] = temp;
 
-    // Update state instantly for fluid UX
     setLinks(list);
 
-    // Call reorder backend endpoint
     try {
       await api.post("/admin/linktree/links/reorder", list.map(l => l.id));
     } catch (err) {
       toast.error("Failed to save link order");
-      fetchData(); // Rollback on error
+      fetchData();
     }
   };
 
-  // Get distinct group headers for suggestions
+  const copyPublicUrl = () => {
+    const fullUrl = `${window.location.origin}/links`;
+    navigator.clipboard.writeText(fullUrl);
+    toast.success("Public link copied to clipboard!");
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
   const categories = Array.from(new Set(links.map(l => l.group_header).filter(Boolean)));
+  const totalClicks = links.reduce((sum, l) => sum + (l.clicks_count || 0), 0);
+  const activeLinks = links.filter(l => l.is_active);
+
+  // Group links for simulator preview
+  const groupedLinks = links.filter(l => l.is_active).reduce((acc, link) => {
+    const header = link.group_header?.trim() || "Links";
+    if (!acc[header]) acc[header] = [];
+    acc[header].push(link);
+    return acc;
+  }, {});
+
+  // Socials list for simulator preview
+  const activeSocials = [
+    { icon: Instagram, val: settings.instagram },
+    { icon: Facebook, val: settings.facebook },
+    { icon: Youtube, val: settings.youtube },
+    { icon: MessageCircle, val: settings.whatsapp },
+    { icon: Play, val: settings.playstore },
+    { icon: Mail, val: settings.email ? `mailto:${settings.email}` : "" }
+  ].filter(s => s.val);
 
   if (loading) {
     return (
@@ -246,171 +267,225 @@ export default function AdminLinktree() {
           target="_blank"
           className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-sm shadow hover:from-blue-700 hover:to-indigo-700 hover:scale-[1.02] active:scale-95 transition-all shrink-0"
         >
-          <Eye className="w-4.5 h-4.5" /> View Live Page
+          <Globe className="w-4.5 h-4.5" /> View Live Page
         </a>
+      </div>
+
+      {/* Metrics Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in duration-400">
+        <div className="bg-white rounded-3xl border border-slate-200/60 p-5 shadow-[0_4px_12px_rgba(0,0,0,0.01)]">
+          <span className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400">Total Clicks</span>
+          <div className="text-3xl font-black text-slate-900 tracking-tight mt-1">{totalClicks}</div>
+        </div>
+        <div className="bg-white rounded-3xl border border-slate-200/60 p-5 shadow-[0_4px_12px_rgba(0,0,0,0.01)]">
+          <span className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400">Total Links</span>
+          <div className="text-3xl font-black text-slate-900 tracking-tight mt-1">{links.length}</div>
+        </div>
+        <div className="bg-white rounded-3xl border border-slate-200/60 p-5 shadow-[0_4px_12px_rgba(0,0,0,0.01)]">
+          <span className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400">Active Links</span>
+          <div className="text-3xl font-black text-emerald-600 tracking-tight mt-1">{activeLinks.length}</div>
+        </div>
+        <div className="bg-white rounded-3xl border border-slate-200/60 p-5 shadow-[0_4px_12px_rgba(0,0,0,0.01)] flex flex-col justify-between">
+          <span className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400">Portal Link</span>
+          <button
+            onClick={copyPublicUrl}
+            className="flex items-center justify-between text-left text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50/50 hover:bg-blue-50 border border-blue-100 rounded-xl px-3 py-1.5 transition mt-1.5"
+          >
+            <span className="truncate">/links</span>
+            {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 ml-2" /> : <Copy className="w-3.5 h-3.5 shrink-0 ml-2" />}
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Left Card: Profile Branding (Premium Overhaul) */}
-        <div className="bg-white rounded-3xl p-6.5 border border-slate-200/60 shadow-[0_4px_24px_rgba(0,0,0,0.02)] h-fit space-y-6 animate-in slide-in-from-left-4 duration-300">
-          <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
-            <Sparkles className="w-4.5 h-4.5 text-violet-655" />
-            Customize Profile Landing
-          </h2>
+        {/* Left Column: Builders & Managers (spans 2 columns) */}
+        <div className="lg:col-span-2 space-y-6">
+          
+          {/* Card 1: Settings Form */}
+          <div className="bg-white rounded-3xl border border-slate-200/60 shadow-[0_4px_24px_rgba(0,0,0,0.02)] p-6.5 space-y-6">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                <Sparkles className="w-4.5 h-4.5 text-violet-500" />
+                Customize Portal branding
+              </h2>
+              {/* Tab Selector */}
+              <div className="flex bg-slate-100 p-1 rounded-xl text-xs font-bold">
+                <button
+                  onClick={() => setActiveTab("branding")}
+                  className={`px-3 py-1.5 rounded-lg transition ${
+                    activeTab === "branding" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  Profile Details
+                </button>
+                <button
+                  onClick={() => setActiveTab("socials")}
+                  className={`px-3 py-1.5 rounded-lg transition ${
+                    activeTab === "socials" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  Social Handles
+                </button>
+              </div>
+            </div>
 
-          <div className="border-t border-slate-100/80 pt-5 space-y-5">
-            {/* Logo Image Upload layout */}
-            <div className="flex items-center gap-4 bg-slate-50/50 p-4 border border-slate-200/60 rounded-2xl shadow-inner">
-              <div className="w-16 h-16 rounded-full bg-white border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 shadow-sm relative group">
-                {settings.logo_url ? (
-                  <img src={settings.logo_url} alt="Logo" className="w-full h-full object-contain p-1" />
-                ) : (
-                  <span className="text-xs font-bold text-slate-400">No Image</span>
-                )}
-                {uploadingLogo && (
-                  <div className="absolute inset-0 bg-slate-900/60 flex items-center justify-center">
-                    <Loader2 className="w-4 h-4 text-white animate-spin" />
+            {/* TAB CONTENT: Branding Info */}
+            {activeTab === "branding" && (
+              <div className="space-y-5 animate-in fade-in duration-300">
+                {/* Logo Image Upload layout */}
+                <div className="flex items-center gap-4 bg-slate-50/50 p-4 border border-slate-200/60 rounded-2xl shadow-inner">
+                  <div className="w-16 h-16 rounded-full bg-white border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 shadow-sm relative group">
+                    {settings.logo_url ? (
+                      <img src={settings.logo_url} alt="Logo" className="w-full h-full object-contain p-1" />
+                    ) : (
+                      <span className="text-xs font-bold text-slate-400">No Image</span>
+                    )}
+                    {uploadingLogo && (
+                      <div className="absolute inset-0 bg-slate-900/60 flex items-center justify-center">
+                        <Loader2 className="w-4 h-4 text-white animate-spin" />
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-              <div className="flex-1 space-y-1">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">School Emblem Logo</span>
-                <label className="block">
-                  <span className="sr-only">Choose logo file</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoUpload}
-                    disabled={uploadingLogo}
-                    className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer"
+                  <div className="flex-1 space-y-1">
+                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">School Emblem Logo</span>
+                    <label className="block">
+                      <span className="sr-only">Choose logo file</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        disabled={uploadingLogo}
+                        className="block w-full text-xs text-slate-555 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Profile Title</label>
+                    <input
+                      type="text"
+                      placeholder="School Title"
+                      value={settings.profile_title}
+                      onChange={(e) => handleSettingsChange("profile_title", e.target.value)}
+                      className="w-full px-4 py-3 border border-slate-200/85 rounded-2xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/15 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Profile Handle</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. @Sdps_patna"
+                      value={settings.profile_handle || ""}
+                      onChange={(e) => handleSettingsChange("profile_handle", e.target.value)}
+                      className="w-full px-4 py-3 border border-slate-200/85 rounded-2xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/15 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Profile Bio</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Enter a brief bio..."
+                    value={settings.profile_bio}
+                    onChange={(e) => handleSettingsChange("profile_bio", e.target.value)}
+                    className="w-full px-4 py-3 border border-slate-200/85 rounded-2xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/15 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-sm resize-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]"
                   />
-                </label>
-              </div>
-            </div>
+                </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Profile Title</label>
-              <input
-                type="text"
-                placeholder="School Title"
-                value={settings.profile_title}
-                onChange={(e) => handleSettingsChange("profile_title", e.target.value)}
-                className="w-full px-4 py-3 border border-slate-200/85 rounded-2xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/15 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]"
-                required
-              />
-            </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Theme Style</label>
+                  <select
+                    value={settings.theme || "light"}
+                    onChange={(e) => handleSettingsChange("theme", e.target.value)}
+                    className="w-full px-4 py-3 border border-slate-200/85 rounded-2xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/15 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]"
+                  >
+                    <option value="light">🌅 Glassmorphic Light Theme</option>
+                    <option value="dark">🌌 Midnight Dark Theme</option>
+                  </select>
+                </div>
+              </div>
+            )}
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Profile Handle</label>
-              <input
-                type="text"
-                placeholder="e.g. @Sdps_patna"
-                value={settings.profile_handle || ""}
-                onChange={(e) => handleSettingsChange("profile_handle", e.target.value)}
-                className="w-full px-4 py-3 border border-slate-200/85 rounded-2xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/15 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Profile Bio</label>
-              <textarea
-                rows={3}
-                placeholder="Enter a brief bio..."
-                value={settings.profile_bio}
-                onChange={(e) => handleSettingsChange("profile_bio", e.target.value)}
-                className="w-full px-4 py-3 border border-slate-200/85 rounded-2xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/15 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-sm resize-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Theme Style</label>
-              <select
-                value={settings.theme || "light"}
-                onChange={(e) => handleSettingsChange("theme", e.target.value)}
-                className="w-full px-4 py-3 border border-slate-200/85 rounded-2xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/15 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]"
-              >
-                <option value="light">🌅 Glassmorphic Light Theme</option>
-                <option value="dark">🌌 Midnight Dark Theme</option>
-              </select>
-            </div>
-
-            {/* Socials Divider Header */}
-            <div className="pt-2">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block border-b border-slate-100 pb-2">Social Channels Outlets</span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3.5">
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Instagram</span>
-                <input
-                  type="url"
-                  placeholder="https://..."
-                  value={settings.instagram}
-                  onChange={(e) => handleSettingsChange("instagram", e.target.value)}
-                  className="w-full px-3 py-2.5 border border-slate-200/80 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-xs shadow-inner"
-                />
+            {/* TAB CONTENT: Social Outlets */}
+            {activeTab === "socials" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in duration-300">
+                <div className="space-y-1.5">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Instagram URL</span>
+                  <input
+                    type="url"
+                    placeholder="https://instagram.com/..."
+                    value={settings.instagram}
+                    onChange={(e) => handleSettingsChange("instagram", e.target.value)}
+                    className="w-full px-4 py-3 border border-slate-200/85 rounded-2xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/15 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-sm shadow-inner"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Facebook URL</span>
+                  <input
+                    type="url"
+                    placeholder="https://facebook.com/..."
+                    value={settings.facebook}
+                    onChange={(e) => handleSettingsChange("facebook", e.target.value)}
+                    className="w-full px-4 py-3 border border-slate-200/85 rounded-2xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/15 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-sm shadow-inner"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400">YouTube Channel URL</span>
+                  <input
+                    type="url"
+                    placeholder="https://youtube.com/..."
+                    value={settings.youtube}
+                    onChange={(e) => handleSettingsChange("youtube", e.target.value)}
+                    className="w-full px-4 py-3 border border-slate-200/85 rounded-2xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/15 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-sm shadow-inner"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400">WhatsApp Link</span>
+                  <input
+                    type="url"
+                    placeholder="https://wa.me/..."
+                    value={settings.whatsapp}
+                    onChange={(e) => handleSettingsChange("whatsapp", e.target.value)}
+                    className="w-full px-4 py-3 border border-slate-200/85 rounded-2xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/15 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-sm shadow-inner"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Google Play Store App URL</span>
+                  <input
+                    type="url"
+                    placeholder="https://play.google.com/store/..."
+                    value={settings.playstore}
+                    onChange={(e) => handleSettingsChange("playstore", e.target.value)}
+                    className="w-full px-4 py-3 border border-slate-200/85 rounded-2xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/15 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-sm shadow-inner"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400">School Email Support</span>
+                  <input
+                    type="email"
+                    placeholder="helpdesk@sdpublic.org"
+                    value={settings.email}
+                    onChange={(e) => handleSettingsChange("email", e.target.value)}
+                    className="w-full px-4 py-3 border border-slate-200/85 rounded-2xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/15 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-sm shadow-inner"
+                  />
+                </div>
               </div>
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Facebook</span>
-                <input
-                  type="url"
-                  placeholder="https://..."
-                  value={settings.facebook}
-                  onChange={(e) => handleSettingsChange("facebook", e.target.value)}
-                  className="w-full px-3 py-2.5 border border-slate-200/80 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-xs shadow-inner"
-                />
-              </div>
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">YouTube</span>
-                <input
-                  type="url"
-                  placeholder="https://..."
-                  value={settings.youtube}
-                  onChange={(e) => handleSettingsChange("youtube", e.target.value)}
-                  className="w-full px-3 py-2.5 border border-slate-200/80 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-xs shadow-inner"
-                />
-              </div>
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">WhatsApp Link</span>
-                <input
-                  type="url"
-                  placeholder="https://..."
-                  value={settings.whatsapp}
-                  onChange={(e) => handleSettingsChange("whatsapp", e.target.value)}
-                  className="w-full px-3 py-2.5 border border-slate-200/80 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-xs shadow-inner"
-                />
-              </div>
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Play Store App</span>
-                <input
-                  type="url"
-                  placeholder="https://..."
-                  value={settings.playstore}
-                  onChange={(e) => handleSettingsChange("playstore", e.target.value)}
-                  className="w-full px-3 py-2.5 border border-slate-200/80 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-xs shadow-inner"
-                />
-              </div>
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">School Email</span>
-                <input
-                  type="email"
-                  placeholder="sdpublic@..."
-                  value={settings.email}
-                  onChange={(e) => handleSettingsChange("email", e.target.value)}
-                  className="w-full px-3 py-2.5 border border-slate-200/80 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/10 focus:border-violet-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-xs shadow-inner"
-                />
-              </div>
-            </div>
+            )}
 
             <button
               onClick={handleSaveSettings}
               disabled={savingSettings}
-              className="w-full py-3.5 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white rounded-2xl font-bold text-sm shadow-md shadow-violet-500/15 hover:shadow-lg transform hover:scale-[1.01] active:scale-99 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-60"
+              className="w-full py-3.5 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-650 text-white rounded-2xl font-bold text-sm shadow-md shadow-violet-500/15 hover:shadow-lg transform hover:scale-[1.01] active:scale-99 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-60"
             >
               {savingSettings ? (
                 <>
-                  <Loader2 className="w-4.5 h-4.5 animate-spin" /> Saving...
+                  <Loader2 className="w-4.5 h-4.5 animate-spin" /> Saving Settings...
                 </>
               ) : (
                 <>
@@ -419,10 +494,8 @@ export default function AdminLinktree() {
               )}
             </button>
           </div>
-        </div>
 
-        {/* Right Card: Links management (Premium Overhaul) */}
-        <div className="lg:col-span-2 space-y-4 animate-in slide-in-from-bottom-4 duration-300">
+          {/* Card 2: Links List Container */}
           <div className="bg-white rounded-3xl p-6.5 border border-slate-200/60 shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-5">
             <div className="flex items-center justify-between border-b border-slate-100/80 pb-4">
               <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
@@ -431,7 +504,7 @@ export default function AdminLinktree() {
               </h2>
               <button
                 onClick={() => openLinkModal()}
-                className="flex items-center gap-1.5 px-4.5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-xs hover:from-blue-700 hover:to-indigo-700 transform hover:scale-[1.02] active:scale-95 transition-all shadow shadow-blue-500/10"
+                className="flex items-center gap-1.5 px-4.5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-650 text-white rounded-xl font-bold text-xs hover:from-blue-700 hover:to-indigo-700 transform hover:scale-[1.02] active:scale-95 transition-all shadow shadow-blue-500/10"
               >
                 <Plus className="w-4 h-4" /> Add Link Outlet
               </button>
@@ -470,7 +543,6 @@ export default function AdminLinktree() {
 
                     {/* Actions and Sorting */}
                     <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                      {/* Toggle status */}
                       <button
                         onClick={() => handleToggleActive(link)}
                         className={`p-2.5 rounded-xl border transition-all duration-300 shadow-sm active:scale-95 ${
@@ -483,7 +555,6 @@ export default function AdminLinktree() {
                         {link.is_active ? <Eye className="w-4.5 h-4.5" /> : <EyeOff className="w-4.5 h-4.5" />}
                       </button>
 
-                      {/* Analytics button */}
                       <button
                         onClick={() => fetchLinkAnalytics(link)}
                         className="p-2.5 hover:bg-violet-50 border border-slate-200 rounded-xl text-violet-600 hover:text-violet-755 transition-all shadow-sm bg-white active:scale-95"
@@ -492,7 +563,6 @@ export default function AdminLinktree() {
                         <BarChart3 className="w-4.5 h-4.5" />
                       </button>
 
-                      {/* Sorting buttons */}
                       <button
                         onClick={() => handleMove(idx, -1)}
                         disabled={idx === 0}
@@ -530,6 +600,108 @@ export default function AdminLinktree() {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Right Column: Live Mockup Smartphone Simulator (spans 1 column) */}
+        <div className="lg:col-span-1 h-fit lg:sticky lg:top-6 flex flex-col items-center">
+          <div className="w-full text-center mb-3">
+            <span className="text-xs font-bold uppercase tracking-widest text-slate-400 flex items-center justify-center gap-1">
+              <Smartphone className="w-4 h-4 text-violet-500" /> Interactive Simulator
+            </span>
+          </div>
+
+          {/* iPhone Mockup Frame */}
+          <div className="relative w-full max-w-[310px] aspect-[9/19.2] bg-slate-950 border-[10px] border-slate-900 rounded-[44px] shadow-2xl overflow-hidden ring-4 ring-slate-800/10">
+            {/* Notch / Dynamic Island */}
+            <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-28 h-5 bg-slate-900 rounded-full z-30 flex items-center justify-between px-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-slate-800"></div>
+              <div className="w-8 h-1 rounded-full bg-slate-800/80"></div>
+            </div>
+
+            {/* Screen Content */}
+            <div className={`w-full h-full overflow-y-auto no-scrollbar px-4 pt-10 pb-6 transition-all duration-500 ${
+              settings.theme === "dark" 
+                ? "bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white" 
+                : "bg-gradient-to-b from-slate-50 via-slate-100 to-slate-50 text-slate-900"
+            }`}>
+              
+              {/* Profile Card */}
+              <div className="flex flex-col items-center text-center space-y-2 mt-4">
+                <div className="w-16 h-16 rounded-full bg-white border border-slate-200/50 flex items-center justify-center overflow-hidden shadow-sm shrink-0">
+                  {settings.logo_url ? (
+                    <img src={settings.logo_url} alt="Logo" className="w-full h-full object-contain p-0.5" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center text-violet-500 font-bold text-xs">SDPS</div>
+                  )}
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm tracking-tight truncate max-w-[200px]">
+                    {settings.profile_title || "S.D. Public School"}
+                  </h3>
+                  {settings.profile_handle && (
+                    <p className="text-[10px] font-bold text-violet-500 mt-0.5 tracking-tight">
+                      {settings.profile_handle}
+                    </p>
+                  )}
+                </div>
+                {settings.profile_bio && (
+                  <p className="text-[9.5px] font-medium text-slate-450 leading-relaxed max-w-[220px] line-clamp-2 px-1">
+                    {settings.profile_bio}
+                  </p>
+                )}
+              </div>
+
+              {/* Social Channels Row */}
+              {activeSocials.length > 0 && (
+                <div className="flex flex-wrap items-center justify-center gap-2 mt-4.5 px-2">
+                  {activeSocials.map((soc, i) => (
+                    <div
+                      key={i}
+                      className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+                        settings.theme === "dark"
+                          ? "bg-white/10 hover:bg-white/20 text-white"
+                          : "bg-white border border-slate-200/60 text-slate-600 hover:text-slate-800 shadow-sm"
+                      }`}
+                    >
+                      <soc.icon className="w-3.5 h-3.5" />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Links Outlets */}
+              <div className="mt-6 space-y-4 px-1">
+                {Object.keys(groupedLinks).length === 0 ? (
+                  <div className="text-center py-8 text-[10px] text-slate-400 font-medium">
+                    No active links to preview.
+                  </div>
+                ) : (
+                  Object.keys(groupedLinks).map((groupName) => (
+                    <div key={groupName} className="space-y-2">
+                      <span className="text-[9px] uppercase tracking-widest font-extrabold text-slate-400 block px-1">
+                        {groupName}
+                      </span>
+                      <div className="space-y-1.5">
+                        {groupedLinks[groupName].map((link) => (
+                          <div
+                            key={link.id}
+                            className={`w-full py-2.5 px-3.5 rounded-xl text-xs font-bold text-center border transition-all duration-300 ${
+                              settings.theme === "dark"
+                                ? "bg-white/5 hover:bg-white/10 border-white/[0.08] text-slate-100"
+                                : "bg-white border-slate-200/80 text-slate-800 shadow-[0_2px_4px_rgba(0,0,0,0.01)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.02)]"
+                            }`}
+                          >
+                            {link.title}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+            </div>
           </div>
         </div>
 
@@ -605,7 +777,7 @@ export default function AdminLinktree() {
                 <button
                   type="submit"
                   disabled={savingLink}
-                  className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-sm hover:from-blue-700 hover:to-indigo-700 transition shadow-md shadow-blue-500/10 flex items-center justify-center gap-1.5"
+                  className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-650 text-white rounded-xl font-bold text-sm hover:from-blue-700 hover:to-indigo-700 transition shadow-md shadow-blue-500/10 flex items-center justify-center gap-1.5"
                 >
                   {savingLink && <Loader2 className="w-4 h-4 animate-spin" />}
                   Save Link
