@@ -212,12 +212,17 @@ const PostBlock = ({ post, list, appointedKeys = [] }) => {
     <div className="glass rounded-3xl p-7">
       <div className="flex items-center justify-between mb-5">
         <h2 className="font-display text-3xl md:text-4xl font-black hero-3d">{post.title}</h2>
-        {sorted[0] && sorted[0].votes > 0 && (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#F4D571] to-[#D4AF37] text-[#1a1a1a] text-sm font-bold shadow">
-            {isPostAppointed ? <Sparkles className="w-4 h-4 text-[#1a1a1a]" /> : <Crown className="w-4 h-4" />}
-            {isPostAppointed ? "Appointed by School Management" : "Winner"}: {sorted[0].name} {!isPostAppointed && `(${sorted[0].votes} ${sorted[0].votes === 1 ? 'vote' : 'votes'})`}
-          </div>
-        )}
+        {sorted[0] && (sorted[0].votes || 0) > 0 && (() => {
+          const maxVotes = sorted[0].votes || 0;
+          const winners = sorted.filter(c => (c.votes || 0) === maxVotes);
+          const winnersNames = winners.map(w => w.name).join(" & ");
+          return (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#F4D571] to-[#D4AF37] text-[#1a1a1a] text-sm font-bold shadow">
+              {isPostAppointed ? <Sparkles className="w-4 h-4 text-[#1a1a1a]" /> : <Crown className="w-4 h-4" />}
+              {isPostAppointed ? "Appointed by School Management" : "Winner"}: {winnersNames} {!isPostAppointed && `(${maxVotes} ${maxVotes === 1 ? 'vote' : 'votes'})`}
+            </div>
+          );
+        })()}
       </div>
       {sorted.length === 0 ? (
         <div className="text-[color:var(--sdps-muted)]">No candidates</div>
@@ -225,7 +230,8 @@ const PostBlock = ({ post, list, appointedKeys = [] }) => {
         <div className="space-y-3">
           {sorted.map((c, i) => {
             const pct = Math.round(((c.votes || 0) / total) * 100);
-            const isLeader = i === 0 && (c.votes || 0) > 0;
+            const maxVotes = sorted[0].votes || 0;
+            const isLeader = (c.votes || 0) > 0 && (c.votes || 0) === maxVotes;
             return (
               <div key={c.candidate_id || c.name} className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-blue-100">

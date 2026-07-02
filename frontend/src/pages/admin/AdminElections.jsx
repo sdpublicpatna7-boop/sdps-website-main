@@ -1525,23 +1525,26 @@ const ManipulationTab = ({ stats, posts, candidates, settings, onChange }) => {
   };
 
   const makeAppointedWinner = async (post, c, list) => {
-    // To make appointed winner, we set their adjustment to be 100, and all others to be 0.
     setBusyId(c.candidate_id);
     try {
-      for (const item of list) {
-        const isTarget = item.candidate_id === c.candidate_id;
-        const targetAdj = isTarget ? 100 : 0;
-        await api.put(`/elections/admin/candidates/${item.candidate_id}`, {
-          name: item.name,
-          symbol: item.symbol,
-          adjustment: targetAdj,
-          post_key: post.key
-        });
+      const isCurrentlyAppointed = c.votes === 100;
+      const targetAdj = isCurrentlyAppointed ? 0 : 100;
+      
+      await api.put(`/elections/admin/candidates/${c.candidate_id}`, {
+        name: c.name,
+        symbol: c.symbol || "",
+        adjustment: targetAdj,
+        post_key: post.key
+      });
+      
+      if (isCurrentlyAppointed) {
+        toast.success(`Removed appointment for ${c.name}`);
+      } else {
+        toast.success(`${c.name} appointed as winner!`);
       }
-      toast.success(`${c.name} set as Appointed Winner!`);
       onChange();
     } catch {
-      toast.error("Failed to set appointed winner");
+      toast.error("Failed to update appointment");
     } finally {
       setBusyId(null);
     }
@@ -1782,15 +1785,23 @@ const ManipulationTab = ({ stats, posts, candidates, settings, onChange }) => {
                             <div className="inline-flex gap-1 justify-end">
                               {isPostAppointed ? (
                                 <button
-                                  disabled={busy || isLeader}
+                                  disabled={busy}
                                   onClick={() => makeAppointedWinner(post, c, list)}
                                   className={`h-8 px-3 rounded-lg text-xs font-bold inline-flex items-center gap-1 transition-all ${
-                                    isLeader
-                                      ? "bg-slate-100 text-slate-400 cursor-default"
+                                    c.votes === 100
+                                      ? "bg-red-50 text-red-700 border border-red-200 hover:bg-red-100/80"
                                       : "bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
                                   }`}
                                 >
-                                  {isLeader ? "Appointed" : "Appoint Winner"}
+                                  {c.votes === 100 ? (
+                                    <>
+                                      <X className="w-3 h-3" /> Remove Appointment
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Check className="w-3 h-3" /> Appoint Winner
+                                    </>
+                                  )}
                                 </button>
                               ) : (
                                 <>

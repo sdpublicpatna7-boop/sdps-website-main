@@ -181,10 +181,7 @@ const ConfettiShower = () => {
 /* ───────────────────────────────────────────────────────
    WINNER SPOTLIGHT CARD (hero section per post)
    ─────────────────────────────────────────────────────── */
-const WinnerSpotlight = ({ winner, position, totalVotes, allCandidates, index, isAppointed }) => {
-  const winnerPhoto = winner?.photo ? (winner.photo.startsWith("data:") || winner.photo.startsWith("http") ? winner.photo : fullUrl(winner.photo)) : null;
-  const winnerPct = totalVotes > 0 ? Math.round((winner.votes / totalVotes) * 100) : 0;
-
+const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, index, isAppointed }) => {
   return (
     <div
       className="animate-card-reveal relative"
@@ -222,72 +219,80 @@ const WinnerSpotlight = ({ winner, position, totalVotes, allCandidates, index, i
           <div className="absolute top-4 left-6 w-16 h-16 rounded-full bg-amber-400/10 animate-popper" style={{ animationDelay: `${index * 0.2 + 0.5}s` }} />
           <div className="absolute top-8 right-10 w-12 h-12 rounded-full bg-blue-400/10 animate-popper" style={{ animationDelay: `${index * 0.2 + 0.8}s` }} />
           
-          <div className="flex items-center gap-6">
-            {/* Winner photo with crown / star */}
-            <div className="relative shrink-0">
-              {/* Sparkles around photo */}
-              <Sparkles className="absolute -top-3 -left-2 w-5 h-5 text-amber-400 animate-sparkle" style={{ animationDelay: "0s" }} />
-              <Star className="absolute -top-1 -right-3 w-4 h-4 text-amber-300 animate-sparkle" style={{ animationDelay: "0.8s" }} />
-              <Sparkles className="absolute -bottom-2 -left-3 w-4 h-4 text-amber-400/70 animate-sparkle" style={{ animationDelay: "1.6s" }} />
+          <div className={`grid ${winners.length > 1 ? "grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100 gap-6" : "grid-cols-1"}`}>
+            {winners.map((winner, wIdx) => {
+              const winnerPhoto = winner?.photo ? (winner.photo.startsWith("data:") || winner.photo.startsWith("http") ? winner.photo : fullUrl(winner.photo)) : null;
+              const winnerPct = totalVotes > 0 ? Math.round((winner.votes / totalVotes) * 100) : 0;
+              return (
+                <div key={winner.candidate_id || wIdx} className={`flex items-center gap-6 ${winners.length > 1 && wIdx > 0 ? "pt-6 md:pt-0 md:pl-6" : ""}`}>
+                  {/* Winner photo with crown / star */}
+                  <div className="relative shrink-0">
+                    {/* Sparkles around photo */}
+                    <Sparkles className="absolute -top-3 -left-2 w-5 h-5 text-amber-400 animate-sparkle" style={{ animationDelay: "0s" }} />
+                    <Star className="absolute -top-1 -right-3 w-4 h-4 text-amber-300 animate-sparkle" style={{ animationDelay: "0.8s" }} />
+                    <Sparkles className="absolute -bottom-2 -left-3 w-4 h-4 text-amber-400/70 animate-sparkle" style={{ animationDelay: "1.6s" }} />
 
-              {/* Crown / Star */}
-              <div className="absolute -top-5 left-1/2 -translate-x-1/2 z-20 animate-crown-float">
-                <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${isAppointed ? "from-blue-400 to-blue-600" : "from-[#F4D571] to-[#B9892B]"} flex items-center justify-center shadow-lg border-2 border-white`}>
-                  {isAppointed ? <Star className="w-5 h-5 text-white fill-white" /> : <Crown className="w-5 h-5 text-white" />}
-                </div>
-              </div>
+                    {/* Crown / Star */}
+                    <div className="absolute -top-5 left-1/2 -translate-x-1/2 z-20 animate-crown-float">
+                      <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${isAppointed ? "from-blue-400 to-blue-600" : "from-[#F4D571] to-[#B9892B]"} flex items-center justify-center shadow-lg border-2 border-white`}>
+                        {isAppointed ? <Star className="w-5 h-5 text-white fill-white" /> : <Crown className="w-5 h-5 text-white" />}
+                      </div>
+                    </div>
 
-              {/* Photo */}
-              <div className={`w-24 h-24 rounded-2xl ring-[3px] ${isAppointed ? "ring-blue-400/50" : "ring-amber-400/50"} overflow-hidden bg-gradient-to-br from-amber-50 to-amber-100 shadow-lg animate-pulse-ring`}>
-                {winnerPhoto ? (
-                  <img src={winnerPhoto} alt={winner.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-3xl font-headline font-black text-amber-600">
-                    {winner.name?.[0]}
+                    {/* Photo */}
+                    <div className={`w-24 h-24 rounded-2xl ring-[3px] ${isAppointed ? "ring-blue-400/50" : "ring-amber-400/50"} overflow-hidden bg-gradient-to-br from-amber-50 to-amber-100 shadow-lg animate-pulse-ring`}>
+                      {winnerPhoto ? (
+                        <img src={winnerPhoto} alt={winner.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-3xl font-headline font-black text-amber-600">
+                          {winner.name?.[0]}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
-            </div>
 
-            {/* Winner info */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                {isAppointed ? <Star className="w-4 h-4 text-blue-500 fill-blue-500" /> : <Trophy className="w-4 h-4 text-amber-500" />}
-                <span className={`text-[10px] tracking-[0.3em] uppercase font-extrabold ${isAppointed ? "text-blue-600" : "text-amber-600"}`}>
-                  {isAppointed ? "Appointed by School Management" : "Winner"}
-                </span>
-              </div>
-              <h4 className="font-headline text-2xl font-black text-slate-900 tracking-tight truncate">
-                {winner.name}
-              </h4>
-              {winner.symbol && (
-                <div className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-0.5">
-                  Symbol: {winner.symbol}
-                </div>
-              )}
-              <div className="flex items-center gap-3 mt-3">
-                <div className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border shadow-sm ${
-                  isAppointed
-                    ? "bg-blue-50 border-blue-200/60 text-blue-700 font-extrabold text-sm"
-                    : "bg-gradient-to-r from-emerald-50 to-emerald-100/80 border border-emerald-200/60 text-emerald-700 text-sm font-extrabold"
-                }`}>
-                  {isAppointed ? (
-                    <>
-                      <Star className="w-3.5 h-3.5 fill-blue-500 text-blue-500" />
-                      Appointed Winner
-                    </>
-                  ) : (
-                    <>
-                      <Award className="w-3.5 h-3.5 text-emerald-600" />
-                      <span className="tabular-nums animate-count-pop" style={{ animationDelay: `${index * 0.2 + 0.4}s` }}>
-                        {winner.votes} votes
+                  {/* Winner info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      {isAppointed ? <Star className="w-4 h-4 text-blue-500 fill-blue-500" /> : <Trophy className="w-4 h-4 text-amber-500" />}
+                      <span className={`text-[10px] tracking-[0.3em] uppercase font-extrabold ${isAppointed ? "text-blue-600" : "text-amber-600"}`}>
+                        {isAppointed ? "Appointed by School Management" : "Winner"}
                       </span>
-                      <span className="text-xs font-bold text-emerald-500">({winnerPct}%)</span>
-                    </>
-                  )}
+                    </div>
+                    <h4 className="font-headline text-2xl font-black text-slate-900 tracking-tight truncate">
+                      {winner.name}
+                    </h4>
+                    {winner.symbol && (
+                      <div className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-0.5">
+                        Symbol: {winner.symbol}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-3 mt-3">
+                      <div className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border shadow-sm ${
+                        isAppointed
+                          ? "bg-blue-50 border-blue-200/60 text-blue-700 font-extrabold text-sm"
+                          : "bg-gradient-to-r from-emerald-50 to-emerald-100/80 border border-emerald-200/60 text-emerald-700 text-sm font-extrabold"
+                      }`}>
+                        {isAppointed ? (
+                          <>
+                            <Star className="w-3.5 h-3.5 fill-blue-500 text-blue-500" />
+                            Appointed Winner
+                          </>
+                        ) : (
+                          <>
+                            <Award className="w-3.5 h-3.5 text-emerald-600" />
+                            <span className="tabular-nums animate-count-pop" style={{ animationDelay: `${index * 0.2 + 0.4}s` }}>
+                              {winner.votes} votes
+                            </span>
+                            <span className="text-xs font-bold text-emerald-500">({winnerPct}%)</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              );
+            })}
           </div>
         </div>
 
@@ -458,19 +463,26 @@ export default function StudentCouncil() {
               all_candidates: sorted, // ALL candidates with their votes!
             });
 
-            // If there's a winner (has votes, or is appointed), add them to dynamic profiles
-            if (sorted[0].votes > 0 || isAppointed) {
+            // If there's a winner (has votes, or is appointed), add all of them to dynamic profiles
+            const maxVotes = sorted[0].votes || 0;
+            const winners = maxVotes > 0 ? sorted.filter(c => c.votes === maxVotes) : [];
+            
+            // If it is appointed, let's grab all candidates with votes === 100
+            const appointedWinners = isAppointed ? sorted.filter(c => c.votes === 100) : [];
+            const finalWinners = isAppointed ? appointedWinners : winners;
+
+            finalWinners.forEach((winner, wIdx) => {
               dynamicProfiles.push({
-                id: `election-${post.key}`,
-                name: sorted[0].name,
+                id: `election-${post.key}-${winner.candidate_id || wIdx}`,
+                name: winner.name,
                 position: post.title,
-                photo_url: sorted[0].photo,
+                photo_url: winner.photo,
                 year: "2026-27",
                 role_type: isAppointed ? "Appointed by School Management" : "Elected",
                 is_captain: !post.title.toLowerCase().includes("vice") && !isAppointed,
                 order: post.order || 0
               });
-            }
+            });
           }
         });
         if (compiled.length > 0) {
@@ -663,10 +675,12 @@ export default function StudentCouncil() {
                     // If we have the new all_candidates array from live data
                     if (r.all_candidates && r.all_candidates.length > 0) {
                       const totalVotesInPost = r.all_candidates.reduce((s, c) => s + (c.votes || 0), 0);
+                      const maxVotes = r.all_candidates[0].votes;
+                      const postWinners = maxVotes > 0 ? r.all_candidates.filter(c => c.votes === maxVotes) : [r.all_candidates[0]];
                       return (
                         <WinnerSpotlight
                           key={r.id || i}
-                          winner={r.all_candidates[0]}
+                          winners={postWinners}
                           position={r.position}
                           totalVotes={totalVotesInPost}
                           allCandidates={r.all_candidates}
@@ -699,7 +713,7 @@ export default function StudentCouncil() {
                     return (
                       <WinnerSpotlight
                         key={r.id || i}
-                        winner={legacyCandidates[0]}
+                        winners={legacyCandidates}
                         position={r.position}
                         totalVotes={totalVotesLeg}
                         allCandidates={legacyCandidates}
