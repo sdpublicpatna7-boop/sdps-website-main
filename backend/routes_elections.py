@@ -264,7 +264,8 @@ async def create_candidate(payload: CandidateCreatePayload):
         if r.status_code not in [200, 201]:
             logger.error(f"Failed to nominate candidate: {r.text}")
             raise HTTPException(status_code=500, detail="Failed to nominate candidate.")
-        return {"success": True}
+        res_data = r.json()
+        return {"success": True, "candidate": res_data[0] if res_data else None}
 
 @elections_router.delete("/candidates/{cid}")
 async def delete_candidate(cid: str):
