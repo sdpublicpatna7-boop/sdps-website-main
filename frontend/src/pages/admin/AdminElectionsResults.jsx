@@ -166,14 +166,14 @@ function KPICard({ icon: Icon, label, value, color }) {
     purple: "from-purple-500 via-purple-600 to-indigo-650 shadow-purple-500/10 border-purple-200/50",
   };
   return (
-    <div className="bg-white rounded-3xl border border-slate-200/60 p-5.5 shadow-[0_4px_12px_rgba(0,0,0,0.01)] hover:shadow-[0_12px_28px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between h-32">
+    <div className="bg-white rounded-3xl border border-slate-200/60 p-5 shadow-[0_4px_12px_rgba(0,0,0,0.01)] hover:shadow-[0_12px_28px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 transition-all duration-300">
       <div className="flex items-center justify-between">
         <span className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400">{label}</span>
         <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${colors[color]} flex items-center justify-center shadow-md`}>
           <Icon className="w-5 h-5 text-white" />
         </div>
       </div>
-      <div className="text-3xl font-black text-slate-900 tracking-tight">{value}</div>
+      <div className="text-3xl font-black text-slate-900 tracking-tight mt-2.5">{value}</div>
     </div>
   );
 }
