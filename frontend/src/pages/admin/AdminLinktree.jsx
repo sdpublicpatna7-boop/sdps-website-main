@@ -481,7 +481,7 @@ export default function AdminLinktree() {
             <button
               onClick={handleSaveSettings}
               disabled={savingSettings}
-              className="w-full py-3.5 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-650 text-white rounded-2xl font-bold text-sm shadow-md shadow-violet-500/15 hover:shadow-lg transform hover:scale-[1.01] active:scale-99 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-60"
+              className="w-full py-3.5 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white rounded-2xl font-bold text-sm shadow-md shadow-violet-500/15 hover:shadow-lg transform hover:scale-[1.01] active:scale-95 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-60"
             >
               {savingSettings ? (
                 <>
@@ -504,7 +504,7 @@ export default function AdminLinktree() {
               </h2>
               <button
                 onClick={() => openLinkModal()}
-                className="flex items-center gap-1.5 px-4.5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-650 text-white rounded-xl font-bold text-xs hover:from-blue-700 hover:to-indigo-700 transform hover:scale-[1.02] active:scale-95 transition-all shadow shadow-blue-500/10"
+                className="flex items-center gap-1.5 px-4.5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-xs hover:from-blue-700 hover:to-indigo-700 transform hover:scale-[1.02] active:scale-95 transition-all shadow shadow-blue-500/10"
               >
                 <Plus className="w-4 h-4" /> Add Link Outlet
               </button>
@@ -777,7 +777,7 @@ export default function AdminLinktree() {
                 <button
                   type="submit"
                   disabled={savingLink}
-                  className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-650 text-white rounded-xl font-bold text-sm hover:from-blue-700 hover:to-indigo-700 transition shadow-md shadow-blue-500/10 flex items-center justify-center gap-1.5"
+                  className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-sm hover:from-blue-700 hover:to-indigo-700 transition shadow-md shadow-blue-500/10 flex items-center justify-center gap-1.5"
                 >
                   {savingLink && <Loader2 className="w-4 h-4 animate-spin" />}
                   Save Link
