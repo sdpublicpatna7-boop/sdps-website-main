@@ -1,0 +1,9 @@
+{
+  "redirects": [
+    {
+      "source": "/s/:code",
+      "destination": "https://api.sdpublic.org/api/s/:code",
+      "permanent": false
+    }
+  ]
+}

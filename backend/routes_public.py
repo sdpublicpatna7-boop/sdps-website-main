@@ -7,7 +7,7 @@ from typing import List, Optional
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Form, File, UploadFile, Body, Request, Response
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse, HTMLResponse
 from pydantic import BaseModel
 import razorpay
 from slowapi import Limiter
@@ -1202,15 +1202,45 @@ def _parse_user_agent(ua: str):
     return device, browser, os_name
 
 
+def is_crawler_bot(user_agent: str) -> bool:
+    if not user_agent:
+        return False
+    ua = user_agent.lower()
+    bot_keywords = [
+        "whatsapp", "facebookexternalhit", "twitterbot", "linkedinbot", 
+        "slackbot", "telegrambot", "discordbot", "googlebot", "bingbot", 
+        "applebot", "embedly", "vkshare", "yandexbot", "crawler", "spider"
+    ]
+    return any(bot in ua for bot in bot_keywords)
+
+
 @public_router.get("/s/{code}")
 @limiter.limit("60/minute")
 async def resolve_short_link(code: str, request: Request):
-    link = await db.short_links.find_one({"code": code}, {"_id": 0})
+    code_clean = code.split("/")[0].strip()
+    link = await db.short_links.find_one({"code": code_clean}, {"_id": 0})
     if not link:
-        raise HTTPException(status_code=404, detail="Short link not found")
+        return HTMLResponse(
+            status_code=404,
+            content="""
+            <html>
+                <head>
+                    <meta charset="utf-8">
+                    <title>Link Not Found</title>
+                </head>
+                <body style="font-family: system-ui, sans-serif; text-align: center; padding: 50px; background: #0f172a; color: #f8fafc;">
+                    <div style="max-width: 400px; margin: 0 auto; padding: 40px; background: #1e293b; border-radius: 24px; border: 1px solid #334155;">
+                        <h2 style="color: #ef4444; margin-top: 0;">Link Unresolved</h2>
+                        <p style="color: #94a3b8; font-size: 14px; line-height: 1.6;">The shortened URL you clicked does not exist or has expired.</p>
+                        <a href="https://www.sdpublic.org" style="display: inline-block; margin-top: 15px; padding: 10px 20px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 12px; font-weight: bold; font-size: 13px;">Back to Home</a>
+                    </div>
+                </body>
+            </html>
+            """
+        )
         
     await db.short_links.update_one(
-        {"code": code},
+        {"code": code_clean},
         {"$inc": {"clicks_count": 1}}
     )
     
@@ -1231,7 +1261,7 @@ async def resolve_short_link(code: str, request: Request):
             pass
             
     click_log = ShortLinkClick(
-        link_code=code,
+        link_code=code_clean,
         ip=ip,
         user_agent=ua,
         device=device,
@@ -1242,7 +1272,47 @@ async def resolve_short_link(code: str, request: Request):
     )
     await db.short_link_clicks.insert_one(click_log.model_dump())
     
-    return {"url": link["url"]}
+    if is_crawler_bot(ua):
+        # Serve custom HTML with OG meta tags so WhatsApp/social link preview cards work
+        title = link.get("title") or "S.D. Public School"
+        description = link.get("description") or "Shortened link redirect portal."
+        image = link.get("image") or "https://res.cloudinary.com/drx3kb809/image/upload/v1782313772/sdps/misc/hffxigjkpw7cbc7cmdm5.jpg"
+        
+        if image.startswith("/"):
+            image = f"https://www.sdpublic.org{image}"
+            
+        html_content = f"""<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{html.escape(title)}</title>
+    <meta name="description" content="{html.escape(description)}">
+    
+    <!-- OpenGraph tags for WhatsApp, Facebook, LinkedIn -->
+    <meta property="og:title" content="{html.escape(title)}">
+    <meta property="og:description" content="{html.escape(description)}">
+    <meta property="og:image" content="{html.escape(image)}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.sdpublic.org/s/{code_clean}">
+    
+    <!-- Twitter tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{html.escape(title)}">
+    <meta name="twitter:description" content="{html.escape(description)}">
+    <meta name="twitter:image" content="{html.escape(image)}">
+    
+    <!-- Automatic HTTP/Browser redirection fallback -->
+    <meta http-equiv="refresh" content="0; url={link['url']}">
+</head>
+<body>
+    <p>Redirecting you to <a href="{html.escape(link['url'])}">{html.escape(link['url'])}</a>...</p>
+    <script>window.location.replace({repr(link['url'])});</script>
+</body>
+</html>
+"""
+        return HTMLResponse(content=html_content)
+        
+    return RedirectResponse(url=link["url"], status_code=302)
 
 
 @public_router.get("/linktree")
