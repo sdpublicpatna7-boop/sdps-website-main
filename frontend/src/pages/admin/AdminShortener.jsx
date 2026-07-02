@@ -27,12 +27,18 @@ export default function AdminShortener() {
   const [previewLoading, setPreviewLoading] = useState(false);
 
   useEffect(() => {
-    if (!url.trim()) {
+    let cleanUrl = url.trim();
+    if (!cleanUrl) {
       setPreviewData(null);
       return;
     }
+    
+    if (!/^https?:\/\//i.test(cleanUrl)) {
+      cleanUrl = "https://" + cleanUrl;
+    }
+
     try {
-      new URL(url.trim());
+      new URL(cleanUrl);
     } catch (_) {
       return;
     }
@@ -40,7 +46,7 @@ export default function AdminShortener() {
     setPreviewLoading(true);
     const handler = setTimeout(async () => {
       try {
-        const { data } = await api.get(`/admin/shortener/preview?url=${encodeURIComponent(url.trim())}`);
+        const { data } = await api.get(`/admin/shortener/preview?url=${encodeURIComponent(cleanUrl)}`);
         setPreviewData(data);
         if (data && data.title && !title.trim()) {
           setTitle(data.title);

@@ -1121,16 +1121,11 @@ class ShortenerMetadataParser(HTMLParser):
             self.title = data.strip()
 
 def get_yt_video_id(url):
+    import re
     try:
-        parsed = urllib.parse.urlparse(url)
-        if parsed.hostname in ('youtu.be', 'www.youtu.be'):
-            return parsed.path.strip('/')
-        if parsed.hostname in ('youtube.com', 'www.youtube.com', 'm.youtube.com'):
-            if parsed.path == '/watch':
-                q = urllib.parse.parse_qs(parsed.query)
-                return q.get('v', [None])[0]
-            if parsed.path.startswith(('/embed/', '/v/')):
-                return parsed.path.split('/')[2]
+        match = re.search(r'(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/|live\/))([\w-]{11})', url)
+        if match:
+            return match.group(1)
     except Exception:
         pass
     return None
