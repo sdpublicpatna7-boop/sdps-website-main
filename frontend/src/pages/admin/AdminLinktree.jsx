@@ -244,7 +244,7 @@ export default function AdminLinktree() {
         <a
           href="/links"
           target="_blank"
-          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-650 text-white rounded-xl font-bold text-sm shadow hover:from-blue-700 hover:to-indigo-700 hover:scale-[1.02] active:scale-95 transition-all shrink-0"
+          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-sm shadow hover:from-blue-700 hover:to-indigo-700 hover:scale-[1.02] active:scale-95 transition-all shrink-0"
         >
           <Eye className="w-4.5 h-4.5" /> View Live Page
         </a>
@@ -406,7 +406,7 @@ export default function AdminLinktree() {
             <button
               onClick={handleSaveSettings}
               disabled={savingSettings}
-              className="w-full py-3.5 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-650 text-white rounded-2xl font-bold text-sm shadow-md shadow-violet-500/15 hover:shadow-lg transform hover:scale-[1.01] active:scale-99 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-60"
+              className="w-full py-3.5 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white rounded-2xl font-bold text-sm shadow-md shadow-violet-500/15 hover:shadow-lg transform hover:scale-[1.01] active:scale-99 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-60"
             >
               {savingSettings ? (
                 <>

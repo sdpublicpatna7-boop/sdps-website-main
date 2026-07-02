@@ -61,14 +61,14 @@ export default function AdminElectionsResults() {
           </label>
           <button
             onClick={fetchResults}
-            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-650 text-white rounded-xl font-bold text-xs shadow hover:from-blue-700 hover:to-indigo-700 hover:scale-[1.02] active:scale-95 transition-all shrink-0"
+            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-xs shadow hover:from-blue-700 hover:to-indigo-700 hover:scale-[1.02] active:scale-95 transition-all shrink-0"
           >
             <RefreshCw className="w-4 h-4" /> Refresh
           </button>
           <Link
             to="/elections/declaration"
             target="_blank"
-            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl font-bold text-xs shadow hover:from-amber-655 hover:to-orange-700 hover:scale-[1.02] active:scale-95 transition-all shrink-0"
+            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl font-bold text-xs shadow hover:from-amber-600 hover:to-orange-700 hover:scale-[1.02] active:scale-95 transition-all shrink-0"
           >
             <Printer className="w-4 h-4" /> Print Declaration
           </Link>
@@ -163,7 +163,7 @@ function KPICard({ icon: Icon, label, value, color }) {
     blue: "from-blue-500 via-blue-600 to-indigo-600 shadow-blue-500/10 border-blue-200/50",
     green: "from-emerald-500 via-emerald-600 to-teal-600 shadow-emerald-500/10 border-emerald-200/50",
     amber: "from-amber-400 via-amber-500 to-orange-500 shadow-amber-500/10 border-amber-200/50",
-    purple: "from-purple-500 via-purple-600 to-indigo-650 shadow-purple-500/10 border-purple-200/50",
+    purple: "from-purple-500 via-purple-600 to-indigo-600 shadow-purple-500/10 border-purple-200/50",
   };
   return (
     <div className="bg-white rounded-3xl border border-slate-200/60 p-5 shadow-[0_4px_12px_rgba(0,0,0,0.01)] hover:shadow-[0_12px_28px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 transition-all duration-300">
