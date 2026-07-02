@@ -7,7 +7,7 @@ import {
   BarChart3, Users, Trophy, Plus, Upload, Trash2, Pencil,
   ShieldCheck, FileSpreadsheet, Crown, Award, Sparkles, X, Save, Settings, ListOrdered,
   RotateCcw, AlertTriangle, GraduationCap, BookOpen, Download,
-  SlidersHorizontal, Minus, Wand2, Tv2, Check, FileImage, Vote
+  SlidersHorizontal, Minus, Wand2, Tv2, Check, FileImage, Vote, Star, Loader2
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -1612,7 +1612,6 @@ const ManipulationTab = ({ stats, posts, candidates, settings, onChange }) => {
       {postLists.map(({ post, list }) => {
         const top = list[0];
         const isPostAppointed = appointedKeys.includes(post.key);
-        const viceInfo = getVicePostInfo(post);
         return (
           <div key={post.key} className="rounded-2xl bg-white border border-slate-200 p-6 shadow-sm" data-testid={`manip-${post.key}`}>
             <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
