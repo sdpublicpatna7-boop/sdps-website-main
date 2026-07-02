@@ -214,7 +214,7 @@ const PostBlock = ({ post, list }) => {
         {sorted[0] && sorted[0].votes > 0 && (
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#F4D571] to-[#D4AF37] text-[#1a1a1a] text-sm font-bold shadow">
             <Crown className="w-4 h-4" />
-            Winner: {sorted[0].name}
+            Winner: {sorted[0].name} ({sorted[0].votes} {sorted[0].votes === 1 ? 'vote' : 'votes'})
           </div>
         )}
       </div>
@@ -243,7 +243,7 @@ const PostBlock = ({ post, list }) => {
                       {isLeader && <Crown className="w-4 h-4 text-[color:var(--sdps-gold)]" />}
                     </div>
                     <div className="text-sm font-bold tabular-nums">
-                      {c.votes || 0}
+                      {c.votes || 0} {(c.votes || 0) === 1 ? 'vote' : 'votes'}
                       <span className="text-[color:var(--sdps-muted)] font-medium"> · {pct}%</span>
                     </div>
                   </div>

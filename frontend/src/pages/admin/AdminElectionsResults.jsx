@@ -94,13 +94,13 @@ export default function AdminElectionsResults() {
         return (
           <div key={post.key} className="bg-white rounded-3xl border border-slate-200/60 shadow-[0_4px_24px_rgba(0,0,0,0.02)] overflow-hidden hover:border-slate-350 transition-colors duration-300 animate-in slide-in-from-bottom-4 duration-300">
             <div className="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2">
-              <h2 className="text-lg font-black text-slate-855 flex items-center gap-2">
-                <Crown className="w-5 h-5 text-amber-550" />
+              <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                <Crown className="w-5 h-5 text-amber-500" />
                 {post.title}
               </h2>
               {sorted[0] && sorted[0].votes > 0 && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-amber-100 to-amber-50 text-amber-800 text-xs font-extrabold border border-amber-200/60 shadow-sm animate-pulse">
-                  <Crown className="w-3.5 h-3.5" /> Leading: {sorted[0].name}
+                  <Crown className="w-3.5 h-3.5" /> Leading: {sorted[0].name} ({sorted[0].votes} {sorted[0].votes === 1 ? 'vote' : 'votes'})
                 </span>
               )}
             </div>
@@ -115,7 +115,7 @@ export default function AdminElectionsResults() {
                     <div key={c.candidate_id || c.name} className="flex items-center gap-4 group">
                       <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white font-black text-lg shrink-0 shadow-sm border transition-transform duration-300 group-hover:scale-105 ${
                         isLeader 
-                          ? "bg-gradient-to-br from-amber-400 via-amber-555 to-orange-550 border-amber-300" 
+                          ? "bg-gradient-to-br from-amber-400 via-amber-500 to-orange-500 border-amber-300" 
                           : "bg-gradient-to-br from-slate-200 to-slate-300 border-slate-100"
                       }`}>
                         {c.photo ? (
@@ -126,12 +126,12 @@ export default function AdminElectionsResults() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1.5">
-                          <span className={`font-bold text-sm truncate flex items-center gap-1.5 ${isLeader ? "text-amber-850" : "text-slate-700"}`}>
+                          <span className={`font-bold text-sm truncate flex items-center gap-1.5 ${isLeader ? "text-amber-800" : "text-slate-700"}`}>
                             {c.name}
-                            {isLeader && <Crown className="w-4 h-4 text-amber-550 inline" />}
+                            {isLeader && <Crown className="w-4 h-4 text-amber-500 inline" />}
                           </span>
                           <span className="text-xs font-extrabold tabular-nums text-slate-800">
-                            {c.votes} <span className="text-slate-455 font-bold">({pct}%)</span>
+                            {c.votes} {c.votes === 1 ? 'vote' : 'votes'} <span className="text-slate-400 font-bold">({pct}%)</span>
                           </span>
                         </div>
                         <div className="h-3 rounded-full bg-slate-50 border border-slate-100 overflow-hidden shadow-inner">
