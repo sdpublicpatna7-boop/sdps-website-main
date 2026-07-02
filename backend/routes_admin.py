@@ -1283,6 +1283,8 @@ async def create_short_link(payload: ShortLinkCreate, admin: TokenData = Depends
         code=code,
         title=title_val,
         url=url_val,
+        description=payload.description or "",
+        image=payload.image or "",
         created_by=admin.email
     )
     await db.short_links.insert_one(link.model_dump())

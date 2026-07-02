@@ -96,7 +96,9 @@ export default function AdminShortener() {
       await api.post("/admin/shortener", {
         title: title.trim(),
         url: url.trim(),
-        custom_code: customCode.trim() || null
+        custom_code: customCode.trim() || null,
+        description: previewData?.description || "",
+        image: previewData?.image || ""
       });
       toast.success("Shortened link created successfully!");
       setTitle("");

@@ -586,6 +586,8 @@ class ShortLinkCreate(BaseDoc):
     title: str
     url: str
     custom_code: Optional[str] = None
+    description: Optional[str] = ""
+    image: Optional[str] = ""
 
 
 class ShortLink(BaseDoc):
@@ -593,6 +595,8 @@ class ShortLink(BaseDoc):
     code: str
     title: str
     url: str
+    description: Optional[str] = ""
+    image: Optional[str] = ""
     created_at: str = Field(default_factory=now_iso)
     created_by: str
     clicks_count: int = 0
