@@ -1381,6 +1381,95 @@ const SettingsTab = ({ settings, onChange }) => {
 
 const ManipulationTab = ({ stats, posts, candidates, settings, onChange }) => {
   const [busyId, setBusyId] = useState(null);
+  const [matrixPost, setMatrixPost] = useState(null);
+  const [matrixList, setMatrixList] = useState([]);
+  const [matrixTarget, setMatrixTarget] = useState(0);
+  const [matrixSaving, setMatrixSaving] = useState(false);
+
+  const openMatrix = (post, list) => {
+    setMatrixPost(post.key);
+    setMatrixList(list.map(c => ({
+      ...c,
+      tempVotes: c.votes
+    })));
+    setMatrixTarget(stats.total_voted || list.reduce((sum, item) => sum + (item.real_votes ?? 0), 0) || list.reduce((sum, item) => sum + item.votes, 0));
+  };
+
+  const handleMatrixChange = (idx, value) => {
+    setMatrixList(prev => {
+      const next = [...prev];
+      next[idx] = { ...next[idx], tempVotes: Math.max(0, value) };
+      return next;
+    });
+  };
+
+  const autoDistributeMatrix = () => {
+    if (matrixList.length === 0) return;
+    let leaderIdx = 0;
+    let maxVotes = -1;
+    matrixList.forEach((c, idx) => {
+      if (c.tempVotes > maxVotes) {
+        maxVotes = c.tempVotes;
+        leaderIdx = idx;
+      }
+    });
+
+    const leader = matrixList[leaderIdx];
+    const remaining = Math.max(0, matrixTarget - leader.tempVotes);
+    const others = matrixList.map((c, idx) => ({ ...c, idx })).filter(c => c.idx !== leaderIdx);
+
+    if (others.length === 0) {
+      handleMatrixChange(leaderIdx, matrixTarget);
+      return;
+    }
+
+    const totalReal = others.reduce((sum, c) => sum + (c.real_votes || 0), 0);
+    let distributedSum = 0;
+    const nextList = [...matrixList];
+
+    others.forEach((c, i) => {
+      let portion = 0;
+      if (totalReal > 0) {
+        portion = Math.round(((c.real_votes || 0) / totalReal) * remaining);
+      } else {
+        portion = Math.round(remaining / others.length);
+      }
+      
+      if (i === others.length - 1) {
+        nextList[c.idx].tempVotes = remaining - distributedSum;
+      } else {
+        nextList[c.idx].tempVotes = portion;
+        distributedSum += portion;
+      }
+    });
+
+    setMatrixList(nextList);
+  };
+
+  const saveMatrix = async () => {
+    setMatrixSaving(true);
+    try {
+      for (const c of matrixList) {
+        const real = c.real_votes ?? 0;
+        const targetAdj = c.tempVotes - real;
+        await api.put(`/elections/admin/candidates/${c.candidate_id}`, {
+          name: c.name,
+          symbol: c.symbol || "",
+          adjustment: targetAdj,
+          post_key: matrixPost
+        });
+      }
+      toast.success("Vote matrix saved and balanced successfully!");
+      setMatrixPost(null);
+      onChange();
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to save matrix updates.");
+    } finally {
+      setMatrixSaving(false);
+    }
+  };
+
   if (!stats) return null;
 
   // Parse currently appointed post keys
@@ -1540,14 +1629,100 @@ const ManipulationTab = ({ stats, posts, candidates, settings, onChange }) => {
                 {top && isPostAppointed && top.votes > 0 && <div className="text-xs text-slate-500 mt-1">Appointed Winner: <span className="font-bold text-blue-600">{top.name}</span></div>}
               </div>
               {!isPostAppointed && (
-                <button
-                  onClick={() => resetAllPost(post, list)}
-                  className="h-10 px-4 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-sm flex items-center gap-2 transition-colors"
-                >
-                  <RotateCcw className="w-4 h-4" /> Clear adjustments
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => openMatrix(post, list)}
+                    className="h-10 px-4 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-sm flex items-center gap-2 transition-colors"
+                  >
+                    <SlidersHorizontal className="w-4 h-4" /> Balance Matrix
+                  </button>
+                  <button
+                    onClick={() => resetAllPost(post, list)}
+                    className="h-10 px-4 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-sm flex items-center gap-2 transition-colors"
+                  >
+                    <RotateCcw className="w-4 h-4" /> Clear adjustments
+                  </button>
+                </div>
               )}
             </div>
+
+            {matrixPost === post.key && (
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 mb-6 space-y-4 shadow-inner">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                  <div className="font-bold text-slate-800 flex items-center gap-2">
+                    <SlidersHorizontal className="w-5 h-5 text-blue-600" />
+                    Vote Balance Matrix
+                  </div>
+                  <button onClick={() => setMatrixPost(null)} className="text-slate-400 hover:text-slate-650 transition-colors">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                
+                <div className="space-y-4">
+                  {matrixList.map((c, idx) => (
+                    <div key={c.candidate_id} className="flex items-center gap-4 flex-wrap sm:flex-nowrap bg-white p-3 rounded-xl border border-slate-150 shadow-sm">
+                      <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-200 shrink-0">
+                        {c.photo ? <img src={c.photo} alt="" className="w-full h-full object-cover" /> : null}
+                      </div>
+                      <div className="flex-1 font-bold text-slate-700 text-sm truncate min-w-[120px]">{c.name}</div>
+                      <div className="text-xs text-slate-400 font-mono text-right shrink-0">Real Votes: {c.real_votes ?? 0}</div>
+                      <div className="w-full sm:w-44 flex items-center gap-2">
+                        <span className="text-xs text-slate-400 font-bold shrink-0">Displayed:</span>
+                        <input
+                          type="number"
+                          value={c.tempVotes}
+                          onChange={(e) => handleMatrixChange(idx, parseInt(e.target.value, 10) || 0)}
+                          className="w-full h-10 px-3 rounded-xl border border-slate-250 bg-slate-50 focus:border-brand-blue outline-none text-right font-mono font-bold text-slate-800"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t border-slate-200 pt-4 text-sm font-semibold text-slate-700">
+                  <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-slate-500">Target Total:</span>
+                      <input
+                        type="number"
+                        value={matrixTarget}
+                        onChange={(e) => setMatrixTarget(parseInt(e.target.value, 10) || 0)}
+                        className="w-24 h-9 px-2 rounded-xl border border-slate-250 bg-white text-center font-mono font-bold text-slate-800"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-slate-500">Current Sum:</span>
+                      <span className="font-mono font-bold text-slate-800 bg-slate-200 px-2 py-0.5 rounded-lg">{matrixList.reduce((sum, item) => sum + item.tempVotes, 0)}</span>
+                    </div>
+                    <div>
+                      {matrixList.reduce((sum, item) => sum + item.tempVotes, 0) === matrixTarget ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">✓ Balanced</span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800 border border-red-200">
+                          ✗ Unbalanced ({matrixList.reduce((sum, item) => sum + item.tempVotes, 0) - matrixTarget > 0 ? `+` : ""}{matrixList.reduce((sum, item) => sum + item.tempVotes, 0) - matrixTarget})
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 justify-end">
+                    <button
+                      onClick={autoDistributeMatrix}
+                      className="h-10 px-4 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs transition"
+                    >
+                      Auto-Balance Remaining
+                    </button>
+                    <button
+                      disabled={matrixList.reduce((sum, item) => sum + item.tempVotes, 0) !== matrixTarget || matrixSaving}
+                      onClick={saveMatrix}
+                      className="h-10 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs disabled:opacity-50 transition shadow-sm"
+                    >
+                      {matrixSaving ? "Saving..." : "Save & Balance"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {list.length === 0 ? (
               <p className="text-sm text-slate-400">No candidates registered.</p>
