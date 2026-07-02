@@ -306,7 +306,7 @@ export default function AdminShortener() {
           
           {/* Search bar */}
           <div className="relative shadow-[0_2px_8px_rgba(0,0,0,0.01)] hover:shadow-md hover:shadow-slate-100 transition-all duration-300 rounded-2xl">
-            <Search className="absolute left-4 top-4.5 w-5 h-5 text-slate-400" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <input
               type="text"
               placeholder="Search shortened links by title, code, or original URL..."

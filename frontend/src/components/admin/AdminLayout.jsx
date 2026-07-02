@@ -28,7 +28,7 @@ const NAV_ITEMS = [
   { to: "/admin/hostel-gallery", label: "Hostel Gallery", icon: Hotel, permission: "hostel-gallery" },
   { to: "/admin/khelo-patna-gallery", label: "Khelo Patna Gallery", icon: Trophy, permission: "khelo-patna-gallery" },
   { section: "Elections" },
-  { to: "/admin/elections", label: "Control Panel", icon: Vote, permission: "council" },
+  { to: "/admin/elections", label: "Control Panel", icon: Vote, permission: "council", end: true },
   { to: "/admin/elections/results", label: "Live Results Tally", icon: Trophy, permission: "council" },
   { to: "/admin/elections/scheduler", label: "Publish Scheduler", icon: Calendar, permission: "council" },
   { section: "Student Council" },
