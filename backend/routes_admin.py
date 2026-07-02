@@ -1129,6 +1129,58 @@ def get_yt_video_id(url):
     except Exception:
         pass
     return None
+def get_social_branding(url: str, title: str = "", description: str = "", image: str = ""):
+    lower_url = url.lower()
+    out_title = title or url
+    out_desc = description
+    out_img = image
+
+    is_raw_title = not title or title == url or url.startswith(title)
+    
+    if is_raw_title or not out_img:
+        if "instagram.com" in lower_url:
+            if is_raw_title:
+                out_title = "Instagram Reel" if "/reel/" in lower_url else "Instagram Post"
+            if not out_desc:
+                out_desc = "Open this link to view photos, videos, and reels on Instagram."
+            if not out_img:
+                out_img = "https://cdn-icons-png.flaticon.com/512/174/174855.png"
+        elif "facebook.com" in lower_url or "fb.watch" in lower_url:
+            if is_raw_title:
+                out_title = "Facebook Video" if ("/watch" in lower_url or "/videos" in lower_url) else "Facebook Post"
+            if not out_desc:
+                out_desc = "Connect with friends, family and other people you know on Facebook."
+            if not out_img:
+                out_img = "https://cdn-icons-png.flaticon.com/512/124/124010.png"
+        elif "x.com" in lower_url or "twitter.com" in lower_url:
+            if is_raw_title:
+                out_title = "X / Twitter Post"
+            if not out_desc:
+                out_desc = "View updates, threads, and media on X."
+            if not out_img:
+                out_img = "https://cdn-icons-png.flaticon.com/512/5969/5969020.png"
+        elif "drive.google.com" in lower_url:
+            if is_raw_title:
+                out_title = "Google Drive File"
+            if not out_desc:
+                out_desc = "Access files, documents, and shared folders securely on Google Drive."
+            if not out_img:
+                out_img = "https://cdn-icons-png.flaticon.com/512/281/281752.png"
+        elif "docs.google.com" in lower_url:
+            if is_raw_title:
+                out_title = "Google Docs Document"
+            if not out_desc:
+                out_desc = "View and edit shared documents online on Google Docs."
+            if not out_img:
+                out_img = "https://cdn-icons-png.flaticon.com/512/281/281760.png"
+
+    return {
+        "title": out_title,
+        "description": out_desc,
+        "image": out_img,
+        "url": url,
+        "is_youtube": False
+    }
 
 @admin_router.get("/shortener/preview")
 async def get_url_preview(url: str, admin: TokenData = Depends(require_permission("site-settings"))):
@@ -1167,23 +1219,16 @@ async def get_url_preview(url: str, admin: TokenData = Depends(require_permissio
             if res.status_code == 200:
                 parser = ShortenerMetadataParser()
                 parser.feed(res.text)
-                return {
-                    "title": parser.title or url_stripped,
-                    "description": parser.description,
-                    "image": parser.image,
-                    "url": url_stripped,
-                    "is_youtube": False
-                }
+                return get_social_branding(
+                    url_stripped,
+                    parser.title,
+                    parser.description,
+                    parser.image
+                )
     except Exception as e:
         logger.error(f"Metadata parser fetch fail: {e}")
         
-    return {
-        "title": url_stripped,
-        "description": "",
-        "image": "",
-        "url": url_stripped,
-        "is_youtube": False
-    }
+    return get_social_branding(url_stripped)
 
 @admin_router.get("/shortener")
 async def list_short_links(admin: TokenData = Depends(require_permission("site-settings"))):
