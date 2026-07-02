@@ -87,7 +87,7 @@ export default function AdminElections() {
               key={t.key}
               data-testid={`tab-${t.key}`}
               onClick={() => setTab(t.key)}
-              className={`flex items-center gap-2 px-4.5 py-2.5 rounded-xl font-extrabold text-sm transition-all duration-300 transform active:scale-95 ${
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-extrabold text-sm transition-all duration-300 transform active:scale-95 ${
                 tab === t.key
                   ? "bg-white text-blue-600 shadow-sm border border-slate-200/30 scale-100"
                   : "bg-transparent text-slate-600 hover:text-slate-800 hover:bg-white/40"

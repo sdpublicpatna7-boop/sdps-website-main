@@ -23,6 +23,37 @@ export default function AdminShortener() {
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [customCode, setCustomCode] = useState("");
+  const [previewData, setPreviewData] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  useEffect(() => {
+    if (!url.trim()) {
+      setPreviewData(null);
+      return;
+    }
+    try {
+      new URL(url.trim());
+    } catch (_) {
+      return;
+    }
+
+    setPreviewLoading(true);
+    const handler = setTimeout(async () => {
+      try {
+        const { data } = await api.get(`/admin/shortener/preview?url=${encodeURIComponent(url.trim())}`);
+        setPreviewData(data);
+        if (data && data.title && !title.trim()) {
+          setTitle(data.title);
+        }
+      } catch (err) {
+        console.error("Preview fetch failed:", err);
+      } finally {
+        setPreviewLoading(false);
+      }
+    }, 600);
+
+    return () => clearTimeout(handler);
+  }, [url]);
 
   // Analytics modal state
   const [selectedLink, setSelectedLink] = useState(null);
@@ -65,6 +96,7 @@ export default function AdminShortener() {
       setTitle("");
       setUrl("");
       setCustomCode("");
+      setPreviewData(null);
       fetchLinks();
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Failed to create short link");
@@ -175,6 +207,53 @@ export default function AdminShortener() {
                 required
               />
             </div>
+
+            {/* Link Preview Card */}
+            {(previewLoading || previewData) && (
+              <div className="rounded-2xl border border-slate-150 overflow-hidden bg-slate-50/40 p-3.5 space-y-2.5 animate-in fade-in duration-300">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Link Preview</div>
+                {previewLoading ? (
+                  <div className="flex items-center gap-3 py-2">
+                    <Loader2 className="w-4.5 h-4.5 text-blue-600 animate-spin" />
+                    <span className="text-xs font-semibold text-slate-500">Fetching original link metadata...</span>
+                  </div>
+                ) : (
+                  previewData && (
+                    <div className="flex gap-3 items-start">
+                      {previewData.image && (
+                        <div className="w-18 h-18 rounded-xl overflow-hidden bg-slate-150 shrink-0 border border-slate-200/50 shadow-sm">
+                          <img src={previewData.image} alt="Preview" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <h4 className="text-xs font-extrabold text-slate-800 line-clamp-2 leading-snug">
+                          {previewData.title || "No Title Available"}
+                        </h4>
+                        {previewData.description && (
+                          <p className="text-[10.5px] font-semibold text-slate-500 line-clamp-2 leading-relaxed">
+                            {previewData.description}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-1.5 pt-0.5">
+                          {previewData.is_youtube ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-red-50 text-red-600 font-bold text-[9px] border border-red-100">
+                              YouTube Video
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 font-bold text-[9px] border border-blue-100">
+                              Webpage
+                            </span>
+                          )}
+                          <span className="text-[9.5px] font-bold text-slate-400 truncate max-w-[120px]">
+                            {previewData.url ? new URL(previewData.url).hostname : ""}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
+            )}
 
             <div className="space-y-1.5">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">

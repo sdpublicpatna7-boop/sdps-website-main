@@ -3,6 +3,8 @@ import os
 import io
 import asyncio
 import logging
+from html.parser import HTMLParser
+import urllib.parse
 import httpx
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Dict, Any
@@ -1085,6 +1087,108 @@ async def delete_khelo_patna_photo(item_id: str, admin: TokenData = Depends(requ
 
 
 # ============= LINK SHORTENER =============
+
+class ShortenerMetadataParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.title = ""
+        self.description = ""
+        self.image = ""
+        self.in_title = False
+
+    def handle_starttag(self, tag, attrs):
+        attrs_dict = dict(attrs)
+        if tag == "title":
+            self.in_title = True
+        elif tag == "meta":
+            prop = attrs_dict.get("property", "").lower()
+            name = attrs_dict.get("name", "").lower()
+            content = attrs_dict.get("content", "")
+            
+            if prop == "og:title" or name == "twitter:title":
+                self.title = content
+            elif prop == "og:description" or name == "description" or name == "twitter:description":
+                self.description = content
+            elif prop == "og:image" or name == "twitter:image":
+                self.image = content
+
+    def handle_endtag(self, tag):
+        if tag == "title":
+            self.in_title = False
+
+    def handle_data(self, data):
+        if self.in_title and not self.title:
+            self.title = data.strip()
+
+def get_yt_video_id(url):
+    try:
+        parsed = urllib.parse.urlparse(url)
+        if parsed.hostname in ('youtu.be', 'www.youtu.be'):
+            return parsed.path.strip('/')
+        if parsed.hostname in ('youtube.com', 'www.youtube.com', 'm.youtube.com'):
+            if parsed.path == '/watch':
+                q = urllib.parse.parse_qs(parsed.query)
+                return q.get('v', [None])[0]
+            if parsed.path.startswith(('/embed/', '/v/')):
+                return parsed.path.split('/')[2]
+    except Exception:
+        pass
+    return None
+
+@admin_router.get("/shortener/preview")
+async def get_url_preview(url: str, admin: TokenData = Depends(require_permission("site-settings"))):
+    url_stripped = url.strip()
+    if not url_stripped:
+        return {"title": "", "description": "", "image": "", "is_youtube": False}
+    
+    yt_id = get_yt_video_id(url_stripped)
+    if yt_id:
+        title = "YouTube Video"
+        thumbnail = f"https://img.youtube.com/vi/{yt_id}/mqdefault.jpg"
+        desc = ""
+        try:
+            async with httpx.AsyncClient(timeout=4.0) as client:
+                res = await client.get(f"https://www.youtube.com/oembed?url={urllib.parse.quote(url_stripped)}&format=json")
+                if res.status_code == 200:
+                    d = res.json()
+                    title = d.get("title", title)
+                    desc = d.get("author_name", "")
+        except Exception as e:
+            logger.error(f"YouTube oembed fail: {e}")
+        return {
+            "title": title,
+            "description": desc,
+            "image": thumbnail,
+            "url": url_stripped,
+            "is_youtube": True
+        }
+
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        async with httpx.AsyncClient(timeout=4.0, follow_redirects=True) as client:
+            res = await client.get(url_stripped, headers=headers)
+            if res.status_code == 200:
+                parser = ShortenerMetadataParser()
+                parser.feed(res.text)
+                return {
+                    "title": parser.title or url_stripped,
+                    "description": parser.description,
+                    "image": parser.image,
+                    "url": url_stripped,
+                    "is_youtube": False
+                }
+    except Exception as e:
+        logger.error(f"Metadata parser fetch fail: {e}")
+        
+    return {
+        "title": url_stripped,
+        "description": "",
+        "image": "",
+        "url": url_stripped,
+        "is_youtube": False
+    }
 
 @admin_router.get("/shortener")
 async def list_short_links(admin: TokenData = Depends(require_permission("site-settings"))):
