@@ -802,19 +802,15 @@ class CandidateUpdateAdminPayload(BaseModel):
     post_key: Optional[str] = None
 
 @elections_router.put("/admin/candidates/{cid}")
-async def update_candidate_admin(cid: str, payload: CandidateUpdateAdminPayload, admin = Depends(get_current_admin)):
+async def update_candidate_admin(cid: str, request: Request, admin = Depends(get_current_admin)):
     await check_supabase()
+    body = await request.json()
+    update_data = {}
+    for key in ["name", "symbol", "photo", "symbol_image", "adjustment", "post_key"]:
+        if key in body:
+            update_data[key] = body[key]
+
     async with httpx.AsyncClient() as client:
-        update_data = {
-            "name": payload.name,
-            "symbol": payload.symbol,
-            "photo": payload.photo,
-            "symbol_image": payload.symbol_image,
-            "adjustment": payload.adjustment
-        }
-        if payload.post_key:
-            update_data["post_key"] = payload.post_key
-            
         r = await client.patch(
             f"{SUPABASE_URL}/rest/v1/election_candidates?id=eq.{cid}",
             json=update_data,
