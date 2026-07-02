@@ -1550,30 +1550,74 @@ const ManipulationTab = ({ stats, posts, candidates, settings, onChange }) => {
     }
   };
 
-  const appointAsVice = async (captainPost, vicePost, candidate) => {
-    // Check if already nominated in Vice category
-    const statsRes = await api.get("/elections/admin/stats");
-    const viceCands = statsRes.data.by_post?.[vicePost.key] || [];
-    const existing = viceCands.find(item => item.name.toLowerCase() === candidate.name.toLowerCase());
-
-    if (existing) {
-      toast.error(`${candidate.name} is already nominated under ${vicePost.title}.`);
-      return;
+  const getVicePostInfo = (post) => {
+    if (post.key === "head_boy") {
+      return { key: "vice_head_boy", title: "Vice School Captain" };
     }
+    if (post.key === "sports_skipper") {
+      return { key: "vice_sports_skipper", title: "Vice Sports Skipper" };
+    }
+    if (post.key === "cultural_head") {
+      return { key: "vice_cultural_head", title: "Vice Cultural Head" };
+    }
+    if (post.key.startsWith("vice_") || post.key === "d" || post.key === "discipline_head") return null;
+    return {
+      key: "vice_" + post.key,
+      title: "Vice " + post.title
+    };
+  };
 
-    if (!window.confirm(`Nominate ${candidate.name} under ${vicePost.title}?`)) return;
-    
+  const appointAsVice = async (captainPost, viceInfo, candidate) => {
     setBusyId(candidate.candidate_id);
     try {
-      toast.message(`Nominating ${candidate.name} under ${vicePost.title}...`);
+      const statsRes = await api.get("/elections/admin/stats");
+      const postsList = statsRes.data.posts || [];
+      
+      let targetVicePost = postsList.find(p => p.key === viceInfo.key);
+      if (!targetVicePost) {
+        if (!window.confirm(`The category "${viceInfo.title}" does not exist. Create it and nominate ${candidate.name}?`)) {
+          setBusyId(null);
+          return;
+        }
+        
+        await api.post("/elections/admin/posts", {
+          key: viceInfo.key,
+          title: viceInfo.title,
+          order_index: postsList.length + 1
+        });
+
+        let appointedKeys = [];
+        try {
+          appointedKeys = JSON.parse(settings.appointed_post_keys || "[]");
+        } catch (e) {}
+        if (!appointedKeys.includes(viceInfo.key)) {
+          const nextKeys = [...appointedKeys, viceInfo.key];
+          await api.post("/elections/settings/appointed_post_keys", { value: JSON.stringify(nextKeys) });
+        }
+      }
+
+      const viceCands = statsRes.data.by_post?.[viceInfo.key] || [];
+      const existing = viceCands.find(item => item.name.toLowerCase() === candidate.name.toLowerCase());
+
+      if (existing) {
+        toast.error(`${candidate.name} is already nominated under ${viceInfo.title}.`);
+        setBusyId(null);
+        return;
+      }
+
+      if (!window.confirm(`Nominate ${candidate.name} under ${viceInfo.title}?`)) {
+        setBusyId(null);
+        return;
+      }
+      
       await api.post("/elections/admin/candidates", {
         name: candidate.name,
-        post_key: vicePost.key,
+        post_key: viceInfo.key,
         symbol: candidate.symbol || "",
         photo: candidate.photo || ""
       });
       
-      toast.success(`${candidate.name} nominated under ${vicePost.title}. You can now override their votes manually.`);
+      toast.success(`${candidate.name} nominated under ${viceInfo.title}!`);
       onChange();
     } catch (e) {
       console.error(e);
@@ -1614,8 +1658,7 @@ const ManipulationTab = ({ stats, posts, candidates, settings, onChange }) => {
       {postLists.map(({ post, list }) => {
         const top = list[0];
         const isPostAppointed = appointedKeys.includes(post.key);
-        const viceKey = "vice_" + post.key;
-        const vicePost = posts.find(p => p.key === viceKey);
+        const viceInfo = getVicePostInfo(post);
         return (
           <div key={post.key} className="rounded-2xl bg-white border border-slate-200 p-6 shadow-sm" data-testid={`manip-${post.key}`}>
             <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
@@ -1744,7 +1787,7 @@ const ManipulationTab = ({ stats, posts, candidates, settings, onChange }) => {
                   </thead>
                   <tbody>
                     {list.map((c, i) => {
-                      const isLeader = i === 0 && c.votes > 0;
+                      const isLeader = isPostAppointed ? c.votes === 100 : (i === 0 && c.votes > 0);
                       const busy = busyId === c.candidate_id;
                       return (
                         <tr key={c.candidate_id} className="border-b border-slate-100 hover:bg-slate-50/50">
@@ -1805,12 +1848,12 @@ const ManipulationTab = ({ stats, posts, candidates, settings, onChange }) => {
                                 </button>
                               ) : (
                                 <>
-                                  {vicePost && (
+                                  {viceInfo && (
                                     <button
                                       disabled={busy}
-                                      onClick={() => appointAsVice(post, vicePost, c)}
+                                      onClick={() => appointAsVice(post, viceInfo, c)}
                                       className="h-8 px-3 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold shadow-sm"
-                                      title={`Nominate ${c.name} under ${vicePost.title}`}
+                                      title={`Nominate ${c.name} under ${viceInfo.title}`}
                                     >
                                       Nominate as Vice
                                     </button>

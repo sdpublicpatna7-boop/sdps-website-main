@@ -493,7 +493,8 @@ export default function StudentCouncil() {
             const merged = [...prev];
             dynamicProfiles.forEach(dp => {
               const exists = prev.some(
-                sp => sp.name.toLowerCase() === dp.name.toLowerCase() && sp.position.toLowerCase() === dp.position.toLowerCase()
+                sp => (sp.name || "").toLowerCase() === (dp.name || "").toLowerCase() &&
+                      (sp.position || "").toLowerCase() === (dp.position || "").toLowerCase()
               );
               if (!exists) {
                 merged.push(dp);
