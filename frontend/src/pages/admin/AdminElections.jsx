@@ -7,7 +7,7 @@ import {
   BarChart3, Users, Trophy, Plus, Upload, Trash2, Pencil,
   ShieldCheck, FileSpreadsheet, Crown, Award, Sparkles, X, Save, Settings, ListOrdered,
   RotateCcw, AlertTriangle, GraduationCap, BookOpen, Download,
-  SlidersHorizontal, Minus, Wand2, Tv2, Check, FileImage
+  SlidersHorizontal, Minus, Wand2, Tv2, Check, FileImage, Vote
 } from "lucide-react";
 import { toast } from "sonner";
 import {
