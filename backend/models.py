@@ -124,7 +124,7 @@ class CouncilMember(BaseDoc):
     id: str = Field(default_factory=new_id)
     name: str
     position: str  # Captain / Vice Captain / Sports Captain / Discipline Head etc
-    role_type: Optional[str] = "Elected"  # "Elected" or "Appointed by Admin"
+    role_type: Optional[str] = "Elected"  # "Elected" or "Appointed by School Management"
     photo_url: Optional[str] = None
     year: str
     bio: Optional[str] = None

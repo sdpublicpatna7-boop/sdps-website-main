@@ -32,7 +32,7 @@ export function AdminCouncilMembers() {
     fields: [
       { name: "name", label: "Name", type: "text", required: true },
       { name: "position", label: "Position", type: "select", required: true, options: POSITIONS },
-      { name: "role_type", label: "Role Type", type: "select", required: true, options: ["Elected", "Appointed by Admin"], default: "Elected" },
+      { name: "role_type", label: "Role Type", type: "select", required: true, options: ["Elected", "Appointed by School Management"], default: "Elected" },
       { name: "year", label: "Year", type: "text", required: true, default: new Date().getFullYear().toString() },
       { name: "house", label: "House", type: "text" },
       { name: "photo_url", label: "Photo", type: "image" },

@@ -1010,7 +1010,7 @@ const CategoriesTab = ({ posts, settings, onChange }) => {
                   onChange={(e) => setIsAppointedNew(e.target.checked)}
                   className="rounded border-slate-350 w-4 h-4 text-blue-600"
                 />
-                Appointed by Admin (Selected directly, no student voting)
+                Appointed by School Management (Selected directly, no student voting)
               </label>
             </div>
           </div>
@@ -1497,7 +1497,7 @@ const ManipulationTab = ({ stats, posts, candidates, settings, onChange }) => {
                   <h2 className="text-lg font-bold text-slate-800">{post.title}</h2>
                   {isPostAppointed && (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                      <Star className="w-3 h-3 fill-blue-500 text-blue-500" /> Appointed by Admin
+                      <Star className="w-3 h-3 fill-blue-500 text-blue-500" /> Appointed by School Management
                     </span>
                   )}
                 </div>

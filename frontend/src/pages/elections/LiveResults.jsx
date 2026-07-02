@@ -215,7 +215,7 @@ const PostBlock = ({ post, list, appointedKeys = [] }) => {
         {sorted[0] && sorted[0].votes > 0 && (
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#F4D571] to-[#D4AF37] text-[#1a1a1a] text-sm font-bold shadow">
             {isPostAppointed ? <Sparkles className="w-4 h-4 text-[#1a1a1a]" /> : <Crown className="w-4 h-4" />}
-            {isPostAppointed ? "Selected by Admin" : "Winner"}: {sorted[0].name} {!isPostAppointed && `(${sorted[0].votes} ${sorted[0].votes === 1 ? 'vote' : 'votes'})`}
+            {isPostAppointed ? "Appointed by School Management" : "Winner"}: {sorted[0].name} {!isPostAppointed && `(${sorted[0].votes} ${sorted[0].votes === 1 ? 'vote' : 'votes'})`}
           </div>
         )}
       </div>

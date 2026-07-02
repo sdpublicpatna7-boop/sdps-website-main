@@ -254,7 +254,7 @@ const WinnerSpotlight = ({ winner, position, totalVotes, allCandidates, index, i
               <div className="flex items-center gap-2 mb-1">
                 {isAppointed ? <Star className="w-4 h-4 text-blue-500 fill-blue-500" /> : <Trophy className="w-4 h-4 text-amber-500" />}
                 <span className={`text-[10px] tracking-[0.3em] uppercase font-extrabold ${isAppointed ? "text-blue-600" : "text-amber-600"}`}>
-                  {isAppointed ? "Selected by Admin" : "Winner"}
+                  {isAppointed ? "Appointed by School Management" : "Winner"}
                 </span>
               </div>
               <h4 className="font-headline text-2xl font-black text-slate-900 tracking-tight truncate">
@@ -524,7 +524,7 @@ export default function StudentCouncil() {
             {profiles.length === 0 && <div className="col-span-4 text-center text-brand-ink/60 py-10 italic">Profiles coming soon.</div>}
             {profiles.map(p => {
               const isVice = (p.position || "").toLowerCase().includes("vice");
-              const isAppointed = p.role_type === "Appointed by Admin";
+              const isAppointed = p.role_type === "Appointed by School Management" || p.role_type === "Appointed by Admin";
               const isDiscipline = (p.position || "").toLowerCase().includes("discipline");
 
               return (
@@ -569,7 +569,7 @@ export default function StudentCouncil() {
                   <div className="text-xs text-brand-orange uppercase tracking-wider font-bold mt-1">{p.position}</div>
                   {isAppointed && (
                     <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200/60 text-blue-600 text-[9px] uppercase tracking-wider font-extrabold mt-1.5">
-                      <Star className="w-2.5 h-2.5" /> Selected by Admin
+                      <Star className="w-2.5 h-2.5" /> Appointed by School Management
                     </div>
                   )}
                   {p.house && <div className="text-xs text-brand-ink/60 mt-1">{p.house} House · {p.year}</div>}
