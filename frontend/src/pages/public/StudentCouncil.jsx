@@ -485,20 +485,62 @@ export default function StudentCouncil() {
         {tab === "profiles" && (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {profiles.length === 0 && <div className="col-span-4 text-center text-brand-ink/60 py-10 italic">Profiles coming soon.</div>}
-            {profiles.map(p => (
-              <div key={p.id} className={`relative bg-white rounded-3xl p-5 border ${p.is_captain ? "border-brand-gold ring-2 ring-brand-gold/30" : "border-black/5"} text-center beam-card`}>
-                {p.is_captain && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-gold-grad text-white text-[10px] uppercase tracking-wider rounded-full font-headline font-bold">Captain</div>
-                )}
-                <div className="w-24 h-24 rounded-full mx-auto overflow-hidden bg-gradient-to-br from-brand-blue to-brand-orange p-1">
-                  {p.photo_url ? <img src={fullUrl(p.photo_url)} alt={p.name} className="w-full h-full rounded-full object-cover" /> : <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-2xl font-headline font-bold text-brand-blue">{p.name?.[0]}</div>}
+            {profiles.map(p => {
+              const isVice = (p.position || "").toLowerCase().includes("vice");
+              const isAppointed = p.role_type === "Appointed by Admin";
+              const isDiscipline = (p.position || "").toLowerCase().includes("discipline");
+
+              return (
+                <div key={p.id} className={`relative bg-white rounded-3xl p-5 border text-center beam-card transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${
+                  p.is_captain
+                    ? "border-brand-gold ring-2 ring-brand-gold/30"
+                    : isVice
+                      ? "border-slate-300 ring-1 ring-slate-200/50"
+                      : isDiscipline
+                        ? "border-blue-300 ring-1 ring-blue-200/50"
+                        : "border-black/5"
+                }`}>
+                  {/* Badge */}
+                  {p.is_captain && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-gold-grad text-white text-[10px] uppercase tracking-wider rounded-full font-headline font-bold shadow-sm">
+                      Captain
+                    </div>
+                  )}
+                  {isVice && !p.is_captain && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-gradient-to-r from-slate-400 to-slate-500 text-white text-[10px] uppercase tracking-wider rounded-full font-headline font-bold shadow-sm">
+                      Vice
+                    </div>
+                  )}
+                  {isDiscipline && !p.is_captain && !isVice && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-[10px] uppercase tracking-wider rounded-full font-headline font-bold shadow-sm">
+                      Discipline
+                    </div>
+                  )}
+
+                  <div className={`w-24 h-24 rounded-full mx-auto overflow-hidden p-1 ${
+                    p.is_captain
+                      ? "bg-gradient-to-br from-brand-gold to-amber-600"
+                      : isVice
+                        ? "bg-gradient-to-br from-slate-300 to-slate-500"
+                        : isDiscipline
+                          ? "bg-gradient-to-br from-blue-400 to-blue-600"
+                          : "bg-gradient-to-br from-brand-blue to-brand-orange"
+                  }`}>
+                    {p.photo_url ? <img src={fullUrl(p.photo_url)} alt={p.name} className="w-full h-full rounded-full object-cover" /> : <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-2xl font-headline font-bold text-brand-blue">{p.name?.[0]}</div>}
+                  </div>
+                  <h3 className="font-headline font-semibold mt-3">{p.name}</h3>
+                  <div className="text-xs text-brand-orange uppercase tracking-wider font-bold mt-1">{p.position}</div>
+                  {isAppointed && (
+                    <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200/60 text-blue-600 text-[9px] uppercase tracking-wider font-extrabold mt-1.5">
+                      <Star className="w-2.5 h-2.5" /> Selected by Admin
+                    </div>
+                  )}
+                  {p.house && <div className="text-xs text-brand-ink/60 mt-1">{p.house} House · {p.year}</div>}
+                  {!p.house && p.year && <div className="text-xs text-brand-ink/60 mt-1">{p.year}</div>}
+                  {p.bio && <p className="text-xs text-brand-ink/70 mt-3 line-clamp-3">{p.bio}</p>}
                 </div>
-                <h3 className="font-headline font-semibold mt-3">{p.name}</h3>
-                <div className="text-xs text-brand-orange uppercase tracking-wider font-bold mt-1">{p.position}</div>
-                {p.house && <div className="text-xs text-brand-ink/60 mt-1">{p.house} House · {p.year}</div>}
-                {p.bio && <p className="text-xs text-brand-ink/70 mt-3 line-clamp-3">{p.bio}</p>}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
