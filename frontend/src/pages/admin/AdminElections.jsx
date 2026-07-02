@@ -7,7 +7,7 @@ import {
   BarChart3, Users, Trophy, Plus, Upload, Trash2, Pencil,
   ShieldCheck, FileSpreadsheet, Crown, Award, Sparkles, X, Save, Settings, ListOrdered,
   RotateCcw, AlertTriangle, GraduationCap, BookOpen, Download,
-  SlidersHorizontal, Minus, Wand2, Tv2
+  SlidersHorizontal, Minus, Wand2, Tv2, Check, FileImage
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -423,6 +423,7 @@ const BallotEditModal = ({ ballot, posts, onClose, onSaved }) => {
 const CandidatesTab = ({ candidates, posts, postLabels, onChange }) => {
   const [editing, setEditing] = useState(null);
   const [creatingPost, setCreatingPost] = useState(null);
+  const [bulkCreatingPost, setBulkCreatingPost] = useState(null);
 
   const remove = async (id) => {
     if (!window.confirm("Delete this candidate?")) return;
@@ -450,13 +451,21 @@ const CandidatesTab = ({ candidates, posts, postLabels, onChange }) => {
           <div key={p.key} className="rounded-2xl bg-white border border-slate-200 p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-slate-800">{p.title}</h2>
-              <button
-                onClick={() => setCreatingPost(p.key)}
-                data-testid={`add-candidate-${p.key}`}
-                className="h-10 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" /> Add Candidate
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setBulkCreatingPost(p.key)}
+                  className="h-10 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-bold flex items-center gap-2 transition"
+                >
+                  <Upload className="w-4 h-4 text-slate-500" /> Bulk Add Candidates
+                </button>
+                <button
+                  onClick={() => setCreatingPost(p.key)}
+                  data-testid={`add-candidate-${p.key}`}
+                  className="h-10 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold flex items-center gap-2 transition"
+                >
+                  <Plus className="w-4 h-4" /> Add Candidate
+                </button>
+              </div>
             </div>
             {items.length === 0 ? (
               <p className="text-sm text-slate-400">No candidates yet.</p>
@@ -493,6 +502,15 @@ const CandidatesTab = ({ candidates, posts, postLabels, onChange }) => {
           isNew={!editing}
           onClose={() => { setEditing(null); setCreatingPost(null); }}
           onSaved={() => { setEditing(null); setCreatingPost(null); onChange(); }}
+        />
+      )}
+
+      {bulkCreatingPost && (
+        <BulkCandidateModal
+          posts={posts}
+          initialPostKey={bulkCreatingPost}
+          onClose={() => setBulkCreatingPost(null)}
+          onSaved={() => { setBulkCreatingPost(null); onChange(); }}
         />
       )}
     </div>
@@ -589,6 +607,232 @@ const CandidateModal = ({ posts, initial, isNew, onClose, onSaved }) => {
             className="h-11 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-2 disabled:opacity-50 text-sm"
           >
             <Save className="w-4 h-4" /> {busy ? "Saving..." : "Save"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const BulkCandidateModal = ({ posts, initialPostKey, onClose, onSaved }) => {
+  const [postKey, setPostKey] = useState(initialPostKey);
+  const [files, setFiles] = useState([]); // [{ tempId, file, name, symbol, photoBase64, status: 'idle'|'uploading'|'success'|'error' }]
+  const [busy, setBusy] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const handleFileSelect = (e) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    if (selectedFiles.length === 0) return;
+
+    selectedFiles.forEach((file, idx) => {
+      if (file.size > 1.5 * 1024 * 1024) {
+        toast.error(`"${file.name}" is too large (max 1.5MB). Skipping.`);
+        return;
+      }
+
+      // Guess candidate name from filename
+      const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+      const cleanName = nameWithoutExt
+        .replace(/[_-]/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase());
+
+      const reader = new FileReader();
+      const tempId = `${Date.now()}-${idx}-${Math.random()}`;
+      
+      reader.onload = () => {
+        setFiles(prev => [
+          ...prev,
+          {
+            tempId,
+            file,
+            name: cleanName,
+            symbol: "",
+            photoBase64: reader.result,
+            status: "idle"
+          }
+        ]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeFile = (tempId) => {
+    setFiles(prev => prev.filter(f => f.tempId !== tempId));
+  };
+
+  const updateField = (tempId, field, value) => {
+    setFiles(prev => prev.map(f => f.tempId === tempId ? { ...f, [field]: value } : f));
+  };
+
+  const handleUploadAll = async () => {
+    const idleFiles = files.filter(f => f.status === "idle" || f.status === "error");
+    if (idleFiles.length === 0) {
+      toast.error("Please add at least one candidate photo to upload.");
+      return;
+    }
+
+    const missingNames = idleFiles.some(f => !f.name.trim());
+    if (missingNames) {
+      toast.error("Please enter a name for all candidates.");
+      return;
+    }
+
+    setBusy(true);
+    toast.info(`Uploading ${idleFiles.length} candidates...`);
+
+    for (let i = 0; i < idleFiles.length; i++) {
+      const item = idleFiles[i];
+      setFiles(prev => prev.map(f => f.tempId === item.tempId ? { ...f, status: "uploading" } : f));
+
+      try {
+        await api.post("/elections/admin/candidates", {
+          name: item.name.trim(),
+          post_key: postKey,
+          symbol: item.symbol.trim() || "Independent",
+          photo: item.photoBase64,
+          symbol_image: ""
+        });
+        setFiles(prev => prev.map(f => f.tempId === item.tempId ? { ...f, status: "success" } : f));
+      } catch (err) {
+        console.error(err);
+        setFiles(prev => prev.map(f => f.tempId === item.tempId ? { ...f, status: "error" } : f));
+      }
+    }
+
+    setBusy(false);
+    toast.success("Bulk candidate upload process completed!");
+    onSaved();
+  };
+
+  const postTitle = posts.find(p => p.key === postKey)?.title || postKey;
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl w-full max-w-2xl p-6 relative max-h-[90vh] overflow-y-auto shadow-xl flex flex-col">
+        <button onClick={onClose} disabled={busy} className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-slate-100 text-slate-400">
+          <X className="w-5 h-5" />
+        </button>
+        <h3 className="text-xl font-bold text-slate-800 mb-1">Bulk Add Candidates</h3>
+        <p className="text-sm text-slate-500 mb-5">
+          Add multiple candidates to: <span className="font-bold text-slate-700">{postTitle}</span>
+        </p>
+
+        <div className="space-y-4 flex-1 overflow-y-auto pr-1">
+          <div className="space-y-1">
+            <Label className="text-slate-600 mb-1 block font-bold">Category / Post</Label>
+            <select
+              value={postKey}
+              onChange={(e) => setPostKey(e.target.value)}
+              disabled={busy}
+              className="h-11 w-full border border-slate-200 rounded-xl px-3 bg-slate-50 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/15"
+            >
+              {posts.map(p => <option key={p.key} value={p.key}>{p.title}</option>)}
+            </select>
+          </div>
+
+          {/* Files Dropzone */}
+          <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 bg-slate-50/50 text-center hover:bg-slate-50 transition duration-300">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleFileSelect}
+              disabled={busy}
+              className="hidden"
+            />
+            <FileImage className="w-9 h-9 text-slate-350 mx-auto mb-2" />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={busy}
+              className="px-4 py-2 bg-white border border-slate-250 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold shadow-sm transition active:scale-95 disabled:opacity-50"
+            >
+              Select Candidate Photos
+            </button>
+            <p className="text-[10px] font-bold text-slate-400 mt-2">
+              Select multiple photos at once. Names will be guessed from the image filenames.
+            </p>
+          </div>
+
+          {/* Files List Table */}
+          {files.length > 0 && (
+            <div className="space-y-2">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block px-1">Selected Candidates ({files.length})</span>
+              <div className="space-y-2 border border-slate-100 rounded-xl p-2 bg-slate-50/20 max-h-72 overflow-y-auto">
+                {files.map((item) => (
+                  <div
+                    key={item.tempId}
+                    className="flex items-center gap-3 p-3 bg-white border border-slate-200/60 rounded-xl shadow-sm hover:shadow"
+                  >
+                    <div className="w-10 h-10 rounded bg-slate-100 border shrink-0 flex items-center justify-center overflow-hidden">
+                      <img src={item.photoBase64} alt="Temp" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex-1 grid grid-cols-2 gap-2.5 min-w-0">
+                      <div>
+                        <input
+                          type="text"
+                          value={item.name}
+                          onChange={e => updateField(item.tempId, "name", e.target.value)}
+                          disabled={busy}
+                          className="w-full px-2.5 py-1.5 border border-slate-200/80 rounded-lg text-slate-800 font-bold text-xs focus:outline-none focus:border-blue-500"
+                          placeholder="Candidate Name *"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="text"
+                          value={item.symbol}
+                          onChange={e => updateField(item.tempId, "symbol", e.target.value)}
+                          disabled={busy}
+                          className="w-full px-2.5 py-1.5 border border-slate-200/80 rounded-lg text-slate-800 font-semibold text-xs focus:outline-none focus:border-blue-500"
+                          placeholder="Election Symbol (e.g. Star)"
+                        />
+                      </div>
+                    </div>
+                    <div className="shrink-0 flex items-center gap-2">
+                      {item.status === "uploading" && <Loader2 className="w-4.5 h-4.5 text-blue-600 animate-spin" />}
+                      {item.status === "success" && <Check className="w-4.5 h-4.5 text-emerald-600" />}
+                      {item.status === "error" && <AlertTriangle className="w-4.5 h-4.5 text-red-500" />}
+                      <button
+                        type="button"
+                        onClick={() => removeFile(item.tempId)}
+                        disabled={busy}
+                        className="p-1 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded transition disabled:opacity-50"
+                      >
+                        <X className="w-4.5 h-4.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-4">
+          <button
+            onClick={onClose}
+            disabled={busy}
+            className="h-11 px-5 rounded-xl border border-slate-200 font-bold hover:bg-slate-50 text-slate-650 text-sm"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleUploadAll}
+            disabled={busy || files.length === 0}
+            className="h-11 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-2 disabled:opacity-50 text-sm"
+          >
+            {busy ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Uploading...
+              </>
+            ) : (
+              <>
+                <Upload className="w-4 h-4" /> Start Bulk Upload ({files.length})
+              </>
+            )}
           </button>
         </div>
       </div>
