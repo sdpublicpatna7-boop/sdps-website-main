@@ -800,11 +800,11 @@ export default function StudentCouncil() {
               </div>
 
               {/* Prefects grid */}
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
+              <div className="flex flex-wrap justify-center gap-4">
                 {prefects.map(pf => (
                   <div
                     key={pf.id}
-                    className="relative bg-white rounded-2xl p-3 border border-slate-200/80 text-center transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 group"
+                    className="relative bg-white rounded-2xl p-3 border border-slate-200/80 text-center transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 group w-28 sm:w-36 md:w-40 shrink-0"
                   >
                     <div className="w-16 h-16 rounded-full mx-auto overflow-hidden p-0.5 bg-gradient-to-br from-slate-300 to-slate-400">
                       {pf.photo ? (() => {
