@@ -46,6 +46,16 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
   const [lineHeight, setLineHeight] = useState("relaxed"); // snug, normal, relaxed, loose
   const [letterheadHeader, setLetterheadHeader] = useState(true);
 
+  // Table Configuration Options
+  const [showTable, setShowTable] = useState(false);
+  const [tableHeader1, setTableHeader1] = useState("Time");
+  const [tableHeader2, setTableHeader2] = useState("Roll Numbers");
+  const [tableRows, setTableRows] = useState([
+    { col1: "08:00 AM – 09:00 AM", col2: "Roll No. 01 – 10" },
+    { col1: "09:00 AM – 10:00 AM", col2: "Roll No. 11 – 20" },
+    { col1: "10:00 AM – 11:00 AM", col2: "Roll No. 21 onwards" }
+  ]);
+
   // Signature Presets & Configuration
   const [selectedRolePreset, setSelectedRolePreset] = useState("principal"); // principal, director, management, custom
   const [signatureUrl, setSignatureUrl] = useState("");
@@ -192,7 +202,11 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
       refPrefix,
       refSerial,
       refLocked,
-      pdfUrl
+      pdfUrl,
+      showTable,
+      tableHeader1,
+      tableHeader2,
+      tableRows
     };
 
     setDrafts(prev => [newDraft, ...prev.filter(d => d.noticeTitle !== noticeTitle || d.subject !== subject)]);
@@ -220,6 +234,14 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
     setRefSerial(item.refSerial || 45);
     setRefLocked(item.refLocked || false);
     setPdfUrl(item.pdfUrl || "");
+    setShowTable(item.showTable !== undefined ? item.showTable : false);
+    setTableHeader1(item.tableHeader1 || "Time");
+    setTableHeader2(item.tableHeader2 || "Roll Numbers");
+    setTableRows(item.tableRows || [
+      { col1: "08:00 AM – 09:00 AM", col2: "Roll No. 01 – 10" },
+      { col1: "09:00 AM – 10:00 AM", col2: "Roll No. 11 – 20" },
+      { col1: "10:00 AM – 11:00 AM", col2: "Roll No. 21 onwards" }
+    ]);
     toast.success("Draft loaded into notice editor!");
   };
 
@@ -251,6 +273,14 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
     setRefPrefix("SDPS/2026-27/");
     setRefLocked(false);
     setPdfUrl("");
+    setShowTable(false);
+    setTableHeader1("Time");
+    setTableHeader2("Roll Numbers");
+    setTableRows([
+      { col1: "08:00 AM – 09:00 AM", col2: "Roll No. 01 – 10" },
+      { col1: "09:00 AM – 10:00 AM", col2: "Roll No. 11 – 20" },
+      { col1: "10:00 AM – 11:00 AM", col2: "Roll No. 21 onwards" }
+    ]);
     toast.success("Notice editor reset to defaults!");
   };
 
@@ -311,9 +341,15 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
     
     const finalRef = finalizeRefNo();
     
+    let tableMarkdown = "";
+    if (showTable && tableRows.length > 0) {
+      tableMarkdown = `\n\n| ${tableHeader1} | ${tableHeader2} |\n| :--- | :--- |\n` + 
+        tableRows.map(r => `| **${r.col1}** | ${r.col2} |`).join("\n") + "\n";
+    }
+
     // Map fields to backend Notice model
     // We compose the description with Subject, Ref No, and By Order information so that it displays complete on public notice board
-    const publishedDescription = `${subject ? `**${subject}**\n\n` : ""}${finalRef ? `${finalRef}\n\n` : ""}${bodyText}\n\n${signatoryHeader}\n${signatoryAuthority}`;
+    const publishedDescription = `${subject ? `**${subject}**\n\n` : ""}${finalRef ? `${finalRef}\n\n` : ""}${bodyText}${tableMarkdown}\n\n${signatoryHeader}\n${signatoryAuthority}`;
     
     const payload = {
       title: `${noticeTitle}${subject ? `: ${subject.replace(/^Subject:\s*/i, "")}` : ""}`,
@@ -842,6 +878,96 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
             </div>
           </div>
 
+          {/* Table Configuration */}
+          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
+                <span>📊</span> Notice Table (Optional)
+              </h3>
+              <label className="relative inline-flex items-center cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={showTable}
+                  onChange={(e) => setShowTable(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-orange animate-all duration-200"></div>
+              </label>
+            </div>
+
+            {showTable && (
+              <div className="space-y-4 animate-in fade-in duration-200">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Column 1 Header</label>
+                    <input
+                      type="text"
+                      value={tableHeader1}
+                      onChange={(e) => setTableHeader1(e.target.value)}
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-orange focus:border-brand-orange bg-slate-50 font-bold"
+                      placeholder="e.g. Time"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Column 2 Header</label>
+                    <input
+                      type="text"
+                      value={tableHeader2}
+                      onChange={(e) => setTableHeader2(e.target.value)}
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-orange focus:border-brand-orange bg-slate-50 font-bold"
+                      placeholder="e.g. Roll Numbers"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">Table Rows</label>
+                  {tableRows.map((row, idx) => (
+                    <div key={idx} className="flex gap-2 items-center">
+                      <input
+                        type="text"
+                        value={row.col1}
+                        onChange={(e) => {
+                          const updated = [...tableRows];
+                          updated[idx] = { ...updated[idx], col1: e.target.value };
+                          setTableRows(updated);
+                        }}
+                        className="flex-1 min-w-0 px-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-orange focus:border-brand-orange bg-slate-50 font-semibold"
+                        placeholder="Column 1 value"
+                      />
+                      <input
+                        type="text"
+                        value={row.col2}
+                        onChange={(e) => {
+                          const updated = [...tableRows];
+                          updated[idx] = { ...updated[idx], col2: e.target.value };
+                          setTableRows(updated);
+                        }}
+                        className="flex-1 min-w-0 px-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-orange focus:border-brand-orange bg-slate-50"
+                        placeholder="Column 2 value"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setTableRows(prev => prev.filter((_, i) => i !== idx))}
+                        className="p-1.5 bg-red-50 hover:bg-red-100 rounded-lg text-red-500 transition duration-150"
+                      >
+                        <Trash className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={() => setTableRows(prev => [...prev, { col1: "", col2: "" }])}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add Row
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Local Draft History */}
           <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
             <h3 className="text-xs font-bold text-slate-800 border-b border-slate-100 pb-2 uppercase tracking-wide">Saved Drafts (Local Storage)</h3>
@@ -954,6 +1080,28 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
               <div className={`px-4 py-4 text-justify font-sans whitespace-pre-wrap leading-relaxed ${fontSizes[fontSize]} ${lineHeights[lineHeight]} text-slate-800`}>
                 {bodyText || "Please enter the content details for the notice..."}
               </div>
+
+              {/* Notice Table (Optional) */}
+              {showTable && tableRows.length > 0 && (
+                <div className="px-4 py-2">
+                  <table className="w-full text-left border-collapse text-xs mt-2 border-y border-slate-200">
+                    <thead>
+                      <tr className="border-b border-slate-300">
+                        <th className="py-2.5 px-2 font-bold text-slate-900 w-[45%]">{tableHeader1 || "Time"}</th>
+                        <th className="py-2.5 px-2 font-bold text-slate-900 w-[55%]">{tableHeader2 || "Roll Numbers"}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tableRows.map((row, idx) => (
+                        <tr key={idx} className="border-b border-slate-200 last:border-b-0">
+                          <td className="py-2.5 px-2 font-bold text-slate-900">{row.col1}</td>
+                          <td className="py-2.5 px-2 text-slate-800">{row.col2}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
 
             {/* Bottom Signatory Area */}
