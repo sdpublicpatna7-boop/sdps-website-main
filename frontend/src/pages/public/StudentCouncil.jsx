@@ -655,9 +655,10 @@ export default function StudentCouncil() {
 
         {/* ── PROFILES TAB ── */}
         {tab === "profiles" && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {profiles.length === 0 && <div className="col-span-4 text-center text-brand-ink/60 py-10 italic">Profiles coming soon.</div>}
-            {profiles.map(p => {
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {profiles.length === 0 && <div className="col-span-4 text-center text-brand-ink/60 py-10 italic">Profiles coming soon.</div>}
+              {profiles.map(p => {
               const isVice = (p.position || "").toLowerCase().includes("vice");
               const isAppointed = p.role_type === "Appointed by School Management" || p.role_type === "Appointed by Admin";
               const isDiscipline = (p.position || "").toLowerCase().includes("discipline");
@@ -756,6 +757,7 @@ export default function StudentCouncil() {
               </div>
             </div>
           )}
+          </>
         )}
 
         {/* ── POSTERS TAB ── */}
