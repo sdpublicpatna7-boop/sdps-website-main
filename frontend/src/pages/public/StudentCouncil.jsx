@@ -650,8 +650,8 @@ export default function StudentCouncil() {
                 }`}>
                   {/* Badge */}
                   {p.is_captain && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-gold-grad text-white text-[10px] uppercase tracking-wider rounded-full font-headline font-bold shadow-sm">
-                      Captain
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-gold-grad text-white text-[10px] uppercase tracking-wider rounded-full font-headline font-bold shadow-sm whitespace-nowrap">
+                      {p.position || "Captain"}
                     </div>
                   )}
                   {isVice && !p.is_captain && (
