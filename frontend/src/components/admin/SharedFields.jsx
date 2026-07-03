@@ -312,14 +312,15 @@ export function ImageOrUrlField({ value, onChange, subDir = "misc", aspect = "vi
             <img
               src={fullUrl(base)}
               alt="Preview"
-              style={
-                (scale === 1 && x === 0 && y === 0)
-                  ? { objectPosition: "center top" }
-                  : {
-                      transform: `scale(${scale}) translate(${pctX.toFixed(2)}%, ${pctY.toFixed(2)}%)`,
-                      transformOrigin: "center center",
-                    }
-              }
+              style={(() => {
+                if (scale === 1 && x === 0 && y === 0) return { objectPosition: "center top" };
+                const posX = 50 - (x / refWidth) * 100;
+                const posY = 50 - (y / refWidth) * 100;
+                return {
+                  objectPosition: `${posX.toFixed(1)}% ${posY.toFixed(1)}%`,
+                  transform: scale !== 1 ? `scale(${scale})` : undefined,
+                };
+              })()}
               className="w-full h-full object-cover"
             />
           </div>

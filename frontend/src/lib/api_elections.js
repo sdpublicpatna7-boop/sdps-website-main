@@ -92,32 +92,35 @@ export const scheduleResultsPublish = async (isoTime) => {
 };
 
 export function parseCandidateTransform(urlStr) {
-  if (!urlStr || typeof urlStr !== "string") return { style: { objectPosition: "center top" }, cleanUrl: urlStr };
+  const defaultStyle = { objectPosition: "center top", objectFit: "cover" };
+  if (!urlStr || typeof urlStr !== "string") return { style: defaultStyle, cleanUrl: urlStr };
   const parts = urlStr.split("?");
   const cleanUrl = parts[0];
   const query = parts[1];
-  if (!query) return { style: { objectPosition: "center top" }, cleanUrl };
+  if (!query) return { style: defaultStyle, cleanUrl };
   const searchParams = new URLSearchParams(query);
   const scaleStr = searchParams.get("scale");
   const xStr = searchParams.get("x");
   const yStr = searchParams.get("y");
 
   if (!scaleStr && !xStr && !yStr) {
-    return { style: { objectPosition: "center top" }, cleanUrl };
+    return { style: defaultStyle, cleanUrl };
   }
 
   const scale = parseFloat(scaleStr) || 1;
   const x = parseFloat(xStr) || 0;
   const y = parseFloat(yStr) || 0;
   
-  // Mockup square reference size is 192px
-  const pctX = (x / 192) * 100;
-  const pctY = (y / 192) * 100;
+  // Convert pixel offsets (calibrated on 192px mockup) to percentage-based object-position.
+  // Default center is 50% 50%. Each pixel of offset maps to ~0.52% (100/192).
+  const posX = 50 - (x / 192) * 100;
+  const posY = 50 - (y / 192) * 100;
   
   return {
     style: {
-      transform: `scale(${scale}) translate(${pctX.toFixed(2)}%, ${pctY.toFixed(2)}%)`,
-      transformOrigin: "center center",
+      objectFit: "cover",
+      objectPosition: `${posX.toFixed(1)}% ${posY.toFixed(1)}%`,
+      transform: scale !== 1 ? `scale(${scale})` : undefined,
     },
     cleanUrl,
   };
