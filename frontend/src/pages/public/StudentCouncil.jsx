@@ -454,6 +454,7 @@ export default function StudentCouncil() {
   const [publishAt, setPublishAt] = useState(null);
   const [showPopup, setShowPopup] = useState(true);
   const [totalVoted, setTotalVoted] = useState(0);
+  const [prefects, setPrefects] = useState([]);
 
   useEffect(() => {
     api.get("/council/profiles").then(r => setProfiles(r.data || [])).catch(() => {});
@@ -476,6 +477,7 @@ export default function StudentCouncil() {
         // Compile the live results — preserve ALL candidates per post
         const compiled = [];
         const dynamicProfiles = [];
+        const prefectsList = [];
         const viceCandidateIds = d.vice_candidate_ids || [];
 
         (d.posts || []).forEach(post => {
@@ -553,6 +555,23 @@ export default function StudentCouncil() {
                 order: (post.order || 0) + 0.5
               });
             });
+
+            // Collect remaining candidates as prefects (not captain, not vice)
+            const winnerIds = new Set();
+            finalWinners.forEach(w => winnerIds.add(w.candidate_id));
+            viceWinners.forEach(w => winnerIds.add(w.candidate_id));
+            sorted.forEach(c => {
+              if (!winnerIds.has(c.candidate_id)) {
+                prefectsList.push({
+                  id: `prefect-${post.key}-${c.candidate_id}`,
+                  name: c.name,
+                  photo: c.photo,
+                  post_title: post.title,
+                  symbol: c.symbol,
+                  votes: c.votes
+                });
+              }
+            });
           }
         });
         if (compiled.length > 0) {
@@ -572,6 +591,9 @@ export default function StudentCouncil() {
             });
             return merged.sort((a, b) => (b.is_captain ? 1 : 0) - (a.is_captain ? 1 : 0));
           });
+        }
+        if (prefectsList.length > 0) {
+          setPrefects(prefectsList);
         }
       } else {
         setElectionStatus("sealed");
@@ -695,6 +717,45 @@ export default function StudentCouncil() {
               );
             })}
           </div>
+
+          {/* ── SCHOOL PREFECTS SECTION ── */}
+          {prefects.length > 0 && (
+            <div className="mt-12">
+              {/* Section header */}
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-[#0E3B91] via-[#1a55b6] to-[#0E3B91] rounded-2xl shadow-lg">
+                  <Award className="w-5 h-5 text-amber-300" />
+                  <h3 className="font-headline text-lg font-black text-white tracking-tight">School Prefects</h3>
+                  <Award className="w-5 h-5 text-amber-300" />
+                </div>
+                <p className="text-xs text-slate-500 font-semibold mt-2 tracking-wide uppercase">Election Participants · 2026-27</p>
+              </div>
+
+              {/* Prefects grid */}
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
+                {prefects.map(pf => (
+                  <div
+                    key={pf.id}
+                    className="relative bg-white rounded-2xl p-3 border border-slate-200/80 text-center transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 group"
+                  >
+                    <div className="w-16 h-16 rounded-full mx-auto overflow-hidden p-0.5 bg-gradient-to-br from-slate-300 to-slate-400">
+                      {pf.photo ? (() => {
+                        const photoSrc = pf.photo.startsWith("data:") || pf.photo.startsWith("http") ? pf.photo : fullUrl(pf.photo);
+                        const { style, cleanUrl } = parseCandidateTransform(photoSrc);
+                        return <img src={cleanUrl} alt={pf.name} style={style} className="w-full h-full rounded-full object-cover" />;
+                      })() : (
+                        <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-lg font-headline font-bold text-slate-500">
+                          {pf.name?.[0]}
+                        </div>
+                      )}
+                    </div>
+                    <h4 className="font-headline font-semibold text-sm mt-2 text-slate-800 leading-tight">{pf.name}</h4>
+                    <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">{pf.post_title}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         )}
 
         {/* ── POSTERS TAB ── */}
