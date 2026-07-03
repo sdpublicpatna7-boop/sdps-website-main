@@ -605,7 +605,16 @@ export default function StudentCouncil() {
           });
         }
         if (prefectsList.length > 0) {
-          setPrefects(prefectsList);
+          const uniquePrefects = [];
+          const seenNames = new Set();
+          prefectsList.forEach(p => {
+            const lowerName = (p.name || "").toLowerCase().trim();
+            if (!seenNames.has(lowerName)) {
+              seenNames.add(lowerName);
+              uniquePrefects.push(p);
+            }
+          });
+          setPrefects(uniquePrefects);
         }
       } else {
         setElectionStatus("sealed");
