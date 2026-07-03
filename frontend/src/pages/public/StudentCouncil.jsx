@@ -220,7 +220,7 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
           <div className="absolute top-4 left-6 w-16 h-16 rounded-full bg-amber-400/10 animate-popper" style={{ animationDelay: `${index * 0.2 + 0.5}s` }} />
           <div className="absolute top-8 right-10 w-12 h-12 rounded-full bg-blue-400/10 animate-popper" style={{ animationDelay: `${index * 0.2 + 0.8}s` }} />
           
-          <div className={`grid ${winners.length > 1 ? "grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100 gap-6" : "grid-cols-1"}`}>
+          <div className="grid grid-cols-1 divide-y divide-slate-100 gap-6">
             {winners.map((winner, wIdx) => {
               const winnerPhoto = winner?.photo ? (winner.photo.startsWith("data:") || winner.photo.startsWith("http") ? winner.photo : fullUrl(winner.photo)) : null;
               const winnerPct = totalVotes > 0 ? Math.round((winner.votes / totalVotes) * 100) : 0;
@@ -228,7 +228,7 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
               const isWinnerAppointed = isAppointed || isWinnerVice;
 
               return (
-                <div key={winner.candidate_id || wIdx} className={`flex items-center gap-6 ${winners.length > 1 && wIdx > 0 ? "pt-6 md:pt-0 md:pl-6" : ""}`}>
+                <div key={winner.candidate_id || wIdx} className={`flex items-center gap-6 ${wIdx > 0 ? "pt-6" : ""}`}>
                   {/* Winner photo with crown / star */}
                   <div className="relative shrink-0">
                     {/* Sparkles around photo */}
