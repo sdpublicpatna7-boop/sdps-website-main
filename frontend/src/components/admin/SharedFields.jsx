@@ -43,6 +43,7 @@ function MockupPreview({ aspect, imageUrl, scale, x, y }) {
     width: "100%",
     height: "100%",
     objectFit: "cover",
+    objectPosition: (scale === 1 && x === 0 && y === 0) ? "center top" : "center center",
     display: "block"
   };
 
@@ -311,10 +312,14 @@ export function ImageOrUrlField({ value, onChange, subDir = "misc", aspect = "vi
             <img
               src={fullUrl(base)}
               alt="Preview"
-              style={{
-                transform: `scale(${scale}) translate(${pctX.toFixed(2)}%, ${pctY.toFixed(2)}%)`,
-                transformOrigin: "center center",
-              }}
+              style={
+                (scale === 1 && x === 0 && y === 0)
+                  ? { objectPosition: "center top" }
+                  : {
+                      transform: `scale(${scale}) translate(${pctX.toFixed(2)}%, ${pctY.toFixed(2)}%)`,
+                      transformOrigin: "center center",
+                    }
+              }
               className="w-full h-full object-cover"
             />
           </div>

@@ -92,15 +92,23 @@ export const scheduleResultsPublish = async (isoTime) => {
 };
 
 export function parseCandidateTransform(urlStr) {
-  if (!urlStr || typeof urlStr !== "string") return { style: {}, cleanUrl: urlStr };
+  if (!urlStr || typeof urlStr !== "string") return { style: { objectPosition: "center top" }, cleanUrl: urlStr };
   const parts = urlStr.split("?");
   const cleanUrl = parts[0];
   const query = parts[1];
-  if (!query) return { style: {}, cleanUrl };
+  if (!query) return { style: { objectPosition: "center top" }, cleanUrl };
   const searchParams = new URLSearchParams(query);
-  const scale = parseFloat(searchParams.get("scale")) || 1;
-  const x = parseFloat(searchParams.get("x")) || 0;
-  const y = parseFloat(searchParams.get("y")) || 0;
+  const scaleStr = searchParams.get("scale");
+  const xStr = searchParams.get("x");
+  const yStr = searchParams.get("y");
+
+  if (!scaleStr && !xStr && !yStr) {
+    return { style: { objectPosition: "center top" }, cleanUrl };
+  }
+
+  const scale = parseFloat(scaleStr) || 1;
+  const x = parseFloat(xStr) || 0;
+  const y = parseFloat(yStr) || 0;
   
   // Mockup square reference size is 192px
   const pctX = (x / 192) * 100;
