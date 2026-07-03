@@ -518,7 +518,8 @@ export default function StudentCouncil() {
             // If there's a winner, add them to dynamic profiles
             const maxVotes = sorted[0].votes || 0;
             const winners = maxVotes > 0 ? sorted.filter(c => c.votes === maxVotes) : [];
-            const appointedWinners = isAppointed ? sorted.filter(c => c.votes === 100) : [];
+            // For appointed posts, the winner is every non-vice candidate
+            const appointedWinners = isAppointed ? sorted.filter(c => !viceCandidateIds.includes(c.candidate_id)) : [];
             const finalWinners = isAppointed ? appointedWinners : winners;
 
             finalWinners.forEach((winner, wIdx) => {
@@ -531,7 +532,8 @@ export default function StudentCouncil() {
                   photo_url: winner.photo,
                   year: "2026-27",
                   role_type: isAppointed ? "Appointed by School Management" : "Elected",
-                  is_captain: !isAppointed,
+                  is_captain: true,
+                  is_appointed: isAppointed,
                   order: post.order || 0
                 });
               }
