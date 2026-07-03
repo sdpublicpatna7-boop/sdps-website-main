@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
-import api from "@/lib/api";
+import api, { getBackendUrl } from "@/lib/api";
 import { toast } from "sonner";
 import { Printer, FileText, Save, Send, Trash, Plus, RotateCcw, AlertTriangle, Shield, FileUp } from "lucide-react";
 
@@ -10,8 +10,9 @@ export function AdminNoticeMaker() {
   
   // School Logo formatting
   const logoUrl = settings?.logo_url || "";
+  const BACKEND_URL = getBackendUrl();
   const formattedLogo = logoUrl
-    ? (logoUrl.startsWith("http") ? logoUrl : `${process.env.REACT_APP_BACKEND_URL || ""}${logoUrl}`)
+    ? (logoUrl.startsWith("http") ? logoUrl : `${BACKEND_URL.replace(/\/+$/, "")}${logoUrl.startsWith("/") ? logoUrl : "/" + logoUrl}`)
     : "";
 
   // Form State
@@ -155,7 +156,9 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
 
   const fullUrl = (u) => {
     if (!u) return "";
-    return u.startsWith("http") ? u : `${process.env.REACT_APP_BACKEND_URL || ""}${u}`;
+    if (u.startsWith("http") || u.startsWith("data:")) return u;
+    const BACKEND_URL = getBackendUrl();
+    return `${BACKEND_URL.replace(/\/+$/, "")}${u.startsWith("/") ? u : "/" + u}`;
   };
 
   const handlePrint = () => {

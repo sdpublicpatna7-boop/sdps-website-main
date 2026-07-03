@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import api from "./api";
+import api, { getBackendUrl } from "./api";
 
 export function useAdminList(endpoint) {
   const [items, setItems] = useState([]);
@@ -32,4 +32,9 @@ export async function uploadFile(file, sub_dir = "misc", max_mb = 5) {
   return r.data;
 }
 
-export const fullUrl = (u) => u && u.startsWith("http") ? u : `${process.env.REACT_APP_BACKEND_URL}${u || ""}`;
+export const fullUrl = (u) => {
+  if (!u) return "";
+  if (u.startsWith("http") || u.startsWith("data:")) return u;
+  const BACKEND_URL = getBackendUrl();
+  return `${BACKEND_URL.replace(/\/+$/, "")}${u.startsWith("/") ? u : "/" + u}`;
+};
