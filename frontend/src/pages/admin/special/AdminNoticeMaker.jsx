@@ -359,7 +359,9 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
 
     // Map fields to backend Notice model
     // We compose the description with Subject, Ref No, and By Order information so that it displays complete on public notice board
-    const publishedDescription = `${subject ? `**${subject}**\n\n` : ""}${finalRef ? `${finalRef}\n\n` : ""}${bodyText}${tableMarkdown}\n\n${signatoryHeader}\n${signatoryAuthority}`;
+    const publishedDescription = bodyText.includes("{{table}}")
+      ? `${subject ? `**${subject}**\n\n` : ""}${finalRef ? `${finalRef}\n\n` : ""}${bodyText.replace("{{table}}", tableMarkdown)}\n\n${signatoryHeader}\n${signatoryAuthority}`
+      : `${subject ? `**${subject}**\n\n` : ""}${finalRef ? `${finalRef}\n\n` : ""}${bodyText}${tableMarkdown}\n\n${signatoryHeader}\n${signatoryAuthority}`;
     
     const payload = {
       title: `${noticeTitle}${subject ? `: ${subject.replace(/^Subject:\s*/i, "")}` : ""}`,
@@ -594,7 +596,10 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Notice Body Description</label>
+              <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex justify-between items-center">
+                <span>Notice Body Description</span>
+                {showTable && <span className="text-[9px] text-brand-orange font-bold normal-case">Type {"{{table}}"} to place table here</span>}
+              </label>
               <textarea
                 value={bodyText}
                 onChange={(e) => setBodyText(e.target.value)}
@@ -1161,71 +1166,93 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
                 </div>
               )}
 
-              {/* Notice Body */}
-              <div className={`px-4 py-4 text-justify font-sans whitespace-pre-wrap leading-relaxed ${fontSizes[fontSize]} ${lineHeights[lineHeight]} text-slate-800`}>
-                {bodyText || "Please enter the content details for the notice..."}
-              </div>
-
-              {/* Notice Table (Optional) */}
-              {showTable && tableRows.length > 0 && (
-                <div className="px-4 py-2">
-                  <table className={`w-full text-${tableAlign} border-collapse text-xs mt-2 ${
-                    tableStyle === "boxed" 
-                      ? "border border-slate-300" 
-                      : "border-y border-slate-300"
-                  }`}>
-                    <thead>
-                      <tr className={`${
-                        tableHeaderBg === "light-grey"
-                          ? "bg-slate-100 text-slate-800"
-                          : tableHeaderBg === "brand-blue"
-                          ? "bg-[#0E3B91] text-white"
-                          : tableHeaderBg === "brand-orange"
-                          ? "bg-[#F87D0E] text-white"
-                          : "text-slate-900"
-                      } ${tableStyle === "boxed" ? "" : "border-b border-slate-300"}`}>
-                        {tableHeaders.map((header, colIdx) => (
-                          <th
-                            key={colIdx}
-                            className={`py-2.5 px-3 font-bold ${
-                              tableStyle === "boxed" ? "border border-slate-300" : ""
-                            }`}
-                          >
-                            {header}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {tableRows.map((row, idx) => (
-                        <tr
-                          key={idx}
-                          className={`${
-                            tableStyle === "boxed"
-                              ? ""
-                              : "border-b border-slate-200 last:border-b-0"
-                          } hover:bg-slate-50/50`}
-                        >
-                          {row.map((cell, colIdx) => (
-                            <td
-                              key={colIdx}
-                              className={`py-2.5 px-3 ${
-                                colIdx === 0 && tableHeaderBg !== "brand-blue" && tableHeaderBg !== "brand-orange"
-                                  ? "font-bold text-slate-900"
-                                  : "text-slate-800"
-                              } ${
-                                tableStyle === "boxed" ? "border border-slate-300" : ""
-                              }`}
+              {/* Notice Body and Table (In-place or trailing) */}
+              {(() => {
+                const textStyle = `px-4 py-2 text-justify font-sans whitespace-pre-wrap leading-relaxed ${fontSizes[fontSize]} ${lineHeights[lineHeight]} text-slate-800`;
+                const hasPlaceholder = showTable && bodyText.includes("{{table}}");
+                
+                const renderTable = () => (
+                  showTable && tableRows.length > 0 && (
+                    <div className="px-4 py-2 my-2">
+                      <table className={`w-full text-${tableAlign} border-collapse text-xs ${
+                        tableStyle === "boxed" 
+                          ? "border border-slate-300" 
+                          : "border-y border-slate-300"
+                      }`}>
+                        <thead>
+                          <tr className={`${
+                            tableHeaderBg === "light-grey"
+                              ? "bg-slate-100 text-slate-800"
+                              : tableHeaderBg === "brand-blue"
+                              ? "bg-[#0E3B91] text-white"
+                              : tableHeaderBg === "brand-orange"
+                              ? "bg-[#F87D0E] text-white"
+                              : "text-slate-900"
+                          } ${tableStyle === "boxed" ? "" : "border-b border-slate-300"}`}>
+                            {tableHeaders.map((header, colIdx) => (
+                              <th
+                                key={colIdx}
+                                className={`py-2.5 px-3 font-bold ${
+                                  tableStyle === "boxed" ? "border border-slate-300" : ""
+                                }`}
+                              >
+                                {header}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {tableRows.map((row, idx) => (
+                            <tr
+                              key={idx}
+                              className={`${
+                                tableStyle === "boxed"
+                                  ? ""
+                                  : "border-b border-slate-200 last:border-b-0"
+                              } hover:bg-slate-50/50`}
                             >
-                              {cell}
-                            </td>
+                              {row.map((cell, colIdx) => (
+                                <td
+                                  key={colIdx}
+                                  className={`py-2.5 px-3 ${
+                                    colIdx === 0 && tableHeaderBg !== "brand-blue" && tableHeaderBg !== "brand-orange"
+                                      ? "font-bold text-slate-900"
+                                      : "text-slate-800"
+                                  } ${
+                                    tableStyle === "boxed" ? "border border-slate-300" : ""
+                                  }`}
+                                >
+                                  {cell}
+                                </td>
+                              ))}
+                            </tr>
                           ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )
+                );
+
+                if (hasPlaceholder) {
+                  const parts = bodyText.split("{{table}}");
+                  const beforeText = parts[0];
+                  const afterText = parts.slice(1).join("{{table}}");
+                  return (
+                    <>
+                      <div className={textStyle}>{beforeText || "Please enter the content details for the notice..."}</div>
+                      {renderTable()}
+                      {afterText && <div className={textStyle}>{afterText}</div>}
+                    </>
+                  );
+                }
+
+                return (
+                  <>
+                    <div className={textStyle}>{bodyText || "Please enter the content details for the notice..."}</div>
+                    {renderTable()}
+                  </>
+                );
+              })()}
             </div>
 
             {/* Bottom Signatory Area */}
