@@ -48,13 +48,15 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
 
   // Table Configuration Options
   const [showTable, setShowTable] = useState(false);
-  const [tableHeader1, setTableHeader1] = useState("Time");
-  const [tableHeader2, setTableHeader2] = useState("Roll Numbers");
+  const [tableHeaders, setTableHeaders] = useState(["Time", "Roll Numbers"]);
   const [tableRows, setTableRows] = useState([
-    { col1: "08:00 AM – 09:00 AM", col2: "Roll No. 01 – 10" },
-    { col1: "09:00 AM – 10:00 AM", col2: "Roll No. 11 – 20" },
-    { col1: "10:00 AM – 11:00 AM", col2: "Roll No. 21 onwards" }
+    ["08:00 AM – 09:00 AM", "Roll No. 01 – 10"],
+    ["09:00 AM – 10:00 AM", "Roll No. 11 – 20"],
+    ["10:00 AM – 11:00 AM", "Roll No. 21 onwards"]
   ]);
+  const [tableStyle, setTableStyle] = useState("dividers"); // "dividers", "boxed"
+  const [tableHeaderBg, setTableHeaderBg] = useState("none"); // "none", "light-grey", "brand-blue", "brand-orange"
+  const [tableAlign, setTableAlign] = useState("left"); // "left", "center", "right"
 
   // Signature Presets & Configuration
   const [selectedRolePreset, setSelectedRolePreset] = useState("principal"); // principal, director, management, custom
@@ -204,9 +206,11 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
       refLocked,
       pdfUrl,
       showTable,
-      tableHeader1,
-      tableHeader2,
-      tableRows
+      tableHeaders,
+      tableRows,
+      tableStyle,
+      tableHeaderBg,
+      tableAlign
     };
 
     setDrafts(prev => [newDraft, ...prev.filter(d => d.noticeTitle !== noticeTitle || d.subject !== subject)]);
@@ -235,13 +239,15 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
     setRefLocked(item.refLocked || false);
     setPdfUrl(item.pdfUrl || "");
     setShowTable(item.showTable !== undefined ? item.showTable : false);
-    setTableHeader1(item.tableHeader1 || "Time");
-    setTableHeader2(item.tableHeader2 || "Roll Numbers");
+    setTableHeaders(item.tableHeaders || ["Time", "Roll Numbers"]);
     setTableRows(item.tableRows || [
-      { col1: "08:00 AM – 09:00 AM", col2: "Roll No. 01 – 10" },
-      { col1: "09:00 AM – 10:00 AM", col2: "Roll No. 11 – 20" },
-      { col1: "10:00 AM – 11:00 AM", col2: "Roll No. 21 onwards" }
+      ["08:00 AM – 09:00 AM", "Roll No. 01 – 10"],
+      ["09:00 AM – 10:00 AM", "Roll No. 11 – 20"],
+      ["10:00 AM – 11:00 AM", "Roll No. 21 onwards"]
     ]);
+    setTableStyle(item.tableStyle || "dividers");
+    setTableHeaderBg(item.tableHeaderBg || "none");
+    setTableAlign(item.tableAlign || "left");
     toast.success("Draft loaded into notice editor!");
   };
 
@@ -274,13 +280,15 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
     setRefLocked(false);
     setPdfUrl("");
     setShowTable(false);
-    setTableHeader1("Time");
-    setTableHeader2("Roll Numbers");
+    setTableHeaders(["Time", "Roll Numbers"]);
     setTableRows([
-      { col1: "08:00 AM – 09:00 AM", col2: "Roll No. 01 – 10" },
-      { col1: "09:00 AM – 10:00 AM", col2: "Roll No. 11 – 20" },
-      { col1: "10:00 AM – 11:00 AM", col2: "Roll No. 21 onwards" }
+      ["08:00 AM – 09:00 AM", "Roll No. 01 – 10"],
+      ["09:00 AM – 10:00 AM", "Roll No. 11 – 20"],
+      ["10:00 AM – 11:00 AM", "Roll No. 21 onwards"]
     ]);
+    setTableStyle("dividers");
+    setTableHeaderBg("none");
+    setTableAlign("left");
     toast.success("Notice editor reset to defaults!");
   };
 
@@ -343,8 +351,10 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
     
     let tableMarkdown = "";
     if (showTable && tableRows.length > 0) {
-      tableMarkdown = `\n\n| ${tableHeader1} | ${tableHeader2} |\n| :--- | :--- |\n` + 
-        tableRows.map(r => `| **${r.col1}** | ${r.col2} |`).join("\n") + "\n";
+      const headersPart = `| ${tableHeaders.join(" | ")} |`;
+      const alignmentPart = `| ${tableHeaders.map(() => tableAlign === "center" ? ":---:" : tableAlign === "right" ? "---:" : ":---").join(" | ")} |`;
+      const rowsPart = tableRows.map(row => `| ${row.map((cell, colIdx) => colIdx === 0 ? `**${cell}**` : cell).join(" | ")} |`).join("\n");
+      tableMarkdown = `\n\n${headersPart}\n${alignmentPart}\n${rowsPart}\n`;
     }
 
     // Map fields to backend Notice model
@@ -897,72 +907,147 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
 
             {showTable && (
               <div className="space-y-4 animate-in fade-in duration-200">
-                <div className="grid grid-cols-2 gap-3">
+                {/* Style Options */}
+                <div className="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-2xl border border-slate-150">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Column 1 Header</label>
-                    <input
-                      type="text"
-                      value={tableHeader1}
-                      onChange={(e) => setTableHeader1(e.target.value)}
-                      className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-orange focus:border-brand-orange bg-slate-50 font-bold"
-                      placeholder="e.g. Time"
-                    />
+                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Style</label>
+                    <select
+                      value={tableStyle}
+                      onChange={(e) => setTableStyle(e.target.value)}
+                      className="w-full px-2 py-1 text-[11px] rounded-lg border border-slate-200 bg-white focus:outline-none font-semibold text-slate-700"
+                    >
+                      <option value="dividers">Dividers</option>
+                      <option value="boxed">Boxed</option>
+                    </select>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Column 2 Header</label>
-                    <input
-                      type="text"
-                      value={tableHeader2}
-                      onChange={(e) => setTableHeader2(e.target.value)}
-                      className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-orange focus:border-brand-orange bg-slate-50 font-bold"
-                      placeholder="e.g. Roll Numbers"
-                    />
+                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Header Bg</label>
+                    <select
+                      value={tableHeaderBg}
+                      onChange={(e) => setTableHeaderBg(e.target.value)}
+                      className="w-full px-2 py-1 text-[11px] rounded-lg border border-slate-200 bg-white focus:outline-none font-semibold text-slate-700"
+                    >
+                      <option value="none">None</option>
+                      <option value="light-grey">Slate Light</option>
+                      <option value="brand-blue">SDPS Blue</option>
+                      <option value="brand-orange">SDPS Orange</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Alignment</label>
+                    <select
+                      value={tableAlign}
+                      onChange={(e) => setTableAlign(e.target.value)}
+                      className="w-full px-2 py-1 text-[11px] rounded-lg border border-slate-200 bg-white focus:outline-none font-semibold text-slate-700"
+                    >
+                      <option value="left">Left</option>
+                      <option value="center">Center</option>
+                      <option value="right">Right</option>
+                    </select>
                   </div>
                 </div>
 
+                {/* Column Manager */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">Table Rows</label>
-                  {tableRows.map((row, idx) => (
-                    <div key={idx} className="flex gap-2 items-center">
-                      <input
-                        type="text"
-                        value={row.col1}
-                        onChange={(e) => {
-                          const updated = [...tableRows];
-                          updated[idx] = { ...updated[idx], col1: e.target.value };
-                          setTableRows(updated);
-                        }}
-                        className="flex-1 min-w-0 px-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-orange focus:border-brand-orange bg-slate-50 font-semibold"
-                        placeholder="Column 1 value"
-                      />
-                      <input
-                        type="text"
-                        value={row.col2}
-                        onChange={(e) => {
-                          const updated = [...tableRows];
-                          updated[idx] = { ...updated[idx], col2: e.target.value };
-                          setTableRows(updated);
-                        }}
-                        className="flex-1 min-w-0 px-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-orange focus:border-brand-orange bg-slate-50"
-                        placeholder="Column 2 value"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setTableRows(prev => prev.filter((_, i) => i !== idx))}
-                        className="p-1.5 bg-red-50 hover:bg-red-100 rounded-lg text-red-500 transition duration-150"
-                      >
-                        <Trash className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Table Columns</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (tableHeaders.length >= 5) {
+                          toast.error("Maximum 5 columns allowed for A4 width compatibility.");
+                          return;
+                        }
+                        setTableHeaders(prev => [...prev, `Column ${prev.length + 1}`]);
+                        setTableRows(prev => prev.map(row => [...row, ""]));
+                      }}
+                      className="px-2 py-1 bg-brand-orange/10 hover:bg-brand-orange/20 text-brand-orange rounded-lg text-[10px] font-bold transition"
+                    >
+                      + Add Column
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {tableHeaders.map((header, idx) => (
+                      <div key={idx} className="flex gap-2 items-center">
+                        <span className="text-xs text-slate-400 font-bold w-4">{idx + 1}.</span>
+                        <input
+                          type="text"
+                          value={header}
+                          onChange={(e) => {
+                            const updated = [...tableHeaders];
+                            updated[idx] = e.target.value;
+                            setTableHeaders(updated);
+                          }}
+                          className="flex-1 min-w-0 px-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-orange focus:border-brand-orange bg-slate-50 font-bold text-slate-700"
+                          placeholder={`Column ${idx + 1} header`}
+                        />
+                        {tableHeaders.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTableHeaders(prev => prev.filter((_, i) => i !== idx));
+                              setTableRows(prev => prev.map(row => row.filter((_, i) => i !== idx)));
+                            }}
+                            className="p-1.5 bg-red-50 hover:bg-red-100 rounded-lg text-red-500 transition duration-150"
+                            title="Delete Column"
+                          >
+                            <Trash className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setTableRows(prev => [...prev, { col1: "", col2: "" }])}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition"
-                  >
-                    <Plus className="w-3.5 h-3.5" /> Add Row
-                  </button>
+                {/* Rows Manager */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Table Rows</label>
+                    <button
+                      type="button"
+                      onClick={() => setTableRows(prev => [...prev, tableHeaders.map(() => "")])}
+                      className="flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-bold transition"
+                    >
+                      <Plus className="w-3 h-3" /> Add Row
+                    </button>
+                  </div>
+                  <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+                    {tableRows.map((row, rowIdx) => (
+                      <div key={rowIdx} className="p-3 bg-slate-50/50 rounded-2xl border border-slate-150 relative group">
+                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                          <button
+                            type="button"
+                            onClick={() => setTableRows(prev => prev.filter((_, i) => i !== rowIdx))}
+                            className="p-1 bg-red-50 hover:bg-red-100 rounded text-red-500 transition duration-150"
+                            title="Delete Row"
+                          >
+                            <Trash className="w-3 h-3" />
+                          </button>
+                        </div>
+                        <div className="space-y-1.5 pt-2">
+                          {row.map((cell, colIdx) => (
+                            <div key={colIdx} className="flex gap-2 items-center">
+                              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider w-12 truncate">{tableHeaders[colIdx] || `Col ${colIdx+1}`}</span>
+                              <input
+                                type="text"
+                                value={cell}
+                                onChange={(e) => {
+                                  const updated = [...tableRows];
+                                  updated[rowIdx] = [...updated[rowIdx]];
+                                  updated[rowIdx][colIdx] = e.target.value;
+                                  setTableRows(updated);
+                                }}
+                                className={`flex-1 px-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-orange focus:border-brand-orange bg-white ${
+                                  colIdx === 0 ? "font-bold text-slate-800" : "text-slate-700"
+                                }`}
+                                placeholder={`Enter value...`}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
@@ -1084,18 +1169,57 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
               {/* Notice Table (Optional) */}
               {showTable && tableRows.length > 0 && (
                 <div className="px-4 py-2">
-                  <table className="w-full text-left border-collapse text-xs mt-2 border-y border-slate-200">
+                  <table className={`w-full text-${tableAlign} border-collapse text-xs mt-2 ${
+                    tableStyle === "boxed" 
+                      ? "border border-slate-300" 
+                      : "border-y border-slate-300"
+                  }`}>
                     <thead>
-                      <tr className="border-b border-slate-300">
-                        <th className="py-2.5 px-2 font-bold text-slate-900 w-[45%]">{tableHeader1 || "Time"}</th>
-                        <th className="py-2.5 px-2 font-bold text-slate-900 w-[55%]">{tableHeader2 || "Roll Numbers"}</th>
+                      <tr className={`${
+                        tableHeaderBg === "light-grey"
+                          ? "bg-slate-100 text-slate-800"
+                          : tableHeaderBg === "brand-blue"
+                          ? "bg-[#0E3B91] text-white"
+                          : tableHeaderBg === "brand-orange"
+                          ? "bg-[#F87D0E] text-white"
+                          : "text-slate-900"
+                      } ${tableStyle === "boxed" ? "" : "border-b border-slate-300"}`}>
+                        {tableHeaders.map((header, colIdx) => (
+                          <th
+                            key={colIdx}
+                            className={`py-2.5 px-3 font-bold ${
+                              tableStyle === "boxed" ? "border border-slate-300" : ""
+                            }`}
+                          >
+                            {header}
+                          </th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody>
                       {tableRows.map((row, idx) => (
-                        <tr key={idx} className="border-b border-slate-200 last:border-b-0">
-                          <td className="py-2.5 px-2 font-bold text-slate-900">{row.col1}</td>
-                          <td className="py-2.5 px-2 text-slate-800">{row.col2}</td>
+                        <tr
+                          key={idx}
+                          className={`${
+                            tableStyle === "boxed"
+                              ? ""
+                              : "border-b border-slate-200 last:border-b-0"
+                          } hover:bg-slate-50/50`}
+                        >
+                          {row.map((cell, colIdx) => (
+                            <td
+                              key={colIdx}
+                              className={`py-2.5 px-3 ${
+                                colIdx === 0 && tableHeaderBg !== "brand-blue" && tableHeaderBg !== "brand-orange"
+                                  ? "font-bold text-slate-900"
+                                  : "text-slate-800"
+                              } ${
+                                tableStyle === "boxed" ? "border border-slate-300" : ""
+                              }`}
+                            >
+                              {cell}
+                            </td>
+                          ))}
                         </tr>
                       ))}
                     </tbody>
