@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api, { parseImageTransform } from "../../lib/api";
+import { parseCandidateTransform } from "../../lib/api_elections";
 import { Crown, Vote, Trophy, X, Clock, Sparkles, Star, Award, Users } from "lucide-react";
 
 const BACKEND = process.env.REACT_APP_BACKEND_URL;
@@ -257,7 +258,7 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
                           : "ring-amber-400/50"
                     } overflow-hidden bg-gradient-to-br from-amber-50 to-amber-100 shadow-lg animate-pulse-ring`}>
                       {winnerPhoto ? (() => {
-                        const { style, cleanUrl } = parseImageTransform(winnerPhoto);
+                        const { style, cleanUrl } = parseCandidateTransform(winnerPhoto);
                         return <img src={cleanUrl} alt={winner.name} style={style} className="w-full h-full object-cover" />;
                       })() : (
                         <div className="w-full h-full flex items-center justify-center text-3xl font-headline font-black text-amber-600">
@@ -385,7 +386,7 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
                     isWinner ? isAppointed ? "ring-2 ring-blue-300/50" : "ring-2 ring-amber-300/50" : "ring-1 ring-slate-200"
                   }`}>
                     {candidatePhoto ? (() => {
-                      const { style, cleanUrl } = parseImageTransform(candidatePhoto);
+                      const { style, cleanUrl } = parseCandidateTransform(candidatePhoto);
                       return <img src={cleanUrl} alt={c.name} style={style} className="w-full h-full object-cover" />;
                     })() : (
                       <div className={`w-full h-full flex items-center justify-center text-sm font-bold ${
@@ -685,7 +686,7 @@ export default function StudentCouncil() {
                           : "bg-gradient-to-br from-brand-blue to-brand-orange"
                   }`}>
                     {p.photo_url ? (() => {
-                      const { style, cleanUrl } = parseImageTransform(fullUrl(p.photo_url));
+                      const { style, cleanUrl } = parseCandidateTransform(fullUrl(p.photo_url));
                       return <img src={cleanUrl} alt={p.name} style={style} className="w-full h-full rounded-full object-cover" />;
                     })() : <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-2xl font-headline font-bold text-brand-blue">{p.name?.[0]}</div>}
                   </div>

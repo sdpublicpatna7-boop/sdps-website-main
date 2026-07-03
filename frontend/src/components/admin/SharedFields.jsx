@@ -274,6 +274,15 @@ export function ImageOrUrlField({ value, onChange, subDir = "misc", aspect = "vi
 
   const { base, scale, x, y } = parseParams(value);
   const preset = ASPECT_PRESETS[aspect] || ASPECT_PRESETS.video;
+  const aspectWidths = {
+    square: 192,
+    round: 160,
+    portrait: 192,
+    video: 384,
+  };
+  const refWidth = aspectWidths[aspect] || 192;
+  const pctX = (x / refWidth) * 100;
+  const pctY = (y / refWidth) * 100;
 
   const openAdjustmentModal = () => {
     setTempScale(scale);
@@ -303,7 +312,7 @@ export function ImageOrUrlField({ value, onChange, subDir = "misc", aspect = "vi
               src={fullUrl(base)}
               alt="Preview"
               style={{
-                transform: `scale(${scale}) translate(${x}px, ${y}px)`,
+                transform: `scale(${scale}) translate(${pctX.toFixed(2)}%, ${pctY.toFixed(2)}%)`,
                 transformOrigin: "center center",
               }}
               className="w-full h-full object-cover"

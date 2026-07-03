@@ -91,3 +91,27 @@ export const scheduleResultsPublish = async (isoTime) => {
   return data;
 };
 
+export function parseCandidateTransform(urlStr) {
+  if (!urlStr || typeof urlStr !== "string") return { style: {}, cleanUrl: urlStr };
+  const parts = urlStr.split("?");
+  const cleanUrl = parts[0];
+  const query = parts[1];
+  if (!query) return { style: {}, cleanUrl };
+  const searchParams = new URLSearchParams(query);
+  const scale = parseFloat(searchParams.get("scale")) || 1;
+  const x = parseFloat(searchParams.get("x")) || 0;
+  const y = parseFloat(searchParams.get("y")) || 0;
+  
+  // Mockup square reference size is 192px
+  const pctX = (x / 192) * 100;
+  const pctY = (y / 192) * 100;
+  
+  return {
+    style: {
+      transform: `scale(${scale}) translate(${pctX.toFixed(2)}%, ${pctY.toFixed(2)}%)`,
+      transformOrigin: "center center",
+    },
+    cleanUrl,
+  };
+}
+

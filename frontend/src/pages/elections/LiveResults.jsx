@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import api, { parseImageTransform } from "../../lib/api";
+import api from "../../lib/api";
 import { Crown, Sparkles, Users, ShieldCheck, RefreshCw, Lock, Clock, Award } from "lucide-react";
-import { photoUrl } from "../../lib/api_elections";
+import { photoUrl, parseCandidateTransform } from "../../lib/api_elections";
 
 const renderCandPhoto = (photo, name, className = "w-full h-full object-cover") => {
   if (!photo) return null;
-  const { style, cleanUrl } = parseImageTransform(photo);
+  const { style, cleanUrl } = parseCandidateTransform(photo);
   return <img src={photoUrl(cleanUrl)} alt={name || ""} style={style} className={className} />;
 };
 

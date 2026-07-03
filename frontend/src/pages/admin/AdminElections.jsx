@@ -1,11 +1,11 @@
 import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
-import api, { parseImageTransform } from "../../lib/api";
+import api from "../../lib/api";
 import { ImageOrUrlField } from "../../components/admin/SharedFields";
 
 const renderCandPhoto = (photo, name, className = "w-full h-full object-cover") => {
   if (!photo) return null;
-  const { style, cleanUrl } = parseImageTransform(photo);
+  const { style, cleanUrl } = parseCandidateTransform(photo);
   return <img src={photoUrl(cleanUrl)} alt={name || ""} style={style} className={className} />;
 };
 import { Input } from "../../components/ui/input";
@@ -17,7 +17,7 @@ import {
   SlidersHorizontal, Minus, Wand2, Tv2, Check, FileImage, Vote, Star, Loader2
 } from "lucide-react";
 import { toast } from "sonner";
-import { photoUrl } from "../../lib/api_elections";
+import { photoUrl, parseCandidateTransform } from "../../lib/api_elections";
 import { uploadImage } from "../../lib/admin";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell, PieChart, Pie, Legend

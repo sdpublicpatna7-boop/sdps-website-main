@@ -2,12 +2,12 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Crown, Users, ShieldCheck, Sparkles, RefreshCw, BarChart3, Printer } from "lucide-react";
 import { Link } from "react-router-dom";
-import api, { parseImageTransform } from "../../lib/api";
-import { photoUrl } from "../../lib/api_elections";
+import api from "../../lib/api";
+import { photoUrl, parseCandidateTransform } from "../../lib/api_elections";
 
 const renderCandPhoto = (photo, name, className = "w-full h-full object-cover rounded-2xl") => {
   if (!photo) return null;
-  const { style, cleanUrl } = parseImageTransform(photo);
+  const { style, cleanUrl } = parseCandidateTransform(photo);
   return <img src={photoUrl(cleanUrl)} alt={name || ""} style={style} className={className} />;
 };
 
