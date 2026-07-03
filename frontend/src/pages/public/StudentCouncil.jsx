@@ -722,7 +722,7 @@ export default function StudentCouncil() {
                     const isDiscipline = (p.position || "").toLowerCase().includes("discipline");
 
                     return (
-                      <div key={p.id} className={`relative bg-white rounded-3xl p-5 border text-center beam-card transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${
+                      <div key={p.id} className={`w-full relative bg-white rounded-3xl p-5 border text-center beam-card transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${
                         p.is_captain
                           ? "border-brand-gold ring-2 ring-brand-gold/30"
                           : isVice
@@ -777,7 +777,7 @@ export default function StudentCouncil() {
                   };
 
                   return (
-                    <div key={group.key} className="space-y-6">
+                    <div key={group.key} className="space-y-6 w-full">
                       {groupCaptains.map(p => renderProfileCard(p))}
                       {groupVices.map(p => renderProfileCard(p))}
                     </div>
