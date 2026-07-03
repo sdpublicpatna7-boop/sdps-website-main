@@ -477,8 +477,23 @@ export default function StudentCouncil() {
         // Compile the live results — preserve ALL candidates per post
         const compiled = [];
         const dynamicProfiles = [];
-        const prefectsList = [];
         const viceCandidateIds = d.vice_candidate_ids || [];
+        const prefectsList = [];
+        const globalWinnerIds = new Set();
+
+        // Gather all winner/vice IDs first across all posts
+        (d.posts || []).forEach(post => {
+          const candidates = d.by_post?.[post.key] || [];
+          const sorted = [...candidates].sort((a, b) => b.votes - a.votes);
+          if (sorted.length > 0) {
+            const isAppointed = (d.appointed_post_keys || []).includes(post.key);
+            const nonViceCands = sorted.filter(c => !viceCandidateIds.includes(c.candidate_id));
+            const captainWinner = nonViceCands[0] || sorted[0];
+            const viceWinners = sorted.filter(c => viceCandidateIds.includes(c.candidate_id));
+            if (captainWinner) globalWinnerIds.add(captainWinner.candidate_id);
+            viceWinners.forEach(vw => globalWinnerIds.add(vw.candidate_id));
+          }
+        });
 
         (d.posts || []).forEach(post => {
           const candidates = d.by_post?.[post.key] || [];
@@ -486,14 +501,14 @@ export default function StudentCouncil() {
           if (sorted.length > 0) {
             const total = sorted.reduce((sum, c) => sum + (c.votes || 0), 0);
             const isAppointed = (d.appointed_post_keys || []).includes(post.key);
-
+            
             // Find Captain winner (highest votes who is NOT flagged as Vice)
             const nonViceCands = sorted.filter(c => !viceCandidateIds.includes(c.candidate_id));
             const captainWinner = nonViceCands[0] || sorted[0];
-
+            
             // Find Vice Captain winner(s) (candidates flagged in vice_candidate_ids under this post)
             const viceWinners = sorted.filter(c => viceCandidateIds.includes(c.candidate_id));
-
+            
             // Compile the list of spotlight winners
             const postWinners = [];
             postWinners.push({
@@ -506,7 +521,7 @@ export default function StudentCouncil() {
                 is_vice: true
               });
             });
-
+            
             compiled.push({
               id: post.key,
               year: "2026-27",
@@ -516,14 +531,14 @@ export default function StudentCouncil() {
               total_votes: total,
               winners: postWinners // Store spotlight winners!
             });
-
+            
             // If there's a winner, add them to dynamic profiles
             const maxVotes = sorted[0].votes || 0;
             const winners = maxVotes > 0 ? sorted.filter(c => c.votes === maxVotes) : [];
             // For appointed posts, the winner is every non-vice candidate
             const appointedWinners = isAppointed ? sorted.filter(c => !viceCandidateIds.includes(c.candidate_id)) : [];
             const finalWinners = isAppointed ? appointedWinners : winners;
-
+            
             finalWinners.forEach((winner, wIdx) => {
               // Only add if not flagged as Vice (since Vice will be added separately below)
               if (!viceCandidateIds.includes(winner.candidate_id)) {
@@ -540,7 +555,7 @@ export default function StudentCouncil() {
                 });
               }
             });
-
+            
             // Add Vice winners to dynamic profiles
             viceWinners.forEach((winner, wIdx) => {
               dynamicProfiles.push({
@@ -555,13 +570,10 @@ export default function StudentCouncil() {
                 order: (post.order || 0) + 0.5
               });
             });
-
-            // Collect remaining candidates as prefects (not captain, not vice)
-            const winnerIds = new Set();
-            finalWinners.forEach(w => winnerIds.add(w.candidate_id));
-            viceWinners.forEach(w => winnerIds.add(w.candidate_id));
+            
+            // Collect remaining candidates as prefects (not captain, not vice anywhere)
             sorted.forEach(c => {
-              if (!winnerIds.has(c.candidate_id)) {
+              if (!globalWinnerIds.has(c.candidate_id)) {
                 prefectsList.push({
                   id: `prefect-${post.key}-${c.candidate_id}`,
                   name: c.name,
@@ -751,7 +763,6 @@ export default function StudentCouncil() {
                       )}
                     </div>
                     <h4 className="font-headline font-semibold text-sm mt-2 text-slate-800 leading-tight">{pf.name}</h4>
-                    <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">{pf.post_title}</div>
                   </div>
                 ))}
               </div>
