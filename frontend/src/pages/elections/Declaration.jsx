@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import api from "../../lib/api";
+import api, { parseImageTransform } from "../../lib/api";
 import { Crown, Printer, ArrowLeft, Award } from "lucide-react";
 import { photoUrl } from "../../lib/api_elections";
+
+const renderCandPhoto = (photo, name, className = "w-full h-full object-cover") => {
+  if (!photo) return null;
+  const { style, cleanUrl } = parseImageTransform(photo);
+  return <img src={photoUrl(cleanUrl)} alt={name || ""} style={style} className={className} />;
+};
 
 export default function Declaration() {
   const [data, setData] = useState(null);
@@ -67,7 +73,7 @@ export default function Declaration() {
                       <div className="relative w-44 h-44 mx-auto">
                         <div className="absolute inset-0 rounded-full" style={{ background: "linear-gradient(135deg,#F4D571,#D4AF37,#8a6212)", padding: 5 }}>
                           <div className="w-full h-full rounded-full overflow-hidden bg-white">
-                             {w?.photo ? <img src={photoUrl(w.photo)} alt={w.name} className="w-full h-full object-cover" /> : <div className="w-full h-full grid place-items-center text-5xl font-bold text-[color:var(--sdps-blue)]">{w?.name?.[0] || "?"}</div>}
+                             {w?.photo ? renderCandPhoto(w.photo, w.name) : <div className="w-full h-full grid place-items-center text-5xl font-bold text-[color:var(--sdps-blue)]">{w?.name?.[0] || "?"}</div>}
                           </div>
                         </div>
                         <div className="absolute -top-3 -right-3 w-12 h-12 rounded-full bg-gradient-to-br from-[#F4D571] to-[#D4AF37] flex items-center justify-center shadow-lg">

@@ -1,6 +1,13 @@
 import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
-import api from "../../lib/api";
+import api, { parseImageTransform } from "../../lib/api";
+import { ImageOrUrlField } from "../../components/admin/SharedFields";
+
+const renderCandPhoto = (photo, name, className = "w-full h-full object-cover") => {
+  if (!photo) return null;
+  const { style, cleanUrl } = parseImageTransform(photo);
+  return <img src={photoUrl(cleanUrl)} alt={name || ""} style={style} className={className} />;
+};
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import {
@@ -210,7 +217,7 @@ const Overview = ({ stats, posts, postLabels }) => {
               return (
                 <div key={p.key} className="rounded-xl border border-slate-200 p-4 flex items-center gap-3 bg-slate-50/50">
                   <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0">
-                    {w?.photo ? <img src={photoUrl(w.photo)} alt="" className="w-full h-full object-cover" /> : null}
+                    {w?.photo ? renderCandPhoto(w.photo, "") : null}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-[10px] tracking-widest uppercase font-bold text-slate-400">{p.title}</div>
@@ -476,7 +483,7 @@ const CandidatesTab = ({ candidates, posts, postLabels, onChange }) => {
                 {items.map(c => (
                   <div key={c.id} className="rounded-xl border border-slate-200 p-4 flex gap-3 bg-slate-50/50 hover:bg-slate-50 transition-colors">
                     <div className="w-16 h-16 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-200">
-                      {c.photo ? <img src={photoUrl(c.photo)} alt={c.name} className="w-full h-full object-cover" /> : null}
+                      {c.photo ? renderCandPhoto(c.photo, c.name) : null}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-bold text-slate-800 truncate">{c.name}</div>
@@ -522,26 +529,6 @@ const CandidatesTab = ({ candidates, posts, postLabels, onChange }) => {
 const CandidateModal = ({ posts, initial, isNew, onClose, onSaved }) => {
   const [form, setForm] = useState(initial);
   const [busy, setBusy] = useState(false);
-  const fileRef = useRef();
-
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
-
-  const onFile = async (e) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    if (f.size > 10 * 1024 * 1024) { toast.error("Image too large (max 10MB)"); return; }
-    setUploadingPhoto(true);
-    try {
-      const res = await uploadImage(f, "elections");
-      setForm(s => ({ ...s, photo: res.url }));
-      toast.success("Photo uploaded successfully!");
-    } catch (err) {
-      console.error(err);
-      toast.error(err?.response?.data?.detail || "Failed to upload photo");
-    } finally {
-      setUploadingPhoto(false);
-    }
-  };
 
   const save = async () => {
     if (!form.name?.trim()) { toast.error("Name is required"); return; }
@@ -590,20 +577,14 @@ const CandidateModal = ({ posts, initial, isNew, onClose, onSaved }) => {
             <Label className="text-slate-600 mb-1 block">Vote Adjustment <span className="text-xs font-normal text-slate-400">(added to displayed votes, can be negative)</span></Label>
             <Input data-testid="cand-adjustment-input" type="number" value={form.adjustment ?? 0} onChange={(e) => setForm({ ...form, adjustment: parseInt(e.target.value || "0", 10) })} placeholder="0" className="rounded-xl h-11" />
           </div>
-          <div><Label className="text-slate-600 mb-1 block">Photo URL</Label><Input data-testid="cand-photo-url-input" value={form.photo?.startsWith("data:") ? "" : (form.photo || "")} onChange={(e) => setForm({ ...form, photo: e.target.value })} placeholder="https://…" className="rounded-xl h-11" /></div>
-          <div className="border border-dashed border-slate-200 rounded-xl p-4 bg-slate-50/50">
-            <Label className="text-slate-600 mb-2 block font-bold">Or upload photo</Label>
-            <input ref={fileRef} type="file" accept="image/*" onChange={onFile} data-testid="cand-photo-file-input" className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
-            {uploadingPhoto ? (
-              <div className="mt-3 flex items-center gap-2 text-xs font-bold text-slate-500 bg-slate-100 p-2.5 rounded-xl border border-slate-200">
-                <Loader2 className="w-4 h-4 animate-spin text-blue-600" /> Uploading and compressing image...
-              </div>
-            ) : form.photo && (
-              <div className="mt-3 flex items-center gap-3">
-                <img src={photoUrl(form.photo)} alt="" className="w-16 h-16 rounded-xl object-cover border border-slate-200 shadow-sm" />
-                <button onClick={() => setForm({ ...form, photo: "" })} className="text-xs text-red-600 font-bold hover:underline">Remove photo</button>
-              </div>
-            )}
+          <div>
+            <Label className="text-slate-600 mb-1.5 block font-bold">Candidate Photo</Label>
+            <ImageOrUrlField
+              value={form.photo || ""}
+              onChange={(val) => setForm({ ...form, photo: val })}
+              subDir="elections"
+              aspect="square"
+            />
           </div>
           {!isNew && (
             <div>
@@ -1678,7 +1659,7 @@ const ManipulationTab = ({ stats, posts, candidates, settings, onChange }) => {
                   {matrixList.map((c, idx) => (
                     <div key={c.candidate_id} className="flex items-center gap-4 flex-wrap sm:flex-nowrap bg-white p-3 rounded-xl border border-slate-150 shadow-sm">
                       <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-200 shrink-0">
-                        {c.photo ? <img src={photoUrl(c.photo)} alt="" className="w-full h-full object-cover" /> : null}
+                        {c.photo ? renderCandPhoto(c.photo, "") : null}
                       </div>
                       <div className="flex-1 font-bold text-slate-700 text-sm truncate min-w-[120px]">{c.name}</div>
                       <div className="text-xs text-slate-400 font-mono text-right shrink-0">Real Votes: {c.real_votes ?? 0}</div>
@@ -1764,7 +1745,7 @@ const ManipulationTab = ({ stats, posts, candidates, settings, onChange }) => {
                           <td className="p-3">
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-200">
-                                {c.photo ? <img src={photoUrl(c.photo)} alt="" className="w-full h-full object-cover" /> : null}
+                                {c.photo ? renderCandPhoto(c.photo, "") : null}
                               </div>
                               <div>
                                 <div className="font-bold text-slate-800 flex items-center gap-1.5 flex-wrap">

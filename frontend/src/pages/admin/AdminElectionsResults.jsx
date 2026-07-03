@@ -2,8 +2,14 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Crown, Users, ShieldCheck, Sparkles, RefreshCw, BarChart3, Printer } from "lucide-react";
 import { Link } from "react-router-dom";
-import api from "../../lib/api";
+import api, { parseImageTransform } from "../../lib/api";
 import { photoUrl } from "../../lib/api_elections";
+
+const renderCandPhoto = (photo, name, className = "w-full h-full object-cover rounded-2xl") => {
+  if (!photo) return null;
+  const { style, cleanUrl } = parseImageTransform(photo);
+  return <img src={photoUrl(cleanUrl)} alt={name || ""} style={style} className={className} />;
+};
 
 export default function AdminElectionsResults() {
   const [data, setData] = useState(null);
@@ -120,7 +126,7 @@ export default function AdminElectionsResults() {
                           : "bg-gradient-to-br from-slate-200 to-slate-300 border-slate-100"
                       }`}>
                         {c.photo ? (
-                          <img src={photoUrl(c.photo)} alt={c.name} className="w-full h-full object-cover rounded-2xl" />
+                          renderCandPhoto(c.photo, c.name)
                         ) : (
                           c.name?.[0]
                         )}

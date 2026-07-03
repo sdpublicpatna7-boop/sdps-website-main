@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react";
-import api from "../../lib/api";
+import api, { parseImageTransform } from "../../lib/api";
 import { Crown, Sparkles, Users, ShieldCheck, RefreshCw, Lock, Clock, Award } from "lucide-react";
 import { photoUrl } from "../../lib/api_elections";
+
+const renderCandPhoto = (photo, name, className = "w-full h-full object-cover") => {
+  if (!photo) return null;
+  const { style, cleanUrl } = parseImageTransform(photo);
+  return <img src={photoUrl(cleanUrl)} alt={name || ""} style={style} className={className} />;
+};
 
 export default function LiveResults() {
   const [data, setData] = useState(null);
@@ -240,7 +246,7 @@ const PostBlock = ({ post, list, appointedKeys = [], viceCandidateIds = [] }) =>
               <div key={c.candidate_id || c.name} className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-blue-100">
                   {c.photo ? (
-                    <img src={photoUrl(c.photo)} alt={c.name} className="w-full h-full object-cover" />
+                    renderCandPhoto(c.photo, c.name)
                   ) : (
                     <div className="w-full h-full grid place-items-center font-bold text-[color:var(--sdps-blue)]">
                       {c.name?.[0]}

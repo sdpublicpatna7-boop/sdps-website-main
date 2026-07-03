@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import api from "../../lib/api";
+import api, { parseImageTransform } from "../../lib/api";
 import { Crown, Vote, Trophy, X, Clock, Sparkles, Star, Award, Users } from "lucide-react";
 
 const BACKEND = process.env.REACT_APP_BACKEND_URL;
@@ -256,9 +256,10 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
                           ? "ring-blue-400/50"
                           : "ring-amber-400/50"
                     } overflow-hidden bg-gradient-to-br from-amber-50 to-amber-100 shadow-lg animate-pulse-ring`}>
-                      {winnerPhoto ? (
-                        <img src={winnerPhoto} alt={winner.name} className="w-full h-full object-cover" />
-                      ) : (
+                      {winnerPhoto ? (() => {
+                        const { style, cleanUrl } = parseImageTransform(winnerPhoto);
+                        return <img src={cleanUrl} alt={winner.name} style={style} className="w-full h-full object-cover" />;
+                      })() : (
                         <div className="w-full h-full flex items-center justify-center text-3xl font-headline font-black text-amber-600">
                           {winner.name?.[0]}
                         </div>
@@ -383,9 +384,10 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
                   <div className={`w-10 h-10 rounded-xl overflow-hidden shrink-0 ${
                     isWinner ? isAppointed ? "ring-2 ring-blue-300/50" : "ring-2 ring-amber-300/50" : "ring-1 ring-slate-200"
                   }`}>
-                    {candidatePhoto ? (
-                      <img src={candidatePhoto} alt={c.name} className="w-full h-full object-cover" />
-                    ) : (
+                    {candidatePhoto ? (() => {
+                      const { style, cleanUrl } = parseImageTransform(candidatePhoto);
+                      return <img src={cleanUrl} alt={c.name} style={style} className="w-full h-full object-cover" />;
+                    })() : (
                       <div className={`w-full h-full flex items-center justify-center text-sm font-bold ${
                         isWinner ? isAppointed ? "bg-blue-100 text-blue-700" : "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-500"
                       }`}>
@@ -682,7 +684,10 @@ export default function StudentCouncil() {
                           ? "bg-gradient-to-br from-blue-400 to-blue-600"
                           : "bg-gradient-to-br from-brand-blue to-brand-orange"
                   }`}>
-                    {p.photo_url ? <img src={fullUrl(p.photo_url)} alt={p.name} className="w-full h-full rounded-full object-cover" /> : <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-2xl font-headline font-bold text-brand-blue">{p.name?.[0]}</div>}
+                    {p.photo_url ? (() => {
+                      const { style, cleanUrl } = parseImageTransform(fullUrl(p.photo_url));
+                      return <img src={cleanUrl} alt={p.name} style={style} className="w-full h-full rounded-full object-cover" />;
+                    })() : <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-2xl font-headline font-bold text-brand-blue">{p.name?.[0]}</div>}
                   </div>
                   <h3 className="font-headline font-semibold mt-3">{p.name}</h3>
                   <div className="text-xs text-brand-orange uppercase tracking-wider font-bold mt-1">{p.position}</div>
