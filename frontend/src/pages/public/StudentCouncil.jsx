@@ -677,68 +677,114 @@ export default function StudentCouncil() {
         {/* ── PROFILES TAB ── */}
         {tab === "profiles" && (
           <>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {profiles.length === 0 && <div className="col-span-4 text-center text-brand-ink/60 py-10 italic">Profiles coming soon.</div>}
-              {profiles.map(p => {
-              const isVice = (p.position || "").toLowerCase().includes("vice");
-              const isAppointed = p.role_type === "Appointed by School Management" || p.role_type === "Appointed by Admin";
-              const isDiscipline = (p.position || "").toLowerCase().includes("discipline");
+            {profiles.length === 0 ? (
+              <div className="text-center text-brand-ink/60 py-10 italic">Profiles coming soon.</div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[
+                  {
+                    key: "school_captain",
+                    title: "School Captain",
+                    captainKeywords: ["school captain"],
+                    viceKeywords: ["vice school captain"],
+                  },
+                  {
+                    key: "sports_skipper",
+                    title: "Sports Skipper",
+                    captainKeywords: ["sports skipper"],
+                    viceKeywords: ["vice sports skipper"],
+                  },
+                  {
+                    key: "cultural_head",
+                    title: "Cultural Head",
+                    captainKeywords: ["cultural head"],
+                    viceKeywords: ["vice cultural head"],
+                  },
+                  {
+                    key: "discipline_head",
+                    title: "Discipline Head",
+                    captainKeywords: ["discipline head"],
+                    viceKeywords: ["vice discipline head"],
+                  }
+                ].map(group => {
+                  const groupCaptains = profiles.filter(p => {
+                    const pos = (p.position || "").toLowerCase();
+                    return group.captainKeywords.some(kw => pos === kw);
+                  });
+                  const groupVices = profiles.filter(p => {
+                    const pos = (p.position || "").toLowerCase();
+                    return group.viceKeywords.some(kw => pos === kw);
+                  });
 
-              return (
-                <div key={p.id} className={`relative bg-white rounded-3xl p-5 border text-center beam-card transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${
-                  p.is_captain
-                    ? "border-brand-gold ring-2 ring-brand-gold/30"
-                    : isVice
-                      ? "border-slate-300 ring-1 ring-slate-200/50"
-                      : isDiscipline
-                        ? "border-blue-300 ring-1 ring-blue-200/50"
-                        : "border-black/5"
-                }`}>
-                  {/* Badge */}
-                  {p.is_captain && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-gold-grad text-white text-[10px] uppercase tracking-wider rounded-full font-headline font-bold shadow-sm whitespace-nowrap">
-                      {p.position || "Captain"}
-                    </div>
-                  )}
-                  {isVice && !p.is_captain && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-gradient-to-r from-slate-400 to-slate-500 text-white text-[10px] uppercase tracking-wider rounded-full font-headline font-bold shadow-sm">
-                      Vice
-                    </div>
-                  )}
-                  {isDiscipline && !p.is_captain && !isVice && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-[10px] uppercase tracking-wider rounded-full font-headline font-bold shadow-sm">
-                      Discipline
-                    </div>
-                  )}
+                  const renderProfileCard = (p) => {
+                    const isVice = (p.position || "").toLowerCase().includes("vice");
+                    const isAppointed = p.role_type === "Appointed by School Management" || p.role_type === "Appointed by Admin";
+                    const isDiscipline = (p.position || "").toLowerCase().includes("discipline");
 
-                  <div className={`w-24 h-24 rounded-full mx-auto overflow-hidden p-1 ${
-                    p.is_captain
-                      ? "bg-gradient-to-br from-brand-gold to-amber-600"
-                      : isVice
-                        ? "bg-gradient-to-br from-slate-300 to-slate-500"
-                        : isDiscipline
-                          ? "bg-gradient-to-br from-blue-400 to-blue-600"
-                          : "bg-gradient-to-br from-brand-blue to-brand-orange"
-                  }`}>
-                    {p.photo_url ? (() => {
-                      const { style, cleanUrl } = parseCandidateTransform(fullUrl(p.photo_url));
-                      return <img src={cleanUrl} alt={p.name} style={style} className="w-full h-full rounded-full object-cover" />;
-                    })() : <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-2xl font-headline font-bold text-brand-blue">{p.name?.[0]}</div>}
-                  </div>
-                  <h3 className="font-headline font-semibold mt-3">{p.name}</h3>
-                  <div className="text-xs text-brand-orange uppercase tracking-wider font-bold mt-1">{p.position}</div>
-                  {isAppointed && (
-                    <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200/60 text-blue-600 text-[9px] uppercase tracking-wider font-extrabold mt-1.5">
-                      <Star className="w-2.5 h-2.5" /> Appointed by School Management
+                    return (
+                      <div key={p.id} className={`relative bg-white rounded-3xl p-5 border text-center beam-card transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${
+                        p.is_captain
+                          ? "border-brand-gold ring-2 ring-brand-gold/30"
+                          : isVice
+                            ? "border-slate-300 ring-1 ring-slate-200/50"
+                            : isDiscipline
+                              ? "border-blue-300 ring-1 ring-blue-200/50"
+                              : "border-black/5"
+                      }`}>
+                        {/* Badge */}
+                        {p.is_captain && (
+                          <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-gold-grad text-white text-[10px] uppercase tracking-wider rounded-full font-headline font-bold shadow-sm whitespace-nowrap">
+                            {p.position || "Captain"}
+                          </div>
+                        )}
+                        {isVice && !p.is_captain && (
+                          <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-gradient-to-r from-slate-400 to-slate-500 text-white text-[10px] uppercase tracking-wider rounded-full font-headline font-bold shadow-sm">
+                            Vice
+                          </div>
+                        )}
+                        {isDiscipline && !p.is_captain && !isVice && (
+                          <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-[10px] uppercase tracking-wider rounded-full font-headline font-bold shadow-sm">
+                            Discipline
+                          </div>
+                        )}
+
+                        <div className={`w-24 h-24 rounded-full mx-auto overflow-hidden p-1 ${
+                          p.is_captain
+                            ? "bg-gradient-to-br from-brand-gold to-amber-600"
+                            : isVice
+                              ? "bg-gradient-to-br from-slate-300 to-slate-500"
+                              : isDiscipline
+                                ? "bg-gradient-to-br from-blue-400 to-blue-600"
+                                : "bg-gradient-to-br from-brand-blue to-brand-orange"
+                        }`}>
+                          {p.photo_url ? (() => {
+                            const { style, cleanUrl } = parseCandidateTransform(fullUrl(p.photo_url));
+                            return <img src={cleanUrl} alt={p.name} style={style} className="w-full h-full rounded-full object-cover" />;
+                          })() : <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-2xl font-headline font-bold text-brand-blue">{p.name?.[0]}</div>}
+                        </div>
+                        <h3 className="font-headline font-semibold mt-3">{p.name}</h3>
+                        <div className="text-xs text-brand-orange uppercase tracking-wider font-bold mt-1">{p.position}</div>
+                        {isAppointed && (
+                          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200/60 text-blue-600 text-[9px] uppercase tracking-wider font-extrabold mt-1.5">
+                            <Star className="w-2.5 h-2.5" /> Appointed by School Management
+                          </div>
+                        )}
+                        {p.house && <div className="text-xs text-brand-ink/60 mt-1">{p.house} House · {p.year}</div>}
+                        {!p.house && p.year && <div className="text-xs text-brand-ink/60 mt-1">{p.year}</div>}
+                        {p.bio && <p className="text-xs text-brand-ink/70 mt-3 line-clamp-3">{p.bio}</p>}
+                      </div>
+                    );
+                  };
+
+                  return (
+                    <div key={group.key} className="space-y-6">
+                      {groupCaptains.map(p => renderProfileCard(p))}
+                      {groupVices.map(p => renderProfileCard(p))}
                     </div>
-                  )}
-                  {p.house && <div className="text-xs text-brand-ink/60 mt-1">{p.house} House · {p.year}</div>}
-                  {!p.house && p.year && <div className="text-xs text-brand-ink/60 mt-1">{p.year}</div>}
-                  {p.bio && <p className="text-xs text-brand-ink/70 mt-3 line-clamp-3">{p.bio}</p>}
-                </div>
-              );
-            })}
-          </div>
+                  );
+                })}
+              </div>
+            )}
 
           {/* ── SCHOOL PREFECTS SECTION ── */}
           {prefects.length > 0 && (
