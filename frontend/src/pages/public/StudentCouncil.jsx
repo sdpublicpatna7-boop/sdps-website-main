@@ -294,7 +294,7 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
                         </>
                       )}
                     </div>
-                    <h4 className="font-headline text-2xl font-black text-slate-900 tracking-tight truncate">
+                    <h4 className="font-headline text-xl font-black text-slate-900 tracking-tight leading-tight break-words">
                       {winner.name}
                     </h4>
                     {winner.symbol && (
