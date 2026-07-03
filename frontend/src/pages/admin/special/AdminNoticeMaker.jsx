@@ -406,7 +406,6 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
           /* Hide editor columns, sidebar, layouts, header, footer */
           body * {
             visibility: hidden;
-            background: none !important;
           }
           #notice-a4-print-area, #notice-a4-print-area * {
             visibility: visible;
@@ -423,6 +422,8 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
             border: none !important;
             box-sizing: border-box;
             background-color: white !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
           @page {
             size: A4 portrait;
