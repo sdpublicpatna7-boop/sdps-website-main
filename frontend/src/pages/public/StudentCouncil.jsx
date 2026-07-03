@@ -349,7 +349,7 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
             <span className="text-[10px] font-bold text-slate-300 ml-auto">{allCandidates.length} total</span>
           </div>
 
-          <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-2">
             {allCandidates.map((c, i) => {
               const pct = totalVotes > 0 ? Math.round((c.votes / totalVotes) * 100) : 0;
               const isWinner = i === 0 && c.votes > 0;
@@ -358,20 +358,20 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
               return (
                 <div
                   key={c.candidate_id || c.name}
-                  className={`flex items-center gap-3 p-3 rounded-2xl transition-all duration-300 ${
+                  className={`flex items-center gap-2 p-2 rounded-xl transition-all duration-300 ${
                     isWinner
                       ? isAppointed
-                        ? "bg-blue-50/50 border border-blue-200/50 shadow-sm"
-                        : "bg-gradient-to-r from-amber-50/80 to-amber-100/50 border border-amber-200/50 shadow-sm"
-                      : "bg-slate-50/60 border border-transparent hover:border-slate-200/60 hover:bg-slate-100/60"
+                        ? "bg-blue-50/50 border border-blue-200/50"
+                        : "bg-amber-50/60 border border-amber-200/50"
+                      : "bg-slate-50/60 border border-transparent"
                   }`}
                 >
                   {/* Rank badge */}
-                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${
+                  <div className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black shrink-0 ${
                     isWinner
                       ? isAppointed
-                        ? "bg-blue-500 text-white shadow-sm"
-                        : "bg-gradient-to-br from-amber-400 to-amber-500 text-white shadow-sm"
+                        ? "bg-blue-500 text-white"
+                        : "bg-gradient-to-br from-amber-400 to-amber-500 text-white"
                       : i === 1
                         ? "bg-gradient-to-br from-slate-300 to-slate-400 text-white"
                         : i === 2
@@ -382,14 +382,14 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
                   </div>
 
                   {/* Photo */}
-                  <div className={`w-10 h-10 rounded-xl overflow-hidden shrink-0 ${
-                    isWinner ? isAppointed ? "ring-2 ring-blue-300/50" : "ring-2 ring-amber-300/50" : "ring-1 ring-slate-200"
+                  <div className={`w-8 h-8 rounded-lg overflow-hidden shrink-0 ${
+                    isWinner ? isAppointed ? "ring-1 ring-blue-300/50" : "ring-1 ring-amber-300/50" : "ring-1 ring-slate-200"
                   }`}>
                     {candidatePhoto ? (() => {
                       const { style, cleanUrl } = parseCandidateTransform(candidatePhoto);
                       return <img src={cleanUrl} alt={c.name} style={style} className="w-full h-full object-cover" />;
                     })() : (
-                      <div className={`w-full h-full flex items-center justify-center text-sm font-bold ${
+                      <div className={`w-full h-full flex items-center justify-center text-xs font-bold ${
                         isWinner ? isAppointed ? "bg-blue-100 text-blue-700" : "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-500"
                       }`}>
                         {c.name?.[0]}
@@ -397,46 +397,35 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
                     )}
                   </div>
 
-                  {/* Name + bar */}
+                  {/* Name + votes */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className={`text-sm font-bold truncate flex items-center gap-1.5 ${isWinner ? isAppointed ? "text-blue-900" : "text-amber-900" : "text-slate-700"}`}>
-                        {c.name}
-                        {isWinner && (isAppointed ? <Star className="w-3.5 h-3.5 text-blue-500 fill-blue-500 shrink-0" /> : <Crown className="w-3.5 h-3.5 text-amber-500 shrink-0" />)}
-                      </span>
-                      {!isAppointed && (
-                        <span className={`text-sm font-extrabold tabular-nums shrink-0 ml-2 ${isWinner ? "text-amber-700" : "text-slate-600"}`}>
-                          {c.votes} <span className={`text-xs font-bold ${isWinner ? "text-amber-500" : "text-slate-400"}`}>({pct}%)</span>
-                        </span>
-                      )}
-                      {isAppointed && isWinner && (
-                        <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100 shrink-0 ml-2 uppercase tracking-wide">
-                          Appointed
-                        </span>
-                      )}
+                    <div className={`text-xs font-bold truncate flex items-center gap-1 ${isWinner ? isAppointed ? "text-blue-900" : "text-amber-900" : "text-slate-700"}`}>
+                      {c.name}
+                      {isWinner && (isAppointed ? <Star className="w-3 h-3 text-blue-500 fill-blue-500 shrink-0" /> : <Crown className="w-3 h-3 text-amber-500 shrink-0" />)}
                     </div>
                     {!isAppointed && (
-                      <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
-                        <div
-                          className="h-full rounded-full animate-bar-fill"
-                          style={{
-                            width: `${pct}%`,
-                            animationDelay: `${index * 0.2 + i * 0.15 + 0.3}s`,
-                            background: isWinner
-                              ? "linear-gradient(90deg, #f59e0b, #d97706)"
-                              : i === 1
-                                ? "linear-gradient(90deg, #94a3b8, #64748b)"
-                                : i === 2
-                                  ? "linear-gradient(90deg, #fb923c, #ea580c)"
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                          <div
+                            className="h-full rounded-full animate-bar-fill"
+                            style={{
+                              width: `${pct}%`,
+                              animationDelay: `${index * 0.2 + i * 0.1 + 0.3}s`,
+                              background: isWinner
+                                ? "linear-gradient(90deg, #f59e0b, #d97706)"
+                                : i === 1
+                                  ? "linear-gradient(90deg, #94a3b8, #64748b)"
                                   : "linear-gradient(90deg, #cbd5e1, #94a3b8)"
-                          }}
-                        />
+                            }}
+                          />
+                        </div>
+                        <span className={`text-[10px] font-extrabold tabular-nums shrink-0 ${isWinner ? "text-amber-700" : "text-slate-500"}`}>
+                          {c.votes} <span className="text-slate-400">({pct}%)</span>
+                        </span>
                       </div>
                     )}
-                    {c.symbol && (
-                      <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-1">
-                        Symbol: {c.symbol}
-                      </div>
+                    {isAppointed && isWinner && (
+                      <span className="text-[8px] font-black text-blue-600 uppercase tracking-wide">Appointed</span>
                     )}
                   </div>
                 </div>
