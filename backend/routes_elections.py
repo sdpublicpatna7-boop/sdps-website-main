@@ -22,6 +22,19 @@ headers = {
 
 elections_router = APIRouter(prefix="/api/elections", tags=["elections"])
 
+def process_base64_photo(photo_str: str) -> str:
+    if photo_str and photo_str.startswith("data:") and ";base64," in photo_str:
+        try:
+            import base64
+            from image_utils import compress_and_save
+            header, data = photo_str.split(";base64,", 1)
+            file_bytes = base64.b64decode(data)
+            res = compress_and_save(file_bytes, sub_dir="elections")
+            return res["url"]
+        except Exception as e:
+            logger.error(f"Failed to process base64 candidate photo: {e}")
+    return photo_str
+
 # Models
 class VoteCastPayload(BaseModel):
     admission_no: str
@@ -249,6 +262,8 @@ async def delete_post(key: str):
 @elections_router.post("/candidates")
 async def create_candidate(payload: CandidateCreatePayload):
     await check_supabase()
+    photo_url = process_base64_photo(payload.photo)
+    symbol_image_url = process_base64_photo(payload.symbol_image)
     async with httpx.AsyncClient() as client:
         r = await client.post(
             f"{SUPABASE_URL}/rest/v1/election_candidates",
@@ -256,8 +271,8 @@ async def create_candidate(payload: CandidateCreatePayload):
                 "name": payload.name,
                 "post_key": payload.post_key,
                 "symbol": payload.symbol,
-                "photo": payload.photo,
-                "symbol_image": payload.symbol_image
+                "photo": photo_url,
+                "symbol_image": symbol_image_url
             },
             headers=headers
         )
@@ -815,7 +830,10 @@ async def update_candidate_admin(cid: str, request: Request, admin = Depends(get
     update_data = {}
     for key in ["name", "symbol", "photo", "symbol_image", "adjustment", "post_key"]:
         if key in body:
-            update_data[key] = body[key]
+            val = body[key]
+            if key in ["photo", "symbol_image"] and val:
+                val = process_base64_photo(val)
+            update_data[key] = val
 
     async with httpx.AsyncClient() as client:
         r = await client.patch(

@@ -1,4 +1,4 @@
-import api from "./api";
+import api, { getBackendUrl } from "./api";
 
 // Public Endpoints
 export const getElectionSettings = async () => {
@@ -34,7 +34,7 @@ export const castVote = async (admissionNo, selections) => {
 export const photoUrl = (photo) => {
   if (!photo) return null;
   if (/^(https?:|data:)/i.test(photo)) return photo;
-  const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
+  const BACKEND_URL = getBackendUrl();
   if (photo.startsWith("/")) return `${BACKEND_URL.replace(/\/+$/, "")}${photo}`;
   return photo;
 };

@@ -10,6 +10,8 @@ import {
   SlidersHorizontal, Minus, Wand2, Tv2, Check, FileImage, Vote, Star, Loader2
 } from "lucide-react";
 import { toast } from "sonner";
+import { photoUrl } from "../../lib/api_elections";
+import { uploadImage } from "../../lib/admin";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell, PieChart, Pie, Legend
 } from "recharts";
@@ -208,7 +210,7 @@ const Overview = ({ stats, posts, postLabels }) => {
               return (
                 <div key={p.key} className="rounded-xl border border-slate-200 p-4 flex items-center gap-3 bg-slate-50/50">
                   <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0">
-                    {w?.photo ? <img src={w.photo} alt="" className="w-full h-full object-cover" /> : null}
+                    {w?.photo ? <img src={photoUrl(w.photo)} alt="" className="w-full h-full object-cover" /> : null}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-[10px] tracking-widest uppercase font-bold text-slate-400">{p.title}</div>
@@ -474,7 +476,7 @@ const CandidatesTab = ({ candidates, posts, postLabels, onChange }) => {
                 {items.map(c => (
                   <div key={c.id} className="rounded-xl border border-slate-200 p-4 flex gap-3 bg-slate-50/50 hover:bg-slate-50 transition-colors">
                     <div className="w-16 h-16 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-200">
-                      {c.photo ? <img src={c.photo} alt={c.name} className="w-full h-full object-cover" /> : null}
+                      {c.photo ? <img src={photoUrl(c.photo)} alt={c.name} className="w-full h-full object-cover" /> : null}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-bold text-slate-800 truncate">{c.name}</div>
@@ -522,13 +524,23 @@ const CandidateModal = ({ posts, initial, isNew, onClose, onSaved }) => {
   const [busy, setBusy] = useState(false);
   const fileRef = useRef();
 
-  const onFile = (e) => {
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  const onFile = async (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    if (f.size > 1.5 * 1024 * 1024) { toast.error("Image too large (max 1.5MB)"); return; }
-    const reader = new FileReader();
-    reader.onload = () => setForm(s => ({ ...s, photo: reader.result }));
-    reader.readAsDataURL(f);
+    if (f.size > 10 * 1024 * 1024) { toast.error("Image too large (max 10MB)"); return; }
+    setUploadingPhoto(true);
+    try {
+      const res = await uploadImage(f, "elections");
+      setForm(s => ({ ...s, photo: res.url }));
+      toast.success("Photo uploaded successfully!");
+    } catch (err) {
+      console.error(err);
+      toast.error(err?.response?.data?.detail || "Failed to upload photo");
+    } finally {
+      setUploadingPhoto(false);
+    }
   };
 
   const save = async () => {
@@ -582,9 +594,13 @@ const CandidateModal = ({ posts, initial, isNew, onClose, onSaved }) => {
           <div className="border border-dashed border-slate-200 rounded-xl p-4 bg-slate-50/50">
             <Label className="text-slate-600 mb-2 block font-bold">Or upload photo</Label>
             <input ref={fileRef} type="file" accept="image/*" onChange={onFile} data-testid="cand-photo-file-input" className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
-            {form.photo && (
+            {uploadingPhoto ? (
+              <div className="mt-3 flex items-center gap-2 text-xs font-bold text-slate-500 bg-slate-100 p-2.5 rounded-xl border border-slate-200">
+                <Loader2 className="w-4 h-4 animate-spin text-blue-600" /> Uploading and compressing image...
+              </div>
+            ) : form.photo && (
               <div className="mt-3 flex items-center gap-3">
-                <img src={form.photo} alt="" className="w-16 h-16 rounded-xl object-cover border border-slate-200 shadow-sm" />
+                <img src={photoUrl(form.photo)} alt="" className="w-16 h-16 rounded-xl object-cover border border-slate-200 shadow-sm" />
                 <button onClick={() => setForm({ ...form, photo: "" })} className="text-xs text-red-600 font-bold hover:underline">Remove photo</button>
               </div>
             )}
@@ -625,8 +641,8 @@ const BulkCandidateModal = ({ posts, initialPostKey, onClose, onSaved }) => {
     if (selectedFiles.length === 0) return;
 
     selectedFiles.forEach((file, idx) => {
-      if (file.size > 1.5 * 1024 * 1024) {
-        toast.error(`"${file.name}" is too large (max 1.5MB). Skipping.`);
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`"${file.name}" is too large (max 10MB). Skipping.`);
         return;
       }
 
@@ -685,11 +701,12 @@ const BulkCandidateModal = ({ posts, initialPostKey, onClose, onSaved }) => {
       setFiles(prev => prev.map(f => f.tempId === item.tempId ? { ...f, status: "uploading" } : f));
 
       try {
+        const uploadRes = await uploadImage(item.file, "elections");
         await api.post("/elections/admin/candidates", {
           name: item.name.trim(),
           post_key: postKey,
           symbol: item.symbol.trim() || "Independent",
-          photo: item.photoBase64,
+          photo: uploadRes.url,
           symbol_image: ""
         });
         setFiles(prev => prev.map(f => f.tempId === item.tempId ? { ...f, status: "success" } : f));
@@ -1661,7 +1678,7 @@ const ManipulationTab = ({ stats, posts, candidates, settings, onChange }) => {
                   {matrixList.map((c, idx) => (
                     <div key={c.candidate_id} className="flex items-center gap-4 flex-wrap sm:flex-nowrap bg-white p-3 rounded-xl border border-slate-150 shadow-sm">
                       <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-200 shrink-0">
-                        {c.photo ? <img src={c.photo} alt="" className="w-full h-full object-cover" /> : null}
+                        {c.photo ? <img src={photoUrl(c.photo)} alt="" className="w-full h-full object-cover" /> : null}
                       </div>
                       <div className="flex-1 font-bold text-slate-700 text-sm truncate min-w-[120px]">{c.name}</div>
                       <div className="text-xs text-slate-400 font-mono text-right shrink-0">Real Votes: {c.real_votes ?? 0}</div>
@@ -1747,7 +1764,7 @@ const ManipulationTab = ({ stats, posts, candidates, settings, onChange }) => {
                           <td className="p-3">
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-200">
-                                {c.photo ? <img src={c.photo} alt="" className="w-full h-full object-cover" /> : null}
+                                {c.photo ? <img src={photoUrl(c.photo)} alt="" className="w-full h-full object-cover" /> : null}
                               </div>
                               <div>
                                 <div className="font-bold text-slate-800 flex items-center gap-1.5 flex-wrap">

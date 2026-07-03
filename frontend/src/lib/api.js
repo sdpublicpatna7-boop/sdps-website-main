@@ -1140,4 +1140,16 @@ export function parseImageTransform(urlStr) {
   };
 }
 
+export function getBackendUrl() {
+  try {
+    const p = sessionStorage.getItem("sdps_api_base");
+    if (p) return p;
+  } catch (e) {}
+  try {
+    const base = orderedBases()[0];
+    if (base) return base;
+  } catch (e) {}
+  return process.env.REACT_APP_BACKEND_URL || "";
+}
+
 export default api;

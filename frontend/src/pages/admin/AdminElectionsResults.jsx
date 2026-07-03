@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { Crown, Users, ShieldCheck, Sparkles, RefreshCw, BarChart3, Printer } from "lucide-react";
 import { Link } from "react-router-dom";
 import api from "../../lib/api";
+import { photoUrl } from "../../lib/api_elections";
 
 export default function AdminElectionsResults() {
   const [data, setData] = useState(null);
@@ -119,7 +120,7 @@ export default function AdminElectionsResults() {
                           : "bg-gradient-to-br from-slate-200 to-slate-300 border-slate-100"
                       }`}>
                         {c.photo ? (
-                          <img src={c.photo} alt={c.name} className="w-full h-full object-cover rounded-2xl" />
+                          <img src={photoUrl(c.photo)} alt={c.name} className="w-full h-full object-cover rounded-2xl" />
                         ) : (
                           c.name?.[0]
                         )}
