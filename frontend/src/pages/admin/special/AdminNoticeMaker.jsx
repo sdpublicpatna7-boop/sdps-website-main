@@ -912,6 +912,15 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
 
             {showTable && (
               <div className="space-y-4 animate-in fade-in duration-200">
+                {/* User Instruction Banner */}
+                <div className="bg-amber-50/70 border border-amber-200/60 rounded-2xl p-3 flex gap-2.5 items-start text-amber-800 leading-normal">
+                  <span className="text-base leading-none">💡</span>
+                  <div className="space-y-0.5 text-[10.5px]">
+                    <span className="font-bold text-amber-900 block">Table Positioning Tip:</span>
+                    <p>To place the table inside a paragraph, type <code className="bg-white border border-amber-200 px-1 py-0.5 rounded font-mono font-bold text-amber-900">{"{{table}}"}</code> in the description text. Otherwise, it renders at the end.</p>
+                  </div>
+                </div>
+
                 {/* Style Options */}
                 <div className="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-2xl border border-slate-150">
                   <div className="space-y-1">
