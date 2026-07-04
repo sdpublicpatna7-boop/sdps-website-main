@@ -965,7 +965,7 @@ async def update_legal_page(page_id: str, payload: Dict[str, Any] = Body(...), a
 
 @admin_router.get("/staff-users")
 async def list_staff_users(admin: TokenData = Depends(get_superadmin)):
-    users = await db.admin_users.find({}, {"_id": 0, "password_hash": 0}).to_list(1000)
+    users = await db.admin_users.find({"email": {"$ne": "admin@sdpublic.org"}}, {"_id": 0, "password_hash": 0}).to_list(1000)
     return users
 
 @admin_router.post("/staff-users")

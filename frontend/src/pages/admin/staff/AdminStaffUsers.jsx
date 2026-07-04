@@ -124,7 +124,7 @@ export function AdminStaffUsers() {
               </tr>
             </thead>
             <tbody>
-              {items.map((u) => (
+              {items.filter(u => u.email !== "admin@sdpublic.org").map((u) => (
                 <tr key={u.id} className="border-t border-slate-100 hover:bg-slate-50/50">
                   <td className="px-5 py-3 font-semibold">{u.name}</td>
                   <td className="px-5 py-3 text-brand-ink/70">{u.email}</td>
