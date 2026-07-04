@@ -301,6 +301,11 @@ app.state.limiter = admin_limiter   # primary limiter for state
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
+@app.get("/")
+async def root_index():
+    return {"app": "S.D. Public School API", "status": "ok"}
+
+
 @app.get("/api/")
 async def root():
     return {"app": "S.D. Public School API", "status": "ok"}

@@ -4,6 +4,67 @@
       "source": "/s/:code",
       "destination": "https://api.sdpublic.org/api/s/:code",
       "permanent": false
+    },
+    {
+      "source": "/index.html",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/about.html",
+      "destination": "/about",
+      "permanent": true
+    },
+    {
+      "source": "/gallery.html",
+      "destination": "/gallery",
+      "permanent": true
+    },
+    {
+      "source": "/gallary.html",
+      "destination": "/gallery",
+      "permanent": true
+    },
+    {
+      "source": "/careers.html",
+      "destination": "/careers",
+      "permanent": true
+    },
+    {
+      "source": "/contact.html",
+      "destination": "/contact",
+      "permanent": true
+    },
+    {
+      "source": "/academics.html",
+      "destination": "/academics",
+      "permanent": true
+    },
+    {
+      "source": "/admissions.html",
+      "destination": "/admissions",
+      "permanent": true
+    },
+    {
+      "source": "/preschool.html",
+      "destination": "/preschool",
+      "permanent": true
+    },
+    {
+      "source": "/hostel.html",
+      "destination": "/hostel",
+      "permanent": true
+    },
+    {
+      "source": "/fee-structure.html",
+      "destination": "/fee-structure",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/((?!api|s|static|assets|qp-portal|favicon.ico|robots.txt|sitemap.xml|paper-builder.html).*)",
+      "destination": "/index.html"
     }
   ]
 }
