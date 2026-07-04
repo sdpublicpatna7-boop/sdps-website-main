@@ -1514,3 +1514,72 @@ async def get_linktree_link_analytics(link_id: str, admin: TokenData = Depends(r
         "referrers": referrers,
         "daily": daily
     }
+
+
+@admin_router.get("/maps-reviews")
+async def list_maps_reviews(admin: TokenData = Depends(require_permission("google-reviews"))):
+    cursor = db.maps_reviews_used.find({}).sort("created_at", -1)
+    docs = await cursor.to_list(length=1000)
+    results = []
+    for doc in docs:
+        doc["id"] = str(doc["_id"])
+        if "_id" in doc:
+            del doc["_id"]
+        results.append(doc)
+    return results
+
+
+@admin_router.get("/maps-reviews/stats")
+async def maps_reviews_stats(admin: TokenData = Depends(require_permission("google-reviews"))):
+    total = await db.maps_reviews_used.count_documents({})
+    
+    # Ratings aggregate
+    ratings_pipeline = [
+        {"$group": {"_id": "$rating", "count": {"$sum": 1}}}
+    ]
+    ratings_cursor = db.maps_reviews_used.aggregate(ratings_pipeline)
+    ratings_res = await ratings_cursor.to_list(length=100)
+    ratings = {str(r["_id"] or 5): r["count"] for r in ratings_res}
+    
+    # Devices aggregate
+    devices_pipeline = [
+        {"$group": {"_id": "$device", "count": {"$sum": 1}}}
+    ]
+    devices_cursor = db.maps_reviews_used.aggregate(devices_pipeline)
+    devices_res = await devices_cursor.to_list(length=100)
+    devices = {str(d["_id"] or "unknown"): d["count"] for d in devices_res}
+    
+    # OS aggregate
+    os_pipeline = [
+        {"$group": {"_id": "$os", "count": {"$sum": 1}}}
+    ]
+    os_cursor = db.maps_reviews_used.aggregate(os_pipeline)
+    os_res = await os_cursor.to_list(length=100)
+    oss = {str(o["_id"] or "unknown"): o["count"] for o in os_res}
+
+    # Browser aggregate
+    browser_pipeline = [
+        {"$group": {"_id": "$browser", "count": {"$sum": 1}}}
+    ]
+    browser_cursor = db.maps_reviews_used.aggregate(browser_pipeline)
+    browser_res = await browser_cursor.to_list(length=100)
+    browsers = {str(b["_id"] or "unknown"): b["count"] for b in browser_res}
+    
+    # Top IPs
+    ips_pipeline = [
+        {"$group": {"_id": "$ip", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 15}
+    ]
+    ips_cursor = db.maps_reviews_used.aggregate(ips_pipeline)
+    ips_res = await ips_cursor.to_list(length=15)
+    top_ips = [{"ip": r["_id"] or "unknown", "count": r["count"]} for r in ips_res]
+    
+    return {
+        "total": total,
+        "ratings": ratings,
+        "devices": devices,
+        "oss": oss,
+        "browsers": browsers,
+        "top_ips": top_ips
+    }

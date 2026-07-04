@@ -929,10 +929,15 @@ async def sal_chat(request: Request, payload: SalChatPayload):
 
 
 @public_router.post("/generate-maps-review")
-async def generate_maps_review(payload: dict = Body(...)):
+async def generate_maps_review(request: Request, payload: dict = Body(...)):
     rating = payload.get("rating")
     if rating not in [1, 2, 3, 4, 5]:
         raise HTTPException(400, "Rating must be an integer between 1 and 5.")
+
+    # Capture metadata from request
+    ip = request.client.host if request.client else "unknown"
+    ua = request.headers.get("user-agent", "unknown")
+    device, browser, os_name = _parse_user_agent(ua)
 
     import random
 
@@ -1030,6 +1035,12 @@ async def generate_maps_review(payload: dict = Body(...)):
     async def _mark_used(text: str):
         await db.maps_reviews_used.insert_one({
             "text": text,
+            "rating": effective_rating,
+            "ip": ip,
+            "user_agent": ua,
+            "device": device,
+            "browser": browser,
+            "os": os_name,
             "created_at": datetime.now(timezone.utc).isoformat(),
         })
 
