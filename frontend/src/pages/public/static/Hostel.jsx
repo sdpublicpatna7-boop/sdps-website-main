@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import PageHero, { DocEmbed, fullUrl } from "@/components/layout/PageHero";
 import api from "@/lib/api";
+import { Bed, Utensils, BookOpen, Trophy, HeartPulse, ShieldAlert } from "lucide-react";
 
 export function Hostel() {
   const [siteSettings, setSiteSettings] = useState(null);
@@ -62,15 +63,17 @@ export function Hostel() {
           </div>
           <div className="space-y-3">
             {[
-              { icon: "🛏️", title: "Spacious Rooms", desc: "Well-ventilated dormitories with comfortable bedding and storage space" },
-              { icon: "🥗", title: "Healthy Meals", desc: "Nutritious and hygienic meals prepared under expert supervision" },
-              { icon: "📖", title: "Daily Study Hours", desc: "Supervised study sessions with tutor support" },
-              { icon: "⚽", title: "Indoor & Outdoor Sports", desc: "Regular sports activities for physical development" },
-              { icon: "🏥", title: "Regular Health Check-ups", desc: "Periodic medical examinations by qualified doctors" },
-              { icon: "📹", title: "24×7 CCTV Security", desc: "Round-the-clock surveillance with trained security personnel" },
+              { icon: Bed, color: "text-brand-blue bg-blue-50", title: "Spacious Rooms", desc: "Well-ventilated dormitories with comfortable bedding and storage space" },
+              { icon: Utensils, color: "text-brand-orange bg-orange-50", title: "Healthy Meals", desc: "Nutritious and hygienic meals prepared under expert supervision" },
+              { icon: BookOpen, color: "text-emerald-500 bg-emerald-50", title: "Daily Study Hours", desc: "Supervised study sessions with tutor support" },
+              { icon: Trophy, color: "text-amber-500 bg-amber-50", title: "Indoor & Outdoor Sports", desc: "Regular sports activities for physical development" },
+              { icon: HeartPulse, color: "text-rose-500 bg-rose-50", title: "Regular Health Check-ups", desc: "Periodic medical examinations by qualified doctors" },
+              { icon: ShieldAlert, color: "text-purple-500 bg-purple-50", title: "24×7 CCTV Security", desc: "Round-the-clock surveillance with trained security personnel" },
             ].map((f, i) => (
-              <div key={i} className="flex items-start gap-4 bg-brand-paper rounded-2xl px-5 py-3.5">
-                <span className="text-2xl shrink-0">{f.icon}</span>
+              <div key={i} className="flex items-center gap-4 bg-brand-paper rounded-2xl px-5 py-3.5">
+                <div className={`w-10 h-10 rounded-xl ${f.color} flex items-center justify-center shrink-0`}>
+                  <f.icon className="w-5.5 h-5.5" />
+                </div>
                 <div>
                   <div className="font-headline font-semibold text-brand-ink text-sm">{f.title}</div>
                   <div className="text-xs text-brand-ink/60 mt-0.5">{f.desc}</div>

@@ -454,23 +454,23 @@ export function AdminMapsReview() {
       <div className="flex gap-2 border-b border-slate-200 pb-3">
         <button
           onClick={() => setActiveTab("poster")}
-          className={`px-4 py-2 text-xs font-bold rounded-xl transition ${
+          className={`px-4 py-2 text-xs font-bold rounded-xl transition flex items-center gap-1.5 ${
             activeTab === "poster"
               ? "bg-brand-blue text-white shadow-sm"
               : "text-slate-600 hover:bg-slate-100"
           }`}
         >
-          🖨️ QR Poster & Printables
+          <Printer className="w-3.5 h-3.5" /> QR Poster & Printables
         </button>
         <button
           onClick={() => setActiveTab("log")}
-          className={`px-4 py-2 text-xs font-bold rounded-xl transition ${
+          className={`px-4 py-2 text-xs font-bold rounded-xl transition flex items-center gap-1.5 ${
             activeTab === "log"
               ? "bg-brand-blue text-white shadow-sm"
               : "text-slate-600 hover:bg-slate-100"
           }`}
         >
-          📊 Generated Log & Device Stats
+          <Activity className="w-3.5 h-3.5" /> Generated Log & Device Stats
         </button>
       </div>
 
@@ -710,8 +710,10 @@ export function AdminMapsReview() {
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex items-center justify-between">
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Mobile vs Desktop</span>
-                <span className="text-base font-bold text-slate-900 mt-1 block">
-                  📱 {stats?.devices?.Mobile || 0} / 💻 {stats?.devices?.Desktop || 0}
+                <span className="text-sm font-bold text-slate-700 mt-1 flex items-center gap-1.5">
+                  <Smartphone className="w-3.5 h-3.5 text-slate-400" /> {stats?.devices?.Mobile || 0}
+                  <span className="text-slate-300">|</span>
+                  <Laptop className="w-3.5 h-3.5 text-slate-400" /> {stats?.devices?.Desktop || 0}
                 </span>
               </div>
               <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">

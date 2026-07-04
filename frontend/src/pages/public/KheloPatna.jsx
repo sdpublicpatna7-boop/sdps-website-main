@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import api, { parseImageTransform } from "../../lib/api";
+import { Trophy, Shield, Lightbulb, Dumbbell, Zap, Target, Activity, Users, UserCheck, Sparkles } from "lucide-react";
 
 const BACKEND = process.env.REACT_APP_BACKEND_URL || "";
 function fullUrl(u) { return u?.startsWith("http") ? u : `${BACKEND}${u}`; }
@@ -12,12 +13,12 @@ export default function KheloPatna() {
   const heroImgUrl = cleanHeroImg.startsWith("http") || (cleanHeroImg.startsWith("/") && !cleanHeroImg.startsWith("/static")) ? cleanHeroImg : `${BACKEND}${cleanHeroImg}`;
 
   const features = [
-    { icon: "⚽", title: "Elite Turf Facility", desc: "Premium quality artificial turf suitable for football, cricket, and multi-sports activities." },
-    { icon: "🏃", title: "All-Weather Play", desc: "Play in any weather condition — rain or sunshine — on our all-weather sports surface." },
-    { icon: "💡", title: "Floodlit Ground", desc: "Evening sports sessions available under high-quality floodlights for extended practice hours." },
-    { icon: "🏆", title: "Tournaments & Events", desc: "Regular inter-school tournaments, sports events and fitness competitions organized jointly." },
-    { icon: "👟", title: "Professional Coaching", desc: "Expert coaches available for structured training sessions in football and other sports." },
-    { icon: "🛡️", title: "Safe & Monitored", desc: "Fully supervised facility ensuring student safety and professional sports environment." },
+    { icon: Dumbbell, color: "text-brand-blue bg-blue-50", title: "Elite Turf Facility", desc: "Premium quality artificial turf suitable for football, cricket, and multi-sports activities." },
+    { icon: Activity, color: "text-emerald-500 bg-emerald-50", title: "All-Weather Play", desc: "Play in any weather condition — rain or sunshine — on our all-weather sports surface." },
+    { icon: Lightbulb, color: "text-amber-500 bg-amber-50", title: "Floodlit Ground", desc: "Evening sports sessions available under high-quality floodlights for extended practice hours." },
+    { icon: Trophy, color: "text-brand-orange bg-orange-50", title: "Tournaments & Events", desc: "Regular inter-school tournaments, sports events and fitness competitions organized jointly." },
+    { icon: UserCheck, color: "text-purple-500 bg-purple-50", title: "Professional Coaching", desc: "Expert coaches available for structured training sessions in football and other sports." },
+    { icon: Shield, color: "text-rose-500 bg-rose-50", title: "Safe & Monitored", desc: "Fully supervised facility ensuring student safety and professional sports environment." },
   ];
 
   const [gallery, setGallery] = useState([]);
@@ -102,8 +103,10 @@ export default function KheloPatna() {
                 <div className="text-3xl font-black text-brand-orange">5+</div>
                 <div className="text-xs text-brand-ink/60 font-semibold uppercase tracking-wide mt-1">Sports Covered</div>
               </div>
-              <div className="bg-brand-paper rounded-2xl px-5 py-4 text-center">
-                <div className="text-3xl font-black text-brand-blue">🏆</div>
+              <div className="bg-brand-paper rounded-2xl px-5 py-4 text-center flex flex-col items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center mb-1">
+                  <Trophy className="w-5 h-5" />
+                </div>
                 <div className="text-xs text-brand-ink/60 font-semibold uppercase tracking-wide mt-1">Tournaments Hosted</div>
               </div>
             </div>
@@ -124,8 +127,10 @@ export default function KheloPatna() {
           <h2 className="section-title text-center mb-10">Facilities & Benefits</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
             {features.map((f, i) => (
-              <div key={i} className="bg-white rounded-2xl p-6 border border-black/5 beam-card hover:-translate-y-1 hover:shadow-lg transition-all">
-                <div className="text-4xl mb-3">{f.icon}</div>
+              <div key={i} className="bg-white rounded-2xl p-6 border border-black/5 beam-card hover:-translate-y-1 hover:shadow-lg transition-all flex flex-col items-start">
+                <div className={`w-12 h-12 rounded-2xl ${f.color} flex items-center justify-center mb-4`}>
+                  <f.icon className="w-6 h-6" />
+                </div>
                 <h3 className="font-headline font-semibold text-lg text-brand-blue mb-2">{f.title}</h3>
                 <p className="text-sm text-brand-ink/70 leading-relaxed">{f.desc}</p>
               </div>
@@ -141,15 +146,17 @@ export default function KheloPatna() {
           <h2 className="section-title text-center mb-8">Available Sports</h2>
           <div className="flex flex-wrap justify-center gap-4">
             {[
-              { sport: "Football", icon: "⚽" },
-              { sport: "Cricket", icon: "🏏" },
-              { sport: "Athletics", icon: "🏃" },
-              { sport: "Basketball", icon: "🏀" },
-              { sport: "Badminton", icon: "🏸" },
-              { sport: "Kabaddi", icon: "🤼" },
+              { sport: "Football", icon: Dumbbell, color: "text-brand-blue bg-blue-50" },
+              { sport: "Cricket", icon: Target, color: "text-brand-orange bg-orange-50" },
+              { sport: "Athletics", icon: Zap, color: "text-amber-500 bg-amber-50" },
+              { sport: "Basketball", icon: Activity, color: "text-red-500 bg-red-50" },
+              { sport: "Badminton", icon: Trophy, color: "text-purple-500 bg-purple-50" },
+              { sport: "Kabaddi", icon: Users, color: "text-emerald-500 bg-emerald-50" },
             ].map((s, i) => (
-              <div key={i} className="bg-gradient-to-br from-brand-blue/5 to-brand-orange/5 border border-brand-blue/10 rounded-2xl px-6 py-5 text-center hover:shadow-md hover:-translate-y-1 transition-all">
-                <div className="text-4xl mb-2">{s.icon}</div>
+              <div key={i} className="bg-gradient-to-br from-brand-blue/5 to-brand-orange/5 border border-brand-blue/10 rounded-2xl px-6 py-5 text-center hover:shadow-md hover:-translate-y-1 transition-all flex flex-col items-center justify-center min-w-[120px]">
+                <div className={`w-12 h-12 rounded-2xl ${s.color} flex items-center justify-center mb-3`}>
+                  <s.icon className="w-6 h-6" />
+                </div>
                 <div className="font-headline font-semibold text-brand-ink">{s.sport}</div>
               </div>
             ))}

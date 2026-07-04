@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import api from "@/lib/api";
 import { toast, Toaster } from "sonner";
-import { Plus, Trash2, Edit2, Save, Loader2 } from "lucide-react";
+import { Plus, Trash2, Edit2, Save, Loader2, BookOpen, Palette } from "lucide-react";
 import { FileOrUrlField } from "@/components/admin/ResourceManager";
 import { CLASSES, SUBJECTS, VACATION_TYPES } from "./shared";
 
@@ -318,7 +318,9 @@ export function AdminHolidayHomework() {
               {/* Subject Checklist */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <label className="field-label mb-0">📚 Subject-wise Checklist</label>
+                  <label className="field-label mb-0 flex items-center gap-1.5">
+                    <BookOpen className="w-4 h-4 text-brand-blue" /> Subject-wise Checklist
+                  </label>
                   <button
                     type="button"
                     onClick={addSubject}
@@ -426,7 +428,9 @@ export function AdminHolidayHomework() {
               {/* Project Work */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <label className="field-label mb-0">🎨 Project Work</label>
+                  <label className="field-label mb-0 flex items-center gap-1.5">
+                    <Palette className="w-4 h-4 text-brand-orange" /> Project Work
+                  </label>
                   <button
                     type="button"
                     onClick={addProject}

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import api, { getBackendUrl } from "@/lib/api";
 import { toast } from "sonner";
-import { Printer, FileText, Save, Send, Trash, Plus, RotateCcw, AlertTriangle, Shield, FileUp } from "lucide-react";
+import { Printer, FileText, Save, Send, Trash, Plus, RotateCcw, AlertTriangle, Shield, FileUp, PenTool, Table, Lightbulb } from "lucide-react";
 
 export function AdminNoticeMaker() {
   const { settings } = useOutletContext() || {};
@@ -637,7 +637,7 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
           {/* Digital Signature Presets & Upload */}
           <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
             <h3 className="text-xs font-bold text-slate-800 border-b border-slate-100 pb-2 uppercase tracking-wide flex items-center gap-1.5">
-              <span>✍️</span> Digital Signature Presets
+              <PenTool className="w-3.5 h-3.5 text-brand-orange" /> Digital Signature Presets
             </h3>
             
             {/* Preset selectors */}
@@ -898,7 +898,7 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
           <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
             <div className="flex justify-between items-center border-b border-slate-100 pb-2">
               <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
-                <span>📊</span> Notice Table (Optional)
+                <Table className="w-3.5 h-3.5 text-brand-blue" /> Notice Table (Optional)
               </h3>
               <label className="relative inline-flex items-center cursor-pointer select-none">
                 <input
@@ -915,7 +915,7 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
               <div className="space-y-4 animate-in fade-in duration-200">
                 {/* User Instruction Banner */}
                 <div className="bg-amber-50/70 border border-amber-200/60 rounded-2xl p-3 flex gap-2.5 items-start text-amber-800 leading-normal">
-                  <span className="text-base leading-none">💡</span>
+                  <Lightbulb className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                   <div className="space-y-0.5 text-[10.5px]">
                     <span className="font-bold text-amber-900 block">Table Positioning Tip:</span>
                     <p>To place the table inside a paragraph, type <code className="bg-white border border-amber-200 px-1 py-0.5 rounded font-mono font-bold text-amber-900">{"{{table}}"}</code> in the description text. Otherwise, it renders at the end.</p>

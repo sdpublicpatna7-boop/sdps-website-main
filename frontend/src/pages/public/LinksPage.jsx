@@ -4,7 +4,7 @@ import {
   Loader2, AlertCircle, ArrowLeft, Globe, MessageCircle,
   Instagram, Facebook, Youtube, Mail, Play, ArrowUpRight,
   GraduationCap, BookOpen, MapPin, BookMarked, ArrowRight,
-  Share2, Sparkles, MoreHorizontal
+  Share2, Sparkles, MoreHorizontal, Star, Pencil
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import api, { API } from "../../lib/api";
@@ -171,10 +171,18 @@ export default function LinksPage() {
       <div className={`absolute inset-0 pointer-events-none overflow-hidden transition-opacity duration-500 ${
         isLight ? "opacity-25" : "opacity-15"
       }`}>
-        <div className="absolute top-16 left-[8%] text-2xl animate-bounce duration-3000">🎓</div>
-        <div className="absolute top-[25%] right-[10%] text-2xl animate-bounce duration-5000">⭐</div>
-        <div className="absolute bottom-[20%] left-[12%] text-2xl animate-bounce duration-4000">📚</div>
-        <div className="absolute bottom-[8%] right-[15%] text-2xl animate-bounce duration-6000">✏️</div>
+        <div className="absolute top-16 left-[8%] text-violet-400 animate-bounce duration-3000">
+          <GraduationCap className="w-8 h-8" />
+        </div>
+        <div className="absolute top-[25%] right-[10%] text-amber-400 animate-bounce duration-5000">
+          <Star className="w-6 h-6 fill-current" />
+        </div>
+        <div className="absolute bottom-[20%] left-[12%] text-pink-400 animate-bounce duration-4000">
+          <BookOpen className="w-8 h-8" />
+        </div>
+        <div className="absolute bottom-[8%] right-[15%] text-indigo-400 animate-bounce duration-6000">
+          <Pencil className="w-6 h-6" />
+        </div>
       </div>
 
       {/* Main Container */}

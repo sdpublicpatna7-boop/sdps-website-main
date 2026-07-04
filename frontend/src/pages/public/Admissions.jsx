@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import api, { parseImageTransform } from "../../lib/api";
 import { toast, Toaster } from "sonner";
-import { Loader2, Check } from "lucide-react";
+import { Loader2, Check, Award, Heart, Sparkles, GraduationCap, MessageSquare, FileText, Calendar, CreditCard } from "lucide-react";
 import { ImageOrUrlField, FileOrUrlField } from "../../components/admin/ResourceManager";
 import SEO from "../../components/layout/SEO";
 
@@ -560,13 +560,15 @@ export function AdmissionsLanding() {
               <div className="font-headline font-semibold text-brand-ink mt-4 mb-2">Why Choose Us?</div>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { icon: "🏆", label: "Top Ranked Pre-School in Patna" },
-                  { icon: "👶", label: "Personalised attention" },
-                  { icon: "🎉", label: "Regular events & competitions" },
-                  { icon: "🎓", label: "Perfect prep for formal schooling" },
+                  { icon: Award, color: "text-amber-500 bg-amber-50", label: "Top Ranked Pre-School in Patna" },
+                  { icon: Heart, color: "text-rose-500 bg-rose-50", label: "Personalised attention" },
+                  { icon: Sparkles, color: "text-orange-500 bg-orange-50", label: "Regular events & competitions" },
+                  { icon: GraduationCap, color: "text-blue-500 bg-blue-50", label: "Perfect prep for formal schooling" },
                 ].map((w, i) => (
-                  <div key={i} className="bg-white border border-black/5 rounded-2xl p-4 text-center">
-                    <div className="text-2xl mb-1">{w.icon}</div>
+                  <div key={i} className="bg-white border border-black/5 rounded-2xl p-4 text-center flex flex-col items-center justify-center">
+                    <div className={`w-9 h-9 rounded-xl ${w.color} flex items-center justify-center mb-2`}>
+                      <w.icon className="w-4 h-4" />
+                    </div>
                     <div className="text-xs font-semibold text-brand-ink">{w.label}</div>
                   </div>
                 ))}
@@ -576,7 +578,9 @@ export function AdmissionsLanding() {
                 <p className="font-legacy text-2xl italic mb-3">
                   "At Curious Minds, every little step leads to a big future!"
                 </p>
-                <div className="font-headline font-bold text-lg mb-3">🌈 Admissions Open 2026-27!</div>
+                <div className="font-headline font-bold text-lg mb-3 flex items-center justify-center gap-1.5">
+                  <Sparkles className="w-5 h-5 text-white animate-pulse" /> Admissions Open 2026-27!
+                </div>
                 <a href="https://forms.gle/uFEcV1KvaedQDG1C9" target="_blank" rel="noreferrer"
                   className="inline-block bg-white text-brand-orange font-bold text-sm px-6 py-2.5 rounded-xl hover:scale-105 transition">
                   Apply Now for Pre-School →
@@ -591,13 +595,15 @@ export function AdmissionsLanding() {
       <section className="py-10 bg-brand-paper">
         <div className="max-w-5xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: "Admission Enquiry", to: "/admission-enquiry", icon: "💬" },
-            { label: "Full Application", to: "/admission-form", icon: "📝" },
-            { label: "Age Eligibility", to: "/admission-eligibility", icon: "📅" },
-            { label: "Fee Structure", to: "/fee-structure", icon: "💰" },
+            { label: "Admission Enquiry", to: "/admission-enquiry", icon: MessageSquare, color: "text-brand-blue bg-blue-50" },
+            { label: "Full Application", to: "/admission-form", icon: FileText, color: "text-brand-orange bg-orange-50" },
+            { label: "Age Eligibility", to: "/admission-eligibility", icon: Calendar, color: "text-amber-500 bg-amber-50" },
+            { label: "Fee Structure", to: "/fee-structure", icon: CreditCard, color: "text-emerald-500 bg-emerald-50" },
           ].map((l, i) => (
-            <Link key={i} to={l.to} className="bg-white rounded-2xl p-5 text-center border border-black/5 hover:border-brand-blue hover:-translate-y-1 hover:shadow-lg transition-all beam-card">
-              <div className="text-3xl mb-2">{l.icon}</div>
+            <Link key={i} to={l.to} className="bg-white rounded-2xl p-5 text-center border border-black/5 hover:border-brand-blue hover:-translate-y-1 hover:shadow-lg transition-all beam-card flex flex-col items-center justify-center">
+              <div className={`w-12 h-12 rounded-2xl ${l.color} flex items-center justify-center mb-3`}>
+                <l.icon className="w-6 h-6" />
+              </div>
               <div className="text-sm font-headline font-semibold text-brand-ink">{l.label}</div>
             </Link>
           ))}

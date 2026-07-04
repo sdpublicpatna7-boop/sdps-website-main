@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { Sparkles, Music, Palette, Puzzle, Heart, Sun } from "lucide-react";
+import { Sparkles, Music, Palette, Puzzle, Heart, Sun, BookOpen, Smile } from "lucide-react";
 
 const ACTIVITIES = [
   { icon: Palette, color: "bg-brand-lotus", label: "Art & Craft" },
@@ -30,28 +30,36 @@ export default function PreSchool() {
           </div>
           <h1 className="font-playful text-6xl sm:text-7xl lg:text-8xl text-brand-blue leading-[1.05]">
             Hello, <span className="text-brand-orange">little</span><br />
-            <span className="text-brand-lotus">explorers!</span> 🌈
+            <span className="text-brand-lotus">explorers!</span> <Sparkles className="inline-block w-8 h-8 text-brand-orange animate-pulse" />
           </h1>
           <p className="mt-6 max-w-2xl mx-auto text-brand-ink/70 text-lg">
             A magical world of stories, songs, art and laughter — where every little step is a giant leap of joy.
           </p>
         </motion.div>
 
-        {/* Floating emoji icons */}
-        <div className="absolute top-10 left-[15%]" style={{ fontSize: 40 }}>
-          <motion.div animate={{ y: [0, -16, 0], rotate: [0, 12, 0] }} transition={{ duration: 4, repeat: Infinity }}>🎨</motion.div>
+        {/* Floating color-themed vector icons */}
+        <div className="absolute top-10 left-[15%] text-brand-lotus" style={{ fontSize: 40 }}>
+          <motion.div animate={{ y: [0, -16, 0], rotate: [0, 12, 0] }} transition={{ duration: 4, repeat: Infinity }}>
+            <Palette className="w-10 h-10 drop-shadow-md" />
+          </motion.div>
         </div>
-        <div className="absolute top-32 right-[12%]" style={{ fontSize: 50 }}>
-          <motion.div animate={{ y: [0, -20, 0], rotate: [0, -10, 0] }} transition={{ duration: 5, repeat: Infinity }}>🎈</motion.div>
+        <div className="absolute top-32 right-[12%] text-brand-orange" style={{ fontSize: 50 }}>
+          <motion.div animate={{ y: [0, -20, 0], rotate: [0, -10, 0] }} transition={{ duration: 5, repeat: Infinity }}>
+            <Sparkles className="w-12 h-12 drop-shadow-md" />
+          </motion.div>
         </div>
-        <div className="absolute bottom-0 left-[8%]" style={{ fontSize: 44 }}>
-          <motion.div animate={{ y: [0, -12, 0] }} transition={{ duration: 3.5, repeat: Infinity }}>📚</motion.div>
+        <div className="absolute bottom-0 left-[8%] text-brand-blue" style={{ fontSize: 44 }}>
+          <motion.div animate={{ y: [0, -12, 0] }} transition={{ duration: 3.5, repeat: Infinity }}>
+            <BookOpen className="w-11 h-11 drop-shadow-md" />
+          </motion.div>
         </div>
       </section>
 
       {/* ACTIVITIES */}
       <section className="relative max-w-6xl mx-auto px-6 py-16">
-        <h2 className="font-playful text-4xl sm:text-5xl text-center text-brand-blue mb-12">What We Love To Do! 💖</h2>
+        <h2 className="font-playful text-4xl sm:text-5xl text-center text-brand-blue mb-12 flex items-center justify-center gap-2">
+          What We Love To Do! <Heart className="w-8 h-8 text-brand-lotus fill-current inline-block ml-2 animate-pulse" />
+        </h2>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
           {ACTIVITIES.map((a, i) => (
             <motion.div
@@ -85,19 +93,21 @@ export default function PreSchool() {
           <h2 className="relative font-playful text-4xl sm:text-5xl text-brand-blue">Why little hearts <span className="text-brand-orange">love</span> SDPS!</h2>
           <div className="relative grid sm:grid-cols-3 gap-6 mt-10">
             {[
-              { emoji: "🌟", title: "Caring Teachers", desc: "Warm, gentle and always smiling" },
-              { emoji: "🛝", title: "Safe Play Areas", desc: "Bright, colorful and well-monitored" },
-              { emoji: "🧸", title: "Joyful Learning", desc: "Songs, stories and lots of fun!" },
+              { icon: Smile, color: "text-brand-lotus bg-pink-50", title: "Caring Teachers", desc: "Warm, gentle and always smiling" },
+              { icon: Sun, color: "text-brand-orange bg-orange-50", title: "Safe Play Areas", desc: "Bright, colorful and well-monitored" },
+              { icon: Puzzle, color: "text-brand-gold bg-amber-50", title: "Joyful Learning", desc: "Songs, stories and lots of fun!" },
             ].map((c, i) => (
-              <div key={i} className="bg-brand-paper rounded-3xl p-6">
-                <div className="text-5xl mb-3">{c.emoji}</div>
+              <div key={i} className="bg-brand-paper rounded-3xl p-6 flex flex-col items-center text-center">
+                <div className={`w-12 h-12 rounded-2xl ${c.color} flex items-center justify-center mb-4`}>
+                  <c.icon className="w-6 h-6" />
+                </div>
                 <div className="font-playful text-xl text-brand-blue">{c.title}</div>
                 <p className="text-sm text-brand-ink/70 mt-1">{c.desc}</p>
               </div>
             ))}
           </div>
-          <Link to="/admission-enquiry" className="btn-secondary mt-10 inline-block" data-testid="preschool-enquire-btn">
-            Enroll Your Little Star ✨
+          <Link to="/admission-enquiry" className="btn-secondary mt-10 inline-flex items-center justify-center gap-1.5" data-testid="preschool-enquire-btn">
+            Enroll Your Little Star <Sparkles className="w-4 h-4 text-white" />
           </Link>
         </div>
       </section>

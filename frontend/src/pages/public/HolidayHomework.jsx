@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../../lib/api";
-import { BookOpen, Palette, MessageCircle, Download, ChevronDown, ChevronUp, Check, Phone, Mail } from "lucide-react";
+import { BookOpen, Palette, MessageCircle, Download, ChevronDown, ChevronUp, Check, Phone, Mail, Calendar } from "lucide-react";
 
 const BACKEND = process.env.REACT_APP_BACKEND_URL || "";
 function fullUrl(u) { return u?.startsWith("http") ? u : `${BACKEND}${u}`; }
@@ -136,8 +136,8 @@ function HomeworkDetail({ hw }) {
                 <h4 className="font-headline font-semibold text-brand-ink mb-2">{proj.title}</h4>
                 {proj.description && <p className="text-sm text-brand-ink/70 mb-3 leading-relaxed">{proj.description}</p>}
                 {proj.submission_date && (
-                  <div className="text-xs bg-red-50 text-red-600 font-semibold px-3 py-1.5 rounded-lg w-fit mb-3">
-                    📅 Submit by: {new Date(proj.submission_date).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+                  <div className="text-xs bg-red-50 text-red-600 font-semibold px-3 py-1.5 rounded-lg w-fit mb-3 flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5" /> Submit by: {new Date(proj.submission_date).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
                   </div>
                 )}
                 {proj.materials_needed?.length > 0 && (
