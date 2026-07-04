@@ -275,6 +275,7 @@ export default function Home() {
                   alt="SDPS School"
                   style={heroFeatureStyle}
                   className="w-full h-full object-cover transition duration-500 group-hover:scale-[1.02]"
+                  fetchpriority="high"
                   onError={(e) => { e.target.src = formattedHeroBanner; }}
                 />
               </div>

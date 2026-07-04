@@ -51,7 +51,7 @@ function PageHero({ title, subtitle, overline, bgImage, pill }) {
     <section className="bg-hero-grad py-16 relative overflow-hidden">
       {bgImage && (
         <div className="absolute inset-0">
-          <img src={bgImage} alt="" className="w-full h-full object-cover opacity-10" />
+          <img src={bgImage} alt="" className="w-full h-full object-cover opacity-10" fetchpriority="high" />
           <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-white/90" />
         </div>
       )}
