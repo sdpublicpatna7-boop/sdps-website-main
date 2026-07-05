@@ -1124,8 +1124,8 @@ const UsersTab = ({ role, users, onChange }) => {
 
   const downloadTemplate = async () => {
     try {
-      const token = localStorage.getItem("sdps_admin_token");
-      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL || ""}/api/elections/admin/template/${role}`, { headers: { Authorization: `Bearer ${token}` } });
+      // Auth is carried by the HttpOnly session cookie (credentials: "include").
+      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL || ""}/api/elections/admin/template/${role}`, { credentials: "include" });
       if (!res.ok) throw new Error();
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);

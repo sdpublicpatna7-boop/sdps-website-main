@@ -551,6 +551,7 @@ drop policy if exists "Anyone can view election candidates" on public.election_c
 drop policy if exists "Admins can manage election candidates" on public.election_candidates;
 drop policy if exists "Admins can view election votes" on public.election_votes;
 drop policy if exists "Anyone can view election settings" on public.election_settings;
+drop policy if exists "Anyone can view non-sensitive election settings" on public.election_settings;
 drop policy if exists "Admins can manage election settings" on public.election_settings;
 drop policy if exists "Anyone can view election results archive" on public.election_results_archive;
 drop policy if exists "Admins can manage election results archive" on public.election_results_archive;
@@ -593,8 +594,23 @@ create policy "Admins can manage testimonials" on public.site_testimonials for a
 create policy "Anyone can read legal pages" on public.site_legal_pages for select using (true);
 create policy "Admins can manage legal pages" on public.site_legal_pages for all using (public.is_qp_admin());
 
-create policy "Anyone can view TCs" on public.tc_records for select using (true);
+-- NOTE: no public select policy. The full TC registry (student names +
+-- admission numbers) must not be enumerable. Verification requires an exact
+-- admission number via the verify_tc_record() RPC below.
 create policy "Admins can manage TCs" on public.tc_records for all using (public.is_qp_admin());
+
+-- Secure TC verification: exact admission number required, returns only the
+-- fields needed to verify a certificate.
+create or replace function public.verify_tc_record(p_admission_no text)
+returns table (student_name text, admission_no text, issue_date date, status text, file_url text)
+language sql
+security definer
+set search_path = public
+as $$
+  select t.student_name, t.admission_no, t.issue_date, t.status, t.file_url
+  from public.tc_records t
+  where t.admission_no = p_admission_no;
+$$;
 
 create policy "Anyone can read exam papers" on public.site_exam_papers for select using (true);
 create policy "Admins can manage exam papers" on public.site_exam_papers for all using (public.is_qp_admin());
@@ -610,8 +626,25 @@ create policy "Public can submit admission enquiries" on public.admission_enquir
 create policy "Admins can manage enquiries" on public.admission_enquiries for all using (public.is_qp_admin());
 
 create policy "Public can submit admission applications" on public.admission_applications for insert with check (true);
-create policy "Public can view their own application status" on public.admission_applications for select using (true);
+-- NOTE: no public select policy. Applications contain PII (child name, DOB,
+-- address, phone, payment ids). Status lookups must go through the backend
+-- (service role) or the lookup_admission_application() RPC below, which
+-- requires the application id AND a matching contact detail.
 create policy "Admins can manage applications" on public.admission_applications for all using (public.is_qp_admin());
+
+-- Secure status lookup: requires both the application reference and a
+-- matching phone or email, so applications cannot be enumerated.
+create or replace function public.lookup_admission_application(p_app_id text, p_contact text)
+returns table (id text, student_name text, class_applied text, status text, payment_status text, created_at timestamptz)
+language sql
+security definer
+set search_path = public
+as $$
+  select a.id::text, a.student_name, a.class_applied, a.status, a.payment_status, a.created_at
+  from public.admission_applications a
+  where a.id::text = p_app_id
+    and (a.phone = p_contact or lower(a.email) = lower(p_contact));
+$$;
 
 create policy "Public can apply for careers" on public.career_applications for insert with check (true);
 create policy "Admins can manage career applications" on public.career_applications for all using (public.is_qp_admin());
@@ -625,15 +658,32 @@ create policy "Anyone authenticated can view birthday students" on public.birthd
 create policy "Anyone can view election posts" on public.election_posts for select using (true);
 create policy "Admins can manage election posts" on public.election_posts for all using (public.is_qp_admin());
 
-create policy "Voters can view their own details" on public.election_voters for select using (true);
+-- NOTE: no public select policy. The voter roster (names, father's name,
+-- class) must not be enumerable with the anon key. Voter check-in requires an
+-- exact admission number via the election_voter_lookup() RPC below.
 create policy "Admins can manage election voters" on public.election_voters for all using (public.is_qp_admin());
+
+-- Secure voter check-in lookup: exact admission number required.
+create or replace function public.election_voter_lookup(p_admission_no text)
+returns table (admission_no text, name text, role text, already_voted boolean, class_name text, father_name text)
+language sql
+security definer
+set search_path = public
+as $$
+  select v.admission_no, v.name, v.role, v.already_voted, v.class_name, v.father_name
+  from public.election_voters v
+  where v.admission_no = p_admission_no;
+$$;
 
 create policy "Anyone can view election candidates" on public.election_candidates for select using (true);
 create policy "Admins can manage election candidates" on public.election_candidates for all using (public.is_qp_admin());
 
 create policy "Admins can view election votes" on public.election_votes for select using (public.is_qp_admin());
 
-create policy "Anyone can view election settings" on public.election_settings for select using (true);
+-- Sensitive keys (e.g. the booth voting access code) are excluded from the
+-- public read policy.
+create policy "Anyone can view non-sensitive election settings" on public.election_settings
+  for select using (key not in ('voting_access_code'));
 create policy "Admins can manage election settings" on public.election_settings for all using (public.is_qp_admin());
 
 create policy "Anyone can view election results archive" on public.election_results_archive for select using (true);

@@ -16,7 +16,7 @@ export default function Declaration() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!localStorage.getItem("sdps_admin_token")) { navigate("/admin/login"); return; }
+    if (localStorage.getItem("sdps_admin_session") !== "1") { navigate("/admin/login"); return; }
     api.get("/elections/results").then(({ data }) => setData(data)).catch(() => navigate("/admin/login"));
     api.get("/elections/settings").then(({ data }) => setLogo(data?.school_logo || "")).catch(() => {});
   }, [navigate]);

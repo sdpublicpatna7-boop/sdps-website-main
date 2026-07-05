@@ -26,8 +26,12 @@ export const getElectionCandidates = async () => {
   return data.candidates || [];
 };
 
-export const castVote = async (admissionNo, selections) => {
-  const { data } = await api.post("/elections/vote", { admission_no: admissionNo, selections });
+export const castVote = async (admissionNo, selections, accessCode = "") => {
+  const { data } = await api.post("/elections/vote", {
+    admission_no: admissionNo,
+    selections,
+    access_code: accessCode || "",
+  });
   return data;
 };
 

@@ -4,8 +4,14 @@ from typing import Dict, List, Any, Optional
 from fastapi import APIRouter, HTTPException, Request, status, UploadFile, File, Depends
 from pydantic import BaseModel
 import httpx
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
+from auth import get_current_admin
 
 logger = logging.getLogger("sdps.elections")
+
+limiter = Limiter(key_func=get_remote_address)
 
 # Supabase REST settings
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
@@ -39,6 +45,7 @@ def process_base64_photo(photo_str: str) -> str:
 class VoteCastPayload(BaseModel):
     admission_no: str
     selections: Dict[str, str]
+    access_code: Optional[str] = ""
 
 class SettingUpdatePayload(BaseModel):
     value: str
@@ -96,7 +103,8 @@ async def get_stats():
         return {"voters_count": vCount}
 
 @elections_router.get("/voters/{admission_no}")
-async def get_voter(admission_no: str):
+@limiter.limit("15/minute")
+async def get_voter(request: Request, admission_no: str):
     await check_supabase()
     async with httpx.AsyncClient() as client:
         r = await client.get(
@@ -157,36 +165,59 @@ async def bootstrap():
         }
 
 @elections_router.post("/vote")
-async def cast_vote(payload: VoteCastPayload):
+@limiter.limit("10/minute")
+async def cast_vote(request: Request, payload: VoteCastPayload):
     await check_supabase()
     adm = payload.admission_no.strip()
     selections = payload.selections
 
     async with httpx.AsyncClient() as client:
-        # 1. Check election settings
+        # 1. Check election settings (open flag + optional booth access code)
         r_settings = await client.get(
-            f"{SUPABASE_URL}/rest/v1/election_settings?key=eq.election_open",
+            f"{SUPABASE_URL}/rest/v1/election_settings",
             headers=headers
         )
-        if r_settings.status_code != 200 or not r_settings.json():
-            raise HTTPException(status_code=403, detail="Voting is currently closed.")
-        
-        if r_settings.json()[0]["value"] != "true":
+        if r_settings.status_code != 200:
             raise HTTPException(status_code=403, detail="Voting is currently closed.")
 
-        # 2. Check voter status
-        r_voter = await client.get(
-            f"{SUPABASE_URL}/rest/v1/election_voters?admission_no=eq.{adm}",
-            headers=headers
+        settings_map = {s["key"]: s["value"] for s in r_settings.json()}
+        if settings_map.get("election_open") != "true":
+            raise HTTPException(status_code=403, detail="Voting is currently closed.")
+
+        # If a booth access code is configured, require it on every vote.
+        required_code = (settings_map.get("voting_access_code") or "").strip()
+        if required_code:
+            import hmac
+            provided = (payload.access_code or "").strip()
+            if not provided or not hmac.compare_digest(provided, required_code):
+                raise HTTPException(status_code=403, detail="Invalid voting access code.")
+
+        # 2. Atomically claim the voter: flip already_voted only if it is
+        # currently false. The row filter makes this race-safe — two
+        # concurrent requests cannot both claim the same voter.
+        r_claim = await client.patch(
+            f"{SUPABASE_URL}/rest/v1/election_voters"
+            f"?admission_no=eq.{adm}&already_voted=eq.false",
+            json={"already_voted": True},
+            headers={**headers, "Prefer": "return=representation"}
         )
-        if r_voter.status_code != 200 or not r_voter.json():
+        if r_claim.status_code not in [200, 204]:
+            logger.error(f"Voter claim failed: {r_claim.text}")
+            raise HTTPException(status_code=500, detail="Failed to cast vote.")
+
+        claimed = r_claim.json() if r_claim.status_code == 200 else []
+        if not claimed:
+            # Either the voter does not exist or has already voted.
+            r_voter = await client.get(
+                f"{SUPABASE_URL}/rest/v1/election_voters?admission_no=eq.{adm}&select=admission_no",
+                headers=headers
+            )
+            if r_voter.status_code == 200 and r_voter.json():
+                raise HTTPException(status_code=400, detail="You have already casted your vote.")
             raise HTTPException(status_code=404, detail="Voter not registered.")
-        
-        voter = r_voter.json()[0]
-        if voter["already_voted"]:
-            raise HTTPException(status_code=400, detail="You have already casted your vote.")
 
-        # 3. Insert selections into election_votes
+        # 3. Insert selections into election_votes (unique constraint on
+        # voter_admission_no is a second line of defense against duplicates).
         r_vote = await client.post(
             f"{SUPABASE_URL}/rest/v1/election_votes",
             json={"voter_admission_no": adm, "selections": selections},
@@ -194,22 +225,13 @@ async def cast_vote(payload: VoteCastPayload):
         )
         if r_vote.status_code not in [200, 201]:
             logger.error(f"Insert vote failed: {r_vote.text}")
-            raise HTTPException(status_code=500, detail="Failed to cast vote.")
-
-        # 4. Set voter status to already voted
-        r_update = await client.patch(
-            f"{SUPABASE_URL}/rest/v1/election_voters?admission_no=eq.{adm}",
-            json={"already_voted": True},
-            headers=headers
-        )
-        if r_update.status_code not in [200, 204]:
-            logger.error(f"Voter update failed: {r_update.text}")
-            # Rollback vote insert
-            await client.delete(
-                f"{SUPABASE_URL}/rest/v1/election_votes?voter_admission_no=eq.{adm}",
+            # Roll back the claim so the voter can retry.
+            await client.patch(
+                f"{SUPABASE_URL}/rest/v1/election_voters?admission_no=eq.{adm}",
+                json={"already_voted": False},
                 headers=headers
             )
-            raise HTTPException(status_code=500, detail="Voter registration confirmation failed.")
+            raise HTTPException(status_code=500, detail="Failed to cast vote.")
 
         return {"success": True, "message": "Vote cast successfully!"}
 
@@ -218,7 +240,7 @@ async def cast_vote(payload: VoteCastPayload):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @elections_router.post("/settings/{key}")
-async def update_settings(key: str, payload: SettingUpdatePayload):
+async def update_settings(key: str, payload: SettingUpdatePayload, admin = Depends(get_current_admin)):
     await check_supabase()
     async with httpx.AsyncClient() as client:
         # Upsert setting
@@ -233,7 +255,7 @@ async def update_settings(key: str, payload: SettingUpdatePayload):
         return {"success": True}
 
 @elections_router.post("/posts")
-async def create_post(payload: PostCreatePayload):
+async def create_post(payload: PostCreatePayload, admin = Depends(get_current_admin)):
     await check_supabase()
     async with httpx.AsyncClient() as client:
         r = await client.post(
@@ -247,7 +269,7 @@ async def create_post(payload: PostCreatePayload):
         return {"success": True}
 
 @elections_router.delete("/posts/{key}")
-async def delete_post(key: str):
+async def delete_post(key: str, admin = Depends(get_current_admin)):
     await check_supabase()
     async with httpx.AsyncClient() as client:
         r = await client.delete(
@@ -260,7 +282,7 @@ async def delete_post(key: str):
         return {"success": True}
 
 @elections_router.post("/candidates")
-async def create_candidate(payload: CandidateCreatePayload):
+async def create_candidate(payload: CandidateCreatePayload, admin = Depends(get_current_admin)):
     await check_supabase()
     photo_url = process_base64_photo(payload.photo)
     symbol_image_url = process_base64_photo(payload.symbol_image)
@@ -283,7 +305,7 @@ async def create_candidate(payload: CandidateCreatePayload):
         return {"success": True, "candidate": res_data[0] if res_data else None}
 
 @elections_router.delete("/candidates/{cid}")
-async def delete_candidate(cid: str):
+async def delete_candidate(cid: str, admin = Depends(get_current_admin)):
     await check_supabase()
     async with httpx.AsyncClient() as client:
         r = await client.delete(
@@ -296,7 +318,7 @@ async def delete_candidate(cid: str):
         return {"success": True}
 
 @elections_router.post("/voters/upload")
-async def upload_voters(payload: List[Dict[str, Any]]):
+async def upload_voters(payload: List[Dict[str, Any]], admin = Depends(get_current_admin)):
     await check_supabase()
     async with httpx.AsyncClient() as client:
         # 1. Clear existing voters
@@ -316,7 +338,7 @@ async def upload_voters(payload: List[Dict[str, Any]]):
         return {"success": True, "count": len(payload)}
 
 @elections_router.post("/archive")
-async def archive_results(session_name: str = "2026-27"):
+async def archive_results(session_name: str = "2026-27", admin = Depends(get_current_admin)):
     await check_supabase()
     async with httpx.AsyncClient() as client:
         # 1. Fetch posts, candidates, and votes from Supabase
@@ -397,8 +419,6 @@ async def archive_results(session_name: str = "2026-27"):
         )
         
         return {"success": True}
-
-from auth import get_current_admin
 
 @elections_router.get("/board")
 async def public_board():
