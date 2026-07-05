@@ -6,8 +6,9 @@ import httpx
 from typing import List, Optional
 from datetime import datetime, timezone
 
+import io
 from fastapi import APIRouter, HTTPException, Form, File, UploadFile, Body, Request, Response
-from fastapi.responses import FileResponse, RedirectResponse, HTMLResponse
+from fastapi.responses import FileResponse, RedirectResponse, HTMLResponse, StreamingResponse
 from pydantic import BaseModel
 import razorpay
 from slowapi import Limiter
@@ -1418,6 +1419,34 @@ async def resolve_linktree_click(link_id: str, request: Request):
     
     target_url = link["url"]
     return RedirectResponse(url=target_url)
+
+
+@public_router.get("/pdf-proxy")
+async def pdf_proxy(url: str):
+    if not (url.startswith("https://res.cloudinary.com/") or url.startswith("http://") or url.startswith("https://")):
+        raise HTTPException(status_code=400, detail="Invalid url scheme")
+        
+    async with httpx.AsyncClient() as client:
+        try:
+            r = await client.get(url, follow_redirects=True)
+            if r.status_code != 200:
+                raise HTTPException(status_code=r.status_code, detail="Failed to fetch document")
+            
+            media_type = r.headers.get("content-type", "application/pdf")
+            if "application/octet-stream" in media_type:
+                media_type = "application/pdf"
+                
+            return StreamingResponse(
+                io.BytesIO(r.content),
+                media_type=media_type,
+                headers={
+                    "Content-Disposition": "inline; filename=\"document.pdf\"",
+                    "X-Content-Type-Options": "nosniff"
+                }
+            )
+        except Exception as e:
+            logger.error(f"Document proxy failed: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
 
 
 

@@ -102,30 +102,39 @@ export function NoticePreview() {
 
       {/* Notice Content Container */}
       {notice.file_url ? (
-        // If there is an attached PDF file, render the PDF directly inline
-        <div className="w-full max-w-[800px] bg-white rounded-3xl border border-slate-200 shadow-lg p-3 flex flex-col gap-3 no-print">
-          <div className="bg-slate-50 rounded-2xl p-4 flex items-center justify-between border border-slate-150">
-            <div className="flex items-center gap-3">
-              <FileText className="w-8 h-8 text-red-500" />
-              <div>
-                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wide">Attached PDF Document</h4>
-                <p className="text-[10px] text-slate-500 mt-0.5">{notice.title}</p>
+        // If there is an attached PDF file, render the PDF directly inline using our pdf-proxy
+        (() => {
+          const originalUrl = notice.file_url.startsWith("http")
+            ? notice.file_url
+            : `${BACKEND_URL.replace(/\/+$/, "")}${notice.file_url.startsWith("/") ? notice.file_url : "/" + notice.file_url}`;
+          const proxyUrl = `${BACKEND_URL.replace(/\/+$/, "")}/api/pdf-proxy?url=${encodeURIComponent(originalUrl)}`;
+
+          return (
+            <div className="w-full max-w-[800px] bg-white rounded-3xl border border-slate-200 shadow-lg p-3 flex flex-col gap-3 no-print">
+              <div className="bg-slate-50 rounded-2xl p-4 flex items-center justify-between border border-slate-150">
+                <div className="flex items-center gap-3">
+                  <FileText className="w-8 h-8 text-red-500" />
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wide">Attached PDF Document</h4>
+                    <p className="text-[10px] text-slate-500 mt-0.5">{notice.title}</p>
+                  </div>
+                </div>
+                <a
+                  href={originalUrl}
+                  download
+                  className="px-4 py-2 bg-slate-200 hover:bg-slate-350 text-slate-800 font-bold rounded-xl text-xs transition"
+                >
+                  Direct Download
+                </a>
               </div>
+              <iframe
+                src={proxyUrl}
+                title={notice.title}
+                className="w-full min-h-[750px] rounded-2xl border border-slate-200"
+              />
             </div>
-            <a
-              href={notice.file_url.startsWith("http") ? notice.file_url : `${BACKEND_URL.replace(/\/+$/, "")}${notice.file_url.startsWith("/") ? notice.file_url : "/" + notice.file_url}`}
-              download
-              className="px-4 py-2 bg-slate-200 hover:bg-slate-350 text-slate-800 font-bold rounded-xl text-xs transition"
-            >
-              Direct Download
-            </a>
-          </div>
-          <iframe
-            src={notice.file_url.startsWith("http") ? notice.file_url : `${BACKEND_URL.replace(/\/+$/, "")}${notice.file_url.startsWith("/") ? notice.file_url : "/" + notice.file_url}`}
-            title={notice.title}
-            className="w-full min-h-[750px] rounded-2xl border border-slate-200"
-          />
-        </div>
+          );
+        })()
       ) : (
         // Otherwise, render the notice maker letterhead layout
         <div

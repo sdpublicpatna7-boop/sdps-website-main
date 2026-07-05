@@ -250,9 +250,13 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         response = await call_next(request)
         
-        is_upload = request.url.path.startswith("/uploads/") or request.url.path.startswith("/api/uploads/")
+        is_frameable = (
+            request.url.path.startswith("/uploads/") or 
+            request.url.path.startswith("/api/uploads/") or
+            request.url.path.startswith("/api/pdf-proxy")
+        )
         
-        if is_upload:
+        if is_frameable:
             response.headers["Content-Security-Policy"] = (
                 "default-src 'self'; "
                 "img-src 'self' data: https: blob:; "
