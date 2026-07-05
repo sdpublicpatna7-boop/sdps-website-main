@@ -48,11 +48,20 @@ export function NoticesList() {
             <div className="flex-1">
               {n.pinned && <span className="inline-block mb-2 px-2 py-0.5 bg-brand-orange text-white text-[10px] uppercase tracking-wider rounded-full">Pinned</span>}
               <div className="text-xs text-brand-ink/50 mb-1">{n.date}</div>
-              <h3 className="font-headline font-semibold">{n.title}</h3>
+              <h3 className="font-headline font-semibold text-brand-ink hover:text-[#0E3B91] transition">
+                <a href={`/notice-preview/${n.id}`} target="_blank" rel="noreferrer">
+                  {n.title}
+                </a>
+              </h3>
             </div>
-            {n.file_url && (
-              <a href={fullUrl(n.file_url)} target="_blank" rel="noreferrer" className="btn-glass shrink-0 text-sm">Download</a>
-            )}
+            <a
+              href={`/notice-preview/${n.id}`}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-glass shrink-0 text-sm font-semibold"
+            >
+              View Notice
+            </a>
           </div>
         ))}
       </div>

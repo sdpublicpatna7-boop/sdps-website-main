@@ -58,6 +58,7 @@ const ShortLinkRedirect = lazy(() => import("@/pages/ShortLinkRedirect"));
 const AdminShortener = lazy(() => import("@/pages/admin/AdminShortener"));
 const LinksPage = lazy(() => import("@/pages/public/LinksPage"));
 const AdminLinktree = lazy(() => import("@/pages/admin/AdminLinktree"));
+const NoticePreview = lazy(() => import("@/pages/public/NoticePreview"));
 
 
 
@@ -135,6 +136,7 @@ function App() {
               <Route path="/elections/board" element={<Suspense fallback={<div>Loading...</div>}><ElectionBoard /></Suspense>} />
               <Route path="/s/:code" element={<Suspense fallback={<div>Loading...</div>}><ShortLinkRedirect /></Suspense>} />
               <Route path="/links" element={<Suspense fallback={<div>Loading...</div>}><LinksPage /></Suspense>} />
+              <Route path="/notice-preview/:id" element={<Suspense fallback={<div>Loading...</div>}><NoticePreview /></Suspense>} />
 
               {/* Public */}
               <Route element={<PublicLayout />}>

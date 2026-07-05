@@ -68,6 +68,14 @@ async def list_notices(limit: int = 50):
     return items
 
 
+@public_router.get("/notices/{item_id}")
+async def get_notice_item(item_id: str):
+    item = await db.notices.find_one({"id": item_id}, {"_id": 0})
+    if not item:
+        raise HTTPException(status_code=404, detail="Not found")
+    return item
+
+
 # ---- Gallery & Videos ----
 @public_router.get("/gallery")
 async def list_gallery(category: Optional[str] = None):
@@ -445,12 +453,16 @@ async def serve_upload(sub_dir: str, filename: str):
         raise HTTPException(status_code=400, detail="Invalid path")
     if not fp.exists() or not fp.is_file():
         raise HTTPException(status_code=404, detail="Not found")
-    # Force download instead of inline rendering. Combined with the upload
-    # allow-list, this prevents stored HTML/SVG from executing in the browser.
+    ext = fp.suffix.lower()
+    if ext in (".pdf", ".png", ".jpg", ".jpeg", ".webp", ".gif"):
+        disposition = "inline"
+    else:
+        disposition = f'attachment; filename="{fp.name}"'
+
     return FileResponse(
         fp,
         headers={
-            "Content-Disposition": f'attachment; filename="{fp.name}"',
+            "Content-Disposition": disposition,
             "X-Content-Type-Options": "nosniff",
         },
     )
