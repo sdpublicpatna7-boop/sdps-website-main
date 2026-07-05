@@ -341,6 +341,9 @@ class SiteSettings(BaseDoc):
         "students": "50000+",
         "alumni": "5000+"
     }
+    signature_principal: str = ""
+    signature_director: str = ""
+    signature_management: str = ""
 
 
 # ---- Contact ----

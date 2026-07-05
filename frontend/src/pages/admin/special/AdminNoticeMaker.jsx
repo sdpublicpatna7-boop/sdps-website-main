@@ -84,6 +84,26 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
     }
   }, [signaturePresets]);
 
+  // Load signature presets from database site-settings on mount
+  useEffect(() => {
+    api.get("/admin/site-settings")
+      .then(r => {
+        const s = r.data || {};
+        setSignaturePresets(prev => {
+          const next = {
+            ...prev,
+            principal: s.signature_principal || prev.principal || "",
+            director: s.signature_director || prev.director || "",
+            management: s.signature_management || prev.management || "",
+          };
+          return next;
+        });
+      })
+      .catch((err) => {
+        console.error("Failed to fetch signature presets from database:", err);
+      });
+  }, []);
+
   // Sync active signature and signatory names on preset select
   useEffect(() => {
     if (selectedRolePreset === "principal") {
@@ -308,6 +328,12 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
         return next;
       });
       setSignatureUrl(url);
+      
+      // Save signature preset to backend database site-settings
+      await api.put("/admin/site-settings", {
+        [`signature_${selectedRolePreset}`]: url
+      });
+      
       toast.success(`${selectedRolePreset} signature uploaded and saved for future use!`);
     } catch (err) {
       console.error(err);
@@ -668,10 +694,18 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
                   {signaturePresets[selectedRolePreset] && (
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={async () => {
                         if (window.confirm(`Clear saved signature image for ${selectedRolePreset}?`)) {
                           setSignaturePresets(prev => ({ ...prev, [selectedRolePreset]: "" }));
-                          toast.success(`Cleared ${selectedRolePreset} signature preset`);
+                          try {
+                            await api.put("/admin/site-settings", {
+                              [`signature_${selectedRolePreset}`]: ""
+                            });
+                            toast.success(`Cleared ${selectedRolePreset} signature preset`);
+                          } catch (err) {
+                            console.error("Failed to clear signature preset in database:", err);
+                            toast.error("Failed to update signature preset on server.");
+                          }
                         }
                       }}
                       className="text-[10px] text-red-500 font-bold hover:underline"

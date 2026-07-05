@@ -57,6 +57,43 @@ export function NoticePreview() {
     ? (logoUrl.startsWith("http") ? logoUrl : `${BACKEND_URL.replace(/\/+$/, "")}${logoUrl.startsWith("/") ? logoUrl : "/" + logoUrl}`)
     : "";
 
+  // Dynamic signature resolution based on notice signatory details
+  const extractSignatory = (desc) => {
+    if (!desc) return { authority: "Principal", header: "By Order:" };
+    const lines = desc.trim().split("\n").map(l => l.trim()).filter(Boolean);
+    if (lines.length >= 2) {
+      const authority = lines[lines.length - 1];
+      const header = lines[lines.length - 2];
+      if (header.toLowerCase().includes("order") || header.toLowerCase().includes("sign") || lines.length === 2) {
+        return { authority, header };
+      }
+      return { authority, header: "" };
+    }
+    return { authority: lines[0] || "Principal", header: "By Order:" };
+  };
+
+  const signatory = extractSignatory(notice?.description);
+  const authLower = (signatory.authority || "Principal").toLowerCase();
+
+  let signatoryPresetKey = "";
+  let signatoryLabel = signatory.authority || "Principal";
+
+  if (authLower.includes("principal")) {
+    signatoryPresetKey = "signature_principal";
+    signatoryLabel = "Principal";
+  } else if (authLower.includes("director")) {
+    signatoryPresetKey = "signature_director";
+    signatoryLabel = "Director";
+  } else if (authLower.includes("management") || authLower.includes("trustee")) {
+    signatoryPresetKey = "signature_management";
+    signatoryLabel = "Management / Trustee";
+  }
+
+  const rawSig = signatoryPresetKey ? settings?.[signatoryPresetKey] : "";
+  const signatureUrl = rawSig
+    ? (rawSig.startsWith("http") ? rawSig : `${BACKEND_URL.replace(/\/+$/, "")}${rawSig.startsWith("/") ? rawSig : "/" + rawSig}`)
+    : "";
+
   return (
     <div className="min-h-screen bg-slate-100 py-8 px-4 flex flex-col items-center print:bg-white print:py-0 print:px-0">
       <style>{`
@@ -201,8 +238,21 @@ export function NoticePreview() {
             </div>
             
             <div className="text-right flex flex-col justify-end items-end pb-3">
-              <div className="w-48 border-t border-slate-300 text-center pt-1.5 mt-8">
-                <span className="font-bold text-xs text-slate-900 uppercase tracking-wide block">Principal</span>
+              {/* Dynamic Signature PNG */}
+              {signatureUrl ? (
+                <div className="flex items-center justify-end mt-1 mb-1 pr-4 relative select-none pointer-events-none" style={{ height: "48px" }}>
+                  <img
+                    src={signatureUrl}
+                    alt="Signature"
+                    className="object-contain"
+                    style={{ height: "48px", maxWidth: "160px" }}
+                  />
+                </div>
+              ) : (
+                <div className="h-12" />
+              )}
+              <div className="w-48 border-t border-slate-300 text-center pt-1.5">
+                <span className="font-bold text-xs text-slate-900 uppercase tracking-wide block">{signatoryLabel}</span>
                 <span className="text-[9px] text-slate-500 block">(Seal & Signature)</span>
               </div>
             </div>
