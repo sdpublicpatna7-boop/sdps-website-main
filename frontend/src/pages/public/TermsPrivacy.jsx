@@ -126,7 +126,7 @@ export default function TermsPrivacy() {
     { icon: BookOpen, title: "Affiliation Rules", desc: "Regulated under state & CBSE board policies." },
     { icon: Scale, title: "Patna Jurisdiction", desc: "Governed under Bihar state legal guidelines." }
   ] : [
-    { icon: Lock, title: "Safe & Encrypted", desc: "Data stored in secure MongoDB databases." },
+    { icon: Lock, title: "Safe & Encrypted", desc: "Data stored in secure, encrypted databases." },
     { icon: Clock, title: "No Spamming", desc: "WhatsApp and SMS sent only for official notices." },
     { icon: Shield, title: "Zero Sharing", desc: "Your personal details are never sold to advertisers." },
     { icon: FileText, title: "CBSE Compliance", desc: "Reports shared only with educational authorities." }
