@@ -184,7 +184,7 @@ sdps-website-main/
 
 ## 🔒 Security & Deployment
 
-- Refer to [DEPLOYMENT.md](file:///Users/aarav/Downloads/sdps-website-main/DEPLOYMENT.md) for Render deployment configuration, MongoDB hosting, and scaling guidelines.
+- Refer to [DEPLOYMENT.md](./DEPLOYMENT.md) for Render deployment configuration, MongoDB hosting, and scaling guidelines.
 - Refer to `SECURITY_REPORT.md` (if present) for details on JWT authorization flows, cookie protection, and masked API credentials.
 
 ---

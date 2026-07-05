@@ -285,10 +285,9 @@ code {
     --sdps-muted: #5C6A82;
 }
 
-/* Display serif for election headlines */
+/* Display face for election headlines (two-font system: Outfit + DM Sans) */
 .font-display {
-    font-family: 'Fraunces', serif;
-    font-feature-settings: 'ss01' on;
+    font-family: 'Outfit', sans-serif;
     letter-spacing: -0.01em;
 }
 

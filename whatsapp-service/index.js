@@ -14,6 +14,7 @@
  * WhatsApp ban risk, and support {name} personalisation in the message.
  */
 const express = require("express");
+const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const qrcode = require("qrcode");
@@ -141,14 +142,25 @@ async function sendMessage(jid, message, media) {
 
 // ── HTTP API ─────────────────────────────────────────────────────────────────
 const app = express();
-app.use(express.json({ limit: "60mb" }));
+  // 20mb accommodates base64-encoded media (~15mb raw) without allowing
+  // memory-exhaustion sized payloads.
+  app.use(express.json({ limit: process.env.WA_BODY_LIMIT || "20mb" }));
 
-// Public keep-alive endpoint (no secret) — for the pinger / uptime monitors.
-app.get("/ping", (req, res) => res.json({ status: "alive", connected: isConnected }));
+  // Public keep-alive endpoint (no secret) — for the pinger / uptime monitors.
+  // Intentionally does NOT reveal connection state to unauthenticated callers.
+  app.get("/ping", (req, res) => res.json({ status: "alive" }));
 
-// Shared-secret auth for every other route.
-app.use((req, res, next) => {
-  if (req.headers["x-wa-secret"] !== WA_API_SECRET) {
+  // Shared-secret auth for every other route (timing-safe comparison).
+  const secretBuf = Buffer.from(WA_API_SECRET);
+  const secretMatches = (provided) => {
+    const providedBuf = Buffer.from(String(provided || ""));
+    return (
+      providedBuf.length === secretBuf.length &&
+      crypto.timingSafeEqual(providedBuf, secretBuf)
+    );
+  };
+  app.use((req, res, next) => {
+    if (!secretMatches(req.headers["x-wa-secret"])) {
     return res.status(401).json({ error: "Unauthorized" });
   }
   next();

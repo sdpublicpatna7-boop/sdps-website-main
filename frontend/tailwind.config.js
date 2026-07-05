@@ -57,11 +57,14 @@ module.exports = {
         },
       },
       fontFamily: {
+        // Two-font system: Outfit for headings, DM Sans for body.
+        // Legacy aliases are remapped to Outfit so existing class usage
+        // keeps working without loading extra font families.
         sans: ["DM Sans", "system-ui", "sans-serif"],
         headline: ["Outfit", "sans-serif"],
-        legacy: ['"Cormorant Garamond"', "serif"],
-        playful: ["Fredoka", "sans-serif"],
-        display: ["Fraunces", "serif"],
+        legacy: ["Outfit", "sans-serif"],
+        playful: ["Outfit", "sans-serif"],
+        display: ["Outfit", "sans-serif"],
       },
       keyframes: {
         "accordion-down": { from: { height: "0" }, to: { height: "var(--radix-accordion-content-height)" } },

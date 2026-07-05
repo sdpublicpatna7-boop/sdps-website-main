@@ -253,6 +253,45 @@ export function AdminSiteSettings() {
             />
           </div>
 
+          {/* Admission Announcement Banner */}
+          <div className="border border-brand-blue/15 bg-brand-blue/[0.03] rounded-xl p-4 space-y-3">
+            <label className="text-xs font-bold uppercase text-brand-ink/60 block">
+              Admission Announcement Banner
+            </label>
+            <p className="text-xs text-brand-ink/40">
+              A slim announcement bar shown at the very top of every public page during admission season. Visitors can dismiss it for their session.
+            </p>
+            <label className="flex items-center gap-2 text-sm text-brand-ink/80 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={String(data.admissions_banner_enabled).toLowerCase() === "true"}
+                onChange={(e) => setData({ ...data, admissions_banner_enabled: e.target.checked ? "true" : "false" })}
+                className="w-4 h-4 accent-brand-blue"
+              />
+              Show the banner on the public site
+            </label>
+            <div>
+              <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">Banner Text</label>
+              <input
+                type="text"
+                value={data.admissions_banner_text || ""}
+                onChange={(e) => setData({ ...data, admissions_banner_text: e.target.value })}
+                placeholder="Admissions Open 2026-27 — Limited seats available"
+                className="w-full rounded-lg border border-brand-ink/15 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">Banner Link</label>
+              <input
+                type="text"
+                value={data.admissions_banner_link || ""}
+                onChange={(e) => setData({ ...data, admissions_banner_link: e.target.value })}
+                placeholder="/admissions"
+                className="w-full rounded-lg border border-brand-ink/15 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
+              />
+            </div>
+          </div>
+
           {/* Admissions Page Open Button */}
           <div>
             <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">

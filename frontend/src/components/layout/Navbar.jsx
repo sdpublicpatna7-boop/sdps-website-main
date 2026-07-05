@@ -2,6 +2,7 @@ import { Link, NavLink } from "react-router-dom";
 import { useState } from "react";
 import { Menu, X, ChevronDown, Phone, Mail } from "lucide-react";
 import { optimizeCloudinary, parseImageTransform } from "@/lib/api";
+import AdmissionBanner from "./AdmissionBanner";
 
 const NAV = [
   { label: "Home", to: "/" },
@@ -49,7 +50,7 @@ const NAV = [
   { label: "Contact", to: "/contact" },
 ];
 
-export default function Navbar({ settings }) {
+export default function Navbar({ settings, hideAdmissionBanner = false }) {
   const [open, setOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState(null);
 
@@ -62,6 +63,8 @@ export default function Navbar({ settings }) {
 
   return (
     <header className="sticky top-0 z-40">
+      {/* Admission season announcement (settings-driven, dismissible) */}
+      {!hideAdmissionBanner && <AdmissionBanner settings={settings} />}
       {/* Top utility bar */}
       <div className="bg-brand-blue-dark text-white text-xs">
         <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between gap-4 flex-wrap">

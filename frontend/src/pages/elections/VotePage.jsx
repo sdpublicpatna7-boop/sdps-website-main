@@ -53,7 +53,11 @@ export default function VotePage() {
     }
     setSubmitting(true);
     try {
-      await castVote(student.admission_no, selections);
+      // Booth access code (if configured by the admin) is stored once per
+      // kiosk session — see the check-in page which reads ?booth= from the URL.
+      let boothCode = "";
+      try { boothCode = sessionStorage.getItem("sdps_booth_code") || ""; } catch (e) {}
+      await castVote(student.admission_no, selections, boothCode);
       navigate("/elections/thank-you");
     } catch (err) {
       toast.error(err?.message || "Failed to submit vote");

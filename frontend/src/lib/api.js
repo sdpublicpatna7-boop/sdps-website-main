@@ -33,20 +33,17 @@ function orderedBases() {
 
 export const API = `${DEFAULT_BASE}/api`;
 
+// The auth token is kept in memory ONLY. Persistence across page loads is
+// handled by the HttpOnly session cookie set by the server, which JavaScript
+// (and therefore any XSS payload) cannot read.
 let inMemoryToken = null;
 try {
-  inMemoryToken = localStorage.getItem("sdps_admin_token") || null;
+  // One-time cleanup: purge tokens persisted by older versions of the app.
+  localStorage.removeItem("sdps_admin_token");
 } catch (e) {}
 
 export function setAuthToken(token) {
   inMemoryToken = token || null;
-  try {
-    if (token) {
-      localStorage.setItem("sdps_admin_token", token);
-    } else {
-      localStorage.removeItem("sdps_admin_token");
-    }
-  } catch (e) {}
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -480,7 +477,7 @@ async function handleSupabaseRequest(config) {
     };
     inMemoryToken = authData.session.access_token;
     try {
-      localStorage.setItem("sdps_admin_token", inMemoryToken);
+      // Presence hint only — the token itself is never persisted.
       localStorage.setItem("sdps_admin_session", "1");
     } catch (e) {}
     supabaseData = {
@@ -493,7 +490,6 @@ async function handleSupabaseRequest(config) {
     await supabase.auth.signOut();
     inMemoryToken = null;
     try {
-      localStorage.removeItem("sdps_admin_token");
       localStorage.removeItem("sdps_admin_session");
     } catch (e) {}
     supabaseData = { status: "ok" };
@@ -1098,7 +1094,6 @@ api.interceptors.response.use(
       inMemoryToken = null;
       try {
         localStorage.removeItem("sdps_admin_session");
-        localStorage.removeItem("sdps_admin_token");
       } catch (e) {}
       window.location.href = "/admin/login";
     }
