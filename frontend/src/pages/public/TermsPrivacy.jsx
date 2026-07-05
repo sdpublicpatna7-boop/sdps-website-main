@@ -22,8 +22,8 @@ const FALLBACK_TERMS = `
   <p>S.D. Public School provides online payment facilities through integrated payment gateways (Razorpay) for school fee collection, registration fees, and other charges.</p>
   <ul>
     <li><strong>Payment Gateway:</strong> All transactions are subject to the terms of the respective payment gateways. The school is not liable for transactions failing due to technical errors on the gateway's or bank's side.</li>
-    <li><strong>Registration Fees:</strong> Admission registration fees are strictly non-refundable and non-transferable under any circumstances.</li>
-    <li><strong>Refund Policy:</strong> Academic and hostel fees once paid are subject to the school board's official refund rules. Refund requests must be submitted in writing to the Principal's office.</li>
+    <li><strong>Fee Payments:</strong> All kinds of fees, including admission, registration, academic, transport, exam, and hostel fees, once paid, are strictly non-refundable and non-transferable under any circumstances.</li>
+    <li><strong>Refund Policy:</strong> S.D. Public School maintains a strict no-refund policy for all services, courses, facilities, and academic sessions.</li>
   </ul>
 
   <h3>4. Campus Facilities & Artificial Turf Rules</h3>
@@ -122,7 +122,7 @@ export default function TermsPrivacy() {
   // Sidebar highlights based on selected tab
   const policyHighlights = pageId === "terms" ? [
     { icon: HeartHandshake, title: "Official Use", desc: "Covers website, ERP portal, and payment desks." },
-    { icon: CreditCard, title: "Fee Clearance", desc: "Registration fees are non-refundable." },
+    { icon: CreditCard, title: "Fee Clearance", desc: "All fees once paid are non-refundable." },
     { icon: BookOpen, title: "Affiliation Rules", desc: "Regulated under state & CBSE board policies." },
     { icon: Scale, title: "Patna Jurisdiction", desc: "Governed under Bihar state legal guidelines." }
   ] : [
