@@ -215,7 +215,7 @@ export default function Home() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: "easeOut" }}>
               <div className="overline mb-4 text-brand-orange font-bold tracking-[0.25em]">Empowering Generations Since 1994</div>
               <h1 className="legacy-title text-brand-ink leading-tight">
-                Welcome to <span className="brand-gradient-text italic font-bold">S.D. Public</span>
+                Welcome to <span className="brand-gradient-text italic font-bold pr-2">S.D. Public</span>
                 <br /> School, <span className="gold-gradient-text">Patna</span>
               </h1>
               <p className="mt-6 text-slate-600 text-base sm:text-lg leading-relaxed max-w-xl">
