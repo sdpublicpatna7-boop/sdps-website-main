@@ -58,7 +58,7 @@ export default function PublicLayout() {
   return (
     <div className="min-h-screen flex flex-col">
       <a href="#main-content" className="skip-link">Skip to main content</a>
-      <Navbar settings={settings} />
+      <Navbar settings={settings} hideAdmissionBanner={isReviewPage} />
       <main id="main-content" className="flex-1">
         <Suspense fallback={<PublicLoading />}>
           <Outlet context={{ settings }} />

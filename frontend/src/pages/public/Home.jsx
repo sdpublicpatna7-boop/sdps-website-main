@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import api, { parseImageTransform } from "../../lib/api";
 import SEO from "../../components/layout/SEO";
+import NoticeBoard from "../../components/home/NoticeBoard";
 
 const FEATURES = [
   { icon: Sparkles, title: "Top-ranked Pre-School", desc: "A nurturing start for young minds with play-based learning" },
@@ -311,6 +312,9 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {/* NOTICE BOARD — latest circulars */}
+      <NoticeBoard />
 
       {/* WHY CHOOSE */}
       <section className="py-24 bg-gradient-to-b from-white to-slate-50/30">
