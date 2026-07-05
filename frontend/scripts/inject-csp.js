@@ -23,7 +23,7 @@ const CSP = [
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: https: blob:",
   "media-src 'self' blob: https:",
-  "frame-src 'self' https://checkout.razorpay.com https://drive.google.com https://www.youtube.com https://www.youtube-nocookie.com",
+  "frame-src 'self' https://api.sdpublic.org https://checkout.razorpay.com https://drive.google.com https://www.youtube.com https://www.youtube-nocookie.com",
   // 'self' + https: keeps cross-origin API (REACT_APP_BACKEND_URL) working over HTTPS.
   "connect-src 'self' https:",
   "object-src 'none'",

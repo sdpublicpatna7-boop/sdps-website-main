@@ -249,21 +249,36 @@ app = FastAPI(title="S.D. Public School API", lifespan=lifespan)
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         response = await call_next(request)
-        response.headers["X-Frame-Options"] = "DENY"
+        
+        is_upload = request.url.path.startswith("/uploads/") or request.url.path.startswith("/api/uploads/")
+        
+        if is_upload:
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'self'; "
+                "img-src 'self' data: https: blob:; "
+                "media-src 'self' blob: https:; "
+                "style-src 'self' 'unsafe-inline'; "
+                "frame-ancestors 'self' https://sdpublic.org https://www.sdpublic.org http://localhost:3000 http://localhost:5173; "
+                "object-src 'none'"
+            )
+            if "X-Frame-Options" in response.headers:
+                del response.headers["X-Frame-Options"]
+        else:
+            response.headers["X-Frame-Options"] = "DENY"
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'self'; "
+                "script-src 'self' https://checkout.razorpay.com; "
+                "frame-src 'self' https://checkout.razorpay.com https://drive.google.com; "
+                "img-src 'self' data: https: blob:; "
+                "media-src 'self' blob: https:; "
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                "font-src 'self' https://fonts.gstatic.com; "
+                "object-src 'none'; base-uri 'self'; form-action 'self'"
+            )
+            
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
-        # Tighten CSP as needed when you know all your script/style origins
-        response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; "
-            "script-src 'self' https://checkout.razorpay.com; "
-            "frame-src https://checkout.razorpay.com https://drive.google.com; "
-            "img-src 'self' data: https: blob:; "
-            "media-src 'self' blob: https:; "
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-            "font-src 'self' https://fonts.gstatic.com; "
-            "object-src 'none'; base-uri 'self'; form-action 'self'"
-        )
         return response
 
 
