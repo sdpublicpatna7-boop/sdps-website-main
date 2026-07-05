@@ -2,13 +2,38 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS'
+// Restrict CORS to configured origins. Set ALLOWED_ORIGINS as a
+// comma-separated list of origins (e.g. "https://www.sdpublic.org").
+const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean)
+
+function corsHeadersFor(req: Request) {
+  const origin = req.headers.get("origin") || ""
+  const allowed = ALLOWED_ORIGINS.length === 0
+    ? origin // no allowlist configured: reflect origin (backwards compatible)
+    : (ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0])
+  return {
+    "Access-Control-Allow-Origin": allowed,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Vary": "Origin",
+  }
+}
+
+function timingSafeEqual(a: string, b: string): boolean {
+  const enc = new TextEncoder()
+  const ab = enc.encode(a)
+  const bb = enc.encode(b)
+  if (ab.length !== bb.length) return false
+  let diff = 0
+  for (let i = 0; i < ab.length; i++) diff |= ab[i] ^ bb[i]
+  return diff === 0
 }
 
 serve(async (req) => {
+  const corsHeaders = corsHeadersFor(req)
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -68,7 +93,7 @@ serve(async (req) => {
       }
 
       // 4. Send WhatsApp message via Render microservice
-      console.log(`Sending OTP code ${code} to ${profile.phone} via ${waServiceUrl}...`)
+      console.log(`Sending OTP to ${profile.phone} via ${waServiceUrl}...`)
       try {
         const waRes = await fetch(`${waServiceUrl}/api/qp/send-whatsapp-otp-direct`, {
           method: "POST",
@@ -87,9 +112,6 @@ serve(async (req) => {
       } catch (waErr) {
         console.error("Failed to connect to Render WhatsApp microservice:", waErr)
       }
-
-      // For debugging convenience, log to console
-      console.warn(`[OTP DEBUG] User=${username} Code=${code}`)
 
       return new Response(JSON.stringify({ message: "Verification code sent to WhatsApp." }), { status: 200, headers: corsHeaders })
     }
@@ -111,8 +133,15 @@ serve(async (req) => {
         return new Response(JSON.stringify({ error: "No active verification request found." }), { status: 400, headers: corsHeaders })
       }
 
-      // 2. Validate code
-      if (otpRec.code !== otp) {
+      // 2. Validate code (timing-safe compare)
+      if (!timingSafeEqual(String(otpRec.code), String(otp))) {
+        // Burn the OTP after too many failed attempts to prevent brute force.
+        const attempts = (otpRec.attempts || 0) + 1
+        if (attempts >= 5) {
+          await supabaseAdmin.from('qp_otps').delete().eq('username', username)
+          return new Response(JSON.stringify({ error: "Too many failed attempts. Request a new code." }), { status: 429, headers: corsHeaders })
+        }
+        await supabaseAdmin.from('qp_otps').update({ attempts }).eq('username', username)
         return new Response(JSON.stringify({ error: "Invalid verification code." }), { status: 400, headers: corsHeaders })
       }
 

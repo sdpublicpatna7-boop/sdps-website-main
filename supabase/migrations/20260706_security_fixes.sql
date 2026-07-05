@@ -58,7 +58,10 @@ drop policy if exists "Anyone can view non-sensitive election settings" on publi
 create policy "Anyone can view non-sensitive election settings" on public.election_settings
   for select using (key not in ('voting_access_code'));
 
--- ── 5. Lock down RPC execution grants ──
+-- ── 5. qp_otps: track failed verification attempts (OTP brute-force guard) ──
+alter table public.qp_otps add column if not exists attempts integer not null default 0;
+
+-- ── 6. Lock down RPC execution grants ──
 -- Allow public execution of the narrow lookup functions only.
 grant execute on function public.lookup_admission_application(text, text) to anon, authenticated;
 grant execute on function public.verify_tc_record(text) to anon, authenticated;

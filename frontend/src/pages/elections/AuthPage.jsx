@@ -18,6 +18,18 @@ export default function AuthPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Booth access code: the kiosk operator opens /elections?booth=CODE once;
+    // the code is kept in sessionStorage and sent with every vote so that
+    // votes cannot be cast from outside the polling booth.
+    try {
+      const boothParam = new URLSearchParams(window.location.search).get("booth");
+      if (boothParam) {
+        sessionStorage.setItem("sdps_booth_code", boothParam);
+        // Strip the code from the address bar so voters never see it.
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+    } catch (e) {}
+
     getElectionSettings().then((settings) => {
       setClosed(String(settings?.election_open ?? "true").toLowerCase() === "false");
     }).catch(() => {});

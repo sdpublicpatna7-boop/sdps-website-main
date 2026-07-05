@@ -84,6 +84,7 @@ create table if not exists public.qp_otps (
   phone text not null,
   code text not null,
   expires_at timestamp with time zone not null,
+  attempts integer not null default 0,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
