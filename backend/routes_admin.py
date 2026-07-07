@@ -34,7 +34,8 @@ from models import (
     EligibilityRow, FeeStructureRow, HostelFeeRow, HostelGalleryItem,
     AdministrationMember, LegalPage, ExamPaper, HolidayHomework, KheloPatnaPhoto,
     Educator, GeneratedThumbnail, SalarySlip, SalaryCertificate, ExperienceCertificate, Testimonial,
-    ShortLink, ShortLinkCreate, LinktreeSettings, LinktreeLink, LinktreeClick
+    ShortLink, ShortLinkCreate, LinktreeSettings, LinktreeLink, LinktreeClick,
+    ApaarRosterStudent, ApaarSubmission
 )
 
 logger = logging.getLogger(__name__)
@@ -1583,3 +1584,93 @@ async def maps_reviews_stats(admin: TokenData = Depends(require_permission("goog
         "browsers": browsers,
         "top_ips": top_ips
     }
+
+
+# ---- APAAR ID Data Manager ----
+@admin_router.get("/apaar/submissions")
+async def get_apaar_submissions(
+    search: Optional[str] = None,
+    class_name: Optional[str] = None,
+    admin: TokenData = Depends(require_permission("site-settings"))
+):
+    query = {}
+    if search:
+        query["$or"] = [
+            {"admission_no": {"$regex": search, "$options": "i"}},
+            {"student_name": {"$regex": search, "$options": "i"}},
+            {"student_aadhaar_name": {"$regex": search, "$options": "i"}}
+        ]
+    if class_name:
+        query["class_name"] = class_name
+        
+    submissions = await db.apaar_submissions.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return submissions
+
+
+@admin_router.delete("/apaar/submissions/{id}")
+async def delete_apaar_submission(id: str, admin: TokenData = Depends(require_permission("site-settings"))):
+    res = await db.apaar_submissions.delete_one({"id": id})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Submission not found")
+    return {"status": "success", "message": "Submission deleted successfully"}
+
+
+@admin_router.get("/apaar/roster")
+async def get_apaar_roster(
+    search: Optional[str] = None,
+    admin: TokenData = Depends(require_permission("site-settings"))
+):
+    query = {}
+    if search:
+        query["$or"] = [
+            {"admission_no": {"$regex": search, "$options": "i"}},
+            {"student_name": {"$regex": search, "$options": "i"}},
+            {"father_name": {"$regex": search, "$options": "i"}}
+        ]
+    students = await db.apaar_roster.find(query, {"_id": 0}).sort("admission_no", 1).to_list(2000)
+    return students
+
+
+@admin_router.post("/apaar/roster/bulk")
+async def upload_apaar_roster(
+    payload: List[Dict[str, str]] = Body(...),
+    admin: TokenData = Depends(require_permission("site-settings"))
+):
+    if not payload:
+        raise HTTPException(status_code=400, detail="Empty payload")
+        
+    from pymongo import UpdateOne
+    operations = []
+    for item in payload:
+        adm = item.get("admission_no")
+        name = item.get("student_name")
+        f_name = item.get("father_name")
+        if not adm or not name:
+            continue
+            
+        operations.append(
+            UpdateOne(
+                {"admission_no": adm.strip()},
+                {
+                    "$set": {
+                        "id": item.get("id") or new_id(),
+                        "admission_no": adm.strip(),
+                        "student_name": name.strip(),
+                        "father_name": (f_name or "").strip(),
+                        "created_at": now_iso()
+                    }
+                },
+                upsert=True
+            )
+        )
+        
+    if operations:
+        await db.apaar_roster.bulk_write(operations)
+        
+    return {"status": "success", "message": f"Successfully processed {len(operations)} roster records."}
+
+
+@admin_router.delete("/apaar/roster/clear")
+async def clear_apaar_roster(admin: TokenData = Depends(require_permission("site-settings"))):
+    await db.apaar_roster.delete_many({})
+    return {"status": "success", "message": "APAAR school roster cleared successfully."}

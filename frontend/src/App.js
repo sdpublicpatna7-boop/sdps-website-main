@@ -37,6 +37,7 @@ const Contact = lazy(() => import("@/pages/public/Contact"));
 const TermsPrivacy = lazy(() => import("@/pages/public/TermsPrivacy"));
 const KheloPatna = lazy(() => import("@/pages/public/KheloPatna"));
 const MapsReview = lazy(() => import("@/pages/public/MapsReview"));
+const ApaarForm = lazy(() => import("@/pages/public/ApaarForm"));
 
 
 const AdminLayout = lazy(() => import("@/components/admin/AdminLayout"));
@@ -111,6 +112,7 @@ const AdminSalarySlip = lazy(() => import("@/pages/admin/special/AdminSalarySlip
 const AdminSalaryCertificate = lazy(() => import("@/pages/admin/special/AdminSalaryCertificate"));
 const AdminExperienceCertificate = lazy(() => import("@/pages/admin/special/AdminExperienceCertificate"));
 const AdminNoticeMaker = lazy(() => import("@/pages/admin/special/AdminNoticeMaker"));
+const AdminApaarManager = lazy(() => import("@/pages/admin/special/AdminApaarManager"));
 
 function AdminLoading() {
   return (
@@ -168,6 +170,7 @@ function App() {
                 <Route path="/privacy" element={<TermsPrivacy />} />
                 <Route path="/khelo-patna" element={<KheloPatna />} />
                 <Route path="/review" element={<MapsReview />} />
+                <Route path="/apaar" element={<ApaarForm />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
 
@@ -219,6 +222,7 @@ function App() {
                 <Route path="salary-certificate" element={<AdminSalaryCertificate />} />
                 <Route path="experience-certificate" element={<AdminExperienceCertificate />} />
                 <Route path="notice-maker" element={<AdminNoticeMaker />} />
+                <Route path="apaar" element={<Suspense fallback={<AdminLoading />}><AdminApaarManager /></Suspense>} />
                 <Route path="site-settings" element={<AdminSiteSettings />} />
                 <Route path="integration-keys" element={<AdminIntegrationKeys />} />
                 <Route path="khelo-patna-gallery" element={<AdminKheloPatna />} />

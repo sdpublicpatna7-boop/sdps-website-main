@@ -22,7 +22,8 @@ from models import (
     PopupSettings, FeeVerifyRequest, SiteSettings,
     ContactMessage, now_iso, new_id,
     EligibilityRow, FeeStructureRow, HostelFeeRow, HostelGalleryItem,
-    AdministrationMember, LegalPage, ShortLinkClick, LinktreeSettings, LinktreeLink, LinktreeClick
+    AdministrationMember, LegalPage, ShortLinkClick, LinktreeSettings, LinktreeLink, LinktreeClick,
+    ApaarRosterStudent, ApaarSubmission
 )
 from email_service import send_email, render_template
 from sms_service import send_sms
@@ -1447,6 +1448,54 @@ async def pdf_proxy(url: str):
         except Exception as e:
             logger.error(f"Document proxy failed: {e}")
             raise HTTPException(status_code=500, detail=str(e))
+
+
+@public_router.get("/apaar/verify")
+async def verify_apaar_student(admission_no: str):
+    if not admission_no:
+        raise HTTPException(status_code=400, detail="Admission number is required")
+    
+    admission_no_clean = admission_no.strip()
+    # Check if student is in roster
+    student = await db.apaar_roster.find_one({"admission_no": admission_no_clean}, {"_id": 0})
+    if not student:
+        return {"status": "not_found", "message": "Admission number not found in school roster. Please verify."}
+    
+    # Check if student already submitted details
+    existing = await db.apaar_submissions.find_one({"admission_no": admission_no_clean}, {"_id": 0})
+    if existing:
+        return {
+            "status": "already_submitted",
+            "message": "APAAR details have already been submitted for this student."
+        }
+        
+    return {
+        "status": "success",
+        "student": student
+    }
+
+
+@public_router.post("/apaar/submit")
+async def submit_apaar_form(payload: ApaarSubmission = Body(...)):
+    admission_no_clean = payload.admission_no.strip()
+    # Verify the student exists in the roster
+    roster_student = await db.apaar_roster.find_one({"admission_no": admission_no_clean}, {"_id": 0})
+    if not roster_student:
+        raise HTTPException(status_code=400, detail="Invalid admission number. Not found in roster.")
+        
+    # Check for duplicate submission
+    existing = await db.apaar_submissions.find_one({"admission_no": admission_no_clean})
+    if existing:
+        raise HTTPException(status_code=400, detail="APAAR data already submitted for this student.")
+        
+    # Normalize inputs
+    doc = payload.model_dump()
+    doc["admission_no"] = admission_no_clean
+    doc["student_name"] = roster_student["student_name"]  # Ensure name matches school records
+    doc["father_name"] = roster_student["father_name"]  # Ensure father name matches school records
+    
+    await db.apaar_submissions.insert_one(doc.copy())
+    return {"status": "success", "message": "APAAR registration details submitted successfully."}
 
 
 

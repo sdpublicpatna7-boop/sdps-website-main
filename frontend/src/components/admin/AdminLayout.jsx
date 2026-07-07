@@ -6,7 +6,7 @@ import {
   GraduationCap, Award, FileText, CreditCard, Settings, LogOut,
   MessageSquare, Megaphone, ScrollText, FilePlus, Home, Hotel,
   BookOpen, Shield, EyeOff, ClipboardList, BookMarked, UserCog,
-  Menu, X, Star, Cake, Link2 as LinkIcon
+  Menu, X, Star, Cake, Link2 as LinkIcon, Fingerprint
 } from "lucide-react";
 import { useAuth } from "../../lib/auth";
 import { startPinger } from "../../lib/pinger";
@@ -67,6 +67,7 @@ const NAV_ITEMS = [
   { to: "/admin/fee-reminders", label: "Fee Reminders", icon: CreditCard, permission: "whatsapp" },
   { to: "/admin/birthday-greetings", label: "Birthday Greetings", icon: Cake, permission: "whatsapp" },
   { to: "/admin/site-settings", label: "Site Settings", icon: Settings, permission: "site-settings" },
+  { to: "/admin/apaar", label: "APAAR ID Manager", icon: Fingerprint, permission: "site-settings" },
   { to: "/admin/link-shortener", label: "Link Shortener", icon: LinkIcon, permission: "site-settings" },
   { to: "/admin/linktree", label: "Linktree Builder", icon: Award, permission: "site-settings" },
   { to: "/admin/integration-keys", label: "Integration Keys", icon: Settings, role: "superadmin" },

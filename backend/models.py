@@ -656,3 +656,37 @@ class LinktreeClick(BaseDoc):
     device: str
     referrer: str
     country: str
+
+
+# ---- APAAR ID Data Collection ----
+class ApaarRosterStudent(BaseDoc):
+    id: str = Field(default_factory=new_id)
+    admission_no: str
+    student_name: str
+    father_name: str
+    created_at: str = Field(default_factory=now_iso)
+
+
+class ApaarSubmission(BaseDoc):
+    id: str = Field(default_factory=new_id)
+    admission_no: str
+    student_name: str  # School records (from roster)
+    father_name: str  # School records (from roster)
+    
+    # Aadhaar info
+    student_aadhaar_name: str
+    student_aadhaar_no: str
+    student_dob: str
+    student_gender: str
+    
+    father_aadhaar_name: str
+    father_aadhaar_no: str
+    mother_aadhaar_name: str
+    mother_aadhaar_no: str
+    
+    # Other details
+    class_name: str
+    section: str
+    mobile_no: str
+    consent: bool = True
+    created_at: str = Field(default_factory=now_iso)
