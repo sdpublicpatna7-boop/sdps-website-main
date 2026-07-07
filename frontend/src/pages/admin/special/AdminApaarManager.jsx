@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import api from "../../../lib/api";
 import { toast, Toaster } from "sonner";
+import * as XLSX from "xlsx";
 import { 
   Users, Search, Download, Trash2, Eye, Upload, 
   Database, FileText, Fingerprint, ShieldCheck, Loader2, RefreshCw 
@@ -94,27 +95,66 @@ export default function AdminApaarManager() {
     }
   };
 
-  // Bulk Upload logic (Excel paste or CSV upload)
   const handleBulkUpload = async (e) => {
     e.preventDefault();
-    let records = [];
 
-    // Prioritize CSV File Upload
     if (selectedFile) {
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const text = event.target.result;
-        records = parseCSVOrText(text);
-        submitRosterData(records);
-      };
-      reader.readAsText(selectedFile);
+      const fileExt = selectedFile.name.split(".").pop().toLowerCase();
+      if (fileExt === "xlsx" || fileExt === "xls") {
+        const reader = new FileReader();
+        setBulkUploading(true);
+        reader.onload = async (event) => {
+          try {
+            const data = new Uint8Array(event.target.result);
+            const workbook = XLSX.read(data, { type: "array" });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            
+            // Convert to array of arrays (raw values)
+            const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            
+            const parsed = [];
+            rows.forEach((row) => {
+              if (row && row.length >= 2) {
+                const admission_no = (row[0] || "").toString().trim();
+                const student_name = (row[1] || "").toString().trim();
+                const father_name = row[2] ? row[2].toString().trim() : "";
+                
+                // Skip headers
+                if (admission_no.toLowerCase().includes("adm") || student_name.toLowerCase().includes("student")) {
+                  return;
+                }
+                
+                if (admission_no && student_name) {
+                  parsed.push({ admission_no, student_name, father_name });
+                }
+              }
+            });
+            
+            submitRosterData(parsed);
+          } catch (err) {
+            console.error(err);
+            toast.error("Failed to parse Excel file. Ensure it is a valid format.");
+            setBulkUploading(false);
+          }
+        };
+        reader.readAsArrayBuffer(selectedFile);
+      } else {
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+          const text = event.target.result;
+          const records = parseCSVOrText(text);
+          submitRosterData(records);
+        };
+        reader.readAsText(selectedFile);
+      }
     } 
     // Fallback to pasted raw text
     else if (pastedData.trim()) {
-      records = parseCSVOrText(pastedData);
+      const records = parseCSVOrText(pastedData);
       submitRosterData(records);
     } else {
-      toast.error("Please paste data or select a CSV file to upload.");
+      toast.error("Please paste data or select a CSV/Excel file to upload.");
     }
   };
 
@@ -446,16 +486,16 @@ export default function AdminApaarManager() {
                 <div className="relative flex items-center justify-center p-4 border border-dashed border-slate-300 hover:border-brand-blue/50 rounded-2xl transition bg-slate-50/50 cursor-pointer">
                   <input
                     type="file"
-                    accept=".csv,.txt"
+                    accept=".csv,.txt,.xlsx,.xls"
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                     onChange={(e) => setSelectedFile(e.target.files[0])}
                   />
                   <div className="text-center">
                     <FileText className="w-6 h-6 text-slate-400 mx-auto mb-1.5" />
                     <span className="text-[11px] font-bold text-slate-700 block">
-                      {selectedFile ? selectedFile.name : "Option B: Choose CSV File"}
+                      {selectedFile ? selectedFile.name : "Option B: Choose CSV or Excel File"}
                     </span>
-                    <span className="text-[9px] text-slate-400 block mt-0.5">Accepts .csv format</span>
+                    <span className="text-[9px] text-slate-400 block mt-0.5">Accepts .csv, .xlsx, .xls formats</span>
                   </div>
                 </div>
               </div>
