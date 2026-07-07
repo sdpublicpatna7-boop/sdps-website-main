@@ -124,7 +124,7 @@ export default function ApaarForm() {
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-orange/10 text-brand-orange text-xs font-bold uppercase tracking-wider mb-3">
             <Fingerprint className="w-4 h-4" /> APAAR Registry Setup
           </div>
-          <h1 className="legacy-title brand-gradient-text">APAAR ID Consent & Registration</h1>
+          <h1 className="legacy-title brand-gradient-text pb-2">APAAR ID Consent & Registration</h1>
           <p className="mt-4 text-brand-ink/70 max-w-xl mx-auto text-sm sm:text-base">
             Create your Automated Permanent Academic Account Registry (APAAR) ID. Fill out the form below according to your official Aadhaar Card details.
           </p>
