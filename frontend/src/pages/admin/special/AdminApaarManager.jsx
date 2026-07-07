@@ -118,11 +118,30 @@ export default function AdminApaarManager() {
               return;
             }
 
-            // Detect column indices based on header names (first row)
-            const firstRow = rows[0] || [];
+            // Detect column indices based on header names dynamically by scanning the first 10 rows
+            let headerRowIndex = 0;
+            let maxHeaderMatches = 0;
+            const searchTerms = ["adm", "name", "roll", "class", "father", "sec", "user"];
+
+            for (let rIdx = 0; rIdx < Math.min(rows.length, 10); rIdx++) {
+              const row = rows[rIdx] || [];
+              const lowerRow = row.map(cell => (cell || "").toString().toLowerCase().trim());
+              const matchesCount = lowerRow.filter(cell => 
+                searchTerms.some(term => cell.includes(term))
+              ).length;
+              
+              if (matchesCount > maxHeaderMatches) {
+                maxHeaderMatches = matchesCount;
+                headerRowIndex = rIdx;
+              }
+            }
+
+            const firstRow = rows[headerRowIndex] || [];
             let admIdx = 0;
             let nameIdx = 1;
             let fatherIdx = 2;
+            let classIdx = -1;
+            let secIdx = -1;
             
             const headers = firstRow.map(h => (h || "").toString().toLowerCase().trim());
             
@@ -162,7 +181,6 @@ export default function AdminApaarManager() {
             }
 
             // 4. Search for Class Name
-            let classIdx = -1;
             const classTerms = ["class", "grade", "standard", "std"];
             for (let term of classTerms) {
               const idx = headers.findIndex(h => h.includes(term));
@@ -173,7 +191,6 @@ export default function AdminApaarManager() {
             }
 
             // 5. Search for Section
-            let secIdx = -1;
             const secTerms = ["section", "sec"];
             for (let term of secTerms) {
               const idx = headers.findIndex(h => h.includes(term));
@@ -184,8 +201,8 @@ export default function AdminApaarManager() {
             }
 
             const parsed = [];
-            // Skip the first row (header) when iterating
-            for (let i = 1; i < rows.length; i++) {
+            // Skip the header row when iterating
+            for (let i = headerRowIndex + 1; i < rows.length; i++) {
               const row = rows[i];
               if (row && row.length > Math.max(admIdx, nameIdx)) {
                 const admission_no = (row[admIdx] || "").toString().trim();
@@ -236,18 +253,36 @@ export default function AdminApaarManager() {
     let nameIdx = 1;
     let fatherIdx = 2;
     
-    // Parse first line to check if it's a header
-    const firstLineParts = lines[0].includes("\t") ? lines[0].split("\t") : lines[0].split(",");
+    // Parse first line to check if it's a header dynamically by scanning the first 10 lines
+    let headerLineIndex = 0;
+    let maxHeaderMatches = 0;
+    const searchTerms = ["adm", "name", "roll", "class", "father", "sec", "user"];
+
+    for (let lIdx = 0; lIdx < Math.min(lines.length, 10); lIdx++) {
+      const line = lines[lIdx];
+      const parts = line.includes("\t") ? line.split("\t") : line.split(",");
+      const lowerParts = parts.map(p => p.trim().toLowerCase());
+      const matchesCount = lowerParts.filter(p => 
+        searchTerms.some(term => p.includes(term))
+      ).length;
+      
+      if (matchesCount > maxHeaderMatches) {
+        maxHeaderMatches = matchesCount;
+        headerLineIndex = lIdx;
+      }
+    }
+
+    const firstLineParts = lines[headerLineIndex].includes("\t") 
+      ? lines[headerLineIndex].split("\t") 
+      : lines[headerLineIndex].split(",");
     const headers = firstLineParts.map(h => h.trim().toLowerCase());
     
-    const hasHeader = headers.some(h => 
-      h.includes("adm") || h.includes("name") || h.includes("roll") || h.includes("class") || h.includes("father") || h.includes("user")
-    );
-    
     let startIdx = 0;
+    let classIdx = -1;
+    let secIdx = -1;
     
-    if (hasHeader) {
-      startIdx = 1; // skip header line in loop
+    if (maxHeaderMatches > 0) {
+      startIdx = headerLineIndex + 1; // skip header line in loop
       
       // 1. Search for Admission No
       const admTerms = ["admission", "admn", "adm_no", "adm no", "username", "user_name", "user name"];
@@ -280,7 +315,6 @@ export default function AdminApaarManager() {
       }
 
       // 4. Search for Class Name
-      let classIdx = -1;
       const classTerms = ["class", "grade", "standard", "std"];
       for (let term of classTerms) {
         const idx = headers.findIndex(h => h.includes(term));
@@ -291,7 +325,6 @@ export default function AdminApaarManager() {
       }
 
       // 5. Search for Section
-      let secIdx = -1;
       const secTerms = ["section", "sec"];
       for (let term of secTerms) {
         const idx = headers.findIndex(h => h.includes(term));
