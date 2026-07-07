@@ -796,24 +796,81 @@ export default function AdminApaarManager() {
                 </div>
               </div>
 
-              {/* Aadhaar Photo Preview block */}
-              {selectedSub.aadhaar_photo && (
-                <div className="border-t border-slate-100 pt-4 space-y-2">
-                  <span className="text-slate-400 font-medium block">Uploaded Aadhaar Card Photo:</span>
-                  <div className="rounded-2xl border border-slate-200 overflow-hidden bg-slate-50/50 p-2 text-center">
-                    <img 
-                      src={selectedSub.aadhaar_photo} 
-                      alt="Aadhaar Card Document" 
-                      className="max-h-[250px] mx-auto rounded-xl shadow-sm hover:scale-[1.01] transition cursor-pointer object-contain"
-                      onClick={() => {
-                        const w = window.open();
-                        w.document.write(`<img src="${selectedSub.aadhaar_photo}" style="max-width:100%; max-height:100vh; display:block; margin:auto;" />`);
-                      }}
-                    />
-                    <span className="text-[10px] text-slate-400 mt-1 block">Click image to view in full resolution</span>
-                  </div>
+              {/* Aadhaar Photos Preview block */}
+              <div className="border-t border-slate-100 pt-4 space-y-4">
+                <span className="text-slate-400 font-medium block">Uploaded Aadhaar Card Photos:</span>
+                
+                <div className="space-y-4">
+                  {selectedSub.student_aadhaar_photo && (
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-slate-450 font-bold block">Student's Aadhaar Card</span>
+                      <div className="rounded-xl border border-slate-200 overflow-hidden bg-slate-50/50 p-2 text-center">
+                        <img 
+                          src={selectedSub.student_aadhaar_photo} 
+                          alt="Student Aadhaar" 
+                          className="max-h-[160px] mx-auto rounded-lg shadow-sm hover:scale-[1.01] transition cursor-pointer object-contain"
+                          onClick={() => {
+                            const w = window.open();
+                            w.document.write(`<img src="${selectedSub.student_aadhaar_photo}" style="max-width:100%; max-height:100vh; display:block; margin:auto;" />`);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedSub.father_aadhaar_photo && (
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-slate-455 font-bold block">Father's Aadhaar Card</span>
+                      <div className="rounded-xl border border-slate-200 overflow-hidden bg-slate-50/50 p-2 text-center">
+                        <img 
+                          src={selectedSub.father_aadhaar_photo} 
+                          alt="Father Aadhaar" 
+                          className="max-h-[160px] mx-auto rounded-lg shadow-sm hover:scale-[1.01] transition cursor-pointer object-contain"
+                          onClick={() => {
+                            const w = window.open();
+                            w.document.write(`<img src="${selectedSub.father_aadhaar_photo}" style="max-width:100%; max-height:100vh; display:block; margin:auto;" />`);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedSub.mother_aadhaar_photo && (
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-slate-455 font-bold block">Mother's Aadhaar Card</span>
+                      <div className="rounded-xl border border-slate-200 overflow-hidden bg-slate-50/50 p-2 text-center">
+                        <img 
+                          src={selectedSub.mother_aadhaar_photo} 
+                          alt="Mother Aadhaar" 
+                          className="max-h-[160px] mx-auto rounded-lg shadow-sm hover:scale-[1.01] transition cursor-pointer object-contain"
+                          onClick={() => {
+                            const w = window.open();
+                            w.document.write(`<img src="${selectedSub.mother_aadhaar_photo}" style="max-width:100%; max-height:100vh; display:block; margin:auto;" />`);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {!selectedSub.student_aadhaar_photo && selectedSub.aadhaar_photo && (
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-slate-455 font-bold block">Aadhaar Card Photo</span>
+                      <div className="rounded-xl border border-slate-200 overflow-hidden bg-slate-50/50 p-2 text-center">
+                        <img 
+                          src={selectedSub.aadhaar_photo} 
+                          alt="Aadhaar" 
+                          className="max-h-[160px] mx-auto rounded-lg shadow-sm hover:scale-[1.01] transition cursor-pointer object-contain"
+                          onClick={() => {
+                            const w = window.open();
+                            w.document.write(`<img src="${selectedSub.aadhaar_photo}" style="max-width:100%; max-height:100vh; display:block; margin:auto;" />`);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
+                <span className="text-[9px] text-slate-400 block text-center">Click any image to view in full resolution</span>
+              </div>
             </div>
 
             {/* Modal Footer */}

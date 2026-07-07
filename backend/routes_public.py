@@ -1494,19 +1494,25 @@ async def submit_apaar_form(payload: ApaarSubmission = Body(...)):
     doc["student_name"] = roster_student["student_name"]  # Ensure name matches school records
     doc["father_name"] = roster_student["father_name"]  # Ensure father name matches school records
     
-    # Process base64 photo and upload to Cloudinary (or local fallback)
-    photo_data = payload.aadhaar_photo
-    if photo_data and photo_data.startswith("data:image/"):
-        import base64
-        from image_utils import compress_and_save
-        try:
-            header, base64_str = photo_data.split(",", 1)
-            file_bytes = base64.b64decode(base64_str)
-            res = compress_and_save(file_bytes, sub_dir="apaar", max_dimension=1600, quality=82)
-            doc["aadhaar_photo"] = res["url"]
-        except Exception as e:
-            print("Failed to save Aadhaar photo to Cloudinary:", e)
-            # Fail gracefully, but fall back to base64 if upload fails completely
+    # Process and upload the three Aadhaar photos to Cloudinary (or local fallback)
+    import base64
+    from image_utils import compress_and_save
+
+    photo_fields = ["student_aadhaar_photo", "father_aadhaar_photo", "mother_aadhaar_photo", "aadhaar_photo"]
+    for field in photo_fields:
+        val = doc.get(field)
+        if val and val.startswith("data:image/"):
+            try:
+                header, base64_str = val.split(",", 1)
+                file_bytes = base64.b64decode(base64_str)
+                res = compress_and_save(file_bytes, sub_dir="apaar", max_dimension=1600, quality=82)
+                doc[field] = res["url"]
+            except Exception as e:
+                print(f"Failed to save {field} to Cloudinary:", e)
+
+    # Align fallback field for compatibility
+    if doc.get("student_aadhaar_photo") and not doc.get("aadhaar_photo"):
+        doc["aadhaar_photo"] = doc["student_aadhaar_photo"]
             
     await db.apaar_submissions.insert_one(doc.copy())
     return {"status": "success", "message": "APAAR registration details submitted successfully."}

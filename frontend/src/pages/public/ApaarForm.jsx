@@ -15,6 +15,7 @@ export default function ApaarForm() {
   // Camera states
   const [showCamera, setShowCamera] = useState(false);
   const [cameraStream, setCameraStream] = useState(null);
+  const [activePhotoField, setActivePhotoField] = useState(""); // student_aadhaar_photo | father_aadhaar_photo | mother_aadhaar_photo
 
   // Form payload
   const [form, setForm] = useState({
@@ -33,6 +34,9 @@ export default function ApaarForm() {
     section: "",
     mobile_no: "",
     aadhaar_photo: "",
+    student_aadhaar_photo: "",
+    father_aadhaar_photo: "",
+    mother_aadhaar_photo: "",
     consent: true
   });
 
@@ -111,13 +115,14 @@ export default function ApaarForm() {
   };
 
   // Camera capture methods
-  const startCamera = async () => {
+  const startCamera = async (field) => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "environment" },
         audio: false
       });
       setCameraStream(stream);
+      setActivePhotoField(field);
       setShowCamera(true);
       setTimeout(() => {
         const videoEl = document.getElementById("webcam-preview");
@@ -148,14 +153,14 @@ export default function ApaarForm() {
       const rawBase64 = canvas.toDataURL("image/jpeg", 0.9);
       
       compressImage(rawBase64, (compressed) => {
-        setForm(prev => ({ ...prev, aadhaar_photo: compressed }));
+        setForm(prev => ({ ...prev, [activePhotoField]: compressed }));
         stopCamera();
         toast.success("Photo captured and optimized!");
       });
     }
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = (e, field) => {
     const file = e.target.files[0];
     if (file) {
       if (!file.type.startsWith("image/")) {
@@ -165,7 +170,7 @@ export default function ApaarForm() {
       const reader = new FileReader();
       reader.onload = (event) => {
         compressImage(event.target.result, (compressed) => {
-          setForm(prev => ({ ...prev, aadhaar_photo: compressed }));
+          setForm(prev => ({ ...prev, [field]: compressed }));
           toast.success("Aadhaar photo compressed and loaded!");
         });
       };
@@ -204,14 +209,25 @@ export default function ApaarForm() {
       toast.error("Mobile number must be exactly 10 digits.");
       return;
     }
-    if (!form.aadhaar_photo) {
-      toast.error("Please upload or take a photo of the Aadhaar Card.");
+    if (!form.student_aadhaar_photo) {
+      toast.error("Please upload or take a photo of the Student's Aadhaar Card.");
+      return;
+    }
+    if (!form.father_aadhaar_photo) {
+      toast.error("Please upload or take a photo of the Father's Aadhaar Card.");
+      return;
+    }
+    if (!form.mother_aadhaar_photo) {
+      toast.error("Please upload or take a photo of the Mother's Aadhaar Card.");
       return;
     }
     if (!form.consent) {
       toast.error("You must check the consent box to submit the form.");
       return;
     }
+    
+    // Set first photo for back-compat fallback
+    form.aadhaar_photo = form.student_aadhaar_photo;
 
     setSubmitting(true);
     try {
@@ -224,6 +240,90 @@ export default function ApaarForm() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const renderPhotoCard = (label, fieldKey) => {
+    const photoVal = form[fieldKey];
+    const isThisFieldActive = showCamera && activePhotoField === fieldKey;
+    
+    return (
+      <div className="space-y-2">
+        <label className="text-[10px] uppercase font-bold tracking-wider text-slate-500 block mb-1">
+          {label} *
+        </label>
+        
+        {isThisFieldActive ? (
+          <div className="bg-slate-900 rounded-2xl p-3 text-center relative overflow-hidden border border-slate-800 shadow-inner">
+            <div className="absolute top-2 left-2 bg-red-600 text-white text-[8px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded flex items-center gap-1 z-10">
+              <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping" /> Live Camera
+            </div>
+            <video 
+              id="webcam-preview" 
+              autoPlay 
+              playsInline 
+              className="w-full max-h-[180px] object-cover rounded-lg border border-white/10" 
+            />
+            <div className="flex justify-center gap-2 mt-2">
+              <button
+                type="button"
+                onClick={handleCapture}
+                className="px-3 py-1 bg-white text-slate-900 font-bold rounded-lg text-[9px] flex items-center gap-1 hover:scale-[1.02] transition"
+              >
+                <Camera className="w-3 h-3" /> Capture
+              </button>
+              <button
+                type="button"
+                onClick={stopCamera}
+                className="px-3 py-1 bg-slate-800 text-white font-bold rounded-lg text-[9px] hover:bg-slate-700 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : photoVal ? (
+          <div className="border border-emerald-250 rounded-xl p-2 bg-emerald-50/20 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <img 
+                src={photoVal} 
+                alt={`${label} Preview`} 
+                className="w-12 h-9 object-cover rounded-lg border border-slate-200" 
+              />
+              <div className="min-w-0">
+                <span className="text-[10px] text-emerald-800 font-bold block truncate">{label} uploaded</span>
+                <span className="text-[8px] text-slate-400 block truncate">Image compressed successfully</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setForm(prev => ({ ...prev, [fieldKey]: "" }))}
+              className="p-1.5 border border-red-200 hover:bg-red-50 text-red-500 rounded-lg transition"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => startCamera(fieldKey)}
+              className="flex items-center justify-center gap-1.5 py-1.5 px-3 border border-slate-200 hover:border-brand-blue rounded-xl text-[10px] sm:text-xs font-bold text-slate-700 hover:bg-blue-50/10 transition"
+            >
+              <Camera className="w-3.5 h-3.5 text-[#0E3B91]" /> Camera
+            </button>
+            
+            <label className="flex items-center justify-center gap-1.5 py-1.5 px-3 border border-slate-200 hover:border-brand-blue rounded-xl text-[10px] sm:text-xs font-bold text-slate-700 hover:bg-blue-50/10 transition cursor-pointer text-center">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleFileChange(e, fieldKey)}
+              />
+              <Upload className="w-3.5 h-3.5 text-[#0E3B91]" /> Upload File
+            </label>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -482,86 +582,17 @@ export default function ApaarForm() {
               </div>
             </div>
 
-            {/* Aadhaar Photo Upload via camera or file */}
+            {/* Aadhaar Photo Uploads via camera or file */}
             <div className="space-y-4 pt-2">
               <h3 className="text-xs font-bold text-[#0E3B91] uppercase tracking-wide border-b pb-1.5 border-slate-100">
-                Aadhaar Card Photo Upload *
+                Aadhaar Card Photo Uploads *
               </h3>
               
-              {showCamera ? (
-                <div className="bg-slate-900 rounded-2xl p-4 text-center relative overflow-hidden">
-                  <div className="absolute top-4 left-4 bg-red-600 text-white text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded flex items-center gap-1 z-10">
-                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping" /> Live Camera
-                  </div>
-                  <video 
-                    id="webcam-preview" 
-                    autoPlay 
-                    playsInline 
-                    className="w-full max-h-[300px] object-cover rounded-xl border border-white/10" 
-                  />
-                  <div className="flex justify-center gap-3 mt-4">
-                    <button
-                      type="button"
-                      onClick={handleCapture}
-                      className="px-4 py-2 bg-white text-slate-900 font-bold rounded-xl text-xs flex items-center gap-1.5 hover:scale-[1.02] transition"
-                    >
-                      <Camera className="w-3.5 h-3.5" /> Capture Photo
-                    </button>
-                    <button
-                      type="button"
-                      onClick={stopCamera}
-                      className="px-4 py-2 bg-slate-800 text-white font-bold rounded-xl text-xs hover:bg-slate-700 transition"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : form.aadhaar_photo ? (
-                <div className="border border-emerald-250 rounded-2xl p-4 bg-emerald-50/30 flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <img 
-                      src={form.aadhaar_photo} 
-                      alt="Aadhaar Preview" 
-                      className="w-16 h-12 object-cover rounded-lg border border-slate-200" 
-                    />
-                    <div className="min-w-0">
-                      <span className="text-[10px] text-emerald-800 font-bold block">Aadhaar Card Uploaded</span>
-                      <span className="text-[9px] text-slate-400 truncate block">Image optimized successfully</span>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setForm(prev => ({ ...prev, aadhaar_photo: "" }))}
-                    className="p-2 border border-red-200 hover:bg-red-50 text-red-500 rounded-xl transition"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={startCamera}
-                    className="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-2xl hover:border-brand-blue hover:bg-blue-50/10 transition group text-center"
-                  >
-                    <Camera className="w-6 h-6 text-[#0E3B91] group-hover:scale-110 transition duration-300 mb-2" />
-                    <span className="text-xs font-bold text-slate-800">Take Photo with Camera</span>
-                    <span className="text-[9px] text-slate-400 block mt-1">Use mobile/webcam directly</span>
-                  </button>
-                  
-                  <label className="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-2xl hover:border-brand-blue hover:bg-blue-50/10 transition group text-center cursor-pointer">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleFileChange}
-                    />
-                    <Upload className="w-6 h-6 text-[#0E3B91] group-hover:scale-110 transition duration-300 mb-2" />
-                    <span className="text-xs font-bold text-slate-800">Upload Image File</span>
-                    <span className="text-[9px] text-slate-400 block mt-1">Select from photo library</span>
-                  </label>
-                </div>
-              )}
+              <div className="space-y-4">
+                {renderPhotoCard("Student's Aadhaar Photo", "student_aadhaar_photo")}
+                {renderPhotoCard("Father's Aadhaar Photo", "father_aadhaar_photo")}
+                {renderPhotoCard("Mother's Aadhaar Photo", "mother_aadhaar_photo")}
+              </div>
             </div>
 
             {/* Declaration Consent box */}
