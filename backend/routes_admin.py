@@ -1604,6 +1604,21 @@ async def get_apaar_submissions(
         query["class_name"] = class_name
         
     submissions = await db.apaar_submissions.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    
+    # Backfill missing class/sec from roster dynamically
+    for sub in submissions:
+        if not sub.get("class_name") or not sub.get("section"):
+            roster_student = await db.apaar_roster.find_one({"admission_no": sub["admission_no"]}, {"class_name": 1, "section": 1, "_id": 0})
+            if roster_student:
+                c_name = roster_student.get("class_name") or ""
+                sec = roster_student.get("section") or ""
+                sub["class_name"] = c_name
+                sub["section"] = sec
+                await db.apaar_submissions.update_one(
+                    {"admission_no": sub["admission_no"]},
+                    {"$set": {"class_name": c_name, "section": sec}}
+                )
+                
     return submissions
 
 

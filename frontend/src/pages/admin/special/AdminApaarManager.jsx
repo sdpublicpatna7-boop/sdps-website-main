@@ -540,7 +540,7 @@ export default function AdminApaarManager() {
                       <tr key={s.id} className="hover:bg-slate-50/70 transition">
                         <td className="py-3.5 px-6 font-bold text-slate-900">{s.admission_no}</td>
                         <td className="py-3.5 px-6 uppercase">{s.student_name}</td>
-                        <td className="py-3.5 px-6">{s.class_name} - {s.section}</td>
+                        <td className="py-3.5 px-6">{(s.class_name || s.section) ? `${s.class_name || ""} ${s.section ? `- ${s.section}` : ""}` : "—"}</td>
                         <td className="py-3.5 px-6 uppercase text-brand-blue">{s.student_aadhaar_name}</td>
                         <td className="py-3.5 px-6">{s.mobile_no}</td>
                         <td className="py-3.5 px-6">{new Date(s.created_at).toLocaleDateString()}</td>

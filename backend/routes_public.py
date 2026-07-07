@@ -1493,6 +1493,8 @@ async def submit_apaar_form(payload: ApaarSubmission = Body(...)):
     doc["admission_no"] = admission_no_clean
     doc["student_name"] = roster_student["student_name"]  # Ensure name matches school records
     doc["father_name"] = roster_student["father_name"]  # Ensure father name matches school records
+    doc["class_name"] = roster_student.get("class_name") or ""
+    doc["section"] = roster_student.get("section") or ""
     
     # Process and upload the three Aadhaar photos to Cloudinary (or local fallback)
     import base64
