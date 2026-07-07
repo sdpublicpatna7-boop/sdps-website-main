@@ -83,8 +83,8 @@ export default function ApaarForm() {
     img.src = base64Str;
     img.onload = () => {
       const canvas = document.createElement("canvas");
-      const MAX_WIDTH = 800;
-      const MAX_HEIGHT = 800;
+      const MAX_WIDTH = 1600;
+      const MAX_HEIGHT = 1600;
       let width = img.width;
       let height = img.height;
 
@@ -105,7 +105,7 @@ export default function ApaarForm() {
       const ctx = canvas.getContext("2d");
       ctx.drawImage(img, 0, 0, width, height);
       
-      const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.6);
+      const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.85);
       callback(compressedDataUrl);
     };
   };
@@ -299,7 +299,7 @@ export default function ApaarForm() {
                     onChange={(e) => setAdmissionNo(e.target.value.replace(/\D/g, ""))}
                   />
                 </div>
-                <span className="text-[9px] text-slate-400 mt-1 block">Only enter the digits of your admission number. The "SDPS" prefix is added automatically.</span>
+                 <span className="text-[10px] text-brand-orange font-semibold mt-1 block">Note: SDPS prefix is already added, just enter your number (digits only).</span>
               </div>
 
               <button
