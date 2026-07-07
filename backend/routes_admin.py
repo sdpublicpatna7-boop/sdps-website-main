@@ -1630,6 +1630,119 @@ async def delete_apaar_submission(id: str, admin: TokenData = Depends(require_pe
     return {"status": "success", "message": "Submission deleted successfully"}
 
 
+@admin_router.post("/apaar/submissions/{id}/reject")
+async def reject_apaar_submission(
+    id: str,
+    payload: Dict[str, str] = Body(...),
+    admin: TokenData = Depends(require_permission("site-settings"))
+):
+    remarks = payload.get("remarks", "")
+    if not remarks:
+        raise HTTPException(status_code=400, detail="Remarks/reason is required for rejection.")
+        
+    sub = await db.apaar_submissions.find_one({"id": id})
+    if not sub:
+        raise HTTPException(status_code=404, detail="Submission not found")
+        
+    admission_no = sub["admission_no"]
+    student_name = sub["student_name"]
+    mobile_no = sub.get("mobile_no", "")
+    
+    prompt = f"""
+Write a highly professional, polite, and formal notification from the S.D. Public School (SDPS) Patna Administration to parents.
+The student "{student_name}" (Admission No: {admission_no}) has a correction required in their APAAR ID consent form submission.
+
+Reason for rejection / Action needed: {remarks}
+
+Provide the parent with their direct resubmission link: https://sdpublic.org/apaar?adm={admission_no}
+
+IMPORTANT formatting rules:
+- Format the response specifically as a WhatsApp message.
+- Use simple emojis if helpful, but maintain a formal, clear, and respectful tone.
+- Do NOT use markdown headings or bullet formatting that looks bad in WhatsApp. Use *bold* for emphasis where appropriate in WhatsApp syntax.
+- Ensure it includes the link.
+- Only return the final message text to send. Do not write any pre-amble or explanations.
+"""
+    
+    groq_key = os.environ.get("GROQ_API_KEY", "")
+    gemini_key = os.environ.get("GEMINI_API_KEY", "")
+    
+    msg_text = ""
+    if groq_key:
+        try:
+            import httpx
+            headers = {
+                "Authorization": f"Bearer {groq_key}",
+                "Content-Type": "application/json"
+            }
+            body = {
+                "model": os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile"),
+                "messages": [
+                    {"role": "system", "content": "You are a professional school administrator. Write formal, concise WhatsApp notifications to parents."},
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.3
+            }
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                res = await client.post("https://api.groq.com/openai/v1/chat/completions", json=body, headers=headers)
+                if res.status_code == 200:
+                    data = res.json()
+                    msg_text = data["choices"][0]["message"]["content"].strip()
+        except Exception as e:
+            print("Groq message generation failed:", e)
+            
+    if not msg_text and gemini_key:
+        try:
+            import httpx
+            model = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={gemini_key}"
+            body = {
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {"temperature": 0.3}
+            }
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                res = await client.post(url, json=body)
+                if res.status_code == 200:
+                    data = res.json()
+                    msg_text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+        except Exception as e:
+            print("Gemini message generation failed:", e)
+            
+    if not msg_text:
+        msg_text = f"""*S.D. PUBLIC SCHOOL, PATNA*
+*Notice: APAAR Registration Correction Required*
+
+Dear Parent,
+
+We have reviewed the APAAR ID Consent & Registration details submitted for your child, *{student_name}* (Admission No: *{admission_no}*).
+
+There is a correction required in the submitted information:
+{remarks}
+
+Please re-submit the correct details using the link below:
+👉 https://sdpublic.org/apaar?adm={admission_no}
+
+For any queries, please message us on WhatsApp.
+
+Regards,
+*Administration*
+*S.D. Public School, Patna*"""
+
+    # Delete submission from database to allow re-submission
+    await db.apaar_submissions.delete_one({"id": id})
+    
+    phone = mobile_no.strip()
+    if len(phone) == 10 and phone.isdigit():
+        phone = f"91{phone}"
+        
+    return {
+        "status": "success",
+        "message": "Submission rejected and deleted successfully.",
+        "whatsapp_message": msg_text,
+        "mobile_no": phone
+    }
+
+
 @admin_router.get("/apaar/roster")
 async def get_apaar_roster(
     search: Optional[str] = None,

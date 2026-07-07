@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import api from "../../lib/api";
 import { toast, Toaster } from "sonner";
 import { Loader2, Fingerprint, ShieldCheck, CheckCircle2, ChevronRight, ArrowLeft, Camera, Upload, Trash2, Video } from "lucide-react";
@@ -39,6 +39,15 @@ export default function ApaarForm() {
     mother_aadhaar_photo: "",
     consent: true
   });
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const adm = params.get("adm") || params.get("admission");
+    if (adm) {
+      const digitsOnly = adm.toUpperCase().replace("SDPS", "").replace(/\D/g, "");
+      setAdmissionNo(digitsOnly);
+    }
+  }, []);
 
   const handleVerify = async (e) => {
     e.preventDefault();
