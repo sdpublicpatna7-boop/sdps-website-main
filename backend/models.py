@@ -691,4 +691,5 @@ class ApaarSubmission(BaseDoc):
     section: str
     mobile_no: str
     consent: bool = True
+    aadhaar_photo: Optional[str] = ""
     created_at: str = Field(default_factory=now_iso)

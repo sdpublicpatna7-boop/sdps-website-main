@@ -1,7 +1,7 @@
 import { useState } from "react";
 import api from "../../lib/api";
 import { toast, Toaster } from "sonner";
-import { Loader2, Fingerprint, ShieldCheck, CheckCircle2, ChevronRight, ArrowLeft } from "lucide-react";
+import { Loader2, Fingerprint, ShieldCheck, CheckCircle2, ChevronRight, ArrowLeft, Camera, Upload, Trash2, Video } from "lucide-react";
 
 export default function ApaarForm() {
   const [step, setStep] = useState(1); // 1: Verify, 2: Fill Form, 3: Success
@@ -11,6 +11,10 @@ export default function ApaarForm() {
   
   // Student record confirmed from school roster
   const [rosterRecord, setRosterRecord] = useState(null);
+
+  // Camera states
+  const [showCamera, setShowCamera] = useState(false);
+  const [cameraStream, setCameraStream] = useState(null);
 
   // Form payload
   const [form, setForm] = useState({
@@ -28,18 +32,26 @@ export default function ApaarForm() {
     class_name: "",
     section: "",
     mobile_no: "",
+    aadhaar_photo: "",
     consent: true
   });
 
   const handleVerify = async (e) => {
     e.preventDefault();
     if (!admissionNo.trim()) {
-      toast.error("Please enter an admission number.");
+      toast.error("Please enter your admission number digits.");
       return;
     }
     setVerifying(true);
+    
+    // Normalize admission number to prepend SDPS prefix
+    const rawInput = admissionNo.trim();
+    const finalAdmissionNo = rawInput.toLowerCase().startsWith("sdps") 
+      ? rawInput.toUpperCase() 
+      : `SDPS${rawInput}`;
+
     try {
-      const r = await api.get(`/apaar/verify?admission_no=${encodeURIComponent(admissionNo.trim())}`);
+      const r = await api.get(`/apaar/verify?admission_no=${encodeURIComponent(finalAdmissionNo)}`);
       if (r.data.status === "success") {
         const student = r.data.student;
         setRosterRecord(student);
@@ -62,6 +74,102 @@ export default function ApaarForm() {
       toast.error(err?.response?.data?.detail || "Verification failed. Please check connection.");
     } finally {
       setVerifying(false);
+    }
+  };
+
+  // Image compressor helper
+  const compressImage = (base64Str, callback) => {
+    const img = new Image();
+    img.src = base64Str;
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const MAX_WIDTH = 800;
+      const MAX_HEIGHT = 800;
+      let width = img.width;
+      let height = img.height;
+
+      if (width > height) {
+        if (width > MAX_WIDTH) {
+          height *= MAX_WIDTH / width;
+          width = MAX_WIDTH;
+        }
+      } else {
+        if (height > MAX_HEIGHT) {
+          width *= MAX_HEIGHT / height;
+          height = MAX_HEIGHT;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.6);
+      callback(compressedDataUrl);
+    };
+  };
+
+  // Camera capture methods
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+        audio: false
+      });
+      setCameraStream(stream);
+      setShowCamera(true);
+      setTimeout(() => {
+        const videoEl = document.getElementById("webcam-preview");
+        if (videoEl) videoEl.srcObject = stream;
+      }, 150);
+    } catch (err) {
+      console.error(err);
+      toast.error("Camera access denied or unavailable. Please choose file upload instead.");
+    }
+  };
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+    }
+    setCameraStream(null);
+    setShowCamera(false);
+  };
+
+  const handleCapture = () => {
+    const videoEl = document.getElementById("webcam-preview");
+    if (videoEl) {
+      const canvas = document.createElement("canvas");
+      canvas.width = videoEl.videoWidth || 640;
+      canvas.height = videoEl.videoHeight || 480;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+      const rawBase64 = canvas.toDataURL("image/jpeg", 0.9);
+      
+      compressImage(rawBase64, (compressed) => {
+        setForm(prev => ({ ...prev, aadhaar_photo: compressed }));
+        stopCamera();
+        toast.success("Photo captured and optimized!");
+      });
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) {
+        toast.error("Please upload an image file.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        compressImage(event.target.result, (compressed) => {
+          setForm(prev => ({ ...prev, aadhaar_photo: compressed }));
+          toast.success("Aadhaar photo compressed and loaded!");
+        });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -94,6 +202,10 @@ export default function ApaarForm() {
     }
     if (form.mobile_no.length !== 10) {
       toast.error("Mobile number must be exactly 10 digits.");
+      return;
+    }
+    if (!form.aadhaar_photo) {
+      toast.error("Please upload or take a photo of the Aadhaar Card.");
       return;
     }
     if (!form.consent) {
@@ -172,13 +284,22 @@ export default function ApaarForm() {
                 <label className="text-[10px] uppercase font-bold tracking-wider text-slate-500 block mb-1">
                   School Admission Number *
                 </label>
-                <input
-                  required
-                  placeholder="e.g. 1945/22"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-250 focus:border-brand-blue outline-none text-sm transition bg-slate-50/20 focus:bg-white"
-                  value={admissionNo}
-                  onChange={(e) => setAdmissionNo(e.target.value)}
-                />
+                <div className="flex rounded-xl overflow-hidden border border-slate-250 focus-within:border-brand-blue transition">
+                  <span className="bg-slate-100 px-4 py-3 text-sm font-bold text-slate-500 border-r border-slate-200 select-none">
+                    SDPS
+                  </span>
+                  <input
+                    required
+                    type="text"
+                    pattern="[0-9]*"
+                    inputMode="numeric"
+                    placeholder="e.g. 98"
+                    className="flex-1 w-full px-4 py-3 outline-none text-sm bg-slate-50/20 focus:bg-white"
+                    value={admissionNo}
+                    onChange={(e) => setAdmissionNo(e.target.value.replace(/\D/g, ""))}
+                  />
+                </div>
+                <span className="text-[9px] text-slate-400 mt-1 block">Only enter the digits of your admission number. The "SDPS" prefix is added automatically.</span>
               </div>
 
               <button
@@ -361,6 +482,88 @@ export default function ApaarForm() {
               </div>
             </div>
 
+            {/* Aadhaar Photo Upload via camera or file */}
+            <div className="space-y-4 pt-2">
+              <h3 className="text-xs font-bold text-[#0E3B91] uppercase tracking-wide border-b pb-1.5 border-slate-100">
+                Aadhaar Card Photo Upload *
+              </h3>
+              
+              {showCamera ? (
+                <div className="bg-slate-900 rounded-2xl p-4 text-center relative overflow-hidden">
+                  <div className="absolute top-4 left-4 bg-red-600 text-white text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded flex items-center gap-1 z-10">
+                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping" /> Live Camera
+                  </div>
+                  <video 
+                    id="webcam-preview" 
+                    autoPlay 
+                    playsInline 
+                    className="w-full max-h-[300px] object-cover rounded-xl border border-white/10" 
+                  />
+                  <div className="flex justify-center gap-3 mt-4">
+                    <button
+                      type="button"
+                      onClick={handleCapture}
+                      className="px-4 py-2 bg-white text-slate-900 font-bold rounded-xl text-xs flex items-center gap-1.5 hover:scale-[1.02] transition"
+                    >
+                      <Camera className="w-3.5 h-3.5" /> Capture Photo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={stopCamera}
+                      className="px-4 py-2 bg-slate-800 text-white font-bold rounded-xl text-xs hover:bg-slate-700 transition"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : form.aadhaar_photo ? (
+                <div className="border border-emerald-250 rounded-2xl p-4 bg-emerald-50/30 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <img 
+                      src={form.aadhaar_photo} 
+                      alt="Aadhaar Preview" 
+                      className="w-16 h-12 object-cover rounded-lg border border-slate-200" 
+                    />
+                    <div className="min-w-0">
+                      <span className="text-[10px] text-emerald-800 font-bold block">Aadhaar Card Uploaded</span>
+                      <span className="text-[9px] text-slate-400 truncate block">Image optimized successfully</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setForm(prev => ({ ...prev, aadhaar_photo: "" }))}
+                    className="p-2 border border-red-200 hover:bg-red-50 text-red-500 rounded-xl transition"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={startCamera}
+                    className="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-2xl hover:border-brand-blue hover:bg-blue-50/10 transition group text-center"
+                  >
+                    <Camera className="w-6 h-6 text-[#0E3B91] group-hover:scale-110 transition duration-300 mb-2" />
+                    <span className="text-xs font-bold text-slate-800">Take Photo with Camera</span>
+                    <span className="text-[9px] text-slate-400 block mt-1">Use mobile/webcam directly</span>
+                  </button>
+                  
+                  <label className="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-2xl hover:border-brand-blue hover:bg-blue-50/10 transition group text-center cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleFileChange}
+                    />
+                    <Upload className="w-6 h-6 text-[#0E3B91] group-hover:scale-110 transition duration-300 mb-2" />
+                    <span className="text-xs font-bold text-slate-800">Upload Image File</span>
+                    <span className="text-[9px] text-slate-400 block mt-1">Select from photo library</span>
+                  </label>
+                </div>
+              )}
+            </div>
+
             {/* Declaration Consent box */}
             <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
               <label className="flex items-start gap-3 cursor-pointer select-none">
@@ -440,6 +643,7 @@ export default function ApaarForm() {
                   class_name: "",
                   section: "",
                   mobile_no: "",
+                  aadhaar_photo: "",
                   consent: true
                 });
                 setStep(1);

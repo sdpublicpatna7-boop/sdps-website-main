@@ -795,6 +795,25 @@ export default function AdminApaarManager() {
                   </span>
                 </div>
               </div>
+
+              {/* Aadhaar Photo Preview block */}
+              {selectedSub.aadhaar_photo && (
+                <div className="border-t border-slate-100 pt-4 space-y-2">
+                  <span className="text-slate-400 font-medium block">Uploaded Aadhaar Card Photo:</span>
+                  <div className="rounded-2xl border border-slate-200 overflow-hidden bg-slate-50/50 p-2 text-center">
+                    <img 
+                      src={selectedSub.aadhaar_photo} 
+                      alt="Aadhaar Card Document" 
+                      className="max-h-[250px] mx-auto rounded-xl shadow-sm hover:scale-[1.01] transition cursor-pointer object-contain"
+                      onClick={() => {
+                        const w = window.open();
+                        w.document.write(`<img src="${selectedSub.aadhaar_photo}" style="max-width:100%; max-height:100vh; display:block; margin:auto;" />`);
+                      }}
+                    />
+                    <span className="text-[10px] text-slate-400 mt-1 block">Click image to view in full resolution</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Modal Footer */}
