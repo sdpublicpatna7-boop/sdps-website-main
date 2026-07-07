@@ -664,6 +664,8 @@ class ApaarRosterStudent(BaseDoc):
     admission_no: str
     student_name: str
     father_name: str
+    class_name: Optional[str] = ""
+    section: Optional[str] = ""
     created_at: str = Field(default_factory=now_iso)
 
 

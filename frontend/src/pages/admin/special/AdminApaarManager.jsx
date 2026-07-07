@@ -161,6 +161,28 @@ export default function AdminApaarManager() {
               }
             }
 
+            // 4. Search for Class Name
+            let classIdx = -1;
+            const classTerms = ["class", "grade", "standard", "std"];
+            for (let term of classTerms) {
+              const idx = headers.findIndex(h => h.includes(term));
+              if (idx !== -1) {
+                classIdx = idx;
+                break;
+              }
+            }
+
+            // 5. Search for Section
+            let secIdx = -1;
+            const secTerms = ["section", "sec"];
+            for (let term of secTerms) {
+              const idx = headers.findIndex(h => h.includes(term));
+              if (idx !== -1) {
+                secIdx = idx;
+                break;
+              }
+            }
+
             const parsed = [];
             // Skip the first row (header) when iterating
             for (let i = 1; i < rows.length; i++) {
@@ -169,9 +191,11 @@ export default function AdminApaarManager() {
                 const admission_no = (row[admIdx] || "").toString().trim();
                 const student_name = (row[nameIdx] || "").toString().trim();
                 const father_name = row[fatherIdx] ? row[fatherIdx].toString().trim() : "";
+                const class_name = classIdx !== -1 && row[classIdx] ? row[classIdx].toString().trim() : "";
+                const section = secIdx !== -1 && row[secIdx] ? row[secIdx].toString().trim() : "";
                 
                 if (admission_no && student_name) {
-                  parsed.push({ admission_no, student_name, father_name });
+                  parsed.push({ admission_no, student_name, father_name, class_name, section });
                 }
               }
             }
@@ -254,6 +278,28 @@ export default function AdminApaarManager() {
           break;
         }
       }
+
+      // 4. Search for Class Name
+      let classIdx = -1;
+      const classTerms = ["class", "grade", "standard", "std"];
+      for (let term of classTerms) {
+        const idx = headers.findIndex(h => h.includes(term));
+        if (idx !== -1) {
+          classIdx = idx;
+          break;
+        }
+      }
+
+      // 5. Search for Section
+      let secIdx = -1;
+      const secTerms = ["section", "sec"];
+      for (let term of secTerms) {
+        const idx = headers.findIndex(h => h.includes(term));
+        if (idx !== -1) {
+          secIdx = idx;
+          break;
+        }
+      }
     }
     
     for (let i = startIdx; i < lines.length; i++) {
@@ -263,9 +309,11 @@ export default function AdminApaarManager() {
         const admission_no = (parts[admIdx] || "").trim();
         const student_name = (parts[nameIdx] || "").trim();
         const father_name = parts[fatherIdx] ? parts[fatherIdx].trim() : "";
+        const class_name = classIdx !== -1 && parts[classIdx] ? parts[classIdx].trim() : "";
+        const section = secIdx !== -1 && parts[secIdx] ? parts[secIdx].trim() : "";
         
         if (admission_no && student_name) {
-          parsed.push({ admission_no, student_name, father_name });
+          parsed.push({ admission_no, student_name, father_name, class_name, section });
         }
       }
     }
@@ -531,6 +579,7 @@ export default function AdminApaarManager() {
                         <th className="py-3 px-6">Admission No</th>
                         <th className="py-3 px-6">Student Name (School)</th>
                         <th className="py-3 px-6">Father's Name (School)</th>
+                        <th className="py-3 px-6">Class/Sec</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
@@ -539,6 +588,7 @@ export default function AdminApaarManager() {
                           <td className="py-3 px-6 font-bold text-slate-900">{r.admission_no}</td>
                           <td className="py-3 px-6 uppercase">{r.student_name}</td>
                           <td className="py-3 px-6 uppercase">{r.father_name || "—"}</td>
+                          <td className="py-3 px-6">{r.class_name || "—"} {r.section ? `- ${r.section}` : ""}</td>
                         </tr>
                       ))}
                     </tbody>

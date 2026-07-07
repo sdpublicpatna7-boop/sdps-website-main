@@ -1645,6 +1645,8 @@ async def upload_apaar_roster(
         adm = item.get("admission_no")
         name = item.get("student_name")
         f_name = item.get("father_name")
+        c_name = item.get("class_name")
+        sec = item.get("section")
         if not adm or not name:
             continue
             
@@ -1657,6 +1659,8 @@ async def upload_apaar_roster(
                         "admission_no": adm.strip(),
                         "student_name": name.strip(),
                         "father_name": (f_name or "").strip(),
+                        "class_name": (c_name or "").strip(),
+                        "section": (sec or "").strip(),
                         "created_at": now_iso()
                     }
                 },

@@ -139,6 +139,7 @@ function App() {
               <Route path="/s/:code" element={<Suspense fallback={<div>Loading...</div>}><ShortLinkRedirect /></Suspense>} />
               <Route path="/links" element={<Suspense fallback={<div>Loading...</div>}><LinksPage /></Suspense>} />
               <Route path="/notice-preview/:id" element={<Suspense fallback={<div>Loading...</div>}><NoticePreview /></Suspense>} />
+              <Route path="/apaar" element={<Suspense fallback={<AdminLoading />}><ApaarForm /></Suspense>} />
 
               {/* Public */}
               <Route element={<PublicLayout />}>
@@ -170,7 +171,6 @@ function App() {
                 <Route path="/privacy" element={<TermsPrivacy />} />
                 <Route path="/khelo-patna" element={<KheloPatna />} />
                 <Route path="/review" element={<MapsReview />} />
-                <Route path="/apaar" element={<ApaarForm />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
 
