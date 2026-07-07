@@ -1735,11 +1735,18 @@ Regards,
     if len(phone) == 10 and phone.isdigit():
         phone = f"91{phone}"
         
+    from whatsapp_service import send_whatsapp_text
+    auto_sent = False
+    if phone:
+        wa_res = await send_whatsapp_text(phone, msg_text)
+        auto_sent = wa_res.get("success", False)
+        
     return {
         "status": "success",
         "message": "Submission rejected and deleted successfully.",
         "whatsapp_message": msg_text,
-        "mobile_no": phone
+        "mobile_no": phone,
+        "auto_sent": auto_sent
     }
 
 

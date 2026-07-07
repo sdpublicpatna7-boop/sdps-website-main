@@ -49,18 +49,20 @@ export default function AdminApaarManager() {
         remarks: rejectRemarks.trim()
       });
       
-      toast.success("Submission rejected and deleted successfully!");
+      if (res.data.auto_sent) {
+        toast.success("Submission rejected. Rejection notice sent automatically via WhatsApp!");
+      } else {
+        toast.warning("WhatsApp service offline. Redirecting to manual WhatsApp send...");
+        if (res.data.whatsapp_message && res.data.mobile_no) {
+          const text = encodeURIComponent(res.data.whatsapp_message);
+          const url = `https://wa.me/${res.data.mobile_no}?text=${text}`;
+          window.open(url, "_blank");
+        }
+      }
       setShowRejectModal(false);
       setRejectRemarks("");
       setRejectingSub(null);
       fetchSubmissions();
-      
-      // Open WhatsApp web with formal message
-      if (res.data.whatsapp_message && res.data.mobile_no) {
-        const text = encodeURIComponent(res.data.whatsapp_message);
-        const url = `https://wa.me/${res.data.mobile_no}?text=${text}`;
-        window.open(url, "_blank");
-      }
     } catch (err) {
       console.error(err);
       toast.error(err?.response?.data?.detail || "Failed to reject submission.");
