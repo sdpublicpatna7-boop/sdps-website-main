@@ -112,24 +112,69 @@ export default function AdminApaarManager() {
             
             // Convert to array of arrays (raw values)
             const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            if (rows.length === 0) {
+              toast.error("The uploaded Excel file is empty.");
+              setBulkUploading(false);
+              return;
+            }
+
+            // Detect column indices based on header names (first row)
+            const firstRow = rows[0] || [];
+            let admIdx = 0;
+            let nameIdx = 1;
+            let fatherIdx = 2;
             
-            const parsed = [];
-            rows.forEach((row) => {
-              if (row && row.length >= 2) {
-                const admission_no = (row[0] || "").toString().trim();
-                const student_name = (row[1] || "").toString().trim();
-                const father_name = row[2] ? row[2].toString().trim() : "";
-                
-                // Skip headers
-                if (admission_no.toLowerCase().includes("adm") || student_name.toLowerCase().includes("student")) {
-                  return;
+            const headers = firstRow.map(h => (h || "").toString().toLowerCase().trim());
+            
+            // 1. Search for Admission No
+            const admTerms = ["admission", "admn", "adm_no", "adm no", "username", "user_name", "user name"];
+            for (let term of admTerms) {
+              const idx = headers.findIndex(h => h.includes(term));
+              if (idx !== -1) {
+                admIdx = idx;
+                break;
+              }
+            }
+            
+            // 2. Search for Student Name
+            const nameTerms = ["student_name", "student name", "student", "name", "full_name", "full name"];
+            for (let term of nameTerms) {
+              const idx = headers.findIndex(h => {
+                if (h.includes(term)) {
+                  return !h.includes("father") && !h.includes("mother") && !h.includes("parent");
                 }
+                return false;
+              });
+              if (idx !== -1) {
+                nameIdx = idx;
+                break;
+              }
+            }
+            
+            // 3. Search for Father Name
+            const fatherTerms = ["father", "f_name", "father_name", "father name", "guardian"];
+            for (let term of fatherTerms) {
+              const idx = headers.findIndex(h => h.includes(term));
+              if (idx !== -1) {
+                fatherIdx = idx;
+                break;
+              }
+            }
+
+            const parsed = [];
+            // Skip the first row (header) when iterating
+            for (let i = 1; i < rows.length; i++) {
+              const row = rows[i];
+              if (row && row.length > Math.max(admIdx, nameIdx)) {
+                const admission_no = (row[admIdx] || "").toString().trim();
+                const student_name = (row[nameIdx] || "").toString().trim();
+                const father_name = row[fatherIdx] ? row[fatherIdx].toString().trim() : "";
                 
                 if (admission_no && student_name) {
                   parsed.push({ admission_no, student_name, father_name });
                 }
               }
-            });
+            }
             
             submitRosterData(parsed);
           } catch (err) {
@@ -160,27 +205,71 @@ export default function AdminApaarManager() {
 
   const parseCSVOrText = (text) => {
     const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
-    const parsed = [];
+    if (lines.length === 0) return [];
     
-    // Attempt parsing
-    lines.forEach((line, idx) => {
-      // Split by tab (Excel paste) or comma (CSV)
-      const parts = line.includes("\t") ? line.split("\t") : line.split(",");
-      if (parts.length >= 2) {
-        const admission_no = parts[0].trim();
-        const student_name = parts[1].trim();
-        const father_name = parts[2] ? parts[2].trim() : "";
-        
-        // Skip header lines if they match labels
-        if (admission_no.toLowerCase().includes("adm") || student_name.toLowerCase().includes("student")) {
-          return;
+    const parsed = [];
+    let admIdx = 0;
+    let nameIdx = 1;
+    let fatherIdx = 2;
+    
+    // Parse first line to check if it's a header
+    const firstLineParts = lines[0].includes("\t") ? lines[0].split("\t") : lines[0].split(",");
+    const headers = firstLineParts.map(h => h.trim().toLowerCase());
+    
+    const hasHeader = headers.some(h => 
+      h.includes("adm") || h.includes("name") || h.includes("roll") || h.includes("class") || h.includes("father") || h.includes("user")
+    );
+    
+    let startIdx = 0;
+    
+    if (hasHeader) {
+      startIdx = 1; // skip header line in loop
+      
+      // 1. Search for Admission No
+      const admTerms = ["admission", "admn", "adm_no", "adm no", "username", "user_name", "user name"];
+      for (let term of admTerms) {
+        const idx = headers.findIndex(h => h.includes(term));
+        if (idx !== -1) {
+          admIdx = idx;
+          break;
         }
+      }
+      
+      // 2. Search for Student Name
+      const nameTerms = ["student_name", "student name", "student", "name", "full_name", "full name"];
+      for (let term of nameTerms) {
+        const idx = headers.findIndex(h => h.includes(term) && !h.includes("father") && !h.includes("mother") && !h.includes("parent"));
+        if (idx !== -1) {
+          nameIdx = idx;
+          break;
+        }
+      }
+      
+      // 3. Search for Father Name
+      const fatherTerms = ["father", "f_name", "father_name", "father name", "guardian"];
+      for (let term of fatherTerms) {
+        const idx = headers.findIndex(h => h.includes(term));
+        if (idx !== -1) {
+          fatherIdx = idx;
+          break;
+        }
+      }
+    }
+    
+    for (let i = startIdx; i < lines.length; i++) {
+      const line = lines[i];
+      const parts = line.includes("\t") ? line.split("\t") : line.split(",");
+      if (parts.length > Math.max(admIdx, nameIdx)) {
+        const admission_no = (parts[admIdx] || "").trim();
+        const student_name = (parts[nameIdx] || "").trim();
+        const father_name = parts[fatherIdx] ? parts[fatherIdx].trim() : "";
         
         if (admission_no && student_name) {
           parsed.push({ admission_no, student_name, father_name });
         }
       }
-    });
+    }
+    
     return parsed;
   };
 
