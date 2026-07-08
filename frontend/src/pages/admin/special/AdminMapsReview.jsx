@@ -844,13 +844,18 @@ export function AdminMapsReview() {
                   <div className="divide-y divide-slate-100">
                     {stats.top_ips.map((item, idx) => (
                       <div key={idx} className="flex justify-between items-center py-2.5 text-xs">
-                        <div className="flex items-center gap-2">
-                          <span className="w-5 h-5 rounded bg-slate-100 text-[10px] font-bold text-slate-500 flex items-center justify-center">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <span className="w-5 h-5 rounded bg-slate-100 text-[10px] font-bold text-slate-500 flex items-center justify-center flex-shrink-0">
                             {idx + 1}
                           </span>
-                          <span className="font-mono text-slate-700">{item.ip}</span>
+                          <span 
+                            className="font-mono text-slate-700 truncate block" 
+                            title={item.ip}
+                          >
+                            {item.ip}
+                          </span>
                         </div>
-                        <span className="bg-brand-orange/15 text-brand-orange font-bold px-2 py-0.5 rounded-full text-[10px]">
+                        <span className="bg-brand-orange/15 text-brand-orange font-bold px-2 py-0.5 rounded-full text-[10px] flex-shrink-0 ml-2">
                           {item.count} review{item.count !== 1 ? "s" : ""}
                         </span>
                       </div>
