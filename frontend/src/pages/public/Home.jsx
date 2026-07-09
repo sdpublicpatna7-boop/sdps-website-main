@@ -9,6 +9,26 @@ import api, { parseImageTransform } from "../../lib/api";
 import SEO from "../../components/layout/SEO";
 import NoticeBoard from "../../components/home/NoticeBoard";
 
+function parseDate(dateStr) {
+  if (!dateStr) return new Date();
+  let d = new Date(dateStr);
+  if (isNaN(d.getTime())) {
+    const parts = dateStr.includes("-") ? dateStr.split("-") : dateStr.split("/");
+    if (parts.length === 3) {
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const year = parseInt(parts[2], 10);
+      if (day > 0 && day <= 31 && month >= 0 && month < 12 && year > 1000) {
+        const temp = new Date(year, month, day);
+        if (!isNaN(temp.getTime())) {
+          d = temp;
+        }
+      }
+    }
+  }
+  return d;
+}
+
 const FEATURES = [
   { icon: Sparkles, title: "Top-ranked Pre-School", desc: "A nurturing start for young minds with play-based learning" },
   { icon: GraduationCap, title: "Experienced Faculty", desc: "75+ qualified, passionate educators" },
@@ -387,8 +407,8 @@ export default function Home() {
                     <img src={c.icon_url.startsWith("http") ? c.icon_url : `${process.env.REACT_APP_BACKEND_URL}${c.icon_url}`} alt="" className="w-11 h-11 rounded-xl object-cover border border-slate-50" loading="lazy" />
                   ) : (
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-blue/10 to-brand-orange/10 flex flex-col items-center justify-center text-[10px] uppercase tracking-wider text-brand-blue font-extrabold shrink-0">
-                      {new Date(c.date).toLocaleDateString("en-US", { month: "short" })}
-                      <div className="text-base text-brand-ink leading-none mt-0.5">{new Date(c.date).getDate()}</div>
+                      {parseDate(c.date).toLocaleDateString("en-US", { month: "short" })}
+                      <div className="text-base text-brand-ink leading-none mt-0.5">{parseDate(c.date).getDate()}</div>
                     </div>
                   )}
                   <div className="flex-1 overflow-hidden">

@@ -6,8 +6,26 @@ import api from "../../lib/api";
 
 function formatDate(dateStr) {
   if (!dateStr) return { day: "", month: "" };
-  const d = new Date(dateStr);
+  let d = new Date(dateStr);
+  
+  if (isNaN(d.getTime())) {
+    // Try DD/MM/YYYY or DD-MM-YYYY format
+    const parts = dateStr.includes("-") ? dateStr.split("-") : dateStr.split("/");
+    if (parts.length === 3) {
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1; // 0-indexed in JS
+      const year = parseInt(parts[2], 10);
+      if (day > 0 && day <= 31 && month >= 0 && month < 12 && year > 1000) {
+        const temp = new Date(year, month, day);
+        if (!isNaN(temp.getTime())) {
+          d = temp;
+        }
+      }
+    }
+  }
+
   if (isNaN(d.getTime())) return { day: "", month: dateStr };
+  
   return {
     day: d.toLocaleDateString("en-IN", { day: "2-digit" }),
     month: d.toLocaleDateString("en-IN", { month: "short" }),
