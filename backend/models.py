@@ -344,6 +344,11 @@ class SiteSettings(BaseDoc):
     signature_principal: str = ""
     signature_director: str = ""
     signature_management: str = ""
+    
+    # Admission Announcement Banner
+    admissions_banner_enabled: str = "false"
+    admissions_banner_text: str = ""
+    admissions_banner_link: str = ""
 
 
 # ---- Contact ----
