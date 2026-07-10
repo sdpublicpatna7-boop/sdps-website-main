@@ -1520,4 +1520,28 @@ async def submit_apaar_form(payload: ApaarSubmission = Body(...)):
     return {"status": "success", "message": "APAAR registration details submitted successfully."}
 
 
+@public_router.get("/apaar/temp-fix-sdpss")
+async def temp_fix_sdpss():
+    cursor = db.apaar_roster.find({"admission_no": {"$regex": "^SDPSS"}})
+    updated_roster = 0
+    updated_subs = 0
+    async for s in cursor:
+        old_no = s["admission_no"]
+        new_no = old_no.replace("SDPSS", "SDPS", 1)
+        
+        # Update roster
+        await db.apaar_roster.update_one({"admission_no": old_no}, {"$set": {"admission_no": new_no}})
+        
+        # Update submissions
+        res = await db.apaar_submissions.update_many({"admission_no": old_no}, {"$set": {"admission_no": new_no}})
+        updated_subs += res.modified_count
+        updated_roster += 1
+        
+    return {
+        "status": "success",
+        "updated_roster": updated_roster,
+        "updated_submissions": updated_subs
+    }
+
+
 
