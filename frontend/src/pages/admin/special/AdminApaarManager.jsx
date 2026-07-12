@@ -12,9 +12,6 @@ export default function AdminApaarManager() {
   const [activeTab, setActiveTab] = useState("submissions"); // submissions, roster
   const [submissions, setSubmissions] = useState([]);
   const [roster, setRoster] = useState([]);
-  
-  const currentSubIndex = selectedSub ? submissions.findIndex(s => s.id === selectedSub.id) : -1;
-  
   // Loadings
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
   const [loadingRoster, setLoadingRoster] = useState(false);
@@ -33,6 +30,7 @@ export default function AdminApaarManager() {
 
   // Details Modal
   const [selectedSub, setSelectedSub] = useState(null);
+  const currentSubIndex = selectedSub ? submissions.findIndex(s => s.id === selectedSub.id) : -1;
 
   const handlePrevSub = () => {
     if (!selectedSub) return;
