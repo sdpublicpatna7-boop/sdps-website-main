@@ -29,7 +29,7 @@ def get_real_ip(request: Request) -> str:
 limiter = Limiter(key_func=get_real_ip)
 from email_service import send_email, send_email_with_attachment, render_template, render_attachment_cover_email, format_salary_slip_email, format_salary_certificate_email, format_experience_certificate_email
 from pdf_service import generate_protected_pdf, wrap_for_pdf
-from image_utils import compress_and_save, save_raw_file, UnsafeUploadError
+from image_utils import compress_and_save, save_raw_file, UnsafeUploadError, UPLOAD_ROOT
 from models import (
     AdminLogin, AdminPasswordReset, AdminPasswordResetConfirm, AdminChangePassword,
     News, Notice, GalleryImage, VideoItem, CalendarEvent, Holiday,
@@ -377,6 +377,7 @@ class EmailSendPayload(BaseModel):
 
 @admin_router.post("/salary-slips/send-email")
 async def email_salary_slip(
+    request: Request,
     payload: EmailSendPayload,
     admin: TokenData = Depends(require_permission("media-tools")),
     _logo: None = Depends(sync_logo_url)
@@ -394,11 +395,23 @@ async def email_salary_slip(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
 
+    # Write PDF to local temp uploads folder for backup download option
+    import uuid
+    temp_dir = UPLOAD_ROOT / "temp"
+    temp_dir.mkdir(exist_ok=True)
+    filename = f"salary_slip_{uuid.uuid4().hex}.pdf"
+    filepath = temp_dir / filename
+    filepath.write_bytes(pdf_bytes)
+
+    base_url = str(request.base_url).rstrip("/")
+    download_url = f"{base_url}/api/uploads/temp/{filename}"
+
     # Send email with PDF attachment
     safe_period = pay_period.replace(" ", "_").replace("/", "-")
     cover_html = render_attachment_cover_email(
         employee_name, "Salary Slip",
-        extra_info=f"Pay Period: <strong>{pay_period}</strong>"
+        extra_info=f"Pay Period: <strong>{pay_period}</strong>",
+        download_url=download_url
     )
     res = await send_email_with_attachment(
         to_email=payload.email,
@@ -415,6 +428,7 @@ async def email_salary_slip(
 
 @admin_router.post("/salary-certificates/send-email")
 async def email_salary_certificate(
+    request: Request,
     payload: EmailSendPayload,
     admin: TokenData = Depends(require_permission("media-tools")),
     _logo: None = Depends(sync_logo_url)
@@ -431,10 +445,22 @@ async def email_salary_certificate(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
 
+    # Write PDF to local temp uploads folder for backup download option
+    import uuid
+    temp_dir = UPLOAD_ROOT / "temp"
+    temp_dir.mkdir(exist_ok=True)
+    filename = f"salary_certificate_{uuid.uuid4().hex}.pdf"
+    filepath = temp_dir / filename
+    filepath.write_bytes(pdf_bytes)
+
+    base_url = str(request.base_url).rstrip("/")
+    download_url = f"{base_url}/api/uploads/temp/{filename}"
+
     # Send email with PDF attachment
     cover_html = render_attachment_cover_email(
         employee_name, "Salary Certificate",
-        extra_info=f"Financial Year: <strong>{data.get('financial_year', '')}</strong>"
+        extra_info=f"Financial Year: <strong>{data.get('financial_year', '')}</strong>",
+        download_url=download_url
     )
     res = await send_email_with_attachment(
         to_email=payload.email,
@@ -451,6 +477,7 @@ async def email_salary_certificate(
 
 @admin_router.post("/experience-certificates/send-email")
 async def email_experience_certificate(
+    request: Request,
     payload: EmailSendPayload,
     admin: TokenData = Depends(require_permission("media-tools")),
     _logo: None = Depends(sync_logo_url)
@@ -467,10 +494,22 @@ async def email_experience_certificate(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
 
+    # Write PDF to local temp uploads folder for backup download option
+    import uuid
+    temp_dir = UPLOAD_ROOT / "temp"
+    temp_dir.mkdir(exist_ok=True)
+    filename = f"experience_certificate_{uuid.uuid4().hex}.pdf"
+    filepath = temp_dir / filename
+    filepath.write_bytes(pdf_bytes)
+
+    base_url = str(request.base_url).rstrip("/")
+    download_url = f"{base_url}/api/uploads/temp/{filename}"
+
     # Send email with PDF attachment
     cover_html = render_attachment_cover_email(
         employee_name, "Experience Certificate",
-        extra_info=f"Tenure: {data.get('joining_date', '')} — {data.get('leaving_date', 'Present')}"
+        extra_info=f"Tenure: {data.get('joining_date', '')} — {data.get('leaving_date', 'Present')}",
+        download_url=download_url
     )
     res = await send_email_with_attachment(
         to_email=payload.email,

@@ -187,24 +187,45 @@ def render_attachment_cover_email(
     employee_name: str,
     document_type: str,
     extra_info: str = "",
+    download_url: str = None,
 ) -> str:
     """
     Render a short branded cover email for PDF attachment emails.
     The actual document is in the PDF — this is just the email body.
     """
     extra_line = f"<p style='font-size:14px;color:#334155;'>{extra_info}</p>" if extra_info else ""
+    
+    if download_url:
+        attachment_section = f"""
+        <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:16px;margin:20px 0;text-align:center;">
+            <p style="margin:0 0 12px 0;font-size:14px;color:#0369a1;">
+                📎 <strong>{document_type} (PDF)</strong> is available for download.
+            </p>
+            <a href="{download_url}" target="_blank" style="display:inline-block;background:#0284c7;color:#ffffff;text-decoration:none;padding:10px 20px;border-radius:6px;font-size:14px;font-weight:bold;">
+                Download Document
+            </a>
+            <p style="margin:8px 0 0 0;font-size:11px;color:#64748b;">
+                🔒 This document is digitally secured and protected against modifications.
+            </p>
+        </div>
+        """
+    else:
+        attachment_section = f"""
+        <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:14px 18px;margin:20px 0;">
+            <p style="margin:0;font-size:13px;color:#0369a1;">
+                📎 <strong>Attachment:</strong> {document_type} (PDF)<br>
+                🔒 This document is digitally secured and protected against modifications.
+            </p>
+        </div>
+        """
+
     body = f"""
     <p style="font-size:15px;color:#1e293b;">Dear <strong>{employee_name}</strong>,</p>
     <p style="font-size:14px;color:#334155;line-height:1.7;">
         Please find your <strong>{document_type}</strong> attached as a PDF document with this email.
     </p>
     {extra_line}
-    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:14px 18px;margin:20px 0;">
-        <p style="margin:0;font-size:13px;color:#0369a1;">
-            📎 <strong>Attachment:</strong> {document_type} (PDF)<br>
-            🔒 This document is digitally secured and protected against modifications.
-        </p>
-    </div>
+    {attachment_section}
     <p style="font-size:13px;color:#64748b;">
         If you have any questions regarding this document, please contact the school administration.
     </p>

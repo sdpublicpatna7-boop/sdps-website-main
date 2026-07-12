@@ -47,3 +47,7 @@ We have successfully completed the native refactoring of the school election por
   * Implemented an async/dependency synchronization routine (`sync_logo_url`) that queries the current database configuration to set active school brand assets.
   * Ensures that salary slips, salary certificates, experience certificates, admission receipts, and public contact emails dynamically render the brand logo.
   * Affected files: [routes_admin.py](file:///Users/aarav/Downloads/sdps-website-main/backend/routes_admin.py), [routes_public.py](file:///Users/aarav/Downloads/sdps-website-main/backend/routes_public.py).
+* **Robust PDF Delivery Fallback**:
+  * Added a dynamic PDF download fallback link to all admin documents (salary slips, salary certificates, experience certificates).
+  * If SMTP fails or is not configured (e.g., in developer/local setups falling back to MailerCloud REST API), the system generates a cryptographically random, secure local download URL for the generated PDF document, rendering a professional "Download Document" button in the email template.
+  * Affected files: [email_service.py](file:///Users/aarav/Downloads/sdps-website-main/backend/email_service.py), [routes_admin.py](file:///Users/aarav/Downloads/sdps-website-main/backend/routes_admin.py).
