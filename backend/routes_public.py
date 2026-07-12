@@ -1424,8 +1424,20 @@ async def resolve_linktree_click(link_id: str, request: Request):
 
 @public_router.get("/pdf-proxy")
 async def pdf_proxy(url: str):
-    if not (url.startswith("https://res.cloudinary.com/") or url.startswith("http://") or url.startswith("https://")):
-        raise HTTPException(status_code=400, detail="Invalid url scheme")
+    from urllib.parse import urlparse
+    parsed = urlparse(url)
+    
+    allowed_hosts = {
+        "res.cloudinary.com",
+        "sdpublic.org",
+        "api.sdpublic.org",
+        "localhost",
+        "127.0.0.1"
+    }
+    
+    hostname = parsed.hostname
+    if not hostname or not any(hostname == host or hostname.endswith("." + host) for host in allowed_hosts):
+        raise HTTPException(status_code=400, detail="Disallowed domain for PDF proxy")
         
     async with httpx.AsyncClient() as client:
         try:

@@ -1604,13 +1604,17 @@ async def get_apaar_submissions(
 ):
     query = {}
     if search:
+        import re
+        escaped_search = re.escape(search)
         query["$or"] = [
-            {"admission_no": {"$regex": search, "$options": "i"}},
-            {"student_name": {"$regex": search, "$options": "i"}},
-            {"student_aadhaar_name": {"$regex": search, "$options": "i"}}
+            {"admission_no": {"$regex": escaped_search, "$options": "i"}},
+            {"student_name": {"$regex": escaped_search, "$options": "i"}},
+            {"student_aadhaar_name": {"$regex": escaped_search, "$options": "i"}}
         ]
     if class_name:
-        query["class_name"] = {"$regex": f"^{class_name}$", "$options": "i"}
+        import re
+        escaped_class = re.escape(class_name)
+        query["class_name"] = {"$regex": f"^{escaped_class}$", "$options": "i"}
         
     submissions = await db.apaar_submissions.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
@@ -1767,13 +1771,17 @@ async def get_apaar_roster(
 ):
     query = {}
     if search:
+        import re
+        escaped_search = re.escape(search)
         query["$or"] = [
-            {"admission_no": {"$regex": search, "$options": "i"}},
-            {"student_name": {"$regex": search, "$options": "i"}},
-            {"father_name": {"$regex": search, "$options": "i"}}
+            {"admission_no": {"$regex": escaped_search, "$options": "i"}},
+            {"student_name": {"$regex": escaped_search, "$options": "i"}},
+            {"father_name": {"$regex": escaped_search, "$options": "i"}}
         ]
     if class_name:
-        query["class_name"] = {"$regex": f"^{class_name}$", "$options": "i"}
+        import re
+        escaped_class = re.escape(class_name)
+        query["class_name"] = {"$regex": f"^{escaped_class}$", "$options": "i"}
     students = await db.apaar_roster.find(query, {"_id": 0}).sort("admission_no", 1).to_list(2000)
     return students
 

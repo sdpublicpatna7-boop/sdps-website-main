@@ -8,9 +8,10 @@ import logging
 from xhtml2pdf import pisa
 import pikepdf
 
+import secrets
 logger = logging.getLogger(__name__)
 
-PDF_OWNER_PASSWORD = os.environ.get("PDF_OWNER_PASSWORD", "SDPS@2026#SecureDoc")
+PDF_OWNER_PASSWORD = os.environ.get("PDF_OWNER_PASSWORD") or secrets.token_hex(16)
 
 LOGO_URL = "https://sdpublic.org/assets/img/logo.png"
 
