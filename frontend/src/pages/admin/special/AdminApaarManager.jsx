@@ -4,13 +4,16 @@ import { toast, Toaster } from "sonner";
 import * as XLSX from "xlsx";
 import { 
   Users, Search, Download, Trash2, Eye, Upload, 
-  Database, FileText, Fingerprint, ShieldCheck, Loader2, RefreshCw, XCircle 
+  Database, FileText, Fingerprint, ShieldCheck, Loader2, RefreshCw, XCircle,
+  ChevronLeft, ChevronRight
 } from "lucide-react";
 
 export default function AdminApaarManager() {
   const [activeTab, setActiveTab] = useState("submissions"); // submissions, roster
   const [submissions, setSubmissions] = useState([]);
   const [roster, setRoster] = useState([]);
+  
+  const currentSubIndex = selectedSub ? submissions.findIndex(s => s.id === selectedSub.id) : -1;
   
   // Loadings
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
@@ -22,6 +25,7 @@ export default function AdminApaarManager() {
   const [subSearch, setSubSearch] = useState("");
   const [subClass, setSubClass] = useState("");
   const [rosterSearch, setRosterSearch] = useState("");
+  const [rosterClass, setRosterClass] = useState("");
 
   // Bulk Upload Inputs
   const [pastedData, setPastedData] = useState("");
@@ -29,6 +33,22 @@ export default function AdminApaarManager() {
 
   // Details Modal
   const [selectedSub, setSelectedSub] = useState(null);
+
+  const handlePrevSub = () => {
+    if (!selectedSub) return;
+    const currentIndex = submissions.findIndex(s => s.id === selectedSub.id);
+    if (currentIndex > 0) {
+      setSelectedSub(submissions[currentIndex - 1]);
+    }
+  };
+
+  const handleNextSub = () => {
+    if (!selectedSub) return;
+    const currentIndex = submissions.findIndex(s => s.id === selectedSub.id);
+    if (currentIndex >= 0 && currentIndex < submissions.length - 1) {
+      setSelectedSub(submissions[currentIndex + 1]);
+    }
+  };
 
   // Rejection states
   const [rejectingSub, setRejectingSub] = useState(null);
@@ -77,7 +97,7 @@ export default function AdminApaarManager() {
     } else {
       fetchRoster();
     }
-  }, [activeTab, subClass]); // reload on tab switch or class filter change
+  }, [activeTab, subClass, rosterClass]); // reload on tab switch or class filter change
 
   const fetchSubmissions = async () => {
     setLoadingSubmissions(true);
@@ -100,7 +120,7 @@ export default function AdminApaarManager() {
     try {
       const qParams = new URLSearchParams();
       if (rosterSearch.trim()) qParams.append("search", rosterSearch.trim());
-      
+      if (rosterClass) qParams.append("class_name", rosterClass);
       const r = await api.get(`/admin/apaar/roster?${qParams.toString()}`);
       setRoster(r.data);
     } catch (err) {
@@ -624,8 +644,8 @@ export default function AdminApaarManager() {
           
           {/* List School Student Roster (Left column, col-span-2) */}
           <div className="lg:col-span-2 space-y-4">
-            <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm flex gap-4 items-center">
-              <div className="relative flex-1">
+            <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 items-center">
+              <div className="relative flex-1 w-full">
                 <Search className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
                 <input
                   placeholder="Search roster by Adm No, Student/Father Name..."
@@ -635,9 +655,21 @@ export default function AdminApaarManager() {
                   onKeyDown={(e) => e.key === "Enter" && fetchRoster()}
                 />
               </div>
+
+              <div className="w-full md:w-48">
+                <select
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-250 text-sm outline-none bg-white"
+                  value={rosterClass}
+                  onChange={(e) => setRosterClass(e.target.value)}
+                >
+                  <option value="">All Classes</option>
+                  {classes.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+
               <button
                 onClick={fetchRoster}
-                className="px-6 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition"
+                className="w-full md:w-auto px-6 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition"
               >
                 Search
               </button>
@@ -766,193 +798,226 @@ export default function AdminApaarManager() {
       {/* DETAIL MODAL */}
       {selectedSub && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50 animate-fade-in no-print">
-          <div className="bg-white rounded-3xl max-w-xl w-full border border-slate-200 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+          <div className="bg-white rounded-3xl max-w-5xl w-full border border-slate-200 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             
             {/* Modal Header */}
             <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-brand-blue">
+              <div className="flex items-center gap-3 text-brand-blue">
                 <Fingerprint className="w-5 h-5" />
                 <h3 className="font-bold text-slate-800 text-sm">APAAR Submission Details</h3>
+                {currentSubIndex !== -1 && (
+                  <span className="text-[10px] bg-slate-200/60 text-slate-650 px-2 py-0.5 rounded-full font-bold select-none">
+                    {currentSubIndex + 1} of {submissions.length}
+                  </span>
+                )}
               </div>
-              <button 
-                onClick={() => setSelectedSub(null)}
-                className="w-8 h-8 rounded-full flex items-center justify-center border border-slate-200 hover:bg-slate-100 text-slate-500 font-bold transition text-sm"
-              >
-                ✕
-              </button>
+              <div className="flex items-center gap-3">
+                {submissions.length > 1 && (
+                  <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm mr-1">
+                    <button
+                      disabled={currentSubIndex <= 0}
+                      onClick={handlePrevSub}
+                      className="p-2 hover:bg-slate-50 text-slate-600 disabled:opacity-30 disabled:hover:bg-transparent border-r border-slate-150 transition"
+                      title="Previous Submission"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      disabled={currentSubIndex === -1 || currentSubIndex >= submissions.length - 1}
+                      onClick={handleNextSub}
+                      className="p-2 hover:bg-slate-50 text-slate-600 disabled:opacity-30 disabled:hover:bg-transparent transition"
+                      title="Next Submission"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+                <button 
+                  onClick={() => setSelectedSub(null)}
+                  className="w-8 h-8 rounded-full flex items-center justify-center border border-slate-200 hover:bg-slate-100 text-slate-500 font-bold transition text-sm shadow-sm"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 overflow-y-auto space-y-6 text-xs text-slate-700">
-              
-              {/* Roster Match Info */}
-              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2">
-                <div className="font-bold text-slate-400 tracking-wider uppercase text-[9px] mb-1">Roster Enrollment Verification</div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <span className="text-slate-400 font-medium block">Admission Number:</span>
-                    <span className="font-bold text-slate-900 tracking-wide">{selectedSub.admission_no}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-medium block">Enrollment Class/Sec:</span>
-                    <span className="font-bold text-slate-900">{selectedSub.class_name} - {selectedSub.section}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-medium block">Name on School Record:</span>
-                    <span className="font-bold text-slate-900 uppercase">{selectedSub.student_name}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-medium block">Father's Name (School):</span>
-                    <span className="font-bold text-slate-900 uppercase">{selectedSub.father_name}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Student Aadhaar Info */}
-              <div className="space-y-3">
-                <div className="font-bold text-slate-400 tracking-wider uppercase text-[9px] border-b border-slate-100 pb-1 flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-brand-blue" /> Student Aadhaar Card Details
-                </div>
-                <div className="grid grid-cols-2 gap-4 pl-1.5">
-                  <div>
-                    <span className="text-slate-400 font-medium block">Name as per Aadhaar:</span>
-                    <span className="font-bold text-slate-800 uppercase">{selectedSub.student_aadhaar_name}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-medium block">Aadhaar Card Number:</span>
-                    <span className="font-bold text-slate-900 tracking-widest">{selectedSub.student_aadhaar_no}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-medium block">Date of Birth:</span>
-                    <span className="font-bold text-slate-900">{selectedSub.student_dob}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-medium block">Gender:</span>
-                    <span className="font-bold text-slate-900">{selectedSub.student_gender}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Parent Aadhaar Info */}
-              <div className="space-y-4">
-                <div className="font-bold text-slate-400 tracking-wider uppercase text-[9px] border-b border-slate-100 pb-1 flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-brand-blue" /> Parents Aadhaar Card Details
-                </div>
-                <div className="grid grid-cols-2 gap-6 pl-1.5">
-                  <div className="space-y-2">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Father</div>
-                    <div>
-                      <span className="text-slate-400 font-medium block">Name as per Aadhaar:</span>
-                      <span className="font-bold text-slate-800 uppercase">{selectedSub.father_aadhaar_name}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 font-medium block">Aadhaar Number:</span>
-                      <span className="font-bold text-slate-900 tracking-wider">{selectedSub.father_aadhaar_no}</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mother</div>
-                    <div>
-                      <span className="text-slate-400 font-medium block">Name as per Aadhaar:</span>
-                      <span className="font-bold text-slate-800 uppercase">{selectedSub.mother_aadhaar_name}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 font-medium block">Aadhaar Number:</span>
-                      <span className="font-bold text-slate-900 tracking-wider">{selectedSub.mother_aadhaar_no}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Contact Info & Consent Verification */}
-              <div className="grid grid-cols-2 gap-4 border-t border-slate-100 pt-4">
-                <div>
-                  <span className="text-slate-400 font-medium block">Linked Mobile Number:</span>
-                  <span className="font-bold text-slate-900">{selectedSub.mobile_no}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 font-medium block">Consent Given:</span>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
-                    ✓ Yes
-                  </span>
-                </div>
-              </div>
-
-              {/* Aadhaar Photos Preview block */}
-              <div className="border-t border-slate-100 pt-4 space-y-4">
-                <span className="text-slate-400 font-medium block">Uploaded Aadhaar Card Photos:</span>
+            <div className="p-6 overflow-y-auto text-xs text-slate-700">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 
-                <div className="space-y-4">
-                  {selectedSub.student_aadhaar_photo && (
-                    <div className="space-y-1">
-                      <span className="text-[10px] text-slate-450 font-bold block">Student's Aadhaar Card</span>
-                      <div className="rounded-xl border border-slate-200 overflow-hidden bg-slate-50/50 p-2 text-center">
-                        <img 
-                          src={selectedSub.student_aadhaar_photo} 
-                          alt="Student Aadhaar" 
-                          className="max-h-[160px] mx-auto rounded-lg shadow-sm hover:scale-[1.01] transition cursor-pointer object-contain"
-                          onClick={() => {
-                            const w = window.open();
-                            w.document.write(`<img src="${selectedSub.student_aadhaar_photo}" style="max-width:100%; max-height:100vh; display:block; margin:auto;" />`);
-                          }}
-                        />
+                {/* Column 1: Details */}
+                <div className="lg:col-span-7 space-y-6">
+                  {/* Roster Match Info */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2">
+                    <div className="font-bold text-slate-400 tracking-wider uppercase text-[9px] mb-1">Roster Enrollment Verification</div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-slate-400 font-medium block">Admission Number:</span>
+                        <span className="font-bold text-slate-900 tracking-wide">{selectedSub.admission_no}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 font-medium block">Enrollment Class/Sec:</span>
+                        <span className="font-bold text-slate-900">{selectedSub.class_name} - {selectedSub.section}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 font-medium block">Name on School Record:</span>
+                        <span className="font-bold text-slate-900 uppercase">{selectedSub.student_name}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 font-medium block">Father's Name (School):</span>
+                        <span className="font-bold text-slate-900 uppercase">{selectedSub.father_name}</span>
                       </div>
                     </div>
-                  )}
+                  </div>
 
-                  {selectedSub.father_aadhaar_photo && (
-                    <div className="space-y-1">
-                      <span className="text-[10px] text-slate-455 font-bold block">Father's Aadhaar Card</span>
-                      <div className="rounded-xl border border-slate-200 overflow-hidden bg-slate-50/50 p-2 text-center">
-                        <img 
-                          src={selectedSub.father_aadhaar_photo} 
-                          alt="Father Aadhaar" 
-                          className="max-h-[160px] mx-auto rounded-lg shadow-sm hover:scale-[1.01] transition cursor-pointer object-contain"
-                          onClick={() => {
-                            const w = window.open();
-                            w.document.write(`<img src="${selectedSub.father_aadhaar_photo}" style="max-width:100%; max-height:100vh; display:block; margin:auto;" />`);
-                          }}
-                        />
+                  {/* Student Aadhaar Info */}
+                  <div className="space-y-3">
+                    <div className="font-bold text-slate-400 tracking-wider uppercase text-[9px] border-b border-slate-100 pb-1 flex items-center gap-1">
+                      <ShieldCheck className="w-3.5 h-3.5 text-brand-blue" /> Student Aadhaar Card Details
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 pl-1.5">
+                      <div>
+                        <span className="text-slate-400 font-medium block">Name as per Aadhaar:</span>
+                        <span className="font-bold text-slate-800 uppercase">{selectedSub.student_aadhaar_name}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 font-medium block">Aadhaar Card Number:</span>
+                        <span className="font-bold text-slate-900 tracking-widest">{selectedSub.student_aadhaar_no}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 font-medium block">Date of Birth:</span>
+                        <span className="font-bold text-slate-900">{selectedSub.student_dob}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 font-medium block">Gender:</span>
+                        <span className="font-bold text-slate-900">{selectedSub.student_gender}</span>
                       </div>
                     </div>
-                  )}
+                  </div>
 
-                  {selectedSub.mother_aadhaar_photo && (
-                    <div className="space-y-1">
-                      <span className="text-[10px] text-slate-455 font-bold block">Mother's Aadhaar Card</span>
-                      <div className="rounded-xl border border-slate-200 overflow-hidden bg-slate-50/50 p-2 text-center">
-                        <img 
-                          src={selectedSub.mother_aadhaar_photo} 
-                          alt="Mother Aadhaar" 
-                          className="max-h-[160px] mx-auto rounded-lg shadow-sm hover:scale-[1.01] transition cursor-pointer object-contain"
-                          onClick={() => {
-                            const w = window.open();
-                            w.document.write(`<img src="${selectedSub.mother_aadhaar_photo}" style="max-width:100%; max-height:100vh; display:block; margin:auto;" />`);
-                          }}
-                        />
-                      </div>
+                  {/* Parent Aadhaar Info */}
+                  <div className="space-y-4">
+                    <div className="font-bold text-slate-400 tracking-wider uppercase text-[9px] border-b border-slate-100 pb-1 flex items-center gap-1">
+                      <ShieldCheck className="w-3.5 h-3.5 text-brand-blue" /> Parents Aadhaar Card Details
                     </div>
-                  )}
+                    <div className="grid grid-cols-2 gap-6 pl-1.5">
+                      <div className="space-y-2">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Father</div>
+                        <div>
+                          <span className="text-slate-400 font-medium block">Name as per Aadhaar:</span>
+                          <span className="font-bold text-slate-800 uppercase">{selectedSub.father_aadhaar_name}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 font-medium block">Aadhaar Number:</span>
+                          <span className="font-bold text-slate-900 tracking-wider">{selectedSub.father_aadhaar_no}</span>
+                        </div>
+                      </div>
 
-                  {!selectedSub.student_aadhaar_photo && selectedSub.aadhaar_photo && (
-                    <div className="space-y-1">
-                      <span className="text-[10px] text-slate-455 font-bold block">Aadhaar Card Photo</span>
-                      <div className="rounded-xl border border-slate-200 overflow-hidden bg-slate-50/50 p-2 text-center">
-                        <img 
-                          src={selectedSub.aadhaar_photo} 
-                          alt="Aadhaar" 
-                          className="max-h-[160px] mx-auto rounded-lg shadow-sm hover:scale-[1.01] transition cursor-pointer object-contain"
-                          onClick={() => {
-                            const w = window.open();
-                            w.document.write(`<img src="${selectedSub.aadhaar_photo}" style="max-width:100%; max-height:100vh; display:block; margin:auto;" />`);
-                          }}
-                        />
+                      <div className="space-y-2">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mother</div>
+                        <div>
+                          <span className="text-slate-400 font-medium block">Name as per Aadhaar:</span>
+                          <span className="font-bold text-slate-800 uppercase">{selectedSub.mother_aadhaar_name}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 font-medium block">Aadhaar Number:</span>
+                          <span className="font-bold text-slate-900 tracking-wider">{selectedSub.mother_aadhaar_no}</span>
+                        </div>
                       </div>
                     </div>
-                  )}
+                  </div>
+
+                  {/* Contact Info & Consent Verification */}
+                  <div className="grid grid-cols-2 gap-4 border-t border-slate-100 pt-4">
+                    <div>
+                      <span className="text-slate-400 font-medium block">Linked Mobile Number:</span>
+                      <span className="font-bold text-slate-900">{selectedSub.mobile_no}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 font-medium block">Consent Given:</span>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                        ✓ Yes
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <span className="text-[9px] text-slate-400 block text-center">Click any image to view in full resolution</span>
+
+                {/* Column 2: Aadhaar Card Photos Preview */}
+                <div className="lg:col-span-5 space-y-4 bg-slate-50 border border-slate-200 rounded-2xl p-4.5">
+                  <span className="text-slate-455 font-bold block text-[10px] uppercase tracking-wider">Uploaded Aadhaar Card Photos:</span>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+                    {selectedSub.student_aadhaar_photo && (
+                      <div className="space-y-1 bg-white border border-slate-150 p-2.5 rounded-xl shadow-sm">
+                        <span className="text-[10px] text-slate-455 font-bold block mb-1.5">Student's Aadhaar Card</span>
+                        <div className="overflow-hidden bg-slate-50/50 p-1 text-center rounded-lg">
+                          <img 
+                            src={selectedSub.student_aadhaar_photo} 
+                            alt="Student Aadhaar" 
+                            className="max-h-[140px] mx-auto rounded shadow-sm hover:scale-[1.02] transition cursor-pointer object-contain"
+                            onClick={() => {
+                              const w = window.open();
+                              w.document.write(`<img src="${selectedSub.student_aadhaar_photo}" style="max-width:100%; max-height:100vh; display:block; margin:auto;" />`);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedSub.father_aadhaar_photo && (
+                      <div className="space-y-1 bg-white border border-slate-150 p-2.5 rounded-xl shadow-sm">
+                        <span className="text-[10px] text-slate-455 font-bold block mb-1.5">Father's Aadhaar Card</span>
+                        <div className="overflow-hidden bg-slate-50/50 p-1 text-center rounded-lg">
+                          <img 
+                            src={selectedSub.father_aadhaar_photo} 
+                            alt="Father Aadhaar" 
+                            className="max-h-[140px] mx-auto rounded shadow-sm hover:scale-[1.02] transition cursor-pointer object-contain"
+                            onClick={() => {
+                              const w = window.open();
+                              w.document.write(`<img src="${selectedSub.father_aadhaar_photo}" style="max-width:100%; max-height:100vh; display:block; margin:auto;" />`);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedSub.mother_aadhaar_photo && (
+                      <div className="space-y-1 bg-white border border-slate-150 p-2.5 rounded-xl shadow-sm">
+                        <span className="text-[10px] text-slate-455 font-bold block mb-1.5">Mother's Aadhaar Card</span>
+                        <div className="overflow-hidden bg-slate-50/50 p-1 text-center rounded-lg">
+                          <img 
+                            src={selectedSub.mother_aadhaar_photo} 
+                            alt="Mother Aadhaar" 
+                            className="max-h-[140px] mx-auto rounded shadow-sm hover:scale-[1.02] transition cursor-pointer object-contain"
+                            onClick={() => {
+                              const w = window.open();
+                              w.document.write(`<img src="${selectedSub.mother_aadhaar_photo}" style="max-width:100%; max-height:100vh; display:block; margin:auto;" />`);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {!selectedSub.student_aadhaar_photo && selectedSub.aadhaar_photo && (
+                      <div className="space-y-1 bg-white border border-slate-150 p-2.5 rounded-xl shadow-sm">
+                        <span className="text-[10px] text-slate-455 font-bold block mb-1.5">Aadhaar Card Photo</span>
+                        <div className="overflow-hidden bg-slate-50/50 p-1 text-center rounded-lg">
+                          <img 
+                            src={selectedSub.aadhaar_photo} 
+                            alt="Aadhaar" 
+                            className="max-h-[140px] mx-auto rounded shadow-sm hover:scale-[1.02] transition cursor-pointer object-contain"
+                            onClick={() => {
+                              const w = window.open();
+                              w.document.write(`<img src="${selectedSub.aadhaar_photo}" style="max-width:100%; max-height:100vh; display:block; margin:auto;" />`);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-[9px] text-slate-400 block text-center mt-1">Click any image to view in full resolution</span>
+                </div>
+
               </div>
             </div>
 
@@ -960,9 +1025,18 @@ export default function AdminApaarManager() {
             <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 text-right space-x-2">
               <button
                 onClick={() => handleDeleteSubmission(selectedSub.id)}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition inline-flex items-center gap-1"
+                className="px-4 py-2 bg-red-650 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition inline-flex items-center gap-1"
               >
                 <Trash2 className="w-3.5 h-3.5" /> Delete Entry
+              </button>
+              <button
+                onClick={() => {
+                  setRejectingSub(selectedSub);
+                  setShowRejectModal(true);
+                }}
+                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition inline-flex items-center gap-1.5"
+              >
+                <XCircle className="w-3.5 h-3.5" /> Reject & Notify
               </button>
               <button
                 onClick={() => setSelectedSub(null)}

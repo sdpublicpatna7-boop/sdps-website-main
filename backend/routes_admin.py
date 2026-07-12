@@ -1610,7 +1610,7 @@ async def get_apaar_submissions(
             {"student_aadhaar_name": {"$regex": search, "$options": "i"}}
         ]
     if class_name:
-        query["class_name"] = class_name
+        query["class_name"] = {"$regex": f"^{class_name}$", "$options": "i"}
         
     submissions = await db.apaar_submissions.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
@@ -1762,6 +1762,7 @@ Regards,
 @admin_router.get("/apaar/roster")
 async def get_apaar_roster(
     search: Optional[str] = None,
+    class_name: Optional[str] = None,
     admin: TokenData = Depends(require_permission("site-settings"))
 ):
     query = {}
@@ -1771,6 +1772,8 @@ async def get_apaar_roster(
             {"student_name": {"$regex": search, "$options": "i"}},
             {"father_name": {"$regex": search, "$options": "i"}}
         ]
+    if class_name:
+        query["class_name"] = {"$regex": f"^{class_name}$", "$options": "i"}
     students = await db.apaar_roster.find(query, {"_id": 0}).sort("admission_no", 1).to_list(2000)
     return students
 
