@@ -26,6 +26,7 @@ export default function AdminShortener() {
   const [customCode, setCustomCode] = useState("");
   const [previewData, setPreviewData] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [bypassAds, setBypassAds] = useState(true);
 
   useEffect(() => {
     let cleanUrl = url.trim();
@@ -99,7 +100,8 @@ export default function AdminShortener() {
         url: url.trim(),
         custom_code: customCode.trim() || null,
         description: previewData?.description || "",
-        image: previewData?.image || ""
+        image: previewData?.image || "",
+        bypass_ads: bypassAds
       });
       toast.success("Shortened link created successfully!");
       setTitle("");
@@ -356,6 +358,18 @@ export default function AdminShortener() {
               <p className="text-[10px] font-medium text-slate-400 leading-relaxed mt-1">
                 Leave blank to automatically generate a random 6-character code (e.g. <code>/s/z9f4k2</code>).
               </p>
+            </div>
+
+            <div className="flex items-center pt-1">
+              <label className="flex items-center gap-2.5 text-xs font-bold text-slate-500 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={bypassAds}
+                  onChange={(e) => setBypassAds(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-350 accent-blue-600 focus:ring-blue-500/20 text-blue-600 cursor-pointer transition-all"
+                />
+                Bypass Youtube Ads
+              </label>
             </div>
 
             <button

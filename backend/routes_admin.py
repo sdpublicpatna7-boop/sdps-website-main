@@ -1242,6 +1242,15 @@ async def create_short_link(payload: ShortLinkCreate, admin: TokenData = Depends
     title_val = payload.title.strip()
     url_val = payload.url.strip()
     
+    if payload.bypass_ads:
+        url_lower = url_val.lower()
+        is_yt = "youtube.com" in url_lower or "youtu.be" in url_lower
+        if is_yt and not ("t=" in url_lower or "time_continue=" in url_lower):
+            if "?" in url_val:
+                url_val = f"{url_val}&t=1"
+            else:
+                url_val = f"{url_val}?t=1"
+                
     if not title_val or not url_val:
         raise HTTPException(status_code=400, detail="Title and URL cannot be empty")
     if len(title_val) > 100:

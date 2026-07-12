@@ -597,6 +597,7 @@ class ShortLinkCreate(BaseDoc):
     custom_code: Optional[str] = None
     description: Optional[str] = ""
     image: Optional[str] = ""
+    bypass_ads: bool = True
 
 
 class ShortLink(BaseDoc):
