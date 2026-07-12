@@ -36,3 +36,14 @@ We have successfully completed the native refactoring of the school election por
 1. React production bundles built successfully (`Compiled successfully`).
 2. FastAPI server started successfully on `http://127.0.0.1:8000`.
 3. React dev server running on `http://localhost:3000`.
+
+---
+
+## 4. Hardening & UX Adjustments (Latest Updates)
+* **Proxy-Aware Rate Limiting**:
+  * Upgraded all standard `slowapi` limiters to resolve client IPs using `X-Forwarded-For` header inspection. This prevents proxy-wide blocking behind reverse proxies (like Render load balancers).
+  * Affected files: [routes_admin.py](file:///Users/aarav/Downloads/sdps-website-main/backend/routes_admin.py), [routes_elections.py](file:///Users/aarav/Downloads/sdps-website-main/backend/routes_elections.py), [routes_public.py](file:///Users/aarav/Downloads/sdps-website-main/backend/routes_public.py), [routes_qp.py](file:///Users/aarav/Downloads/sdps-website-main/backend/routes_qp.py), [routes_whatsapp.py](file:///Users/aarav/Downloads/sdps-website-main/backend/routes_whatsapp.py).
+* **Dynamic Logo Branding in Emails & PDFs**:
+  * Implemented an async/dependency synchronization routine (`sync_logo_url`) that queries the current database configuration to set active school brand assets.
+  * Ensures that salary slips, salary certificates, experience certificates, admission receipts, and public contact emails dynamically render the brand logo.
+  * Affected files: [routes_admin.py](file:///Users/aarav/Downloads/sdps-website-main/backend/routes_admin.py), [routes_public.py](file:///Users/aarav/Downloads/sdps-website-main/backend/routes_public.py).

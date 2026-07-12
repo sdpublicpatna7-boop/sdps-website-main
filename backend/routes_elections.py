@@ -5,13 +5,18 @@ from fastapi import APIRouter, HTTPException, Request, status, UploadFile, File,
 from pydantic import BaseModel
 import httpx
 from slowapi import Limiter
-from slowapi.util import get_remote_address
 
 from auth import get_current_admin
 
 logger = logging.getLogger("sdps.elections")
 
-limiter = Limiter(key_func=get_remote_address)
+def get_real_ip(request: Request) -> str:
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host or "127.0.0.1"
+
+limiter = Limiter(key_func=get_real_ip)
 
 # Supabase REST settings
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")

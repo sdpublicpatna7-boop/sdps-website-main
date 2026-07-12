@@ -13,7 +13,6 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, B
 from pydantic import BaseModel
 import pandas as pd
 from slowapi import Limiter
-from slowapi.util import get_remote_address
 
 from auth import (
     hash_password, verify_password, create_access_token,
@@ -21,7 +20,13 @@ from auth import (
     set_auth_cookie, clear_auth_cookie, ADMIN_COOKIE_NAME, JWT_EXPIRY_HOURS
 )
 
-limiter = Limiter(key_func=get_remote_address)
+def get_real_ip(request: Request) -> str:
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host or "127.0.0.1"
+
+limiter = Limiter(key_func=get_real_ip)
 from email_service import send_email, send_email_with_attachment, render_template, render_attachment_cover_email, format_salary_slip_email, format_salary_certificate_email, format_experience_certificate_email
 from pdf_service import generate_protected_pdf, wrap_for_pdf
 from image_utils import compress_and_save, save_raw_file, UnsafeUploadError
@@ -355,13 +360,27 @@ async def delete_experience_certificate(item_id: str, admin: TokenData = Depends
     return {"deleted": res.deleted_count}
 
 
+async def sync_logo_url():
+    if db is not None:
+        settings = await db.site_settings.find_one({}, {"logo_url": 1, "_id": 0})
+        if settings and settings.get("logo_url"):
+            import email_service
+            import pdf_service
+            email_service.LOGO_URL = settings["logo_url"]
+            pdf_service.LOGO_URL = settings["logo_url"]
+
+
 class EmailSendPayload(BaseModel):
     email: str
     data: Dict[str, Any]
 
 
 @admin_router.post("/salary-slips/send-email")
-async def email_salary_slip(payload: EmailSendPayload, admin: TokenData = Depends(require_permission("media-tools"))):
+async def email_salary_slip(
+    payload: EmailSendPayload,
+    admin: TokenData = Depends(require_permission("media-tools")),
+    _logo: None = Depends(sync_logo_url)
+):
     data = payload.data
     employee_name = data.get("employee_name", "Employee")
     pay_period = data.get("pay_period", "")
@@ -395,7 +414,11 @@ async def email_salary_slip(payload: EmailSendPayload, admin: TokenData = Depend
 
 
 @admin_router.post("/salary-certificates/send-email")
-async def email_salary_certificate(payload: EmailSendPayload, admin: TokenData = Depends(require_permission("media-tools"))):
+async def email_salary_certificate(
+    payload: EmailSendPayload,
+    admin: TokenData = Depends(require_permission("media-tools")),
+    _logo: None = Depends(sync_logo_url)
+):
     data = payload.data
     employee_name = data.get("employee_name", "Employee")
     subject = f"Salary Certificate - {employee_name}"
@@ -427,7 +450,11 @@ async def email_salary_certificate(payload: EmailSendPayload, admin: TokenData =
 
 
 @admin_router.post("/experience-certificates/send-email")
-async def email_experience_certificate(payload: EmailSendPayload, admin: TokenData = Depends(require_permission("media-tools"))):
+async def email_experience_certificate(
+    payload: EmailSendPayload,
+    admin: TokenData = Depends(require_permission("media-tools")),
+    _logo: None = Depends(sync_logo_url)
+):
     data = payload.data
     employee_name = data.get("employee_name", "Employee")
     subject = f"Experience Certificate - {employee_name}"

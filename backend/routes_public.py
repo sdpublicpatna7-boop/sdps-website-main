@@ -12,7 +12,6 @@ from fastapi.responses import FileResponse, RedirectResponse, HTMLResponse, Stre
 from pydantic import BaseModel
 import razorpay
 from slowapi import Limiter
-from slowapi.util import get_remote_address
 
 from models import (
     News, Notice, GalleryImage, VideoItem, CalendarEvent, Holiday,
@@ -32,7 +31,21 @@ from image_utils import save_raw_file, UPLOAD_ROOT, UnsafeUploadError
 
 logger = logging.getLogger(__name__)
 public_router = APIRouter(prefix="/api", tags=["public"])
-limiter = Limiter(key_func=get_remote_address)
+
+def get_real_ip(request: Request) -> str:
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host or "127.0.0.1"
+
+limiter = Limiter(key_func=get_real_ip)
+
+async def sync_logo_url():
+    if db is not None:
+        settings = await db.site_settings.find_one({}, {"logo_url": 1, "_id": 0})
+        if settings and settings.get("logo_url"):
+            import email_service
+            email_service.LOGO_URL = settings["logo_url"]
 
 # Reasonable bounds for any rupee amount accepted from the public (anti-abuse).
 MIN_PAYMENT_INR = 1
@@ -137,6 +150,7 @@ async def list_enquiry_questions():
 @public_router.post("/admission/enquiry")
 @limiter.limit("10/minute")
 async def submit_enquiry(request: Request, payload: AdmissionEnquiry):
+    await sync_logo_url()
     doc = payload.model_dump()
     await db.admission_enquiries.insert_one(doc.copy())
     # Escape user-supplied values before embedding in HTML email (prevents HTML injection).
@@ -229,6 +243,7 @@ async def submit_career_application(
     answers: str = Form("{}"),
     resume: Optional[UploadFile] = File(None),
 ):
+    await sync_logo_url()
     import json
     try:
         ans = json.loads(answers)
@@ -682,6 +697,7 @@ async def confirm_admission_payment(request: Request, payload: AdmissionPaymentC
 @public_router.post("/admission/send-receipt")
 @limiter.limit("20/minute")
 async def send_admission_receipt(request: Request, payload: AdmissionReceiptRequest):
+    await sync_logo_url()
     from email_service import send_email, render_template
     if not payload.email:
         return {"sent": False, "reason": "No email provided"}

@@ -12,7 +12,6 @@ from jose import JWTError, jwt
 import pandas as pd
 from passlib.context import CryptContext
 from slowapi import Limiter
-from slowapi.util import get_remote_address
 
 from qp_models import (
     QPUser, QPSession, QPExamArchive, QPAssignment,
@@ -29,7 +28,14 @@ from whatsapp_service import send_whatsapp_text
 logger = logging.getLogger(__name__)
 qp_router = APIRouter(prefix="/api/qp", tags=["qp"])
 db = None
-limiter = Limiter(key_func=get_remote_address)
+
+def get_real_ip(request: Request) -> str:
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host or "127.0.0.1"
+
+limiter = Limiter(key_func=get_real_ip)
 
 QP_JWT_EXP_H = int(os.environ.get("QP_JWT_EXPIRY_HOURS", "12"))
 QP_PORTAL_URL = os.environ.get("QP_PORTAL_URL", "https://sdpublic.org/qp-portal/")

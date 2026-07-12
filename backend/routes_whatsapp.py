@@ -22,12 +22,18 @@ from PIL import Image, ImageDraw, ImageFont
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request
 from pydantic import BaseModel
 from slowapi import Limiter
-from slowapi.util import get_remote_address
 
 from auth import get_superadmin, TokenData
 
 logger = logging.getLogger("sdps.whatsapp")
-limiter = Limiter(key_func=get_remote_address)
+
+def get_real_ip(request: Request) -> str:
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host or "127.0.0.1"
+
+limiter = Limiter(key_func=get_real_ip)
 
 WA_SERVICE_URL = os.environ.get("WA_SERVICE_URL", "http://localhost:3001")
 WA_API_SECRET = os.environ.get("WA_API_SECRET", "")
