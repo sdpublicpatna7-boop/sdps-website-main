@@ -4,7 +4,8 @@ import {
   Award, Plus, Edit2, Trash2, ArrowUp, ArrowDown, Upload,
   Loader2, Globe, Save, HelpCircle, Eye, EyeOff, LayoutGrid, Sparkles,
   BarChart3, Calendar, Smartphone, Chrome, ShieldAlert, X, Link2,
-  Mail, MessageCircle, Play, Instagram, Facebook, Youtube, Copy, Check
+  Mail, MessageCircle, Play, Instagram, Facebook, Youtube, Copy, Check,
+  GraduationCap, BookOpen, MapPin, UserPlus, Star, ArrowRight
 } from "lucide-react";
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -13,6 +14,82 @@ import {
 import api from "../../lib/api";
 
 const PIE_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
+
+const getLinkIconAndColor = (title, url) => {
+  const t = title.toLowerCase();
+  const u = url ? url.toLowerCase() : "";
+  
+  if (t.includes("enquiry")) {
+    return {
+      icon: GraduationCap,
+      color: "bg-blue-50 border-blue-100 text-blue-600"
+    };
+  }
+  if (t.includes("prospectus")) {
+    return {
+      icon: BookOpen,
+      color: "bg-amber-50 border-amber-100 text-amber-600"
+    };
+  }
+  if (t.includes("rate") || t.includes("review") || t.includes("feedback")) {
+    return {
+      icon: Star,
+      color: "bg-amber-50 border-amber-100 text-amber-500"
+    };
+  }
+  if (t.includes("contact") || t.includes("save") || t.includes("vcard") || t.includes("phone")) {
+    return {
+      icon: UserPlus,
+      color: "bg-indigo-50 border-indigo-100 text-indigo-600"
+    };
+  }
+  if (u.includes("youtube.com") || u.includes("youtu.be") || t.includes("youtube") || t.includes("video")) {
+    return {
+      icon: Youtube,
+      color: "bg-red-50 border-red-100 text-red-600"
+    };
+  }
+  if (u.includes("instagram.com") || t.includes("instagram")) {
+    return {
+      icon: Instagram,
+      color: "bg-pink-50 border-pink-100 text-pink-600"
+    };
+  }
+  if (u.includes("facebook.com") || t.includes("facebook")) {
+    return {
+      icon: Facebook,
+      color: "bg-blue-50 border-blue-100 text-blue-600"
+    };
+  }
+  if (u.includes("whatsapp") || u.includes("wa.me") || t.includes("whatsapp")) {
+    return {
+      icon: MessageCircle,
+      color: "bg-emerald-50 border-emerald-100 text-emerald-600"
+    };
+  }
+  if (t.includes("email") || t.includes("mail") || u.startsWith("mailto:")) {
+    return {
+      icon: Mail,
+      color: "bg-sky-50 border-sky-100 text-sky-600"
+    };
+  }
+  if (t.includes("website") || t.includes("school") || u.includes("sdpublic.org")) {
+    return {
+      icon: Globe,
+      color: "bg-sky-50 border-sky-100 text-sky-600"
+    };
+  }
+  if (t.includes("maps") || t.includes("location") || u.includes("google.com/maps")) {
+    return {
+      icon: MapPin,
+      color: "bg-rose-50 border-rose-100 text-rose-600"
+    };
+  }
+  return {
+    icon: ArrowRight,
+    color: "bg-slate-50 border-slate-100 text-slate-600"
+  };
+};
 
 export default function AdminLinktree() {
   const [settings, setSettings] = useState({
@@ -683,18 +760,26 @@ export default function AdminLinktree() {
                         {groupName}
                       </span>
                       <div className="space-y-1.5">
-                        {groupedLinks[groupName].map((link) => (
-                          <div
-                            key={link.id}
-                            className={`w-full py-2.5 px-3.5 rounded-xl text-xs font-bold text-center border transition-all duration-300 ${
-                              settings.theme === "dark"
-                                ? "bg-white/5 hover:bg-white/10 border-white/[0.08] text-slate-100"
-                                : "bg-white border-slate-200/80 text-slate-800 shadow-[0_2px_4px_rgba(0,0,0,0.01)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.02)]"
-                            }`}
-                          >
-                            {link.title}
-                          </div>
-                        ))}
+                        {groupedLinks[groupName].map((link) => {
+                          const { icon: CardIcon, color: bubbleColor } = getLinkIconAndColor(link.title, link.url);
+                          return (
+                            <div
+                              key={link.id}
+                              className={`w-full py-2 px-3 rounded-xl text-left border flex items-center gap-2.5 transition-all duration-300 ${
+                                settings.theme === "dark"
+                                  ? "bg-white/5 hover:bg-white/10 border-white/[0.08] text-slate-100"
+                                  : "bg-white border-slate-200/80 text-slate-800 shadow-[0_2px_4px_rgba(0,0,0,0.01)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.02)]"
+                              }`}
+                            >
+                              <div className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 ${bubbleColor}`}>
+                                <CardIcon className="w-3.5 h-3.5" />
+                              </div>
+                              <span className="truncate font-bold text-[11px] flex-1">
+                                {link.title}
+                              </span>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   ))

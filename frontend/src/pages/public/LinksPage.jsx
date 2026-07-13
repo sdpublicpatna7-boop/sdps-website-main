@@ -4,7 +4,8 @@ import {
   Loader2, AlertCircle, ArrowLeft, Globe, MessageCircle,
   Instagram, Facebook, Youtube, Mail, Play, ArrowUpRight,
   GraduationCap, BookOpen, MapPin, BookMarked, ArrowRight,
-  Share2, Sparkles, MoreHorizontal, Star, Pencil
+  Share2, Sparkles, MoreHorizontal, Star, Pencil, UserPlus,
+  Search, QrCode, X, Sun, Moon
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import api, { API } from "../../lib/api";
@@ -13,6 +14,9 @@ export default function LinksPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [isLightOverride, setIsLightOverride] = useState(null);
 
   useEffect(() => {
     const fetchLinktree = async () => {
@@ -76,10 +80,16 @@ export default function LinksPage() {
   }
 
   const { settings, links } = data;
-  const isLight = settings.theme === "light";
+  const isLight = isLightOverride !== null ? isLightOverride : (settings.theme === "light");
+
+  // Filter links based on search query
+  const filteredLinks = links.filter(link => 
+    link.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (link.group_header || "").toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // Group links by their group_header
-  const groupedLinks = links.reduce((acc, link) => {
+  const groupedLinks = filteredLinks.reduce((acc, link) => {
     const header = link.group_header?.trim() || "Links";
     if (!acc[header]) acc[header] = [];
     acc[header].push(link);
@@ -113,28 +123,58 @@ export default function LinksPage() {
         color: "bg-amber-50 border-amber-100 text-amber-600"
       };
     }
-    if (t.includes("website") || t.includes("school")) {
+    if (t.includes("rate") || t.includes("review") || t.includes("feedback")) {
+      return {
+        icon: Star,
+        color: "bg-amber-50 border-amber-100 text-amber-500"
+      };
+    }
+    if (t.includes("contact") || t.includes("save") || t.includes("vcard") || t.includes("phone")) {
+      return {
+        icon: UserPlus,
+        color: "bg-indigo-50 border-indigo-100 text-indigo-600"
+      };
+    }
+    if (u.includes("youtube.com") || u.includes("youtu.be") || t.includes("youtube") || t.includes("video")) {
+      return {
+        icon: Youtube,
+        color: "bg-red-50 border-red-100 text-red-600"
+      };
+    }
+    if (u.includes("instagram.com") || t.includes("instagram")) {
+      return {
+        icon: Instagram,
+        color: "bg-pink-50 border-pink-100 text-pink-600"
+      };
+    }
+    if (u.includes("facebook.com") || t.includes("facebook")) {
+      return {
+        icon: Facebook,
+        color: "bg-blue-50 border-blue-100 text-blue-600"
+      };
+    }
+    if (u.includes("whatsapp") || u.includes("wa.me") || t.includes("whatsapp")) {
+      return {
+        icon: MessageCircle,
+        color: "bg-emerald-50 border-emerald-100 text-emerald-600"
+      };
+    }
+    if (t.includes("email") || t.includes("mail") || u.startsWith("mailto:")) {
+      return {
+        icon: Mail,
+        color: "bg-sky-50 border-sky-100 text-sky-600"
+      };
+    }
+    if (t.includes("website") || t.includes("school") || u.includes("sdpublic.org")) {
       return {
         icon: Globe,
         color: "bg-sky-50 border-sky-100 text-sky-600"
       };
     }
-    if (t.includes("contact") || t.includes("save")) {
-      return {
-        icon: BookMarked,
-        color: "bg-indigo-50 border-indigo-100 text-indigo-600"
-      };
-    }
-    if (t.includes("maps") || t.includes("location") || t.includes("rate")) {
+    if (t.includes("maps") || t.includes("location") || u.includes("google.com/maps")) {
       return {
         icon: MapPin,
         color: "bg-rose-50 border-rose-100 text-rose-600"
-      };
-    }
-    if (u.includes("whatsapp") || u.includes("wa.me")) {
-      return {
-        icon: MessageCircle,
-        color: "bg-emerald-50 border-emerald-100 text-emerald-600"
       };
     }
     return {
@@ -190,24 +230,47 @@ export default function LinksPage() {
         
         {/* Top bar header tools */}
         <div className="flex items-center justify-between px-1.5">
-          <div className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all ${
-            isLight
-              ? "bg-white/80 border-slate-200 text-slate-700 shadow-sm"
-              : "bg-white/[0.03] border-white/5 text-slate-400"
-          }`}>
-            <Sparkles className="w-4 h-4 text-amber-500 animate-pulse" />
-          </div>
           <button
-            onClick={handleShare}
+            onClick={() => setIsLightOverride(isLight ? false : true)}
             className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all hover:scale-105 active:scale-95 ${
               isLight
                 ? "bg-white/80 border-slate-200 text-slate-700 hover:bg-white shadow-sm"
                 : "bg-white/[0.03] border-white/5 text-slate-400 hover:bg-white/[0.08]"
             }`}
-            title="Share Profile"
+            title="Toggle Theme"
           >
-            <Share2 className="w-4 h-4" />
+            {isLight ? (
+              <Moon className="w-4 h-4 text-slate-600" />
+            ) : (
+              <Sun className="w-4 h-4 text-amber-400" />
+            )}
           </button>
+          
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowQrModal(true)}
+              className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all hover:scale-105 active:scale-95 ${
+                isLight
+                  ? "bg-white/80 border-slate-200 text-slate-700 hover:bg-white shadow-sm"
+                  : "bg-white/[0.03] border-white/5 text-slate-400 hover:bg-white/[0.08]"
+              }`}
+              title="QR Code"
+            >
+              <QrCode className="w-4 h-4" />
+            </button>
+            
+            <button
+              onClick={handleShare}
+              className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all hover:scale-105 active:scale-95 ${
+                isLight
+                  ? "bg-white/80 border-slate-200 text-slate-700 hover:bg-white shadow-sm"
+                  : "bg-white/[0.03] border-white/5 text-slate-400 hover:bg-white/[0.08]"
+              }`}
+              title="Share Profile"
+            >
+              <Share2 className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Profile Card branding */}
@@ -263,9 +326,50 @@ export default function LinksPage() {
           )}
         </div>
 
+        {/* Search Bar */}
+        <div className="relative px-0.5 pt-2">
+          <div className="relative">
+            <Search className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 transition-colors ${
+              isLight ? "text-slate-400" : "text-slate-500"
+            }`} />
+            <input
+              type="text"
+              placeholder="Search links..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={`w-full pl-10 pr-10 py-3 rounded-2xl text-sm font-semibold transition-all outline-none border ${
+                isLight
+                  ? "bg-white border-slate-200 text-slate-800 placeholder-slate-400 focus:border-slate-350 focus:shadow-sm"
+                  : "bg-white/[0.03] border-white/5 text-white placeholder-slate-500 focus:border-white/10 focus:bg-white/[0.05]"
+              }`}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className={`absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
+                  isLight ? "hover:bg-slate-100 text-slate-450 hover:text-slate-700" : "hover:bg-white/5 text-slate-500 hover:text-white"
+                }`}
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Links lists section */}
         <div className="space-y-5 px-0.5 pt-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          {Object.entries(groupedLinks).map(([groupName, groupItems]) => (
+          {filteredLinks.length === 0 ? (
+            <div className="text-center py-12 space-y-3">
+              <div className={`w-12 h-12 mx-auto rounded-full flex items-center justify-center border ${
+                isLight ? "bg-slate-100/80 border-slate-200 text-slate-400" : "bg-white/5 border-white/10 text-slate-500"
+              }`}>
+                <Search className="w-5 h-5" />
+              </div>
+              <p className={`text-sm font-bold ${isLight ? "text-slate-500" : "text-slate-450"}`}>
+                No links match "{searchQuery}"
+              </p>
+            </div>
+          ) : Object.entries(groupedLinks).map(([groupName, groupItems]) => (
             <div key={groupName} className="space-y-2.5">
               {/* Category Divider Header (Centered) */}
               {groupName !== "Links" && (
@@ -321,6 +425,78 @@ export default function LinksPage() {
         </div>
 
       </div>
+
+      {/* QR Code Modal */}
+      {showQrModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          {/* Backdrop */}
+          <div 
+            onClick={() => setShowQrModal(false)}
+            className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
+          />
+          
+          {/* Modal Card */}
+          <div className={`w-full max-w-sm rounded-[32px] border p-6 text-center space-y-6 shadow-2xl relative z-10 scale-in duration-200 ${
+            isLight
+              ? "bg-white border-slate-200 text-slate-800"
+              : "bg-slate-900 border-white/5 text-white"
+          }`}>
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <span className={`text-[11px] font-black uppercase tracking-widest ${isLight ? "text-slate-400" : "text-slate-500"}`}>
+                Share Profile QR
+              </span>
+              <button 
+                onClick={() => setShowQrModal(false)}
+                className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
+                  isLight ? "hover:bg-slate-100 text-slate-450 hover:text-slate-700" : "hover:bg-white/5 text-slate-500 hover:text-white"
+                }`}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            
+            {/* QR Code Wrapper */}
+            <div className={`aspect-square w-48 mx-auto rounded-3xl p-4 border flex items-center justify-center ${
+              isLight ? "bg-slate-50 border-slate-100" : "bg-white border-white/5"
+            }`}>
+              <img 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(window.location.href)}`}
+                alt="QR Code"
+                className="w-full h-full object-contain"
+              />
+            </div>
+            
+            {/* Details */}
+            <div className="space-y-1">
+              <h3 className="font-extrabold text-sm tracking-tight">
+                {settings.profile_title || "S.D. Public School"}
+              </h3>
+              <p className={`text-[10px] font-bold ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+                Scan to access official links
+              </p>
+            </div>
+            
+            {/* Buttons */}
+            <div className="pt-2">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.href);
+                  toast.success("Link copied to clipboard!");
+                  setShowQrModal(false);
+                }}
+                className={`w-full py-3 rounded-2xl text-[11px] font-extrabold uppercase tracking-wider transition-all duration-300 transform active:scale-95 ${
+                  isLight
+                    ? "bg-slate-900 hover:bg-slate-800 text-white shadow-md shadow-slate-900/10"
+                    : "bg-white hover:bg-slate-100 text-slate-950 shadow-md shadow-white/5"
+                }`}
+              >
+                Copy Link
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer Branding */}
       <div className="text-center pt-8 text-[9px] font-extrabold uppercase tracking-widest z-10">
