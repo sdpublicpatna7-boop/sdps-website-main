@@ -51,3 +51,11 @@ We have successfully completed the native refactoring of the school election por
   * Added a dynamic PDF download fallback link to all admin documents (salary slips, salary certificates, experience certificates).
   * If SMTP fails or is not configured (e.g., in developer/local setups falling back to MailerCloud REST API), the system generates a cryptographically random, secure local download URL for the generated PDF document, rendering a professional "Download Document" button in the email template.
   * Affected files: [email_service.py](file:///Users/aarav/Downloads/sdps-website-main/backend/email_service.py), [routes_admin.py](file:///Users/aarav/Downloads/sdps-website-main/backend/routes_admin.py).
+* **Enhanced Linktree Experience**:
+  * Fixed keyword matching order priority so that `"Save Our Contact"` matches contact card tags correctly instead of falling back to the `"school"` keyword (which rendered the Globe icon).
+  * Upgraded icon and bubble colors: added support for **Star icon** (gold/amber) for Google Maps review/rating items, and **UserPlus icon** (indigo) for contact-card downloads.
+  * Integrated a live **Search and Filter bar** with custom empty-state messaging, allowing real-time searching through links.
+  * Added an **Interactive Theme Toggle** on the landing page so visitors can preview light or dark modes.
+  * Added a **QR Code generator modal** allowing users to instantly display/scan a QR code to share the Linktree.
+  * Upgraded the admin interactive phone preview simulator to render all matching icons and custom bubble styles in real-time.
+  * Affected files: [LinksPage.jsx](file:///Users/aarav/Downloads/sdps-website-main/frontend/src/pages/public/LinksPage.jsx), [AdminLinktree.jsx](file:///Users/aarav/Downloads/sdps-website-main/frontend/src/pages/admin/AdminLinktree.jsx).
