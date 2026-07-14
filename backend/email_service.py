@@ -237,110 +237,404 @@ def render_attachment_cover_email(
 
 def format_salary_slip_email(data: dict) -> str:
     import uuid
-    basic = data.get("basic_salary", 0)
-    hra = data.get("hra", 0)
-    da = data.get("da", 0)
-    medical = data.get("medical_allowance", 0)
-    conveyance = data.get("conveyance_allowance", 0)
-    special = data.get("special_allowance", 0)
-    gross = data.get("gross_salary", basic + hra + da + medical + conveyance + special)
+    try:
+        basic = int(float(data.get("basic_salary", 0)))
+    except (ValueError, TypeError):
+        basic = 0
+    try:
+        hra = int(float(data.get("hra", 0)))
+    except (ValueError, TypeError):
+        hra = 0
+    try:
+        da = int(float(data.get("da", 0)))
+    except (ValueError, TypeError):
+        da = 0
+    try:
+        medical = int(float(data.get("medical_allowance", 0)))
+    except (ValueError, TypeError):
+        medical = 0
+    try:
+        conveyance = int(float(data.get("conveyance_allowance", 0)))
+    except (ValueError, TypeError):
+        conveyance = 0
+    try:
+        special = int(float(data.get("special_allowance", 0)))
+    except (ValueError, TypeError):
+        special = 0
+    try:
+        gross = int(float(data.get("gross_salary", basic + hra + da + medical + conveyance + special)))
+    except (ValueError, TypeError):
+        gross = basic + hra + da + medical + conveyance + special
     
-    pf = data.get("pf", 0)
-    tax = data.get("professional_tax", 0)
-    tds = data.get("tds", 0)
-    other = data.get("other_deductions", 0)
-    deductions = data.get("total_deductions", pf + tax + tds + other)
-    net = data.get("net_salary", gross - deductions)
+    try:
+        pf = int(float(data.get("pf", 0)))
+    except (ValueError, TypeError):
+        pf = 0
+    try:
+        tax = int(float(data.get("professional_tax", 0)))
+    except (ValueError, TypeError):
+        tax = 0
+    try:
+        tds = int(float(data.get("tds", 0)))
+    except (ValueError, TypeError):
+        tds = 0
+    try:
+        other = int(float(data.get("other_deductions", 0)))
+    except (ValueError, TypeError):
+        other = 0
+    try:
+        deductions = int(float(data.get("total_deductions", pf + tax + tds + other)))
+    except (ValueError, TypeError):
+        deductions = pf + tax + tds + other
+    try:
+        net = int(float(data.get("net_salary", gross - deductions)))
+    except (ValueError, TypeError):
+        net = gross - deductions
+        
     doc_id = data.get("id") or f"SLIP-{str(uuid.uuid4())[:8].upper()}"
     
     return f"""
-    <p>Dear {data.get("employee_name")},</p>
-    <p>Please find below your Salary Slip for the month of <strong>{data.get("pay_period")}</strong>.</p>
-    
-    <table border="0" cellpadding="6" cellspacing="0" width="100%" style="border-collapse:collapse;margin-top:20px;font-size:13px;color:#334155;">
-        <tr style="background:#f1f5f9;">
-            <td colspan="2" style="font-weight:bold;color:#0f172a;border-bottom:1px solid #cbd5e1;">Employee Details</td>
-        </tr>
-        <tr>
-            <td width="50%"><strong>Employee Name:</strong> {data.get("employee_name")}</td>
-            <td width="50%"><strong>Designation:</strong> {data.get("designation")}</td>
-        </tr>
-        <tr>
-            <td><strong>Employee ID:</strong> {data.get("employee_id")}</td>
-            <td><strong>Department:</strong> {data.get("department")}</td>
-        </tr>
-        <tr>
-            <td><strong>Pay Period:</strong> {data.get("pay_period")}</td>
-            <td><strong>Working Days:</strong> {data.get("working_days")} / {data.get("present_days")}</td>
-        </tr>
-    </table>
-    
-    <table border="0" cellpadding="6" cellspacing="0" width="100%" style="border-collapse:collapse;margin-top:20px;font-size:13px;color:#334155;">
-        <tr style="background:#0E3B91;color:#ffffff;">
-            <th align="left" width="50%" style="padding:8px 12px;">Earnings</th>
-            <th align="left" width="50%" style="padding:8px 12px;">Deductions</th>
-        </tr>
-        <tr valign="top">
-            <td style="border:1px solid #e2e8f0;padding:0;">
-                <table cellpadding="6" cellspacing="0" width="100%">
-                    <tr><td>Basic Salary</td><td align="right">₹{basic:,}</td></tr>
-                    <tr><td>HRA</td><td align="right">₹{hra:,}</td></tr>
-                    <tr><td>DA</td><td align="right">₹{da:,}</td></tr>
-                    <tr><td>Medical</td><td align="right">₹{medical:,}</td></tr>
-                    <tr><td>Conveyance</td><td align="right">₹{conveyance:,}</td></tr>
-                    <tr><td>Special</td><td align="right">₹{special:,}</td></tr>
-                    <tr style="background:#f8fafc;font-weight:bold;color:#0f172a;">
-                        <td>Gross Salary</td><td align="right">₹{gross:,}</td>
-                    </tr>
-                </table>
-            </td>
-            <td style="border:1px solid #e2e8f0;padding:0;">
-                <table cellpadding="6" cellspacing="0" width="100%">
-                    <tr><td>Provident Fund (PF)</td><td align="right">₹{pf:,}</td></tr>
-                    <tr><td>Professional Tax</td><td align="right">₹{tax:,}</td></tr>
-                    <tr><td>Income Tax (TDS)</td><td align="right">₹{tds:,}</td></tr>
-                    <tr><td>Other Deductions</td><td align="right">₹{other:,}</td></tr>
-                    <tr><td style="color:transparent;line-height:1;">Spacer</td><td align="right" style="color:transparent;line-height:1;">0</td></tr>
-                    <tr><td style="color:transparent;line-height:1;">Spacer</td><td align="right" style="color:transparent;line-height:1;">0</td></tr>
-                    <tr style="background:#f8fafc;font-weight:bold;color:#0f172a;">
-                        <td>Total Deductions</td><td align="right">₹{deductions:,}</td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-    </table>
-    
-    <div style="margin-top:20px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;text-align:center;">
-        <span style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:bold;display:block;margin-bottom:4px;">Net Payable Salary</span>
-        <strong style="font-size:20px;color:#0f172a;">₹{net:,}/-</strong>
-        <span style="font-size:12px;color:#334155;display:block;margin-top:4px;font-style:italic;">({data.get("amount_in_words")})</span>
-    </div>
-    
-    <table border="0" cellpadding="6" cellspacing="0" width="100%" style="border-collapse:collapse;margin-top:20px;font-size:13px;color:#334155;">
-        <tr style="background:#f1f5f9;">
-            <td colspan="2" style="font-weight:bold;color:#0f172a;border-bottom:1px solid #cbd5e1;">Payment Details</td>
-        </tr>
-        <tr>
-            <td width="50%"><strong>Payment Mode:</strong> {data.get("payment_mode")}</td>
-            <td width="50%"><strong>Bank Name:</strong> {data.get("bank_name") or "-"}</td>
-        </tr>
-        <tr>
-            <td><strong>Account Number:</strong> {data.get("account_number")}</td>
-            <td><strong>UTR / Transaction ID:</strong> {data.get("utr_id") or "-"}</td>
-        </tr>
-        <tr>
-            <td colspan="2"><strong>Payment Date:</strong> {data.get("payment_date")}</td>
-        </tr>
-    </table>
+    <style>
+        .salary-slip-container {{
+            font-family: Arial, Helvetica, sans-serif;
+            color: #1e293b;
+            font-size: 10px;
+            line-height: 1.35;
+        }}
+        .section-title {{
+            font-size: 10px;
+            font-weight: bold;
+            color: #0f172a;
+            border-bottom: 1.5px solid #0f172a;
+            padding-bottom: 2px;
+            margin-top: 12px;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }}
+        .details-table {{
+            width: 100%;
+            border-collapse: collapse;
+        }}
+        .details-table td {{
+            padding: 3px 0;
+            font-size: 10px;
+        }}
+        .details-label {{
+            color: #64748b;
+            font-weight: bold;
+        }}
+        .details-value {{
+            color: #0f172a;
+            font-weight: bold;
+        }}
+        .financial-table {{
+            width: 100%;
+            border-collapse: collapse;
+        }}
+        .financial-table th {{
+            font-size: 9px;
+            font-weight: bold;
+            color: #64748b;
+            border-bottom: 1px solid #cbd5e1;
+            padding-bottom: 3px;
+            text-transform: uppercase;
+        }}
+        .financial-table td {{
+            padding: 4px 0;
+            font-size: 10px;
+        }}
+        .total-row td {{
+            border-top: 1.5px solid #0f172a;
+            border-bottom: 1.5px solid #0f172a;
+            font-weight: bold;
+            color: #0f172a;
+            padding: 5px 0;
+        }}
+        .net-pay-card {{
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-top: 12px;
+            width: 100%;
+        }}
+        .net-pay-label {{
+            font-size: 8px;
+            font-weight: bold;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }}
+        .net-pay-val {{
+            font-size: 16px;
+            font-weight: 800;
+            color: #0f172a;
+        }}
+        .words-val {{
+            font-size: 10px;
+            font-weight: bold;
+            color: #1e293b;
+            font-style: italic;
+        }}
+        .verification-log {{
+            margin-top: 15px;
+            border-top: 1px dashed #cbd5e1;
+            padding-top: 8px;
+            text-align: center;
+            font-size: 8px;
+            color: #64748b;
+        }}
+    </style>
+    <div class="salary-slip-container">
+        <!-- Header -->
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-bottom: 2px solid #0f172a; padding-bottom: 6px;">
+            <tr>
+                <td width="70%" valign="middle">
+                    <table border="0" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td width="48" valign="middle">
+                                <img src="{LOGO_URL}" style="height: 40px; width: 40px;" />
+                            </td>
+                            <td valign="middle" style="padding-left: 8px;">
+                                <h2 style="margin: 0; font-size: 16px; font-weight: 800; color: #0f172a; letter-spacing: 0.5px; line-height: 1.1;">S.D. PUBLIC SCHOOL</h2>
+                                <p style="margin: 2px 0 0 0; font-size: 9px; font-weight: bold; color: #475569; text-transform: uppercase; letter-spacing: 1px;">PATNA-7, BIHAR</p>
+                                <p style="margin: 1px 0 0 0; font-size: 8px; font-weight: 600; color: #d97706; font-style: italic;">Empowering Generations Since 1994</p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+                <td width="30%" align="right" valign="middle">
+                    <div style="border: 1px solid #0f172a; padding: 3px 6px; font-weight: 800; font-size: 8px; background-color: #f8fafc; text-transform: uppercase; display: inline-block; border-radius: 4px; color: #0f172a; margin-bottom: 2px;">SALARY SLIP</div>
+                    <p style="margin: 0; font-size: 10px; font-weight: bold; color: #0f172a;">Month: {data.get("pay_period", "")}</p>
+                </td>
+            </tr>
+        </table>
 
-    <div style="margin-top:28px;border-top:1px dashed #cbd5e1;padding-top:16px;text-align:center;font-size:11px;color:#64748b;font-family:Arial,sans-serif;">
-        <span style="font-weight:bold;color:#0F172A;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;">Secure Document Verification Log</span>
-        Verification ID: <strong>SDPS-SLIP-{doc_id}</strong><br/>
-        This is a cryptographically registered, computer-generated document issued by S.D. Public School, Patna. 
-        It is electronically secured and does not require a physical seal or signature. 
-        For security and authentication, this document is locked against modifications.
-    </div>
-    """
+        <!-- Employee Details -->
+        <div class="section-title">Employee Details</div>
+        <table cellpadding="0" cellspacing="0" class="details-table">
+            <tr>
+                <td width="48%" style="border-bottom: 1px solid #e2e8f0; padding: 4px 0;">
+                    <table width="100%">
+                        <tr>
+                            <td align="left" class="details-label" width="40%">Employee Name</td>
+                            <td align="right" class="details-value" width="60%">: {data.get("employee_name", "")}</td>
+                        </tr>
+                    </table>
+                </td>
+                <td width="4%"></td>
+                <td width="48%" style="border-bottom: 1px solid #e2e8f0; padding: 4px 0;">
+                    <table width="100%">
+                        <tr>
+                            <td align="left" class="details-label" width="40%">Designation</td>
+                            <td align="right" class="details-value" width="60%">: {data.get("designation", "")}</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td style="border-bottom: 1px solid #e2e8f0; padding: 4px 0;">
+                    <table width="100%">
+                        <tr>
+                            <td align="left" class="details-label" width="40%">Employee ID</td>
+                            <td align="right" class="details-value" width="60%">: {data.get("employee_id", "")}</td>
+                        </tr>
+                    </table>
+                </td>
+                <td></td>
+                <td style="border-bottom: 1px solid #e2e8f0; padding: 4px 0;">
+                    <table width="100%">
+                        <tr>
+                            <td align="left" class="details-label" width="40%">Department</td>
+                            <td align="right" class="details-value" width="60%">: {data.get("department", "")}</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td style="border-bottom: 1px solid #e2e8f0; padding: 4px 0;">
+                    <table width="100%">
+                        <tr>
+                            <td align="left" class="details-label" width="40%">Pay Period</td>
+                            <td align="right" class="details-value" width="60%">: {data.get("pay_period", "")}</td>
+                        </tr>
+                    </table>
+                </td>
+                <td></td>
+                <td style="border-bottom: 1px solid #e2e8f0; padding: 4px 0;">
+                    <table width="100%">
+                        <tr>
+                            <td align="left" class="details-label" width="40%">Working / Present Days</td>
+                            <td align="right" class="details-value" width="60%">: {data.get("working_days", "")} / {data.get("present_days", "")}</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Financial Grid -->
+        <table cellpadding="0" cellspacing="0" width="100%" style="margin-top: 10px;">
+            <tr>
+                <!-- Earnings Column -->
+                <td width="48%" valign="top">
+                    <div class="section-title" style="margin-top:0;">Earnings</div>
+                    <table cellpadding="0" cellspacing="0" class="financial-table">
+                        <tr style="border-bottom: 1px solid #cbd5e1; font-weight: bold; color: #64748b;">
+                            <th align="left" style="padding-bottom: 3px;">Particulars</th>
+                            <th align="right" style="padding-bottom: 3px;">Amount</th>
+                        </tr>
+                        <tr>
+                            <td align="left" style="padding: 4px 0; border-bottom: 1px solid #f1f5f9; color: #475569;">Basic Salary</td>
+                            <td align="right" style="padding: 4px 0; border-bottom: 1px solid #f1f5f9; font-weight: bold; color: #0f172a;">₹{basic:,}</td>
+                        </tr>
+                        <tr>
+                            <td align="left" style="padding: 4px 0; border-bottom: 1px solid #f1f5f9; color: #475569;">House Rent Allowance (HRA)</td>
+                            <td align="right" style="padding: 4px 0; border-bottom: 1px solid #f1f5f9; font-weight: bold; color: #0f172a;">₹{hra:,}</td>
+                        </tr>
+                        <tr>
+                            <td align="left" style="padding: 4px 0; border-bottom: 1px solid #f1f5f9; color: #475569;">Dearness Allowance (DA)</td>
+                            <td align="right" style="padding: 4px 0; border-bottom: 1px solid #f1f5f9; font-weight: bold; color: #0f172a;">₹{da:,}</td>
+                        </tr>
+                        <tr>
+                            <td align="left" style="padding: 4px 0; border-bottom: 1px solid #f1f5f9; color: #475569;">Medical Allowance</td>
+                            <td align="right" style="padding: 4px 0; border-bottom: 1px solid #f1f5f9; font-weight: bold; color: #0f172a;">₹{medical:,}</td>
+                        </tr>
+                        <tr>
+                            <td align="left" style="padding: 4px 0; border-bottom: 1px solid #f1f5f9; color: #475569;">Conveyance Allowance</td>
+                            <td align="right" style="padding: 4px 0; border-bottom: 1px solid #f1f5f9; font-weight: bold; color: #0f172a;">₹{conveyance:,}</td>
+                        </tr>
+                        <tr>
+                            <td align="left" style="padding: 4px 0; border-bottom: 1px solid #f1f5f9; color: #475569;">Special Allowance</td>
+                            <td align="right" style="padding: 4px 0; border-bottom: 1px solid #f1f5f9; font-weight: bold; color: #0f172a;">₹{special:,}</td>
+                        </tr>
+                        <tr class="total-row">
+                            <td align="left" style="padding: 5px 4px;">Gross Salary</td>
+                            <td align="right" style="padding: 5px 4px;">₹{gross:,}</td>
+                        </tr>
+                    </table>
+                </td>
+                
+                <!-- Spacer Column -->
+                <td width="4%"></td>
+                
+                <!-- Deductions Column -->
+                <td width="48%" valign="top">
+                    <div class="section-title" style="margin-top:0;">Deductions</div>
+                    <table cellpadding="0" cellspacing="0" class="financial-table">
+                        <tr style="border-bottom: 1px solid #cbd5e1; font-weight: bold; color: #64748b;">
+                            <th align="left" style="padding-bottom: 3px;">Particulars</th>
+                            <th align="right" style="padding-bottom: 3px;">Amount</th>
+                        </tr>
+                        <tr>
+                            <td align="left" style="padding: 4px 0; border-bottom: 1px solid #f1f5f9; color: #475569;">Provident Fund (PF)</td>
+                            <td align="right" style="padding: 4px 0; border-bottom: 1px solid #f1f5f9; font-weight: bold; color: #0f172a;">₹{pf:,}</td>
+                        </tr>
+                        <tr>
+                            <td align="left" style="padding: 4px 0; border-bottom: 1px solid #f1f5f9; color: #475569;">Professional Tax</td>
+                            <td align="right" style="padding: 4px 0; border-bottom: 1px solid #f1f5f9; font-weight: bold; color: #0f172a;">₹{tax:,}</td>
+                        </tr>
+                        <tr>
+                            <td align="left" style="padding: 4px 0; border-bottom: 1px solid #f1f5f9; color: #475569;">Income Tax (TDS)</td>
+                            <td align="right" style="padding: 4px 0; border-bottom: 1px solid #f1f5f9; font-weight: bold; color: #0f172a;">₹{tds:,}</td>
+                        </tr>
+                        <tr>
+                            <td align="left" style="padding: 4px 0; border-bottom: 1px solid #f1f5f9; color: #475569;">Other Deductions</td>
+                            <td align="right" style="padding: 4px 0; border-bottom: 1px solid #f1f5f9; font-weight: bold; color: #0f172a;">₹{other:,}</td>
+                        </tr>
+                        <!-- Spacer rows to align height with earnings -->
+                        <tr>
+                            <td style="color: transparent; line-height: 1.35; padding: 4px 0; border-bottom: 1px solid #f1f5f9;">Spacer</td>
+                            <td align="right" style="color: transparent; line-height: 1.35; padding: 4px 0; border-bottom: 1px solid #f1f5f9;">0</td>
+                        </tr>
+                        <tr>
+                            <td style="color: transparent; line-height: 1.35; padding: 4px 0; border-bottom: 1px solid #f1f5f9;">Spacer</td>
+                            <td align="right" style="color: transparent; line-height: 1.35; padding: 4px 0; border-bottom: 1px solid #f1f5f9;">0</td>
+                        </tr>
+                        <tr class="total-row">
+                            <td align="left" style="padding: 5px 4px;">Total Deductions</td>
+                            <td align="right" style="padding: 5px 4px;">₹{deductions:,}</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Net Payable Salary Card -->
+        <table cellpadding="0" cellspacing="0" class="net-pay-card">
+            <tr>
+                <td width="40%" valign="middle">
+                    <span class="net-pay-label">Net Payable Salary</span><br/>
+                    <span class="net-pay-val">₹{net:,}/-</span>
+                </td>
+                <td width="60%" align="right" valign="middle">
+                    <span class="net-pay-label">Amount In Words</span><br/>
+                    <span class="words-val">{data.get("amount_in_words", "")}</span>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Payment Details -->
+        <div class="section-title">Payment Details</div>
+        <table cellpadding="0" cellspacing="0" class="details-table">
+            <tr>
+                <td width="48%" style="border-bottom: 1px solid #e2e8f0; padding: 4px 0;">
+                    <table width="100%">
+                        <tr>
+                            <td align="left" class="details-label" width="40%">Payment Mode</td>
+                            <td align="right" class="details-value" width="60%">: {data.get("payment_mode", "")}</td>
+                        </tr>
+                    </table>
+                </td>
+                <td width="4%"></td>
+                <td width="48%" style="border-bottom: 1px solid #e2e8f0; padding: 4px 0;">
+                    <table width="100%">
+                        <tr>
+                            <td align="left" class="details-label" width="40%">Bank Name</td>
+                            <td align="right" class="details-value" width="60%">: {data.get("bank_name") or "—"}</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td style="border-bottom: 1px solid #e2e8f0; padding: 4px 0;">
+                    <table width="100%">
+                        <tr>
+                            <td align="left" class="details-label" width="40%">Account Number</td>
+                            <td align="right" class="details-value" width="60%">: {data.get("account_number", "")}</td>
+                        </tr>
+                    </table>
+                </td>
+                <td></td>
+                <td style="border-bottom: 1px solid #e2e8f0; padding: 4px 0;">
+                    <table width="100%">
+                        <tr>
+                            <td align="left" class="details-label" width="40%">UTR / Transaction ID</td>
+                            <td align="right" class="details-value" width="60%">: {data.get("utr_id") or "—"}</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="3" style="border-bottom: 1px solid #e2e8f0; padding: 4px 0;">
+                    <table width="100%">
+                        <tr>
+                            <td align="left" class="details-label" width="20%">Payment Date</td>
+                            <td align="right" class="details-value" width="80%">: {data.get("payment_date", "")}</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Secure Document Verification Log -->
+        <div class="verification-log">
+            <span style="font-weight: bold; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">Secure Document Verification Log</span>
+            Verification ID: <strong>SDPS-SLIP-{doc_id}</strong><br/>
+            This is a cryptographically registered, computer-generated document issued by S.D. Public School, Patna.<br/>
+            It is electronically secured and does not require a physical seal or signature. Locked against modifications.
+        </div>
+    </div>"""
 
 
 def format_salary_certificate_email(data: dict) -> str:

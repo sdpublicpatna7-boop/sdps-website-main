@@ -75,6 +75,29 @@ def wrap_for_pdf(title: str, body_html: str) -> str:
     Wrap document body HTML in an A4-sized PDF template with school header and footer.
     This is separate from the email template — optimized for print/PDF rendering.
     """
+    if "Salary Slip" in title:
+        return f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+    @page {{
+        size: A4;
+        margin: 12mm 12mm 12mm 12mm;
+    }}
+    body {{
+        font-family: Arial, Helvetica, sans-serif;
+        color: #1e293b;
+        margin: 0;
+        padding: 0;
+    }}
+</style>
+</head>
+<body>
+    {body_html}
+</body>
+</html>"""
+
     return f"""<!DOCTYPE html>
 <html>
 <head>
