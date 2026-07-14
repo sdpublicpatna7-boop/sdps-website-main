@@ -59,3 +59,9 @@ We have successfully completed the native refactoring of the school election por
   * Added a **QR Code generator modal** allowing users to instantly display/scan a QR code to share the Linktree.
   * Upgraded the admin interactive phone preview simulator to render all matching icons and custom bubble styles in real-time.
   * Affected files: [LinksPage.jsx](file:///Users/aarav/Downloads/sdps-website-main/frontend/src/pages/public/LinksPage.jsx), [AdminLinktree.jsx](file:///Users/aarav/Downloads/sdps-website-main/frontend/src/pages/admin/AdminLinktree.jsx).
+* **Salary Slip PDF Design Alignment**:
+  * Completely redesigned the backend generated PDF salary slip attachment in `email_service.py` (`format_salary_slip_email`) to match the premium, single-page, print-ready grid design viewed inside the Admin Portal.
+  * Used `xhtml2pdf`-compatible table positioning structures (side-by-side tables for Earnings vs Deductions) with clean grey border lines, custom badge headings, and a highlighted Net Payable card to ensure zero formatting issues and prevent layout overflow to page 2.
+  * Cleaned up the PDF document body by stripping out the email-specific greetings (e.g. "Dear Principal, Please find below..."), which are now cleanly contained only within the cover email itself.
+  * Overrode the page margins inside `pdf_service.py` to `12mm` and bypassed the duplicate school letterhead headers/footers specifically when compiling `"Salary Slip"` documents.
+  * Affected files: [email_service.py](file:///Users/aarav/Downloads/sdps-website-main/backend/email_service.py), [pdf_service.py](file:///Users/aarav/Downloads/sdps-website-main/backend/pdf_service.py).
