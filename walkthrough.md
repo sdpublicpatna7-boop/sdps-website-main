@@ -73,3 +73,12 @@ We have successfully completed the native refactoring of the school election por
   * Implemented client-side sort filters on both the Submissions and School Roster table headers, allowing the admin to sort student records in ascending or descending order dynamically by fields such as Student Name, Father's Name, Admission Number, Student (Aadhaar), Mobile Number, and Date.
   * Updated detail modal navigation logic to correctly traverse matching sorted orders when navigating between previous/next records.
   * Affected files: [routes_admin.py](file:///Users/aarav/Downloads/sdps-website-main/backend/routes_admin.py), [ApaarForm.jsx](file:///Users/aarav/Downloads/sdps-website-main/frontend/src/pages/public/ApaarForm.jsx), [AdminApaarManager.jsx](file:///Users/aarav/Downloads/sdps-website-main/frontend/src/pages/admin/special/AdminApaarManager.jsx).
+* **Real-time Admin Notifications**:
+  * Implemented automatic toast popups that appear after entering the Admin Panel (and periodically poll every 30 seconds) if there are any new/unread submissions for:
+    * **Admission Enquiry Forms** (`AdmissionEnquiry`)
+    * **Teacher Job Applications** (`CareerApplication`)
+    * **Full Admission Applications** (`FullAdmission`)
+    * **Contact Form Messages** (`ContactMessage`)
+  * Included a call-to-action button ("View") directly inside each notification toast, allowing the admin to jump directly to the relevant management page with a single click.
+  * Synchronized the counts dynamically using the browser's `localStorage` so that notifications only trigger when new items have actually arrived since the admin's last visit or viewing of that module.
+  * Affected files: [AdminLayout.jsx](file:///Users/aarav/Downloads/sdps-website-main/frontend/src/components/admin/AdminLayout.jsx).
