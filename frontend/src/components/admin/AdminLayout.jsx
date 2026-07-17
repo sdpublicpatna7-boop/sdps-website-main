@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
+import { toast, Toaster } from "sonner";
 import {
   LayoutDashboard, Newspaper, Bell, Image as ImageIcon, Video,
   Calendar, PartyPopper, Crown, Vote, Trophy, Users, Briefcase,
@@ -149,7 +150,125 @@ export default function AdminLayout() {
       }
     }
   }, [location.pathname, user, loading, navigate]);
+  const checkNewUpdates = (currentStats) => {
+    if (!currentStats) return;
 
+    const lastEnquiries = localStorage.getItem("last_seen_enquiries");
+    const lastCareerApps = localStorage.getItem("last_seen_career_applications");
+    const lastAdmissions = localStorage.getItem("last_seen_admissions");
+    const lastContactMsgs = localStorage.getItem("last_seen_contact_messages");
+
+    const currEnquiries = currentStats.enquiries || 0;
+    const currCareerApps = currentStats.career_applications || 0;
+    const currAdmissions = currentStats.admissions || 0;
+    const currContactMsgs = currentStats.contact_messages || 0;
+
+    // Enquiries
+    if (lastEnquiries !== null) {
+      const diff = currEnquiries - parseInt(lastEnquiries, 10);
+      if (diff > 0) {
+        toast.info(`${diff} new admission ${diff === 1 ? 'enquiry' : 'enquiries'} received!`, {
+          action: {
+            label: 'View',
+            onClick: () => navigate('/admin/admission-enquiries')
+          },
+          duration: 10000
+        });
+      }
+    }
+    localStorage.setItem("last_seen_enquiries", currEnquiries.toString());
+
+    // Career Applications
+    if (lastCareerApps !== null) {
+      const diff = currCareerApps - parseInt(lastCareerApps, 10);
+      if (diff > 0) {
+        toast.info(`${diff} new teacher ${diff === 1 ? 'application' : 'applications'} received!`, {
+          action: {
+            label: 'View',
+            onClick: () => navigate('/admin/career-applications')
+          },
+          duration: 10000
+        });
+      }
+    }
+    localStorage.setItem("last_seen_career_applications", currCareerApps.toString());
+
+    // Full Admissions
+    if (lastAdmissions !== null) {
+      const diff = currAdmissions - parseInt(lastAdmissions, 10);
+      if (diff > 0) {
+        toast.info(`${diff} new admission ${diff === 1 ? 'application' : 'applications'} received!`, {
+          action: {
+            label: 'View',
+            onClick: () => navigate('/admin/admissions')
+          },
+          duration: 10000
+        });
+      }
+    }
+    localStorage.setItem("last_seen_admissions", currAdmissions.toString());
+
+    // Contact Messages
+    if (lastContactMsgs !== null) {
+      const diff = currContactMsgs - parseInt(lastContactMsgs, 10);
+      if (diff > 0) {
+        toast.info(`${diff} new contact ${diff === 1 ? 'message' : 'messages'} received!`, {
+          action: {
+            label: 'View',
+            onClick: () => navigate('/admin/contact-messages')
+          },
+          duration: 10000
+        });
+      }
+    }
+    localStorage.setItem("last_seen_contact_messages", currContactMsgs.toString());
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    
+    // Sync counts immediately if currently viewing those pages
+    api.get("/admin/stats")
+      .then((r) => {
+        const stats = r.data;
+        if (location.pathname === "/admin/admission-enquiries") {
+          localStorage.setItem("last_seen_enquiries", (stats.enquiries || 0).toString());
+        }
+        if (location.pathname === "/admin/career-applications") {
+          localStorage.setItem("last_seen_career_applications", (stats.career_applications || 0).toString());
+        }
+        if (location.pathname === "/admin/admissions") {
+          localStorage.setItem("last_seen_admissions", (stats.admissions || 0).toString());
+        }
+        if (location.pathname === "/admin/contact-messages") {
+          localStorage.setItem("last_seen_contact_messages", (stats.contact_messages || 0).toString());
+        }
+      })
+      .catch(() => {});
+  }, [location.pathname, user]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchAndCheckStats = () => {
+      api.get("/admin/stats")
+        .then((r) => {
+          checkNewUpdates(r.data);
+        })
+        .catch(() => {});
+    };
+
+    // Run once on load/mount with a small delay for UI layout rendering
+    const timeoutId = setTimeout(fetchAndCheckStats, 1500);
+
+    // Poll every 30 seconds
+    const intervalId = setInterval(fetchAndCheckStats, 30000);
+
+    return () => {
+      clearTimeout(timeoutId);
+      clearInterval(intervalId);
+    };
+  }, [user]);
   useEffect(() => {
     startPinger();
   }, []);
@@ -208,6 +327,7 @@ export default function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
+      <Toaster position="top-right" richColors />
       {/* Mobile Top Bar Header */}
       <header className="md:hidden flex items-center justify-between px-4 py-3 bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-40">
         <div className="flex items-center gap-3">
