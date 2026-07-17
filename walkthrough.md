@@ -65,3 +65,7 @@ We have successfully completed the native refactoring of the school election por
   * Cleaned up the PDF document body by stripping out the email-specific greetings (e.g. "Dear Principal, Please find below..."), which are now cleanly contained only within the cover email itself.
   * Overrode the page margins inside `pdf_service.py` to `12mm` and bypassed the duplicate school letterhead headers/footers specifically when compiling `"Salary Slip"` documents.
   * Affected files: [email_service.py](file:///Users/aarav/Downloads/sdps-website-main/backend/email_service.py), [pdf_service.py](file:///Users/aarav/Downloads/sdps-website-main/backend/pdf_service.py).
+* **APAAR Consent Module Bug Fixes**:
+  * Removed the `"Transgender"` choice option from the public-facing APAAR Card registration consent form's Gender selection dropdown.
+  * Refactored the backend class name queries in both the Submissions tally endpoint and the School Roster student list endpoint. Replaced strict regex boundaries (`^class_name$`) with a precise word-boundary search (`(?:\b|[^a-zA-Z])class_name(?:\b|[^a-zA-Z])`) that correctly filters out overlapping Roman numerals (e.g. preventing `"I"` from matching `"IX"` or `"XI"`) while successfully finding entries with suffixes/prefixes (like `"Class I"`, `"I A"`, or `"I-A"`).
+  * Affected files: [routes_admin.py](file:///Users/aarav/Downloads/sdps-website-main/backend/routes_admin.py), [ApaarForm.jsx](file:///Users/aarav/Downloads/sdps-website-main/frontend/src/pages/public/ApaarForm.jsx).
