@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import api from "../../../lib/api";
 import { toast, Toaster } from "sonner";
 import * as XLSX from "xlsx";
 import { 
   Users, Search, Download, Trash2, Eye, Upload, 
   Database, FileText, Fingerprint, ShieldCheck, Loader2, RefreshCw, XCircle,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown
 } from "lucide-react";
 
 export default function AdminApaarManager() {
@@ -24,29 +24,18 @@ export default function AdminApaarManager() {
   const [rosterSearch, setRosterSearch] = useState("");
   const [rosterClass, setRosterClass] = useState("");
 
+  // Sorting State
+  const [subSortField, setSubSortField] = useState("");
+  const [subSortAsc, setSubSortAsc] = useState(true);
+  const [rosterSortField, setRosterSortField] = useState("");
+  const [rosterSortAsc, setRosterSortAsc] = useState(true);
+
   // Bulk Upload Inputs
   const [pastedData, setPastedData] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
 
   // Details Modal
   const [selectedSub, setSelectedSub] = useState(null);
-  const currentSubIndex = selectedSub ? submissions.findIndex(s => s.id === selectedSub.id) : -1;
-
-  const handlePrevSub = () => {
-    if (!selectedSub) return;
-    const currentIndex = submissions.findIndex(s => s.id === selectedSub.id);
-    if (currentIndex > 0) {
-      setSelectedSub(submissions[currentIndex - 1]);
-    }
-  };
-
-  const handleNextSub = () => {
-    if (!selectedSub) return;
-    const currentIndex = submissions.findIndex(s => s.id === selectedSub.id);
-    if (currentIndex >= 0 && currentIndex < submissions.length - 1) {
-      setSelectedSub(submissions[currentIndex + 1]);
-    }
-  };
 
   // Rejection states
   const [rejectingSub, setRejectingSub] = useState(null);
@@ -86,6 +75,77 @@ export default function AdminApaarManager() {
       toast.error(err?.response?.data?.detail || "Failed to reject submission.");
     } finally {
       setProcessingRejection(false);
+    }
+  };
+
+  const toggleSubSort = (field) => {
+    if (subSortField === field) {
+      setSubSortAsc(prev => !prev);
+    } else {
+      setSubSortField(field);
+      setSubSortAsc(true);
+    }
+  };
+
+  const toggleRosterSort = (field) => {
+    if (rosterSortField === field) {
+      setRosterSortAsc(prev => !prev);
+    } else {
+      setRosterSortField(field);
+      setRosterSortAsc(true);
+    }
+  };
+
+  const sortedSubmissions = useMemo(() => {
+    if (!subSortField) return submissions;
+    return [...submissions].sort((a, b) => {
+      let valA = a[subSortField] || "";
+      let valB = b[subSortField] || "";
+      if (typeof valA === "string") valA = valA.toLowerCase();
+      if (typeof valB === "string") valB = valB.toLowerCase();
+      if (valA < valB) return subSortAsc ? -1 : 1;
+      if (valA > valB) return subSortAsc ? 1 : -1;
+      return 0;
+    });
+  }, [submissions, subSortField, subSortAsc]);
+
+  const sortedRoster = useMemo(() => {
+    if (!rosterSortField) return roster;
+    return [...roster].sort((a, b) => {
+      let valA = a[rosterSortField] || "";
+      let valB = b[rosterSortField] || "";
+      if (typeof valA === "string") valA = valA.toLowerCase();
+      if (typeof valB === "string") valB = valB.toLowerCase();
+      if (valA < valB) return rosterSortAsc ? -1 : 1;
+      if (valA > valB) return rosterSortAsc ? 1 : -1;
+      return 0;
+    });
+  }, [roster, rosterSortField, rosterSortAsc]);
+
+  const renderSortIcon = (currentField, field, asc) => {
+    if (currentField !== field) {
+      return <ArrowUpDown className="w-3.5 h-3.5 ml-1 text-slate-300 shrink-0 inline-block align-middle" />;
+    }
+    return asc 
+      ? <ArrowUp className="w-3.5 h-3.5 ml-1 text-brand-blue shrink-0 inline-block align-middle" /> 
+      : <ArrowDown className="w-3.5 h-3.5 ml-1 text-brand-blue shrink-0 inline-block align-middle" />;
+  };
+
+  const currentSubIndex = selectedSub ? sortedSubmissions.findIndex(s => s.id === selectedSub.id) : -1;
+
+  const handlePrevSub = () => {
+    if (!selectedSub) return;
+    const currentIndex = sortedSubmissions.findIndex(s => s.id === selectedSub.id);
+    if (currentIndex > 0) {
+      setSelectedSub(sortedSubmissions[currentIndex - 1]);
+    }
+  };
+
+  const handleNextSub = () => {
+    if (!selectedSub) return;
+    const currentIndex = sortedSubmissions.findIndex(s => s.id === selectedSub.id);
+    if (currentIndex >= 0 && currentIndex < sortedSubmissions.length - 1) {
+      setSelectedSub(sortedSubmissions[currentIndex + 1]);
     }
   };
 
@@ -585,17 +645,59 @@ export default function AdminApaarManager() {
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-slate-50 text-slate-500 font-bold uppercase border-b border-slate-100 select-none">
-                      <th className="py-4 px-6">Adm No</th>
-                      <th className="py-4 px-6">Student (School)</th>
-                      <th className="py-4 px-6">Class/Sec</th>
-                      <th className="py-4 px-6">Student (Aadhaar)</th>
-                      <th className="py-4 px-6">Aadhaar Linked Mobile</th>
-                      <th className="py-4 px-6">Submitted Date</th>
-                      <th className="py-4 px-6 text-right">Actions</th>
+                      <th 
+                        onClick={() => toggleSubSort("admission_no")} 
+                        className="py-4 px-6 cursor-pointer hover:bg-slate-100/80 transition duration-150 select-none"
+                      >
+                        <div className="flex items-center gap-1">
+                          Adm No {renderSortIcon(subSortField, "admission_no", subSortAsc)}
+                        </div>
+                      </th>
+                      <th 
+                        onClick={() => toggleSubSort("student_name")} 
+                        className="py-4 px-6 cursor-pointer hover:bg-slate-100/80 transition duration-150 select-none"
+                      >
+                        <div className="flex items-center gap-1">
+                          Student (School) {renderSortIcon(subSortField, "student_name", subSortAsc)}
+                        </div>
+                      </th>
+                      <th 
+                        onClick={() => toggleSubSort("class_name")} 
+                        className="py-4 px-6 cursor-pointer hover:bg-slate-100/80 transition duration-150 select-none"
+                      >
+                        <div className="flex items-center gap-1">
+                          Class/Sec {renderSortIcon(subSortField, "class_name", subSortAsc)}
+                        </div>
+                      </th>
+                      <th 
+                        onClick={() => toggleSubSort("student_aadhaar_name")} 
+                        className="py-4 px-6 cursor-pointer hover:bg-slate-100/80 transition duration-150 select-none"
+                      >
+                        <div className="flex items-center gap-1">
+                          Student (Aadhaar) {renderSortIcon(subSortField, "student_aadhaar_name", subSortAsc)}
+                        </div>
+                      </th>
+                      <th 
+                        onClick={() => toggleSubSort("mobile_no")} 
+                        className="py-4 px-6 cursor-pointer hover:bg-slate-100/80 transition duration-150 select-none"
+                      >
+                        <div className="flex items-center gap-1">
+                          Aadhaar Linked Mobile {renderSortIcon(subSortField, "mobile_no", subSortAsc)}
+                        </div>
+                      </th>
+                      <th 
+                        onClick={() => toggleSubSort("created_at")} 
+                        className="py-4 px-6 cursor-pointer hover:bg-slate-100/80 transition duration-150 select-none"
+                      >
+                        <div className="flex items-center gap-1">
+                          Submitted Date {renderSortIcon(subSortField, "created_at", subSortAsc)}
+                        </div>
+                      </th>
+                      <th className="py-4 px-6 text-right select-none">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
-                    {submissions.map(s => (
+                    {sortedSubmissions.map(s => (
                       <tr key={s.id} className="hover:bg-slate-50/70 transition">
                         <td className="py-3.5 px-6 font-bold text-slate-900">{s.admission_no}</td>
                         <td className="py-3.5 px-6 uppercase">{s.student_name}</td>
@@ -689,14 +791,42 @@ export default function AdminApaarManager() {
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr className="bg-slate-50 text-slate-500 font-bold uppercase border-b border-slate-100 select-none sticky top-0">
-                        <th className="py-3 px-6">Admission No</th>
-                        <th className="py-3 px-6">Student Name (School)</th>
-                        <th className="py-3 px-6">Father's Name (School)</th>
-                        <th className="py-3 px-6">Class/Sec</th>
+                        <th 
+                          onClick={() => toggleRosterSort("admission_no")} 
+                          className="py-3 px-6 cursor-pointer hover:bg-slate-100/80 transition duration-150 select-none"
+                        >
+                          <div className="flex items-center gap-1">
+                            Admission No {renderSortIcon(rosterSortField, "admission_no", rosterSortAsc)}
+                          </div>
+                        </th>
+                        <th 
+                          onClick={() => toggleRosterSort("student_name")} 
+                          className="py-3 px-6 cursor-pointer hover:bg-slate-100/80 transition duration-150 select-none"
+                        >
+                          <div className="flex items-center gap-1">
+                            Student Name (School) {renderSortIcon(rosterSortField, "student_name", rosterSortAsc)}
+                          </div>
+                        </th>
+                        <th 
+                          onClick={() => toggleRosterSort("father_name")} 
+                          className="py-3 px-6 cursor-pointer hover:bg-slate-100/80 transition duration-150 select-none"
+                        >
+                          <div className="flex items-center gap-1">
+                            Father's Name (School) {renderSortIcon(rosterSortField, "father_name", rosterSortAsc)}
+                          </div>
+                        </th>
+                        <th 
+                          onClick={() => toggleRosterSort("class_name")} 
+                          className="py-3 px-6 cursor-pointer hover:bg-slate-100/80 transition duration-150 select-none"
+                        >
+                          <div className="flex items-center gap-1">
+                            Class/Sec {renderSortIcon(rosterSortField, "class_name", rosterSortAsc)}
+                          </div>
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
-                      {roster.map(r => (
+                      {sortedRoster.map(r => (
                         <tr key={r.admission_no} className="hover:bg-slate-50/70 transition">
                           <td className="py-3 px-6 font-bold text-slate-900">{r.admission_no}</td>
                           <td className="py-3 px-6 uppercase">{r.student_name}</td>
@@ -805,12 +935,12 @@ export default function AdminApaarManager() {
                 <h3 className="font-bold text-slate-800 text-sm">APAAR Submission Details</h3>
                 {currentSubIndex !== -1 && (
                   <span className="text-[10px] bg-slate-200/60 text-slate-650 px-2 py-0.5 rounded-full font-bold select-none">
-                    {currentSubIndex + 1} of {submissions.length}
+                    {currentSubIndex + 1} of {sortedSubmissions.length}
                   </span>
                 )}
               </div>
               <div className="flex items-center gap-3">
-                {submissions.length > 1 && (
+                {sortedSubmissions.length > 1 && (
                   <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm mr-1">
                     <button
                       disabled={currentSubIndex <= 0}
@@ -821,7 +951,7 @@ export default function AdminApaarManager() {
                       <ChevronLeft className="w-4 h-4" />
                     </button>
                     <button
-                      disabled={currentSubIndex === -1 || currentSubIndex >= submissions.length - 1}
+                      disabled={currentSubIndex === -1 || currentSubIndex >= sortedSubmissions.length - 1}
                       onClick={handleNextSub}
                       className="p-2 hover:bg-slate-50 text-slate-600 disabled:opacity-30 disabled:hover:bg-transparent transition"
                       title="Next Submission"
