@@ -1680,7 +1680,7 @@ async def get_apaar_submissions(
     if class_name:
         import re
         escaped_class = re.escape(class_name)
-        query["class_name"] = {"$regex": rf"(?:\b|[^a-zA-Z]){escaped_class}(?:\b|[^a-zA-Z])", "$options": "i"}
+        query["class_name"] = {"$regex": rf"(?<!\bKG)(?<!\bK\.G\.)(?<!\bKG\s)(?<!\bKG-)(?<!\bK\.G\.-)(?<!\bK\.G\.\s)(?:\b|[^a-zA-Z]){escaped_class}(?:\b|[^a-zA-Z])", "$options": "i"}
         
     submissions = await db.apaar_submissions.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
@@ -1847,7 +1847,7 @@ async def get_apaar_roster(
     if class_name:
         import re
         escaped_class = re.escape(class_name)
-        query["class_name"] = {"$regex": rf"(?:\b|[^a-zA-Z]){escaped_class}(?:\b|[^a-zA-Z])", "$options": "i"}
+        query["class_name"] = {"$regex": rf"(?<!\bKG)(?<!\bK\.G\.)(?<!\bKG\s)(?<!\bKG-)(?<!\bK\.G\.-)(?<!\bK\.G\.\s)(?:\b|[^a-zA-Z]){escaped_class}(?:\b|[^a-zA-Z])", "$options": "i"}
     students = await db.apaar_roster.find(query, {"_id": 0}).sort("admission_no", 1).to_list(2000)
     return students
 
