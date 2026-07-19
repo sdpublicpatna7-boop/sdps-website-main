@@ -82,3 +82,9 @@ We have successfully completed the native refactoring of the school election por
   * Included a call-to-action button ("View") directly inside each notification toast, allowing the admin to jump directly to the relevant management page with a single click.
   * Synchronized the counts dynamically using the browser's `localStorage` so that notifications only trigger when new items have actually arrived since the admin's last visit or viewing of that module.
   * Affected files: [AdminLayout.jsx](file:///Users/aarav/Downloads/sdps-website-main/frontend/src/components/admin/AdminLayout.jsx).
+* **PWA Support**:
+  * Created `manifest.json` configuration defining short name, theme colors, background colors, and app icons (`logo192.png`, `logo512.png`) to enable standalone application install support.
+  * Added `<link rel="manifest">` inside the head of the main index layout template.
+  * Designed and registered a customized `service-worker.js` with a Network-First cache fallback strategy to ensure high performance and reliable offline page capabilities for the entire web portal.
+  * Affected files: [index.html](file:///Users/aarav/Downloads/sdps-website-main/frontend/public/index.html), [index.js](file:///Users/aarav/Downloads/sdps-website-main/frontend/src/index.js), [manifest.json](file:///Users/aarav/Downloads/sdps-website-main/frontend/public/manifest.json), [service-worker.js](file:///Users/aarav/Downloads/sdps-website-main/frontend/public/service-worker.js).
+
