@@ -1794,17 +1794,17 @@ export default function AdminOmrGenerator() {
                     {(showBookletNo || showSetCode || isAutomated) && (
                       <div className="grid grid-cols-12 gap-1.5">
                         {showBookletNo && (
-                          <div className={`${showSetCode ? 'col-span-7' : 'col-span-12'} border border-black p-1.5 flex items-center justify-between bg-white min-h-[44px]`}>
-                            <div>
-                              <span className="font-bold uppercase text-[8.5px] text-black block mb-0.5">BOOKLET NO:</span>
-                              <span className="font-mono font-extrabold text-[11px] text-black tracking-wider block">
+                          <div className={`${showSetCode ? 'col-span-7' : 'col-span-12'} border border-black p-1 flex items-center justify-between bg-white min-h-[44px] overflow-hidden`}>
+                            <div className="min-w-0 flex-1 pr-1">
+                              <span className="font-bold uppercase text-[8px] text-black block mb-0.5 whitespace-nowrap">BOOKLET NO:</span>
+                              <span className="font-mono font-extrabold text-[9.5px] sm:text-[10px] text-black tracking-tight block whitespace-nowrap overflow-hidden">
                                 {currentBookletNo}
                               </span>
                             </div>
                             {(showBarcode || isAutomated) && (
-                              <div className="flex flex-col items-end justify-center shrink-0 border-l border-black/20 pl-2">
-                                <BarcodeSvg value={currentBookletNo} height={22} />
-                                <span className="text-[7px] font-mono font-extrabold text-black tracking-widest mt-0.5">
+                              <div className="flex flex-col items-end justify-center shrink-0 border-l border-black/20 pl-1.5">
+                                <BarcodeSvg value={currentBookletNo} height={20} />
+                                <span className="text-[6.5px] font-mono font-extrabold text-black tracking-tighter mt-0.5 whitespace-nowrap">
                                   {currentBookletNo}
                                 </span>
                               </div>
@@ -1813,14 +1813,14 @@ export default function AdminOmrGenerator() {
                         )}
 
                         {showSetCode && (
-                          <div className={`${showBookletNo ? 'col-span-5' : 'col-span-12'} border border-black p-1 flex flex-col justify-between min-h-[44px]`}>
-                            <span className="font-bold uppercase text-[8.5px] block">QUESTION SET:</span>
+                          <div className={`${showBookletNo ? 'col-span-5' : 'col-span-12'} border border-black p-1 flex flex-col justify-between min-h-[44px] bg-white`}>
+                            <span className="font-bold uppercase text-[8px] block text-black whitespace-nowrap">QUESTION SET:</span>
                             <div className="flex justify-around items-center py-0.5">
                               {["A", "B", "C", "D"].map((setCode) => (
-                                <div key={setCode} className="flex items-center gap-1">
+                                <div key={setCode} className="flex items-center">
                                   <div
                                     style={{ aspectRatio: "1 / 1" }}
-                                    className="w-4 h-4 rounded-full border-2 border-black flex items-center justify-center font-bold text-[8px] shrink-0"
+                                    className="w-4 h-4 rounded-full border border-black flex items-center justify-center font-bold text-[8px] shrink-0 text-black bg-white"
                                   >
                                     {setCode}
                                   </div>
@@ -1911,11 +1911,15 @@ export default function AdminOmrGenerator() {
                 {columnsData.map((colQuestions, cIdx) => (
                   <div key={cIdx} className="space-y-1 border-r border-black/30 last:border-r-0 pr-1">
                     {/* Column Header */}
-                    <div className="flex items-center text-[9px] font-black uppercase text-black border-b border-black pb-0.5 mb-0.5">
-                      <span className="w-7">Q.No</span>
-                      <span className="flex-1 text-center font-bold tracking-widest">
-                        OPTIONS ({optionLabels.join(" ")})
-                      </span>
+                    <div className="flex items-center text-[8.5px] font-black uppercase text-black border-b border-black pb-0.5 mb-0.5">
+                      <span className="w-7 text-right pr-1 shrink-0">Q.NO</span>
+                      <div className="flex-1 flex justify-around items-center px-1">
+                        {optionLabels.map((label) => (
+                          <span key={label} className="w-4.5 sm:w-5 text-center font-extrabold text-[8.5px] text-black shrink-0">
+                            {label}
+                          </span>
+                        ))}
+                      </div>
                     </div>
 
                     {colQuestions.map((qNum) => (
