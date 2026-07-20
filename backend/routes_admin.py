@@ -2007,38 +2007,63 @@ async def get_omr_roster(
     available_classes = sorted(list(available_classes_set))
     available_sections = sorted(list(available_sections_set))
 
+    ROMAN_TO_ARABIC = {
+        "I": "1", "II": "2", "III": "3", "IV": "4", "V": "5",
+        "VI": "6", "VII": "7", "VIII": "8", "IX": "9", "X": "10",
+        "XI": "11", "XII": "12"
+    }
+    ARABIC_TO_ROMAN = {v: k for k, v in ROMAN_TO_ARABIC.items()}
+
     query = {}
+    class_or_conditions = []
     if class_name and class_name.strip() and class_name.upper() != "ALL":
-        raw_val = class_name.strip()
-        escaped_c = re.escape(raw_val)
-        clean_val = re.sub(r'(?i)class', '', raw_val).strip()
-        clean_val_no_dash = re.sub(r'[\-\s]', '', clean_val).strip()
-        escaped_clean = re.escape(clean_val_no_dash) if clean_val_no_dash else escaped_c
-        query["$or"] = [
-            {"class_name": {"$regex": f"^{escaped_c}$", "$options": "i"}},
-            {"class": {"$regex": f"^{escaped_c}$", "$options": "i"}},
-            {"class_name": {"$regex": f".*{escaped_clean}.*", "$options": "i"}},
-            {"class": {"$regex": f".*{escaped_clean}.*", "$options": "i"}},
-            {"student_class": {"$regex": f".*{escaped_clean}.*", "$options": "i"}},
-            {"standard": {"$regex": f".*{escaped_clean}.*", "$options": "i"}}
-        ]
+        raw_c = class_name.strip().upper()
+        clean_c = re.sub(r'^(CLASS|STD|STANDARD)\s*[\-\s]*', '', raw_c, flags=re.I).strip()
+        clean_c_no_dash = re.sub(r'[\-\s]', '', clean_c)
+        
+        variants = {raw_c}
+        if clean_c:
+            variants.add(clean_c)
+            variants.add(f"CLASS {clean_c}")
+            variants.add(f"CLASS-{clean_c}")
+            variants.add(f"STD {clean_c}")
+            
+            if clean_c_no_dash in ROMAN_TO_ARABIC:
+                ar = ROMAN_TO_ARABIC[clean_c_no_dash]
+                variants.update({ar, f"CLASS {ar}", f"CLASS-{ar}", f"STD {ar}"})
+            elif clean_c_no_dash in ARABIC_TO_ROMAN:
+                rm = ARABIC_TO_ROMAN[clean_c_no_dash]
+                variants.update({rm, f"CLASS {rm}", f"CLASS-{rm}", f"STD {rm}"})
+
+        class_fields = ["class_name", "class", "student_class", "std", "standard", "grade", "cls"]
+        for var in variants:
+            escaped = re.escape(var)
+            for field in class_fields:
+                class_or_conditions.append({field: {"$regex": f"^{escaped}$", "$options": "i"}})
+                class_or_conditions.append({field: {"$regex": f".*{escaped}.*", "$options": "i"}})
+
+    sec_or_conditions = []
     if section and section.strip() and section.upper() != "ALL":
-        raw_s = section.strip()
-        escaped_s = re.escape(raw_s)
-        clean_s = re.sub(r'(?i)section|sec', '', raw_s).strip()
-        clean_s_no_dash = re.sub(r'[\-\s]', '', clean_s).strip()
-        escaped_clean_s = re.escape(clean_s_no_dash) if clean_s_no_dash else escaped_s
-        sec_condition = [
-            {"section": {"$regex": f"^{escaped_s}$", "$options": "i"}},
-            {"sec": {"$regex": f"^{escaped_s}$", "$options": "i"}},
-            {"section": {"$regex": f".*{escaped_clean_s}.*", "$options": "i"}},
-            {"sec": {"$regex": f".*{escaped_clean_s}.*", "$options": "i"}}
-        ]
-        if "$or" in query:
-            class_or = query.pop("$or")
-            query["$and"] = [{"$or": class_or}, {"$or": sec_condition}]
-        else:
-            query["$or"] = sec_condition
+        raw_s = section.strip().upper()
+        clean_s = re.sub(r'^(SECTION|SEC)\s*[\-\s]*', '', raw_s, flags=re.I).strip()
+        
+        sec_vars = {raw_s}
+        if clean_s:
+            sec_vars.update({clean_s, f"SECTION {clean_s}", f"SEC {clean_s}", f"SEC-{clean_s}"})
+            
+        sec_fields = ["section", "sec", "section_name"]
+        for svar in sec_vars:
+            escaped_s = re.escape(svar)
+            for sfield in sec_fields:
+                sec_or_conditions.append({sfield: {"$regex": f"^{escaped_s}$", "$options": "i"}})
+                sec_or_conditions.append({sfield: {"$regex": f".*{escaped_s}.*", "$options": "i"}})
+
+    if class_or_conditions and sec_or_conditions:
+        query["$and"] = [{"$or": class_or_conditions}, {"$or": sec_or_conditions}]
+    elif class_or_conditions:
+        query["$or"] = class_or_conditions
+    elif sec_or_conditions:
+        query["$or"] = sec_or_conditions
 
     omr_docs = []
     if source in ("all", "omr"):

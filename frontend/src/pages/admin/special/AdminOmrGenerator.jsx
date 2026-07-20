@@ -258,6 +258,12 @@ export default function AdminOmrGenerator() {
     }
   }, [templateType, displayedRoster.length]);
 
+  useEffect(() => {
+    if (templateType === "automated" && roster.length === 0) {
+      fetchRoster("ALL", "ALL");
+    }
+  }, [templateType]);
+
   const autoSaveBooklets = async (studentList = displayedRoster) => {
     if (!studentList || studentList.length === 0) return;
     try {
@@ -619,6 +625,7 @@ export default function AdminOmrGenerator() {
                         const val = e.target.value;
                         setSelectedClassFilter(val);
                         if (val !== "ALL") setClassName(val);
+                        fetchRoster(val, selectedSectionFilter);
                       }}
                       className="w-full px-2 py-1 text-[10.5px] rounded-md border border-emerald-300 font-bold focus:outline-none focus:border-emerald-600 bg-white"
                     >
@@ -643,6 +650,7 @@ export default function AdminOmrGenerator() {
                       onChange={(e) => {
                         const val = e.target.value;
                         setSelectedSectionFilter(val);
+                        fetchRoster(selectedClassFilter, val);
                       }}
                       className="w-full px-2 py-1 text-[10.5px] rounded-md border border-emerald-300 font-bold focus:outline-none focus:border-emerald-600 bg-white"
                     >
