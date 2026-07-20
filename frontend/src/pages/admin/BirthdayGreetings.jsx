@@ -52,6 +52,9 @@ export default function BirthdayGreetings() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalStudentsCount, setTotalStudentsCount] = useState(0);
 
+  const [selectedClass, setSelectedClass] = useState("");
+  const [selectedSection, setSelectedSection] = useState("");
+
   // Edit / Add modal state hooks
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState("add"); // "add" or "edit"
@@ -63,6 +66,8 @@ export default function BirthdayGreetings() {
     phone: "",
     admission_no: "",
     roll_no: "",
+    class_name: "",
+    section: "",
     dob: "",
     permanent_address: "",
     current_address: "",
@@ -116,12 +121,13 @@ export default function BirthdayGreetings() {
     }
   }, [progress?.running, fetchDbInfo]);
 
-  const fetchStudents = useCallback(async (page = 1, query = "") => {
+  const fetchStudents = useCallback(async (page = 1, query = "", cName = "", sec = "") => {
     setStudentsLoading(true);
     try {
-      const r = await api.get("/whatsapp/birthday-campaign/students", {
-        params: { search: query, page, limit: 15 }
-      });
+      const params = { search: query, page, limit: 15 };
+      if (cName) params.class_name = cName;
+      if (sec) params.section = sec;
+      const r = await api.get("/whatsapp/birthday-campaign/students", { params });
       setStudents(r.data.students);
       setTotalPages(r.data.pages);
       setCurrentPage(r.data.page);
@@ -135,15 +141,15 @@ export default function BirthdayGreetings() {
 
   useEffect(() => {
     if (activeTab === "database") {
-      fetchStudents(currentPage, searchQuery);
+      fetchStudents(currentPage, searchQuery, selectedClass, selectedSection);
     }
-  }, [activeTab, currentPage, fetchStudents]);
+  }, [activeTab, currentPage, selectedClass, selectedSection, fetchStudents]);
 
   const handleSearchChange = (e) => {
     const q = e.target.value;
     setSearchQuery(q);
     setCurrentPage(1);
-    fetchStudents(1, q);
+    fetchStudents(1, q, selectedClass, selectedSection);
   };
 
   const handleOpenAddModal = () => {
@@ -156,6 +162,8 @@ export default function BirthdayGreetings() {
       phone: "",
       admission_no: "",
       roll_no: "",
+      class_name: "",
+      section: "",
       dob: "",
       permanent_address: "",
       current_address: "",
@@ -174,6 +182,8 @@ export default function BirthdayGreetings() {
       phone: student.phone || student.contact_no || "",
       admission_no: student.admission_no || student.admn_no || "",
       roll_no: student.roll_no || student.roll || "",
+      class_name: student.class_name || student.class || "",
+      section: student.section || student.sec || "",
       dob: student.dob || student.date_of_birth || "",
       permanent_address: student.permanent_address || "",
       current_address: student.current_address || "",
@@ -687,24 +697,55 @@ export default function BirthdayGreetings() {
       {activeTab === "database" && (
         <div className="bg-white rounded-2xl border border-black/5 p-5 shadow-sm">
           {/* Controls */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
-            <div className="relative flex-1 max-w-md">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={handleSearchChange}
-                placeholder="Search by Name, Roll No, Admission No, or Phone..."
-                className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-blue text-slate-700 bg-slate-50/50"
-              />
-              <span className="absolute left-3 top-2.5 text-slate-400">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </span>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
+            <div className="flex flex-col sm:flex-row items-center gap-3 flex-1">
+              <div className="relative flex-1 w-full">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  placeholder="Search by Name, Roll No, Admission No, or Phone..."
+                  className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-blue text-slate-700 bg-slate-50/50"
+                />
+                <span className="absolute left-3 top-2.5 text-slate-400">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </span>
+              </div>
+
+              {/* Class & Section Filters */}
+              <div className="flex gap-2 w-full sm:w-auto">
+                <input
+                  type="text"
+                  placeholder="Filter Class (e.g. IX)"
+                  value={selectedClass}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setSelectedClass(v);
+                    setCurrentPage(1);
+                    fetchStudents(1, searchQuery, v, selectedSection);
+                  }}
+                  className="w-32 px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-brand-blue text-slate-700 bg-slate-50/50 font-medium"
+                />
+                <input
+                  type="text"
+                  placeholder="Filter Sec (e.g. A)"
+                  value={selectedSection}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setSelectedSection(v);
+                    setCurrentPage(1);
+                    fetchStudents(1, searchQuery, selectedClass, v);
+                  }}
+                  className="w-28 px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-brand-blue text-slate-700 bg-slate-50/50 font-medium"
+                />
+              </div>
             </div>
+
             <button
               onClick={handleOpenAddModal}
-              className="flex items-center justify-center gap-1.5 text-xs font-semibold px-4 py-2.5 rounded-xl bg-brand-blue text-white hover:opacity-90"
+              className="flex items-center justify-center gap-1.5 text-xs font-semibold px-4 py-2.5 rounded-xl bg-brand-blue text-white hover:opacity-90 shrink-0"
             >
               Add Student Manually
             </button>
@@ -719,10 +760,12 @@ export default function BirthdayGreetings() {
           ) : students.length > 0 ? (
             <>
               <div className="border border-black/5 rounded-xl overflow-hidden overflow-x-auto bg-white">
-                <table className="w-full text-xs text-left min-w-[1100px]">
+                <table className="w-full text-xs text-left min-w-[1200px]">
                   <thead className="bg-slate-50 text-slate-500 sticky top-0 border-b border-black/5">
                     <tr>
                       <th className="px-4 py-3 font-semibold">Name</th>
+                      <th className="px-4 py-3 font-semibold">Class</th>
+                      <th className="px-4 py-3 font-semibold">Section</th>
                       <th className="px-4 py-3 font-semibold">Roll No</th>
                       <th className="px-4 py-3 font-semibold">Admission No</th>
                       <th className="px-4 py-3 font-semibold">Contact No</th>
@@ -739,6 +782,8 @@ export default function BirthdayGreetings() {
                     {students.map((student) => (
                       <tr key={student.id} className="hover:bg-slate-50/50">
                         <td className="px-4 py-3 font-semibold text-slate-800">{student.name}</td>
+                        <td className="px-4 py-3 font-bold text-slate-700">{student.class_name || student.class || "—"}</td>
+                        <td className="px-4 py-3 font-bold text-slate-700">{student.section || student.sec || "—"}</td>
                         <td className="px-4 py-3 font-mono text-slate-600">{student.roll_no || student.roll || "—"}</td>
                         <td className="px-4 py-3 font-mono text-slate-600">{student.admission_no || student.admn_no || "—"}</td>
                         <td className="px-4 py-3 text-slate-600">{student.phone || student.contact_no || "—"}</td>
@@ -838,6 +883,30 @@ export default function BirthdayGreetings() {
                     required
                     value={currentStudent.name}
                     onChange={(e) => setCurrentStudent({ ...currentStudent, name: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-blue text-slate-700 bg-slate-50/50"
+                  />
+                </div>
+
+                {/* Class */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Class (e.g. IX / Class IX)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. IX"
+                    value={currentStudent.class_name}
+                    onChange={(e) => setCurrentStudent({ ...currentStudent, class_name: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-blue text-slate-700 bg-slate-50/50"
+                  />
+                </div>
+
+                {/* Section */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Section (e.g. A / B)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. A"
+                    value={currentStudent.section}
+                    onChange={(e) => setCurrentStudent({ ...currentStudent, section: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-blue text-slate-700 bg-slate-50/50"
                   />
                 </div>
