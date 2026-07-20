@@ -533,7 +533,7 @@ export default function AdminOmrGenerator() {
       cloned.style.width = "100%";
       cloned.style.height = "100%";
       cloned.style.margin = "0";
-      cloned.style.padding = isLandscape ? "24px" : "48px"; // exact paddings corresponding to sm:p-6 and A4 standard
+      cloned.style.padding = isLandscape ? "16px" : "24px"; // exact paddings corresponding to sm:p-6 and A4 standard
       cloned.style.boxSizing = "border-box";
       cloned.style.display = "flex";
       cloned.style.flexDirection = "column";
@@ -1894,7 +1894,7 @@ export default function AdminOmrGenerator() {
             max-width: ${omrMode === 'booklet' ? '297mm' : '210mm'} !important;
             max-height: ${omrMode === 'booklet' ? '210mm' : '297mm'} !important;
             margin: 0 auto !important;
-            padding: ${omrMode === 'booklet' ? '6mm 6mm' : '12mm 12mm'} !important;
+            padding: ${omrMode === 'booklet' ? '4mm 4mm' : '6mm 6mm'} !important;
             border: none !important;
             box-shadow: none !important;
             background: white !important;
