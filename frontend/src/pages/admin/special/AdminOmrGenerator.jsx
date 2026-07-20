@@ -530,11 +530,53 @@ export default function AdminOmrGenerator() {
   };
 
   /**
+   * Client-Side Direct High-Res PDF Generator (Zero-Server Fallback)
+   * Uses jsPDF + html2canvas directly in the user's browser memory
+   */
+  const exportClientSidePdf = async (onProgress) => {
+    const printAreas = document.querySelectorAll(".omr-print-area");
+    if (printAreas.length === 0) {
+      throw new Error("No OMR sheets rendered to export.");
+    }
+
+    const total = printAreas.length;
+    const isLandscape = omrMode === "booklet";
+
+    const pdf = new jsPDF({
+      orientation: isLandscape ? "landscape" : "portrait",
+      unit: "mm",
+      format: "a4",
+      compress: true
+    });
+
+    for (let i = 0; i < total; i++) {
+      if (onProgress) onProgress(i + 1, total);
+
+      const el = printAreas[i];
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff"
+      });
+
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+      const pdfWidth = isLandscape ? 297 : 210;
+      const pdfHeight = isLandscape ? 210 : 297;
+
+      if (i > 0) {
+        pdf.addPage("a4", isLandscape ? "landscape" : "portrait");
+      }
+
+      pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight, undefined, "FAST");
+    }
+
+    return pdf.output("blob");
+  };
+
+  /**
    * exportOMRAsBlob — Captures all rendered OMR sheets from the DOM
    * and returns a high-resolution PDF as a Promise<Blob>.
-   *
-   * @param {function} onProgress - Optional callback: (current, total) => void
-   * @returns {Promise<Blob>} PDF blob (application/pdf)
    */
   const exportOMRAsBlob = async (onProgress) => {
     const printAreas = document.querySelectorAll(".omr-print-area");
@@ -543,19 +585,14 @@ export default function AdminOmrGenerator() {
     }
 
     const total = printAreas.length;
-    if (onProgress) onProgress(0, total);
-
     const isLandscape = omrMode === "booklet";
 
-    // 1. Gather all active document stylesheets and style elements to match look and feel,
-    // converting relative URLs to absolute URLs so Playwright can fetch them over the network.
+    // 1. Gather minimal stylesheets without bloated redundant CSS blocks
     let stylesHtml = "";
-    document.querySelectorAll("style, link[rel='stylesheet']").forEach((el) => {
-      if (el.tagName === "STYLE") {
-        stylesHtml += el.outerHTML;
-      } else if (el.tagName === "LINK" && el.href) {
-        const absoluteUrl = new URL(el.getAttribute("href"), window.location.origin).href;
-        stylesHtml += `<link rel="stylesheet" href="${absoluteUrl}">`;
+    document.querySelectorAll("style").forEach((el) => {
+      const content = el.innerHTML || "";
+      if (content.includes("omr") || content.includes("font") || content.includes("grid") || content.includes("border")) {
+        stylesHtml += `<style>${content}</style>`;
       }
     });
 
@@ -566,14 +603,12 @@ export default function AdminOmrGenerator() {
       const cloned = el.cloneNode(true);
       cloned.querySelectorAll(".no-print").forEach((subEl) => subEl.remove());
       
-      // Convert relative image URLs (like school logo) to absolute URLs
       cloned.querySelectorAll("img").forEach((img) => {
         if (img.getAttribute("src")) {
           img.src = new URL(img.getAttribute("src"), window.location.origin).href;
         }
       });
       
-      // Enforce physical page boundaries matching A4 standard print layouts
       cloned.style.width = isLandscape ? "297mm" : "210mm";
       cloned.style.height = isLandscape ? "210mm" : "297mm";
       cloned.style.margin = "0 auto";
@@ -615,11 +650,13 @@ export default function AdminOmrGenerator() {
       htmlPages.push(pageHtml);
     }
 
-    const pdfBlob = await exportOmrPdf(htmlPages, isLandscape);
-
-    if (onProgress) onProgress(total, total);
-
-    return pdfBlob;
+    try {
+      const pdfBlob = await exportOmrPdf(htmlPages, isLandscape);
+      return pdfBlob;
+    } catch (backendErr) {
+      console.warn("Backend PDF rendering notice, engaging high-res client-side PDF engine:", backendErr);
+      return await exportClientSidePdf(onProgress);
+    }
   };
 
   /** PDF Export state */
