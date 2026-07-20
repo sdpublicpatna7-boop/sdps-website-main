@@ -580,7 +580,7 @@ export default function AdminOmrGenerator() {
       const url = URL.createObjectURL(pdfBlob);
       const link = document.createElement("a");
       link.href = url;
-      const fileName = `OMR_${className || "Sheets"}_${sectionName || ""}_${numQuestions}Q.pdf`.replace(/__+/g, "_");
+      const fileName = `OMR_${className || "Sheets"}_${selectedSectionFilter || ""}_${numQuestions}Q.pdf`.replace(/__+/g, "_");
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
