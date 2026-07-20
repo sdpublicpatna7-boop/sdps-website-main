@@ -512,53 +512,80 @@ export default function AdminOmrGenerator() {
       compress: true,
     });
 
-    // Create a temporary off-screen container for clean renders without layout constraints
+    // 1. Wait for all document fonts to load completely before capturing
+    await document.fonts.ready;
+
+    // 2. Wait for all logo and barcode images in the DOM to be fully loaded
+    const images = Array.from(document.images);
+    await Promise.all(images.map(img => {
+      if (img.complete) return Promise.resolve();
+      return new Promise(resolve => {
+        img.onload = resolve;
+        img.onerror = resolve;
+      });
+    }));
+
+    // 3. Create a temporary, visible-but-hidden fixed viewport with absolute A4 dimensions
+    // This places it in the active DOM rendering flow, allowing the browser's layout engine
+    // to perform perfect layout passes without cropping or viewport clipping.
     const tempContainer = document.createElement("div");
-    tempContainer.style.position = "absolute";
-    tempContainer.style.left = "-9999px";
-    tempContainer.style.top = "-9999px";
-    // standard screen rendering scale fits inside typical 800px width
-    tempContainer.style.width = isLandscape ? "1120px" : "800px";
-    tempContainer.style.height = isLandscape ? "800px" : "1120px";
+    tempContainer.style.position = "fixed";
+    tempContainer.style.left = "0";
+    tempContainer.style.top = "0";
+    tempContainer.style.zIndex = "-9999";
+    tempContainer.style.opacity = "0";
+    tempContainer.style.pointerEvents = "none";
+    tempContainer.style.width = isLandscape ? "297mm" : "210mm";
+    tempContainer.style.height = isLandscape ? "210mm" : "297mm";
     document.body.appendChild(tempContainer);
 
     for (let i = 0; i < printAreas.length; i++) {
       const el = printAreas[i];
 
-      // Clone element to avoid modifying the active DOM tree
+      // Clone the sheet to avoid disrupting screen view
       const cloned = el.cloneNode(true);
       cloned.querySelectorAll(".no-print").forEach((subEl) => subEl.remove());
       
-      // Enforce clean layout values on the clone
+      // Enforce absolute dimensions and padding matching the standard screen rendering
       cloned.style.width = "100%";
       cloned.style.height = "100%";
       cloned.style.margin = "0";
-      cloned.style.padding = isLandscape ? "16px" : "24px"; // exact paddings corresponding to sm:p-6 and A4 standard
+      cloned.style.padding = isLandscape ? "4mm" : "6mm";
       cloned.style.boxSizing = "border-box";
       cloned.style.display = "flex";
       cloned.style.flexDirection = "column";
       cloned.style.justifyContent = "space-between";
       cloned.style.border = "none";
       cloned.style.boxShadow = "none";
+      cloned.style.background = "white";
 
+      // Append clone to active container
       tempContainer.innerHTML = "";
       tempContainer.appendChild(cloned);
 
-      // Brief delay for the browser layout engine to register the clone element
-      await new Promise((r) => setTimeout(r, 40));
+      // Brief delay to allow CSS styles and layouts to apply to the cloned node
+      await new Promise((r) => setTimeout(r, 60));
 
-      // Render element to canvas at high resolution
+      // Get precise layout boundaries in pixels calculated by browser rendering engine
+      const rectWidth = cloned.offsetWidth;
+      const rectHeight = cloned.offsetHeight;
+
+      // 4. Capture layout with html2canvas matching layout width/height
       const canvas = await html2canvas(cloned, {
-        scale: 2.5,                  // Increased scale for ultra-sharp 300+ DPI text and QR/barcodes
+        scale: 3,                    // 3× scale at 96 DPI results in 288 DPI (~300 DPI equivalent) print sharpness
         useCORS: true,
         allowTaint: false,
         backgroundColor: "#ffffff",
         logging: false,
-        width: isLandscape ? 1120 : 800,
-        height: isLandscape ? 800 : 1120,
+        width: rectWidth,
+        height: rectHeight,
+        windowWidth: rectWidth,
+        windowHeight: rectHeight,
+        scrollX: 0,
+        scrollY: 0,
       });
 
-      // Convert canvas to JPEG (smaller than PNG, still high quality)
+      // Convert canvas to JPEG (smaller size, high-quality)
       const imgData = canvas.toDataURL("image/jpeg", 0.95);
 
       if (i > 0) pdf.addPage("a4", isLandscape ? "landscape" : "portrait");
