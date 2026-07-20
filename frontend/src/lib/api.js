@@ -1232,7 +1232,7 @@ export async function exportOmrPdf(htmlOrPages, isLandscape = false) {
     responseType: "blob",
     timeout: 300000
   });
-  return res.data;
+  return new Blob([res.data], { type: "application/pdf" });
 }
 
 export default api;
