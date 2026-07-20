@@ -2093,36 +2093,38 @@ async def get_omr_roster(
     elif sec_or_conditions:
         query["$or"] = sec_or_conditions
 
-    bday_docs = await db.birthday_students.find(query).to_list(length=5000)
+    bday_docs = []
+    if class_name and class_name.strip():
+        bday_docs = await db.birthday_students.find(query).to_list(length=5000)
 
-    # Fallback in-memory matcher if db query returns 0 records
-    if not bday_docs:
-        all_bday = await db.birthday_students.find({}).to_list(length=5000)
-        
-        target_c = (class_name or "").strip().upper()
-        clean_target_c = re.sub(r'^(CLASS|STD|STANDARD)\s*[\-\s]*', '', target_c, flags=re.I).strip()
-        clean_target_c_nodash = re.sub(r'[\-\s]', '', clean_target_c)
-        target_ar = ROMAN_TO_ARABIC.get(clean_target_c_nodash, clean_target_c_nodash)
-        target_rm = ARABIC_TO_ROMAN.get(clean_target_c_nodash, clean_target_c_nodash)
+        # Fallback in-memory matcher if db query returns 0 records
+        if not bday_docs:
+            all_bday = await db.birthday_students.find({}).to_list(length=5000)
+            
+            target_c = (class_name or "").strip().upper()
+            clean_target_c = re.sub(r'^(CLASS|STD|STANDARD)\s*[\-\s]*', '', target_c, flags=re.I).strip()
+            clean_target_c_nodash = re.sub(r'[\-\s]', '', clean_target_c)
+            target_ar = ROMAN_TO_ARABIC.get(clean_target_c_nodash, clean_target_c_nodash)
+            target_rm = ARABIC_TO_ROMAN.get(clean_target_c_nodash, clean_target_c_nodash)
 
-        def matches_student(doc):
-            if not target_c or target_c == "ALL":
-                return True
-            s_class = str(doc.get("class_name") or doc.get("class") or doc.get("student_class") or doc.get("standard") or "").strip().upper()
-            if not s_class:
-                return True
-            s_clean = re.sub(r'^(CLASS|STD|STANDARD)\s*[\-\s]*', '', s_class, flags=re.I).strip()
-            s_clean_nodash = re.sub(r'[\-\s]', '', s_clean)
-            s_ar = ROMAN_TO_ARABIC.get(s_clean_nodash, s_clean_nodash)
-            s_rm = ARABIC_TO_ROMAN.get(s_clean_nodash, s_clean_nodash)
+            def matches_student(doc):
+                if not target_c or target_c == "ALL":
+                    return True
+                s_class = str(doc.get("class_name") or doc.get("class") or doc.get("student_class") or doc.get("standard") or "").strip().upper()
+                if not s_class:
+                    return True
+                s_clean = re.sub(r'^(CLASS|STD|STANDARD)\s*[\-\s]*', '', s_class, flags=re.I).strip()
+                s_clean_nodash = re.sub(r'[\-\s]', '', s_clean)
+                s_ar = ROMAN_TO_ARABIC.get(s_clean_nodash, s_clean_nodash)
+                s_rm = ARABIC_TO_ROMAN.get(s_clean_nodash, s_clean_nodash)
 
-            return (clean_target_c_nodash in (s_clean_nodash, s_ar, s_rm) or
-                    target_ar in (s_clean_nodash, s_ar, s_rm) or
-                    target_rm in (s_clean_nodash, s_ar, s_rm) or
-                    target_c in s_class or s_class in target_c)
+                return (clean_target_c_nodash in (s_clean_nodash, s_ar, s_rm) or
+                        target_ar in (s_clean_nodash, s_ar, s_rm) or
+                        target_rm in (s_clean_nodash, s_ar, s_rm) or
+                        target_c in s_class or s_class in target_c)
 
-        for d in all_bday:
-            if matches_student(d): bday_docs.append(d)
+            for d in all_bday:
+                if matches_student(d): bday_docs.append(d)
 
     seen_adm = set()
     unified_students = []

@@ -223,7 +223,9 @@ export default function AdminOmrGenerator() {
   const handleClearRoster = () => {
     setRoster([]);
     setNumCopies(1);
-    toast.info("Cleared loaded student roster. Displaying 1 blank OMR sheet.");
+    setSelectedClassFilter("");
+    setSelectedSectionFilter("");
+    toast.info("Cleared selected class and student roster. Displaying 1 blank OMR sheet.");
   };
 
   const handleClearAllBooklets = async () => {
@@ -320,19 +322,25 @@ export default function AdminOmrGenerator() {
         setNumCopies(res.students.length);
         if (res.available_classes) setAvailableClasses(res.available_classes);
         if (res.available_sections) setAvailableSections(res.available_sections);
-        toast.success(`Loaded ${res.students.length} student records for Class ${cFilter !== 'ALL' ? cFilter : ''}!`);
+        if (cFilter) {
+          toast.success(`Loaded ${res.students.length} student records for Class ${cFilter}!`);
+        }
       } else {
         if (res && res.available_classes) setAvailableClasses(res.available_classes);
         if (res && res.available_sections) setAvailableSections(res.available_sections);
         setRoster([]);
         setNumCopies(1);
-        toast.info(`No matching student records found for Class ${cFilter !== 'ALL' ? cFilter : ''} ${sFilter !== 'ALL' ? 'Section ' + sFilter : ''}.`);
+        if (cFilter) {
+          toast.info(`No matching student records found for Class ${cFilter} ${sFilter ? 'Section ' + sFilter : ''}.`);
+        }
       }
     } catch (e) {
       console.error(e);
       setRoster([]);
       setNumCopies(1);
-      toast.error("Could not query student roster.");
+      if (cFilter) {
+        toast.error("Could not query student roster.");
+      }
     } finally {
       setLoadingRoster(false);
     }
@@ -413,6 +421,7 @@ export default function AdminOmrGenerator() {
       }
     } catch (e) { /* ignore corrupt storage */ }
     setSettingsLoaded(true);
+    fetchRoster("", "");
   }, []);
 
   // Sync settings when loaded from backend
@@ -717,7 +726,7 @@ export default function AdminOmrGenerator() {
                     onClick={handleClearRoster}
                     className="flex-1 py-1.5 px-2 bg-slate-100 hover:bg-red-50 text-slate-700 hover:text-red-700 border border-slate-300 hover:border-red-300 text-[10px] font-bold rounded-lg flex items-center justify-center gap-1 transition shadow-2xs"
                   >
-                    Clear Roster
+                    Clear Selection
                   </button>
 
                   <button
