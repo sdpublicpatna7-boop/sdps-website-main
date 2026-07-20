@@ -502,10 +502,16 @@ export default function AdminOmrGenerator() {
 
     const isLandscape = omrMode === "booklet";
 
-    // 1. Gather all active document stylesheets and style elements to match look and feel
+    // 1. Gather all active document stylesheets and style elements to match look and feel,
+    // converting relative URLs to absolute URLs so Playwright can fetch them over the network.
     let stylesHtml = "";
     document.querySelectorAll("style, link[rel='stylesheet']").forEach((el) => {
-      stylesHtml += el.outerHTML;
+      if (el.tagName === "STYLE") {
+        stylesHtml += el.outerHTML;
+      } else if (el.tagName === "LINK" && el.href) {
+        const absoluteUrl = new URL(el.getAttribute("href"), window.location.origin).href;
+        stylesHtml += `<link rel="stylesheet" href="${absoluteUrl}">`;
+      }
     });
 
     // 2. Clone each sheet and apply standard dimensions
@@ -514,6 +520,13 @@ export default function AdminOmrGenerator() {
       const el = printAreas[i];
       const cloned = el.cloneNode(true);
       cloned.querySelectorAll(".no-print").forEach((subEl) => subEl.remove());
+      
+      // Convert relative image URLs (like school logo) to absolute URLs
+      cloned.querySelectorAll("img").forEach((img) => {
+        if (img.getAttribute("src")) {
+          img.src = new URL(img.getAttribute("src"), window.location.origin).href;
+        }
+      });
       
       // Enforce physical page boundaries matching A4 standard print layouts
       cloned.style.width = isLandscape ? "297mm" : "210mm";
