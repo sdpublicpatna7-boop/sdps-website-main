@@ -265,24 +265,11 @@ export default function AdminOmrGenerator() {
     }
   };
 
-  const handleCopySimpleToAutomated = async () => {
+  const handleCopySimpleToAutomated = () => {
     setTemplateType("automated");
     setSubHeaderLayout("simple");
     setShowRollNoBubbleGrid(false);
     toast.success("Applied Simple Fill-in layout to Pre-filled OMR Template!");
-    let currentRoster = roster;
-    if (currentRoster.length === 0) {
-      const res = await getOmrRoster({ class_name: selectedClassFilter, section: selectedSectionFilter });
-      if (res && res.students && res.students.length > 0) {
-        setRoster(res.students);
-        setNumCopies(res.students.length);
-        currentRoster = res.students;
-      }
-    }
-    if (currentRoster.length > 0) {
-      await autoSaveBooklets(currentRoster);
-      toast.success(`Indexed ${currentRoster.length} generated booklet numbers in database for OMR evaluation!`);
-    }
   };
 
   const handleSaveBookletsToBackend = async () => {
@@ -528,7 +515,6 @@ export default function AdminOmrGenerator() {
                 onClick={() => {
                   setTemplateType("automated");
                   setShowRollNoBubbleGrid(true);
-                  if (roster.length === 0) fetchRoster();
                 }}
                 className={`py-2 px-2 text-[11px] font-bold rounded-xl border transition text-center ${
                   templateType === "automated"
@@ -579,7 +565,6 @@ export default function AdminOmrGenerator() {
                         const val = e.target.value;
                         setSelectedClassFilter(val);
                         if (val !== "ALL") setClassName(val);
-                        fetchRoster(val, selectedSectionFilter);
                       }}
                       className="w-full px-2 py-1 text-[10.5px] rounded-md border border-emerald-300 font-bold focus:outline-none focus:border-emerald-600 bg-white"
                     >
@@ -602,7 +587,6 @@ export default function AdminOmrGenerator() {
                       onChange={(e) => {
                         const val = e.target.value;
                         setSelectedSectionFilter(val);
-                        fetchRoster(selectedClassFilter, val);
                       }}
                       className="w-full px-2 py-1 text-[10.5px] rounded-md border border-emerald-300 font-bold focus:outline-none focus:border-emerald-600 bg-white"
                     >
