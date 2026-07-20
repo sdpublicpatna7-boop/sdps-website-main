@@ -1292,6 +1292,19 @@ async def wa_delete_birthday_student(
     return {"success": True}
 
 
+@wa_router.delete("/birthday-campaign/students/clear-all")
+async def wa_clear_all_birthday_students(admin: TokenData = Depends(get_superadmin)):
+    """Clear all birthday student records and synced OMR roster records from the database."""
+    res_bday = await db.birthday_students.delete_many({})
+    res_omr = await db.omr_roster.delete_many({})
+    return {
+        "success": True,
+        "message": f"Cleared {res_bday.deleted_count} birthday student records and {res_omr.deleted_count} OMR roster records.",
+        "deleted_birthday_count": res_bday.deleted_count,
+        "deleted_omr_count": res_omr.deleted_count
+    }
+
+
 async def run_daily_birthday_campaign_loop():
     """
     Background loop that wakes up periodically, checks if it is past 6:00 AM in IST,

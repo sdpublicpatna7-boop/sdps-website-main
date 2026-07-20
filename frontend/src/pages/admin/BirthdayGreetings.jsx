@@ -4,7 +4,7 @@ import { Toaster, toast } from "sonner";
 import {
   Cake, Smartphone, RefreshCw, FileSpreadsheet, Send,
   Eye, Megaphone, Loader2, CheckCircle2, AlertTriangle, StopCircle, Calendar,
-  Upload, Database, AlertCircle, Sparkles
+  Upload, Database, AlertCircle, Sparkles, Trash2
 } from "lucide-react";
 
 const DEFAULT_TEMPLATE =
@@ -239,6 +239,24 @@ export default function BirthdayGreetings() {
     }
   };
 
+  const handleClearAllStudents = async () => {
+    const ok = window.confirm(
+      `Warning: Are you sure you want to CLEAR ALL student records from the Birthday Greetings database? This will permanently delete all ${dbInfo.total_students} student records.`
+    );
+    if (!ok) return;
+
+    try {
+      const res = await api.delete("/whatsapp/birthday-campaign/students/clear-all");
+      toast.success(res.data.message || "All student records cleared!");
+      fetchDbInfo();
+      if (activeTab === "database") {
+        fetchStudents(1, searchQuery);
+      }
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Failed to clear student database");
+    }
+  };
+
   const onPickFile = (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
@@ -467,7 +485,7 @@ export default function BirthdayGreetings() {
           <div className="bg-white rounded-2xl border border-black/5 p-5 mb-6 shadow-sm">
             <div className="flex items-center justify-between border-b border-black/5 pb-3 mb-4">
               <div className="text-sm font-semibold text-slate-700">1. Roster Management (CSV/Excel Import)</div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap items-center">
                 <button
                   onClick={() => setImportMode("overwrite")}
                   className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition ${importMode === "overwrite" ? "bg-slate-100 text-slate-800 border-black/10 shadow-inner" : "bg-white text-slate-400 border-transparent hover:text-slate-600"}`}
@@ -479,6 +497,12 @@ export default function BirthdayGreetings() {
                   className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition ${importMode === "append" ? "bg-slate-100 text-slate-800 border-black/10 shadow-inner" : "bg-white text-slate-400 border-transparent hover:text-slate-600"}`}
                 >
                   Append New Admissions
+                </button>
+                <button
+                  onClick={handleClearAllStudents}
+                  className="text-xs font-bold px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 transition flex items-center gap-1 cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Clear All Roster
                 </button>
               </div>
             </div>
@@ -743,12 +767,20 @@ export default function BirthdayGreetings() {
               </div>
             </div>
 
-            <button
-              onClick={handleOpenAddModal}
-              className="flex items-center justify-center gap-1.5 text-xs font-semibold px-4 py-2.5 rounded-xl bg-brand-blue text-white hover:opacity-90 shrink-0"
-            >
-              Add Student Manually
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleClearAllStudents}
+                className="flex items-center justify-center gap-1.5 text-xs font-bold px-4 py-2.5 rounded-xl bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 shrink-0 cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Clear All Students
+              </button>
+              <button
+                onClick={handleOpenAddModal}
+                className="flex items-center justify-center gap-1.5 text-xs font-semibold px-4 py-2.5 rounded-xl bg-brand-blue text-white hover:opacity-90 shrink-0"
+              >
+                Add Student Manually
+              </button>
+            </div>
           </div>
 
           {/* Table */}
