@@ -2564,14 +2564,22 @@ async def export_omr_pdf(
     This guarantees 100% pixel-perfect output matching the browser preview exactly.
     """
     html_content = payload.get("html")
+    html_pages = payload.get("htmlPages")
     is_landscape = payload.get("isLandscape", False)
     
-    if not html_content:
+    if not html_pages and html_content:
+        html_pages = [html_content]
+        
+    if not html_pages:
         raise HTTPException(status_code=400, detail="Missing HTML content.")
         
     async with pdf_export_lock:
         try:
             from playwright.async_api import async_playwright
+            import pikepdf
+            import io
+            
+            pdf_chunks = []
             
             async with async_playwright() as p:
                 browser = await p.chromium.launch(
@@ -2579,26 +2587,41 @@ async def export_omr_pdf(
                     executable_path="/usr/bin/chromium",
                     args=["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
                 )
-                context = await browser.new_context()
-                page = await context.new_page()
                 
-                # Load the full HTML document
-                await page.set_content(html_content)
-                
-                # Wait for all stylesheets, external images, and fonts to load completely
-                await page.wait_for_load_state("networkidle")
-                
-                # Generate the vector PDF using Chromium's native PrintToPDF engine
-                pdf_bytes = await page.pdf(
-                    format="A4",
-                    landscape=is_landscape,
-                    print_background=True,
-                    margin={"top": "0mm", "right": "0mm", "bottom": "0mm", "left": "0mm"}
-                )
-                
+                for page_html in html_pages:
+                    # Create isolated browser context and page for each sheet to completely isolate RAM usage
+                    context = await browser.new_context()
+                    page = await context.new_page()
+                    
+                    await page.set_content(page_html)
+                    await page.wait_for_load_state("networkidle")
+                    
+                    pdf_bytes = await page.pdf(
+                        format="A4",
+                        landscape=is_landscape,
+                        print_background=True,
+                        margin={"top": "0mm", "right": "0mm", "bottom": "0mm", "left": "0mm"}
+                    )
+                    pdf_chunks.append(pdf_bytes)
+                    
+                    # Close page and context immediately to free memory back to OS
+                    await page.close()
+                    await context.close()
+                    
                 await browser.close()
                 
-            return Response(content=pdf_bytes, media_type="application/pdf")
+            # Merge all single-sheet vector PDFs using high-performance, low-memory pikepdf
+            merged_pdf = pikepdf.Pdf.new()
+            for chunk in pdf_chunks:
+                with pikepdf.Pdf.open(io.BytesIO(chunk)) as src:
+                    merged_pdf.pages.extend(src.pages)
+                    
+            output = io.BytesIO()
+            merged_pdf.save(output)
+            final_pdf_bytes = output.getvalue()
+            merged_pdf.close()
+            
+            return Response(content=final_pdf_bytes, media_type="application/pdf")
         except Exception as e:
             logger.error(f"Playwright PDF generation failed: {e}")
             raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")

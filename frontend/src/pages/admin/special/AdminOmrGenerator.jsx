@@ -514,8 +514,8 @@ export default function AdminOmrGenerator() {
       }
     });
 
-    // 2. Clone each sheet and apply standard dimensions
-    let sheetsHtml = "";
+    // 2. Clone each sheet, build individual document HTMLs
+    const htmlPages = [];
     for (let i = 0; i < printAreas.length; i++) {
       const el = printAreas[i];
       const cloned = el.cloneNode(true);
@@ -540,50 +540,41 @@ export default function AdminOmrGenerator() {
       cloned.style.border = "none";
       cloned.style.boxShadow = "none";
       cloned.style.background = "white";
-      cloned.style.pageBreakAfter = "always";
-      cloned.style.breakAfter = "page";
 
-      sheetsHtml += cloned.outerHTML;
+      const pageHtml = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <title>OMR Sheet Page ${i + 1}</title>
+            ${stylesHtml}
+            <style>
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              .omr-print-area {
+                box-shadow: none !important;
+                border: none !important;
+              }
+            </style>
+          </head>
+          <body>
+            ${cloned.outerHTML}
+          </body>
+        </html>
+      `;
+      htmlPages.push(pageHtml);
     }
 
-    // 3. Construct a clean single-document payload
-    const fullHtml = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <title>OMR Sheets Export</title>
-          ${stylesHtml}
-          <style>
-            html, body {
-              margin: 0 !important;
-              padding: 0 !important;
-              background: white !important;
-              -webkit-print-color-adjust: exact !important;
-              print-color-adjust: exact !important;
-            }
-            .omr-print-area {
-              box-shadow: none !important;
-              border: none !important;
-            }
-            @media print {
-              body {
-                background: white !important;
-              }
-            }
-          </style>
-        </head>
-        <body>
-          ${sheetsHtml}
-        </body>
-      </html>
-    `;
-
-    // 4. Update progress bar state during generation
+    // 3. Update progress bar state during generation
     if (onProgress) onProgress(Math.floor(total / 2), total);
     
-    // Call our backend Playwright Chromium native print endpoint
-    const pdfBlob = await exportOmrPdf(fullHtml, isLandscape);
+    // Call our backend Playwright Chromium native print endpoint with the array of pages
+    const pdfBlob = await exportOmrPdf(htmlPages, isLandscape);
 
     if (onProgress) onProgress(total, total);
 

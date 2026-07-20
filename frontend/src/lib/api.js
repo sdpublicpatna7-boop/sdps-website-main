@@ -1216,8 +1216,14 @@ export async function deleteOmrStudent(studentId) {
   return res.data;
 }
 
-export async function exportOmrPdf(html, isLandscape = false) {
-  const res = await api.post("/admin/omr/export-pdf", { html, isLandscape }, {
+export async function exportOmrPdf(htmlOrPages, isLandscape = false) {
+  const payload = { isLandscape };
+  if (Array.isArray(htmlOrPages)) {
+    payload.htmlPages = htmlOrPages;
+  } else {
+    payload.html = htmlOrPages;
+  }
+  const res = await api.post("/admin/omr/export-pdf", payload, {
     responseType: "blob"
   });
   return res.data;
