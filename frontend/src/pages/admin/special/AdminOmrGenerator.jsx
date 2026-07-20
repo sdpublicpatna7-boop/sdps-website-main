@@ -104,6 +104,24 @@ export default function AdminOmrGenerator() {
   const [showInstructions, setShowInstructions] = useState(true);
   const [showTimingMarks, setShowTimingMarks] = useState(true);
 
+  const [candidateInstructions, setCandidateInstructions] = useState([
+    "Carry your Hall Ticket/Admit Card to the examination hall. Entry without a valid Hall Ticket will not be permitted.",
+    "Verify that your Name, Class, Section, Roll Number, Subject, and Examination Details on the OMR Sheet exactly match your Hall Ticket. In case of any discrepancy, inform the Invigilator immediately.",
+    "Use only a Blue or Black Ball Pen to fill the OMR sheet.",
+    "Write your Name, Class, Section, Roll Number, Subject, and other required details neatly in the space provided.",
+    "Fill the corresponding bubbles completely and darkly without leaving any gaps.",
+    "Use only one bubble for each question.",
+    "Do not tick (✓), cross (✗), circle (○), or partially fill the bubbles.",
+    "Do not use a pencil, whitener, eraser, or correction fluid.",
+    "Avoid overwriting or making stray marks on the OMR sheet.",
+    "Read each question carefully before marking your answer.",
+    "Once marked, an answer cannot be changed.",
+    "Keep the OMR sheet clean, flat, and free from folds, tears, stains, or damage.",
+    "Do not write anything in the barcode, QR code, or scanner area of the OMR sheet.",
+    "Before submitting, ensure that all personal details, Hall Ticket details, and OMR bubbles are filled correctly.",
+    "Submit the OMR sheet only when instructed by the Invigilator. Ensure your Hall Ticket remains with you after the examination unless instructed otherwise."
+  ]);
+
   // Sync settings when loaded
   useEffect(() => {
     if (settings?.school_name) setSchoolName(settings.school_name);
@@ -559,15 +577,30 @@ export default function AdminOmrGenerator() {
               </label>
             </div>
 
-            <label className="flex items-center justify-between text-xs font-medium text-slate-700 cursor-pointer">
-              <span>Instructions Box</span>
-              <input
-                type="checkbox"
-                checked={showInstructions}
-                onChange={(e) => setShowInstructions(e.target.checked)}
-                className="rounded text-brand-blue focus:ring-brand-blue"
-              />
-            </label>
+            <div className="space-y-2">
+              <label className="flex items-center justify-between text-xs font-medium text-slate-700 cursor-pointer">
+                <span>Instructions Box</span>
+                <input
+                  type="checkbox"
+                  checked={showInstructions}
+                  onChange={(e) => setShowInstructions(e.target.checked)}
+                  className="rounded text-brand-blue focus:ring-brand-blue"
+                />
+              </label>
+
+              {showInstructions && (
+                <div className="bg-slate-100 p-2.5 rounded-xl border border-slate-200 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-700 block">Edit Instructions (1 rule per line):</span>
+                  <textarea
+                    rows={4}
+                    value={candidateInstructions.join("\n")}
+                    onChange={(e) => setCandidateInstructions(e.target.value.split("\n").filter((line) => line.trim() !== ""))}
+                    className="w-full p-2 text-[10px] rounded-lg border border-slate-300 font-sans focus:outline-none focus:border-brand-blue bg-white leading-snug"
+                    placeholder="Enter each instruction on a new line..."
+                  />
+                </div>
+              )}
+            </div>
 
             <label className="flex items-center justify-between text-xs font-medium text-slate-700 cursor-pointer">
               <span>Machine Alignment Timing Marks</span>
@@ -743,14 +776,15 @@ export default function AdminOmrGenerator() {
 
                   {/* Instructions Box */}
                   {showInstructions && (
-                    <div className="border border-black p-1.5 bg-gray-50 text-[9px] space-y-0.5">
-                      <div className="font-bold uppercase text-[8.5px] border-b border-black/20 pb-0.5 mb-0.5 flex items-center gap-1">
+                    <div className="border border-black p-1.5 bg-gray-50 text-[8px]">
+                      <div className="font-bold uppercase text-[8px] border-b border-black/20 pb-0.5 mb-1 flex items-center gap-1">
                         <Info className="w-3 h-3 text-black shrink-0" /> INSTRUCTIONS FOR CANDIDATE:
                       </div>
-                      <ul className="list-disc pl-3 text-[8.5px] leading-tight space-y-0.5 text-black/90 font-medium">
-                        <li>Use <strong>BLUE or BLACK Ball Point Pen</strong> only to darken bubbles.</li>
-                        <li>Darken only ONE circle for each question.</li>
-                      </ul>
+                      <ol className="list-decimal pl-3 text-[7px] leading-[1.15] text-black font-medium grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-0.5">
+                        {candidateInstructions.map((inst, i) => (
+                          <li key={i}>{inst}</li>
+                        ))}
+                      </ol>
                     </div>
                   )}
                 </div>
