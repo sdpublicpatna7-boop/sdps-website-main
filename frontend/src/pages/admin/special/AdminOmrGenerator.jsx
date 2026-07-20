@@ -3,7 +3,7 @@ import { useOutletContext } from "react-router-dom";
 import { 
   Printer, FileText, Settings, Sparkles, RefreshCw, 
   LayoutGrid, Sliders, CheckSquare, Info, ShieldCheck, Download,
-  Save, Copy, Hash, Database, Loader2
+  Save, Copy, Hash, Database, Loader2, History, X, BookOpen
 } from "lucide-react";
 import { getOmrRoster, saveOmrBooklets, getOmrBooklets, clearOmrBooklets, exportOmrPdf, getNextBookletSerial } from "@/lib/api";
 import api from "@/lib/api";
@@ -198,6 +198,11 @@ export default function AdminOmrGenerator() {
   const [availableClasses, setAvailableClasses] = useState([]);
   const [availableSections, setAvailableSections] = useState([]);
 
+  // Reprint Batch Modal State
+  const [showReprintModal, setShowReprintModal] = useState(false);
+  const [reprintBatches, setReprintBatches] = useState([]);
+  const [loadingReprintBatches, setLoadingReprintBatches] = useState(false);
+
   // Roll Number Range & Sorting State
   const [rollStartFilter, setRollStartFilter] = useState("");
   const [rollEndFilter, setRollEndFilter] = useState("");
@@ -318,7 +323,7 @@ export default function AdminOmrGenerator() {
     try {
       const startNum = parseInt(bookletStartNo || "1001", 10);
       const bookletMappings = studentList.map((student, idx) => {
-        const bookletNo = `${bookletPrefix}${(startNum + idx)}`;
+        const bookletNo = student.booklet_no || `${bookletPrefix}${(startNum + idx)}`;
         return {
           booklet_no: bookletNo,
           barcode: bookletNo,
@@ -345,6 +350,85 @@ export default function AdminOmrGenerator() {
     } catch (err) {
       console.warn("Auto-save booklet mapping notice:", err);
     }
+  };
+
+  const openReprintModal = async () => {
+    setShowReprintModal(true);
+    setLoadingReprintBatches(true);
+    try {
+      const res = await getOmrBooklets();
+      if (res && res.status === "success" && Array.isArray(res.booklets)) {
+        const groups = {};
+        res.booklets.forEach((item) => {
+          const key = `${item.class_name || 'All'}||${item.section || 'All'}||${item.subject_name || 'Subject'}||${item.exam_title || 'Exam'}||${item.session || ''}`;
+          if (!groups[key]) {
+            groups[key] = {
+              key,
+              class_name: item.class_name || "All",
+              section: item.section || "A",
+              subject_name: item.subject_name || "Subject",
+              exam_title: item.exam_title || "Exam",
+              session: item.session || "",
+              created_at: item.updated_at || item.created_at || "",
+              booklets: []
+            };
+          }
+          groups[key].booklets.push(item);
+        });
+
+        const batchList = Object.values(groups).map((group) => {
+          const serials = group.booklets.map(b => b.booklet_no).filter(Boolean);
+          const minSerial = serials[0] || "";
+          const maxSerial = serials[serials.length - 1] || "";
+          return {
+            ...group,
+            count: group.booklets.length,
+            minSerial,
+            maxSerial
+          };
+        });
+        setReprintBatches(batchList);
+      }
+    } catch (err) {
+      console.warn("Failed to load previous booklet batches:", err);
+      toast.error("Could not fetch previously saved booklet batches.");
+    } finally {
+      setLoadingReprintBatches(false);
+    }
+  };
+
+  const handleLoadReprintBatch = (batch) => {
+    if (batch.class_name && batch.class_name !== "All") {
+      setClassName(batch.class_name);
+      setSelectedClassFilter(batch.class_name);
+    }
+    if (batch.section) {
+      setSelectedSectionFilter(batch.section);
+    }
+    if (batch.subject_name) setSubjectName(batch.subject_name);
+    if (batch.exam_title) setExamTitle(batch.exam_title);
+    if (batch.session) setSession(batch.session);
+
+    const rosterFromBatch = batch.booklets.map((item) => ({
+      roll_no: item.roll_no,
+      roll: item.roll_no,
+      student_name: item.student_name,
+      name: item.student_name,
+      class_name: item.class_name,
+      section: item.section,
+      admission_no: item.admission_no,
+      father_name: item.father_name,
+      booklet_no: item.booklet_no
+    }));
+
+    setRoster(rosterFromBatch);
+    setNumCopies(rosterFromBatch.length);
+    setAutoIndexBooklets(false);
+    setShowReprintModal(false);
+
+    toast.success(
+      `Loaded Previous Batch: ${batch.class_name}-${batch.section} ${batch.subject_name} (${rosterFromBatch.length} booklets: ${batch.minSerial} to ${batch.maxSerial})`
+    );
   };
 
   const fetchRoster = async (cFilter = selectedClassFilter, sFilter = selectedSectionFilter) => {
@@ -813,6 +897,13 @@ export default function AdminOmrGenerator() {
           >
             <Printer className="w-4 h-4" /> Print / Save as PDF
           </button>
+
+          <button
+            onClick={openReprintModal}
+            className="flex items-center gap-2 bg-purple-700 hover:bg-purple-800 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition shadow-md shadow-purple-700/20 cursor-pointer"
+          >
+            <History className="w-4 h-4" /> Re-print Previous Batch
+          </button>
         </div>
       </div>
 
@@ -846,6 +937,86 @@ export default function AdminOmrGenerator() {
               </div>
             )}
             <p className="text-[11px] text-slate-400">Please don't close or navigate away from this page.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Re-print Previous Batch Modal */}
+      {showReprintModal && (
+        <div className="no-print fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 shadow-2xl max-w-2xl w-full mx-auto space-y-5 border border-slate-100 max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2.5 bg-purple-100 text-purple-700 rounded-2xl">
+                  <History className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Re-Print Previously Generated Batch</h3>
+                  <p className="text-xs text-slate-500">Select a saved batch to reload its candidates with their exact assigned Booklet Numbers</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowReprintModal(false)}
+                className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+              {loadingReprintBatches ? (
+                <div className="py-12 text-center text-slate-400 space-y-2">
+                  <Loader2 className="w-8 h-8 animate-spin mx-auto text-purple-600" />
+                  <p className="text-xs font-medium">Fetching saved booklet batches from database…</p>
+                </div>
+              ) : reprintBatches.length === 0 ? (
+                <div className="py-12 text-center text-slate-400 space-y-2 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                  <BookOpen className="w-8 h-8 mx-auto text-slate-300" />
+                  <p className="text-sm font-semibold text-slate-600">No Previously Saved Booklet Batches Found</p>
+                  <p className="text-xs text-slate-400 max-w-xs mx-auto">Generate and download your first batch of OMR booklets to save them for future re-printing.</p>
+                </div>
+              ) : (
+                reprintBatches.map((batch) => (
+                  <div
+                    key={batch.key}
+                    className="p-4 bg-slate-50 hover:bg-purple-50/50 rounded-2xl border border-slate-200 hover:border-purple-200 transition flex items-center justify-between gap-4"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-0.5 bg-purple-100 text-purple-800 text-[11px] font-bold rounded-lg uppercase">
+                          {batch.class_name} - Sec {batch.section}
+                        </span>
+                        <span className="text-xs font-bold text-slate-800">{batch.subject_name}</span>
+                        {batch.exam_title && (
+                          <span className="text-[11px] text-slate-500 font-medium">({batch.exam_title})</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-slate-500 font-mono">
+                        <span>Booklets: <strong className="text-purple-700 font-semibold">{batch.minSerial}</strong> to <strong className="text-purple-700 font-semibold">{batch.maxSerial}</strong></span>
+                        <span>•</span>
+                        <span>{batch.count} Students</span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => handleLoadReprintBatch(batch)}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold rounded-xl transition shadow-sm shrink-0 cursor-pointer"
+                    >
+                      <Printer className="w-3.5 h-3.5" /> Re-Print Batch
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 flex justify-end">
+              <button
+                onClick={() => setShowReprintModal(false)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
