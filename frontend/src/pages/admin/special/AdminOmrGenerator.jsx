@@ -328,7 +328,8 @@ export default function AdminOmrGenerator() {
         if (res.available_classes) setAvailableClasses(res.available_classes);
         if (res.available_sections) setAvailableSections(res.available_sections);
         if (cFilter) {
-          toast.success(`Loaded ${res.students.length} student records for Class ${cFilter}!`);
+          const cleanClassName = cFilter.replace(/^Class\s+/i, '');
+          toast.success(`Loaded ${res.students.length} student records for Class ${cleanClassName}!`);
         }
       } else {
         if (res && res.available_classes) setAvailableClasses(res.available_classes);
@@ -336,7 +337,8 @@ export default function AdminOmrGenerator() {
         setRoster([]);
         setNumCopies(1);
         if (cFilter) {
-          toast.info(`No matching student records found for Class ${cFilter} ${sFilter ? 'Section ' + sFilter : ''}.`);
+          const cleanClassName = cFilter.replace(/^Class\s+/i, '');
+          toast.info(`No matching student records found for Class ${cleanClassName} ${sFilter ? 'Section ' + sFilter : ''}.`);
         }
       }
     } catch (e) {

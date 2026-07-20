@@ -8,6 +8,7 @@ const Toaster = ({
   return (
     <Sonner
       theme={theme}
+      closeButton={true}
       className="toaster group"
       toastOptions={{
         classNames: {

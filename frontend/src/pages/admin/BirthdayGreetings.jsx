@@ -359,7 +359,7 @@ export default function BirthdayGreetings() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <Toaster position="top-right" richColors />
+      <Toaster position="top-right" richColors closeButton />
 
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4 mb-8">

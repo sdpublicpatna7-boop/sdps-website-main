@@ -136,7 +136,7 @@ export default function WhatsAppMarketing() {
 
   return (
     <div className="max-w-5xl">
-      <Toaster position="top-right" richColors />
+      <Toaster position="top-right" richColors closeButton />
 
       <div className="flex items-center gap-3 mb-6">
         <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 flex items-center justify-center">

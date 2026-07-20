@@ -330,7 +330,7 @@ export default function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
-      <Toaster position="top-right" richColors />
+      <Toaster position="top-right" richColors closeButton />
       {/* Mobile Top Bar Header */}
       <header className="md:hidden flex items-center justify-between px-4 py-3 bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-40">
         <div className="flex items-center gap-3">
