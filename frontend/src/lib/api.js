@@ -1216,5 +1216,12 @@ export async function deleteOmrStudent(studentId) {
   return res.data;
 }
 
+export async function exportOmrPdf(html, isLandscape = false) {
+  const res = await api.post("/admin/omr/export-pdf", { html, isLandscape }, {
+    responseType: "blob"
+  });
+  return res.data;
+}
+
 export default api;
 

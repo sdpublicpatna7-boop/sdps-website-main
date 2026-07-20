@@ -5,7 +5,7 @@ import {
   LayoutGrid, Sliders, CheckSquare, Info, ShieldCheck, Download,
   Save, Copy, Hash, Database, Loader2
 } from "lucide-react";
-import { getOmrRoster, saveOmrBooklets, getOmrBooklets, clearOmrBooklets } from "@/lib/api";
+import { getOmrRoster, saveOmrBooklets, getOmrBooklets, clearOmrBooklets, exportOmrPdf } from "@/lib/api";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
@@ -500,56 +500,25 @@ export default function AdminOmrGenerator() {
     const total = printAreas.length;
     if (onProgress) onProgress(0, total);
 
-    // A4 dimensions in mm
     const isLandscape = omrMode === "booklet";
-    const pageW = isLandscape ? 297 : 210;
-    const pageH = isLandscape ? 210 : 297;
 
-    const pdf = new jsPDF({
-      orientation: isLandscape ? "landscape" : "portrait",
-      unit: "mm",
-      format: "a4",
-      compress: true,
+    // 1. Gather all active document stylesheets and style elements to match look and feel
+    let stylesHtml = "";
+    document.querySelectorAll("style, link[rel='stylesheet']").forEach((el) => {
+      stylesHtml += el.outerHTML;
     });
 
-    // 1. Wait for all document fonts to load completely before capturing
-    await document.fonts.ready;
-
-    // 2. Wait for all logo and barcode images in the DOM to be fully loaded
-    const images = Array.from(document.images);
-    await Promise.all(images.map(img => {
-      if (img.complete) return Promise.resolve();
-      return new Promise(resolve => {
-        img.onload = resolve;
-        img.onerror = resolve;
-      });
-    }));
-
-    // 3. Create a temporary, visible-but-hidden fixed viewport with absolute A4 dimensions
-    // This places it in the active DOM rendering flow, allowing the browser's layout engine
-    // to perform perfect layout passes without cropping or viewport clipping.
-    const tempContainer = document.createElement("div");
-    tempContainer.style.position = "fixed";
-    tempContainer.style.left = "0";
-    tempContainer.style.top = "0";
-    tempContainer.style.zIndex = "-9999";
-    tempContainer.style.opacity = "0";
-    tempContainer.style.pointerEvents = "none";
-    tempContainer.style.width = isLandscape ? "297mm" : "210mm";
-    tempContainer.style.height = isLandscape ? "210mm" : "297mm";
-    document.body.appendChild(tempContainer);
-
+    // 2. Clone each sheet and apply standard dimensions
+    let sheetsHtml = "";
     for (let i = 0; i < printAreas.length; i++) {
       const el = printAreas[i];
-
-      // Clone the sheet to avoid disrupting screen view
       const cloned = el.cloneNode(true);
       cloned.querySelectorAll(".no-print").forEach((subEl) => subEl.remove());
       
-      // Enforce absolute dimensions and padding matching the standard screen rendering
-      cloned.style.width = "100%";
-      cloned.style.height = "100%";
-      cloned.style.margin = "0";
+      // Enforce physical page boundaries matching A4 standard print layouts
+      cloned.style.width = isLandscape ? "297mm" : "210mm";
+      cloned.style.height = isLandscape ? "210mm" : "297mm";
+      cloned.style.margin = "0 auto";
       cloned.style.padding = isLandscape ? "4mm" : "6mm";
       cloned.style.boxSizing = "border-box";
       cloned.style.display = "flex";
@@ -558,50 +527,54 @@ export default function AdminOmrGenerator() {
       cloned.style.border = "none";
       cloned.style.boxShadow = "none";
       cloned.style.background = "white";
+      cloned.style.pageBreakAfter = "always";
+      cloned.style.breakAfter = "page";
 
-      // Append clone to active container
-      tempContainer.innerHTML = "";
-      tempContainer.appendChild(cloned);
-
-      // Brief delay to allow CSS styles and layouts to apply to the cloned node
-      await new Promise((r) => setTimeout(r, 60));
-
-      // Get precise layout boundaries in pixels calculated by browser rendering engine
-      const rectWidth = cloned.offsetWidth;
-      const rectHeight = cloned.offsetHeight;
-
-      // 4. Capture layout with html2canvas matching layout width/height
-      const canvas = await html2canvas(cloned, {
-        scale: 3,                    // 3× scale at 96 DPI results in 288 DPI (~300 DPI equivalent) print sharpness
-        useCORS: true,
-        allowTaint: false,
-        backgroundColor: "#ffffff",
-        logging: false,
-        width: rectWidth,
-        height: rectHeight,
-        windowWidth: rectWidth,
-        windowHeight: rectHeight,
-        scrollX: 0,
-        scrollY: 0,
-      });
-
-      // Convert canvas to JPEG (smaller size, high-quality)
-      const imgData = canvas.toDataURL("image/jpeg", 0.95);
-
-      if (i > 0) pdf.addPage("a4", isLandscape ? "landscape" : "portrait");
-      pdf.addImage(imgData, "JPEG", 0, 0, pageW, pageH);
-
-      // Report progress after each page is done
-      if (onProgress) onProgress(i + 1, total);
-
-      // Yield to the browser event loop so the UI can repaint the progress bar
-      await new Promise((r) => setTimeout(r, 0));
+      sheetsHtml += cloned.outerHTML;
     }
 
-    // Cleanup temp container
-    document.body.removeChild(tempContainer);
+    // 3. Construct a clean single-document payload
+    const fullHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>OMR Sheets Export</title>
+          ${stylesHtml}
+          <style>
+            html, body {
+              margin: 0 !important;
+              padding: 0 !important;
+              background: white !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            .omr-print-area {
+              box-shadow: none !important;
+              border: none !important;
+            }
+            @media print {
+              body {
+                background: white !important;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          ${sheetsHtml}
+        </body>
+      </html>
+    `;
 
-    return pdf.output("blob");
+    // 4. Update progress bar state during generation
+    if (onProgress) onProgress(Math.floor(total / 2), total);
+    
+    // Call our backend Playwright Chromium native print endpoint
+    const pdfBlob = await exportOmrPdf(fullHtml, isLandscape);
+
+    if (onProgress) onProgress(total, total);
+
+    return pdfBlob;
   };
 
   /** PDF Export state */
