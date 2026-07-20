@@ -24,6 +24,7 @@ from pydantic import BaseModel
 from slowapi import Limiter
 
 from auth import get_superadmin, TokenData
+from models import now_iso
 
 logger = logging.getLogger("sdps.whatsapp")
 
@@ -1003,9 +1004,10 @@ async def wa_birthday_campaign_import(
     # Automatically sync with OMR student roster for pre-filled OMR generation
     omr_operations = []
     for s in students:
+        s_name = str(s.get("name") or s.get("student_name") or "STUDENT")
         adm = s.get("admission_no") or f"{s.get('class_name')}-{s.get('section')}-{s.get('roll_no')}"
         if not adm or adm == "--":
-            adm = f"SDPS-{s['name'].replace(' ', '')[:4].upper()}"
+            adm = f"SDPS-{s_name.replace(' ', '')[:4].upper()}"
         doc = {
             "id": adm,
             "admission_no": adm,
