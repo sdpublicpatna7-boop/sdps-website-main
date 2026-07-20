@@ -306,8 +306,6 @@ export default function AdminOmrGenerator() {
         if (res.available_classes) setAvailableClasses(res.available_classes);
         if (res.available_sections) setAvailableSections(res.available_sections);
         toast.success(`Loaded ${res.students.length} student records for Class ${cFilter !== 'ALL' ? cFilter : ''}!`);
-        
-        autoSaveBooklets(res.students).catch(() => {});
       } else {
         if (res && res.available_classes) setAvailableClasses(res.available_classes);
         if (res && res.available_sections) setAvailableSections(res.available_sections);
