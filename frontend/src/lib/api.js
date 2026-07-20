@@ -1181,6 +1181,11 @@ export async function getOmrBooklets(params = {}) {
   return res.data;
 }
 
+export async function clearOmrBooklets() {
+  const res = await api.delete("/admin/omr/booklets/clear");
+  return res.data;
+}
+
 export async function saveOmrEvaluations(payload) {
   const res = await api.post("/admin/omr/evaluations/save", payload);
   return res.data;

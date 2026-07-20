@@ -2247,6 +2247,13 @@ async def list_omr_booklets(
     return {"status": "success", "booklets": records, "count": len(records)}
 
 
+@admin_router.delete("/omr/booklets/clear")
+async def clear_omr_booklets(admin: TokenData = Depends(require_permission("site-settings"))):
+    """Clear all stored OMR barcode booklet mappings from the database."""
+    res = await db.omr_booklets.delete_many({})
+    return {"status": "success", "message": f"Cleared {res.deleted_count} stored booklet barcode mappings.", "count": res.deleted_count}
+
+
 @admin_router.get("/omr/booklet/{booklet_no}")
 async def get_omr_booklet(
     booklet_no: str,

@@ -5,7 +5,7 @@ import {
   LayoutGrid, Sliders, CheckSquare, Info, ShieldCheck, Download,
   Save, Copy, Hash, Database
 } from "lucide-react";
-import { getOmrRoster, saveOmrBooklets, getOmrBooklets } from "@/lib/api";
+import { getOmrRoster, saveOmrBooklets, getOmrBooklets, clearOmrBooklets } from "@/lib/api";
 import api from "@/lib/api";
 import { toast } from "sonner";
 
@@ -217,6 +217,19 @@ export default function AdminOmrGenerator() {
       toast.error("Failed to query saved barcode mappings.");
     } finally {
       setLoadingSavedBooklets(false);
+    }
+  };
+
+  const handleClearAllBooklets = async () => {
+    if (!window.confirm("Are you sure you want to CLEAR ALL stored barcode index mappings from the database? This action cannot be undone.")) {
+      return;
+    }
+    try {
+      const res = await clearOmrBooklets();
+      toast.success(res.message || "Cleared all stored barcode indexes!");
+      setSavedBooklets([]);
+    } catch (err) {
+      toast.error("Failed to clear barcode indexes.");
     }
   };
 
@@ -623,7 +636,6 @@ export default function AdminOmrGenerator() {
                         const val = e.target.value;
                         setSelectedClassFilter(val);
                         if (val !== "ALL") setClassName(val);
-                        fetchRoster(val, selectedSectionFilter);
                       }}
                       className="w-full px-2 py-1 text-[10.5px] rounded-md border border-emerald-300 font-bold focus:outline-none focus:border-emerald-600 bg-white"
                     >
@@ -648,7 +660,6 @@ export default function AdminOmrGenerator() {
                       onChange={(e) => {
                         const val = e.target.value;
                         setSelectedSectionFilter(val);
-                        fetchRoster(selectedClassFilter, val);
                       }}
                       className="w-full px-2 py-1 text-[10.5px] rounded-md border border-emerald-300 font-bold focus:outline-none focus:border-emerald-600 bg-white"
                     >
@@ -1601,7 +1612,16 @@ export default function AdminOmrGenerator() {
             </div>
 
             <div className="flex justify-between items-center text-xs text-slate-500 pt-2 border-t border-slate-150">
-              <span>Total Indexed: <strong>{savedBooklets.length} Barcodes</strong></span>
+              <div className="flex items-center gap-3">
+                <span>Total Indexed: <strong>{savedBooklets.length} Barcodes</strong></span>
+                <button
+                  type="button"
+                  onClick={handleClearAllBooklets}
+                  className="px-3 py-1 bg-red-50 text-red-600 border border-red-200 text-[11px] font-bold rounded-lg hover:bg-red-100 transition cursor-pointer"
+                >
+                  Clear All Indexes
+                </button>
+              </div>
               <button
                 onClick={() => setShowBookletsModal(false)}
                 className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 cursor-pointer"
