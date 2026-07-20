@@ -1983,17 +1983,41 @@ async def get_omr_roster(
     Supports filtering by Class Name and Section.
     Also returns available classes and sections for UI selection.
     """
-    available_classes_set = set()
+    ROMAN_TO_ARABIC = {
+        "I": "1", "II": "2", "III": "3", "IV": "4", "V": "5",
+        "VI": "6", "VII": "7", "VIII": "8", "IX": "9", "X": "10",
+        "XI": "11", "XII": "12"
+    }
+    ARABIC_TO_ROMAN = {v: k for k, v in ROMAN_TO_ARABIC.items()}
+
+    def clean_class_name(c_str: str) -> str:
+        s = str(c_str).strip()
+        clean = re.sub(r'^(CLASS|STD|STANDARD)[\s\-]*', '', s, flags=re.I).strip()
+        clean_nodash = re.sub(r'[\-\s]', '', clean).upper()
+        if clean_nodash in ROMAN_TO_ARABIC:
+            return f"Class {clean_nodash}"
+        if clean_nodash in ARABIC_TO_ROMAN:
+            return f"Class {ARABIC_TO_ROMAN[clean_nodash]}"
+        if clean_nodash in ("NURSERY", "NUR"):
+            return "Class Nursery"
+        if clean_nodash in ("LKG", "KGI", "KG1"):
+            return "Class LKG"
+        if clean_nodash in ("UKG", "KGII", "KG2"):
+            return "Class UKG"
+        if clean:
+            return f"Class {clean.title()}"
+        return s
+
+    raw_classes = set()
     available_sections_set = set()
 
     for col in (db.omr_roster, db.birthday_students):
         try:
-            raw_c = await col.distinct("class_name")
-            for c in raw_c:
-                if c and str(c).strip(): available_classes_set.add(str(c).strip().upper())
-            raw_c2 = await col.distinct("class")
-            for c in raw_c2:
-                if c and str(c).strip(): available_classes_set.add(str(c).strip().upper())
+            for field in ("class_name", "class"):
+                distinct_vals = await col.distinct(field)
+                for val in distinct_vals:
+                    if val and str(val).strip():
+                        raw_classes.add(clean_class_name(str(val)))
 
             raw_s = await col.distinct("section")
             for s in raw_s:
@@ -2004,15 +2028,14 @@ async def get_omr_roster(
         except Exception:
             pass
 
-    available_classes = sorted(list(available_classes_set))
-    available_sections = sorted(list(available_sections_set))
+    CLASS_ORDER = ["Class Nursery", "Class LKG", "Class UKG", "Class I", "Class II", "Class III", "Class IV", "Class V", "Class VI", "Class VII", "Class VIII", "Class IX", "Class X", "Class XI", "Class XII"]
+    def class_sort_key(c):
+        if c in CLASS_ORDER:
+            return (0, CLASS_ORDER.index(c))
+        return (1, c)
 
-    ROMAN_TO_ARABIC = {
-        "I": "1", "II": "2", "III": "3", "IV": "4", "V": "5",
-        "VI": "6", "VII": "7", "VIII": "8", "IX": "9", "X": "10",
-        "XI": "11", "XII": "12"
-    }
-    ARABIC_TO_ROMAN = {v: k for k, v in ROMAN_TO_ARABIC.items()}
+    available_classes = sorted(list(raw_classes), key=class_sort_key)
+    available_sections = sorted(list(available_sections_set))
 
     query = {}
     class_or_conditions = []

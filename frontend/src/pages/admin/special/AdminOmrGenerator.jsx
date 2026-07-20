@@ -648,14 +648,9 @@ export default function AdminOmrGenerator() {
                       <option value="ALL">All Classes</option>
                       {availableClasses.map((c) => (
                         <option key={c} value={c}>
-                          {c.toUpperCase().startsWith("CLASS") ? c : `Class ${c}`}
+                          {c}
                         </option>
                       ))}
-                      {availableClasses.length === 0 && (
-                        ["NURSERY", "LKG", "UKG", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"].map((c) => (
-                          <option key={c} value={c}>Class {c}</option>
-                        ))
-                      )}
                     </select>
                   </div>
 
