@@ -638,7 +638,7 @@ export default function AdminOmrGenerator() {
 
       const el = printAreas[i];
       const canvas = await html2canvas(el, {
-        scale: 2,
+        scale: 3,
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
