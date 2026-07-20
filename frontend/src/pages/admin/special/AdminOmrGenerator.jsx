@@ -699,26 +699,27 @@ export default function AdminOmrGenerator() {
       if (timer) clearInterval(timer);
       setPdfProgress({ current: totalPages, total: totalPages });
 
-      // Download file to browser with delayed URL revocation
+      // Generate Blob URL and open directly in a new tab (matching gungunerp.in method!)
       const pdfFileBlob = pdfBlob instanceof Blob ? pdfBlob : new Blob([pdfBlob], { type: "application/pdf" });
       const url = window.URL.createObjectURL(pdfFileBlob);
-      const link = document.createElement("a");
-      link.style.display = "none";
-      link.href = url;
-      const fileName = `OMR_${className || "Sheets"}_${selectedSectionFilter || ""}_${numQuestions}Q.pdf`.replace(/[^a-zA-Z0-9_\-\.]/g, "_");
-      link.setAttribute("download", fileName);
-      document.body.appendChild(link);
-      link.click();
-
-      // Delay cleanup by 15 seconds so browser download manager finishes saving file
-      setTimeout(() => {
-        try {
-          if (document.body.contains(link)) {
-            document.body.removeChild(link);
-          }
-          window.URL.revokeObjectURL(url);
-        } catch (e) { /* ignore cleanup notice */ }
-      }, 15000);
+      
+      // Open PDF Blob in a new tab
+      const pdfWindow = window.open(url, "_blank");
+      if (!pdfWindow) {
+        // Fallback download if popups blocked by browser
+        const link = document.createElement("a");
+        link.style.display = "none";
+        link.href = url;
+        const fileName = `OMR_${className || "Sheets"}_${selectedSectionFilter || ""}_${numQuestions}Q.pdf`.replace(/[^a-zA-Z0-9_\-\.]/g, "_");
+        link.setAttribute("download", fileName);
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => {
+          try {
+            if (document.body.contains(link)) document.body.removeChild(link);
+          } catch (e) { /* ignore cleanup */ }
+        }, 15000);
+      }
 
       const fileSizeMb = (pdfBlob.size / (1024 * 1024)).toFixed(1);
       toast.success(`PDF Exported — ${totalPages} pages (${fileSizeMb} MB) downloaded!`);
