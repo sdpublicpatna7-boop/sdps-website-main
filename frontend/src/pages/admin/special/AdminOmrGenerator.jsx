@@ -541,12 +541,12 @@ export default function AdminOmrGenerator() {
               {templateType === "simple" ? (
                 <div className="grid grid-cols-2 gap-2 text-[10px] font-bold border border-black p-1.5 mb-2 bg-gray-50 text-center">
                   <div>
-                    <span className="text-black/60 uppercase block text-[8.5px]">Class & Section:</span>
-                    <span className="text-black font-extrabold">{className ? `${className}` : "______________"}</span>
+                    <span className="text-black/60 uppercase block text-[8.5px]">Class & Section (Handwritten):</span>
+                    <span className="text-black font-extrabold">___________________________</span>
                   </div>
                   <div>
                     <span className="text-black/60 uppercase block text-[8.5px]">Subject:</span>
-                    <span className="text-black font-extrabold">{subjectName || "______________"}</span>
+                    <span className="text-black font-extrabold">{subjectName || "___________________________"}</span>
                   </div>
                 </div>
               ) : (
@@ -586,12 +586,14 @@ export default function AdminOmrGenerator() {
                   <div className="grid grid-cols-3 gap-1.5">
                     <div className="border border-black p-1">
                       <span className="font-bold uppercase text-[8.5px] block">
-                        ROLL NO {templateType === "simple" ? "(HANDWRITTEN)" : ""}:
+                        CLASS & SECTION:
                       </span>
                       <div className="h-4"></div>
                     </div>
                     <div className="border border-black p-1">
-                      <span className="font-bold uppercase text-[8.5px] block">SECTION / CLASS:</span>
+                      <span className="font-bold uppercase text-[8.5px] block">
+                        ROLL NO:
+                      </span>
                       <div className="h-4"></div>
                     </div>
                     <div className="border border-black p-1">
