@@ -2591,29 +2591,37 @@ async def export_omr_pdf(
             
             rendered_via_browserless = False
             if browserless_key:
-                logger.info("Attempting PDF rendering via Browserless.io Cloud REST API...")
+                logger.info(f"Attempting concurrent PDF rendering for {len(html_pages)} pages via Browserless.io Cloud REST API...")
                 try:
-                    async with httpx.AsyncClient(timeout=120.0) as client:
-                        for idx, page_html in enumerate(html_pages):
-                            b_url = f"https://chrome.browserless.io/pdf?token={browserless_key}"
-                            b_payload = {
-                                "html": page_html,
-                                "options": {
-                                    "displayHeaderFooter": False,
-                                    "printBackground": True,
-                                    "format": "A4",
-                                    "landscape": is_landscape,
-                                    "margin": {"top": "0mm", "right": "0mm", "bottom": "0mm", "left": "0mm"}
+                    limits = httpx.Limits(max_keepalive_connections=20, max_connections=30)
+                    async with httpx.AsyncClient(timeout=120.0, limits=limits) as client:
+                        semaphore = asyncio.Semaphore(8) # Process 8 pages in parallel concurrently
+                        
+                        async def render_single_page(idx, page_html):
+                            async with semaphore:
+                                b_url = f"https://chrome.browserless.io/pdf?token={browserless_key}"
+                                b_payload = {
+                                    "html": page_html,
+                                    "options": {
+                                        "displayHeaderFooter": False,
+                                        "printBackground": True,
+                                        "format": "A4",
+                                        "landscape": is_landscape,
+                                        "margin": {"top": "0mm", "right": "0mm", "bottom": "0mm", "left": "0mm"}
+                                    }
                                 }
-                            }
-                            resp = await client.post(b_url, json=b_payload)
-                            if resp.status_code == 200 and len(resp.content) > 100:
-                                chunk_path = os.path.join(temp_dir, f"page_{idx}.pdf")
-                                with open(chunk_path, "wb") as f:
-                                    f.write(resp.content)
-                                temp_files.append(chunk_path)
-                            else:
-                                raise Exception(f"Browserless REST API returned status {resp.status_code}: {resp.text[:200]}")
+                                resp = await client.post(b_url, json=b_payload)
+                                if resp.status_code == 200 and len(resp.content) > 100:
+                                    chunk_path = os.path.join(temp_dir, f"page_{idx:05d}.pdf")
+                                    with open(chunk_path, "wb") as f:
+                                        f.write(resp.content)
+                                    return chunk_path
+                                else:
+                                    raise Exception(f"Browserless REST API page {idx} error {resp.status_code}: {resp.text[:200]}")
+
+                        tasks = [render_single_page(idx, page_html) for idx, page_html in enumerate(html_pages)]
+                        temp_files = list(await asyncio.gather(*tasks))
+                        
                     rendered_via_browserless = True
                     logger.info("Successfully rendered PDF via Browserless.io Cloud REST API.")
                 except Exception as b_err:

@@ -1224,7 +1224,8 @@ export async function exportOmrPdf(htmlOrPages, isLandscape = false) {
     payload.html = htmlOrPages;
   }
   const res = await api.post("/admin/omr/export-pdf", payload, {
-    responseType: "blob"
+    responseType: "blob",
+    timeout: 300000
   });
   return res.data;
 }
