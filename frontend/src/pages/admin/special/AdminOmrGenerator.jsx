@@ -488,18 +488,17 @@ export default function AdminOmrGenerator() {
    * exportOMRAsBlob — Captures all rendered OMR sheets from the DOM
    * and returns a high-resolution PDF as a Promise<Blob>.
    *
-   * - Does NOT open the browser print dialog.
-   * - Does NOT trigger an automatic download.
-   * - Returns Promise<Blob> (application/pdf).
-   * - Preserves exact A4 layout, fonts, barcodes, QR codes, bubbles, borders.
-   * - 300 DPI equivalent output (scale factor 2 on standard screens).
-   * - Multi-page: each .omr-print-area becomes one PDF page.
+   * @param {function} onProgress - Optional callback: (current, total) => void
+   * @returns {Promise<Blob>} PDF blob (application/pdf)
    */
-  const exportOMRAsBlob = async () => {
+  const exportOMRAsBlob = async (onProgress) => {
     const printAreas = document.querySelectorAll(".omr-print-area");
     if (printAreas.length === 0) {
       throw new Error("No OMR sheets rendered to export.");
     }
+
+    const total = printAreas.length;
+    if (onProgress) onProgress(0, total);
 
     // A4 dimensions in mm
     const isLandscape = omrMode === "booklet";
@@ -518,12 +517,11 @@ export default function AdminOmrGenerator() {
 
       // Render element to canvas at high resolution
       const canvas = await html2canvas(el, {
-        scale: 2,                    // 2× for crisp 300 DPI-equivalent output
-        useCORS: true,               // allow cross-origin images (school logo)
+        scale: 2,
+        useCORS: true,
         allowTaint: false,
         backgroundColor: "#ffffff",
         logging: false,
-        // Capture the full element dimensions
         width: el.scrollWidth,
         height: el.scrollHeight,
         windowWidth: el.scrollWidth,
@@ -534,46 +532,50 @@ export default function AdminOmrGenerator() {
       const imgData = canvas.toDataURL("image/jpeg", 0.92);
 
       // Calculate dimensions to fit the canvas image onto the A4 page
-      // preserving aspect ratio and filling the page
       const canvasAspect = canvas.width / canvas.height;
       const pageAspect = pageW / pageH;
 
       let imgW, imgH;
       if (canvasAspect > pageAspect) {
-        // Canvas is wider relative to page — fit by width
         imgW = pageW;
         imgH = pageW / canvasAspect;
       } else {
-        // Canvas is taller relative to page — fit by height
         imgH = pageH;
         imgW = pageH * canvasAspect;
       }
 
-      // Center the image on the page
       const offsetX = (pageW - imgW) / 2;
       const offsetY = (pageH - imgH) / 2;
 
       if (i > 0) pdf.addPage("a4", isLandscape ? "landscape" : "portrait");
       pdf.addImage(imgData, "JPEG", offsetX, offsetY, imgW, imgH);
+
+      // Report progress after each page is done
+      if (onProgress) onProgress(i + 1, total);
+
+      // Yield to the browser event loop so the UI can repaint the progress bar
+      await new Promise((r) => setTimeout(r, 0));
     }
 
-    // Return as Blob without triggering download or print dialog
     return pdf.output("blob");
   };
 
-  /** Wrapper: calls exportOMRAsBlob() and triggers a file download. */
+  /** PDF Export state */
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [pdfProgress, setPdfProgress] = useState({ current: 0, total: 0 });
 
   const handleExportPdf = async () => {
     try {
       setExportingPdf(true);
-      toast.loading("Generating high-resolution PDF…", { id: "pdf-export" });
+      setPdfProgress({ current: 0, total: 0 });
 
       if (displayedRoster.length > 0) {
         await autoSaveBooklets(displayedRoster);
       }
 
-      const pdfBlob = await exportOMRAsBlob();
+      const pdfBlob = await exportOMRAsBlob((current, total) => {
+        setPdfProgress({ current, total });
+      });
 
       const url = URL.createObjectURL(pdfBlob);
       const link = document.createElement("a");
@@ -585,12 +587,13 @@ export default function AdminOmrGenerator() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      toast.success(`PDF exported — ${(pdfBlob.size / (1024 * 1024)).toFixed(1)} MB`, { id: "pdf-export" });
+      toast.success(`PDF exported — ${pdfProgress.total} pages, ${(pdfBlob.size / (1024 * 1024)).toFixed(1)} MB`);
     } catch (err) {
       console.error("PDF export failed:", err);
-      toast.error(`PDF export failed: ${err.message}`, { id: "pdf-export" });
+      toast.error(`PDF export failed: ${err.message}`);
     } finally {
       setExportingPdf(false);
+      setPdfProgress({ current: 0, total: 0 });
     }
   };
 
@@ -657,7 +660,9 @@ export default function AdminOmrGenerator() {
             className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition shadow-md shadow-emerald-700/20 cursor-pointer disabled:opacity-60 disabled:cursor-wait"
           >
             {exportingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-            {exportingPdf ? "Generating PDF…" : "Export as PDF"}
+            {exportingPdf
+              ? (pdfProgress.total > 0 ? `Page ${pdfProgress.current}/${pdfProgress.total}` : "Preparing…")
+              : "Export as PDF"}
           </button>
 
           <button
@@ -668,6 +673,40 @@ export default function AdminOmrGenerator() {
           </button>
         </div>
       </div>
+
+      {/* PDF Export Progress Overlay */}
+      {exportingPdf && (
+        <div className="no-print fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center">
+          <div className="bg-white rounded-3xl p-8 shadow-2xl max-w-md w-full mx-4 text-center space-y-5">
+            <div className="w-16 h-16 mx-auto bg-emerald-100 rounded-2xl flex items-center justify-center">
+              <Loader2 className="w-8 h-8 text-emerald-700 animate-spin" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">Generating PDF</h3>
+              <p className="text-sm text-slate-500 mt-1">
+                {pdfProgress.total > 0
+                  ? `Rendering page ${pdfProgress.current} of ${pdfProgress.total}`
+                  : "Preparing sheets\u2026"}
+              </p>
+            </div>
+            {pdfProgress.total > 0 && (
+              <div className="space-y-2">
+                <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full transition-all duration-300 ease-out"
+                    style={{ width: `${Math.round((pdfProgress.current / pdfProgress.total) * 100)}%` }}
+                  />
+                </div>
+                <div className="flex justify-between text-xs font-semibold text-slate-600">
+                  <span>{pdfProgress.current} / {pdfProgress.total} pages</span>
+                  <span>{Math.round((pdfProgress.current / pdfProgress.total) * 100)}%</span>
+                </div>
+              </div>
+            )}
+            <p className="text-[11px] text-slate-400">Please don't close or navigate away from this page.</p>
+          </div>
+        </div>
+      )}
 
       {/* Main Layout Grid */}
       <div className="grid lg:grid-cols-12 gap-6 items-start">
