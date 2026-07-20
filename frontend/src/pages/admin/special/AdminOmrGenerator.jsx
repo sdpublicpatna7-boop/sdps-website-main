@@ -637,22 +637,45 @@ export default function AdminOmrGenerator() {
       if (onProgress) onProgress(i + 1, total);
 
       const el = printAreas[i];
+
+      // Get the element's true position relative to the document
+      // (not the viewport). html2canvas needs these to clip the capture
+      // correctly when the page is scrolled.
+      const rect = el.getBoundingClientRect();
+      const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+      const scrollTop  = window.pageYOffset || document.documentElement.scrollTop;
+      const elDocTop   = rect.top  + scrollTop;
+      const elDocLeft  = rect.left + scrollLeft;
+
+      // A4 at 96 dpi base: 794 × 1123 px portrait, 1123 × 794 px landscape.
+      // Locking windowWidth/windowHeight to these exact values means Tailwind
+      // always sees the same breakpoint during capture regardless of screen size.
+      const a4PxW = isLandscape ? 1123 : 794;
+      const a4PxH = isLandscape ? 794  : 1123;
+
       const canvas = await html2canvas(el, {
-        scale: 4,
+        scale: 4,                  // → ~380 DPI on A4
         useCORS: true,
+        allowTaint: false,
         logging: false,
         backgroundColor: "#ffffff",
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: el.scrollWidth,
-        windowHeight: el.scrollHeight
+        // Tell html2canvas where the element actually lives in the document
+        scrollX: -elDocLeft,
+        scrollY: -elDocTop,
+        // Fix the virtual viewport to exact A4 so no responsive class ever fires
+        windowWidth:  a4PxW,
+        windowHeight: a4PxH,
+        // Capture exactly the element's rendered size
+        width:  el.offsetWidth,
+        height: el.offsetHeight,
+        x: 0,
+        y: 0,
       });
 
-      // PNG (lossless) instead of JPEG — JPEG's chroma-subsampled compression
-      // softens the edges of solid black bubbles/barcodes/grid lines, which hurts
-      // real-world OMR scanner readability. PNG keeps those edges pixel-sharp.
+      // PNG (lossless) — keeps bubble/barcode/grid edges pixel-sharp for scanning.
+      // JPEG's chroma-subsampled compression softens solid black edges.
       const imgData = canvas.toDataURL("image/png");
-      const pdfWidth = isLandscape ? 297 : 210;
+      const pdfWidth  = isLandscape ? 297 : 210;
       const pdfHeight = isLandscape ? 210 : 297;
 
       if (i > 0) {
