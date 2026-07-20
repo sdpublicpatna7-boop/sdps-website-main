@@ -566,6 +566,7 @@ export default function AdminOmrGenerator() {
 
   const handleExportPdf = async () => {
     try {
+      window.__sdps_suppress_logout = true;
       setExportingPdf(true);
       setPdfProgress({ current: 0, total: 0 });
 
@@ -594,6 +595,7 @@ export default function AdminOmrGenerator() {
     } finally {
       setExportingPdf(false);
       setPdfProgress({ current: 0, total: 0 });
+      window.__sdps_suppress_logout = false;
     }
   };
 

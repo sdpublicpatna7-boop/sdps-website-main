@@ -55,6 +55,8 @@ export function AuthProvider({ children }) {
     const reset = () => {
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => {
+        // Skip auto-logout if a long-running operation (e.g. PDF export) is in progress
+        if (window.__sdps_suppress_logout) return reset();
         logout();
       }, INACTIVITY_LIMIT);
     };
