@@ -187,8 +187,8 @@ export default function AdminOmrGenerator() {
   const [roster, setRoster] = useState([]);
   const [loadingRoster, setLoadingRoster] = useState(false);
   const [savingBooklets, setSavingBooklets] = useState(false);
-  const [selectedClassFilter, setSelectedClassFilter] = useState("ALL");
-  const [selectedSectionFilter, setSelectedSectionFilter] = useState("ALL");
+  const [selectedClassFilter, setSelectedClassFilter] = useState("");
+  const [selectedSectionFilter, setSelectedSectionFilter] = useState("");
   const [availableClasses, setAvailableClasses] = useState([]);
   const [availableSections, setAvailableSections] = useState([]);
 
@@ -277,11 +277,7 @@ export default function AdminOmrGenerator() {
     }
   }, [templateType, displayedRoster.length]);
 
-  useEffect(() => {
-    if (templateType === "automated" && roster.length === 0) {
-      fetchRoster("ALL", "ALL");
-    }
-  }, [templateType]);
+  // Roster fetching is triggered on demand when user selects class and clicks "Load Birthday Roster"
 
   const autoSaveBooklets = async (studentList = displayedRoster) => {
     if (!studentList || studentList.length === 0) return;
@@ -641,11 +637,11 @@ export default function AdminOmrGenerator() {
                       onChange={(e) => {
                         const val = e.target.value;
                         setSelectedClassFilter(val);
-                        if (val !== "ALL") setClassName(val);
+                        if (val) setClassName(val);
                       }}
                       className="w-full px-2 py-1 text-[10.5px] rounded-md border border-emerald-300 font-bold focus:outline-none focus:border-emerald-600 bg-white"
                     >
-                      <option value="ALL">All Classes</option>
+                      <option value="">-- Select Class --</option>
                       {availableClasses.map((c) => (
                         <option key={c} value={c}>
                           {c}
@@ -664,7 +660,7 @@ export default function AdminOmrGenerator() {
                       }}
                       className="w-full px-2 py-1 text-[10.5px] rounded-md border border-emerald-300 font-bold focus:outline-none focus:border-emerald-600 bg-white"
                     >
-                      <option value="ALL">All Sections</option>
+                      <option value="">-- Select Section --</option>
                       {availableSections.map((s) => (
                         <option key={s} value={s}>
                           {s.toUpperCase().startsWith("SECTION") || s.toUpperCase().startsWith("SEC") ? s : `Section ${s}`}
@@ -713,12 +709,12 @@ export default function AdminOmrGenerator() {
                   </div>
                 </div>
 
-                <div className="flex gap-2 pt-0.5">
+                <div className="grid grid-cols-2 gap-2 pt-0.5">
                   <button
                     type="button"
                     onClick={() => fetchRoster(selectedClassFilter, selectedSectionFilter)}
                     disabled={loadingRoster}
-                    className="flex-1 py-1.5 px-2 bg-white hover:bg-emerald-100 text-emerald-900 text-[10px] font-bold border border-emerald-300 rounded-lg flex items-center justify-center gap-1 transition shadow-2xs"
+                    className="py-1.5 px-2 bg-white hover:bg-emerald-100 text-emerald-900 text-[10px] font-bold border border-emerald-300 rounded-lg flex items-center justify-center gap-1 transition shadow-2xs"
                   >
                     <RefreshCw className={`w-3 h-3 ${loadingRoster ? 'animate-spin' : ''}`} />
                     {loadingRoster ? "Fetching..." : "Load Birthday Roster"}
@@ -727,7 +723,7 @@ export default function AdminOmrGenerator() {
                   <button
                     type="button"
                     onClick={handleClearRoster}
-                    className="py-1.5 px-2 bg-slate-100 hover:bg-red-50 text-slate-700 hover:text-red-700 border border-slate-300 hover:border-red-300 text-[10px] font-bold rounded-lg flex items-center justify-center gap-1 transition shadow-2xs shrink-0"
+                    className="py-1.5 px-2 bg-slate-100 hover:bg-red-50 text-slate-700 hover:text-red-700 border border-slate-300 hover:border-red-300 text-[10px] font-bold rounded-lg flex items-center justify-center gap-1 transition shadow-2xs"
                   >
                     Clear Roster
                   </button>
@@ -736,7 +732,7 @@ export default function AdminOmrGenerator() {
                     type="button"
                     onClick={handleSaveBookletsToBackend}
                     disabled={savingBooklets}
-                    className="flex-1 py-1.5 px-2 bg-emerald-700 hover:bg-emerald-800 text-white text-[10px] font-bold rounded-lg flex items-center justify-center gap-1 transition shadow-2xs"
+                    className="py-1.5 px-2 bg-emerald-700 hover:bg-emerald-800 text-white text-[10px] font-bold rounded-lg flex items-center justify-center gap-1 transition shadow-2xs"
                   >
                     <Save className="w-3 h-3" />
                     {savingBooklets ? "Indexing..." : "Save Mappings"}
@@ -745,7 +741,7 @@ export default function AdminOmrGenerator() {
                   <button
                     type="button"
                     onClick={handleOpenBookletsModal}
-                    className="py-1.5 px-2 bg-white hover:bg-slate-100 text-slate-800 text-[10px] font-bold border border-slate-300 rounded-lg flex items-center justify-center gap-1 transition shadow-2xs shrink-0"
+                    className="py-1.5 px-2 bg-white hover:bg-slate-100 text-slate-800 text-[10px] font-bold border border-slate-300 rounded-lg flex items-center justify-center gap-1 transition shadow-2xs"
                   >
                     <Database className="w-3 h-3 text-brand-blue" />
                     View Index
