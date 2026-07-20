@@ -220,6 +220,12 @@ export default function AdminOmrGenerator() {
     }
   };
 
+  const handleClearRoster = () => {
+    setRoster([]);
+    setNumCopies(1);
+    toast.info("Cleared loaded student roster. Displaying 1 blank OMR sheet.");
+  };
+
   const handleClearAllBooklets = async () => {
     if (!window.confirm("Are you sure you want to CLEAR ALL stored barcode index mappings from the database? This action cannot be undone.")) {
       return;
@@ -721,6 +727,14 @@ export default function AdminOmrGenerator() {
                   >
                     <RefreshCw className={`w-3 h-3 ${loadingRoster ? 'animate-spin' : ''}`} />
                     {loadingRoster ? "Fetching..." : "Load Birthday Roster"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleClearRoster}
+                    className="py-1.5 px-2 bg-slate-100 hover:bg-red-50 text-slate-700 hover:text-red-700 border border-slate-300 hover:border-red-300 text-[10px] font-bold rounded-lg flex items-center justify-center gap-1 transition shadow-2xs shrink-0"
+                  >
+                    Clear Roster
                   </button>
 
                   <button
