@@ -853,21 +853,21 @@ export default function AdminOmrGenerator() {
 
                     {/* Roll No / Class / Sec / Date Row */}
                     <div className="grid grid-cols-3 gap-1.5">
-                      <div className="border border-black p-1">
-                        <span className="font-bold uppercase text-[8.5px] block">
+                      <div className="border border-black p-2">
+                        <span className="font-bold uppercase text-[8.5px] block mb-1">
                           CLASS & SECTION:
                         </span>
-                        <div className="h-4"></div>
+                        <div className="h-7 border-b border-dashed border-black/40"></div>
                       </div>
-                      <div className="border border-black p-1">
-                        <span className="font-bold uppercase text-[8.5px] block">
+                      <div className="border border-black p-2">
+                        <span className="font-bold uppercase text-[8.5px] block mb-1">
                           ROLL NO:
                         </span>
-                        <div className="h-4"></div>
+                        <div className="h-7 border-b border-dashed border-black/40"></div>
                       </div>
-                      <div className="border border-black p-1">
-                        <span className="font-bold uppercase text-[8.5px] block">DATE:</span>
-                        <div className="h-4 text-right text-[9px] pr-1 font-mono">{examDate}</div>
+                      <div className="border border-black p-2">
+                        <span className="font-bold uppercase text-[8.5px] block mb-1">DATE:</span>
+                        <div className="h-7 text-right text-[9px] pr-1 font-mono flex items-end justify-end">{examDate}</div>
                       </div>
                     </div>
 
@@ -875,14 +875,11 @@ export default function AdminOmrGenerator() {
                     {(showBookletNo || showSetCode) && (
                       <div className="grid grid-cols-2 gap-1.5">
                         {showBookletNo && (
-                          <div className="border border-black p-1 flex items-center justify-between min-h-[38px]">
+                          <div className="border border-black p-2 flex items-center justify-between min-h-[38px]">
                             <div>
                               <span className="font-bold uppercase text-[8.5px] block">BOOKLET NO:</span>
                               <span className="font-mono font-extrabold text-[10px] text-black tracking-wider">{currentBookletNo}</span>
                             </div>
-                            {showBarcode && (
-                              <BarcodeSvg value={currentBookletNo} height={18} className="shrink-0 transform scale-90 origin-right" />
-                            )}
                           </div>
                         )}
 
