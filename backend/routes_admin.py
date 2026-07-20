@@ -2596,27 +2596,32 @@ async def export_omr_pdf(
                     args=launch_args
                 )
                 
-                for page_html in html_pages:
-                    # Create isolated browser context and page for each sheet to completely isolate RAM usage
-                    context = await browser.new_context()
-                    page = await context.new_page()
-                    
-                    await page.set_content(page_html)
-                    await page.wait_for_load_state("networkidle")
-                    
-                    pdf_bytes = await page.pdf(
-                        format="A4",
-                        landscape=is_landscape,
-                        print_background=True,
-                        margin={"top": "0mm", "right": "0mm", "bottom": "0mm", "left": "0mm"}
-                    )
-                    pdf_chunks.append(pdf_bytes)
-                    
-                    # Close page and context immediately to free memory back to OS
-                    await page.close()
-                    await context.close()
-                    
-                await browser.close()
+                try:
+                    for page_html in html_pages:
+                        # Create isolated browser context and page for each sheet to completely isolate RAM usage
+                        context = await browser.new_context()
+                        try:
+                            page = await context.new_page()
+                            try:
+                                await page.set_content(page_html, wait_until="load", timeout=30000)
+                                try:
+                                    await page.wait_for_load_state("networkidle", timeout=3000)
+                                except Exception:
+                                    pass
+                                
+                                pdf_bytes = await page.pdf(
+                                    format="A4",
+                                    landscape=is_landscape,
+                                    print_background=True,
+                                    margin={"top": "0mm", "right": "0mm", "bottom": "0mm", "left": "0mm"}
+                                )
+                                pdf_chunks.append(pdf_bytes)
+                            finally:
+                                await page.close()
+                        finally:
+                            await context.close()
+                finally:
+                    await browser.close()
                 
             # Merge all single-sheet vector PDFs using high-performance, low-memory pikepdf
             merged_pdf = pikepdf.Pdf.new()
