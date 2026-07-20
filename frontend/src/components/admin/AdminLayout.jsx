@@ -7,7 +7,7 @@ import {
   GraduationCap, Award, FileText, CreditCard, Settings, LogOut,
   MessageSquare, Megaphone, ScrollText, FilePlus, Home, Hotel,
   BookOpen, Shield, EyeOff, ClipboardList, BookMarked, UserCog,
-  Menu, X, Star, Cake, Link2 as LinkIcon, Fingerprint, Lock
+  Menu, X, Star, Cake, Link2 as LinkIcon, Fingerprint, Lock, CheckSquare
 } from "lucide-react";
 import { useAuth } from "../../lib/auth";
 import { startPinger } from "../../lib/pinger";
@@ -61,6 +61,7 @@ const NAV_ITEMS = [
   { to: "/admin/experience-certificate", label: "Experience Certificate", icon: FileText, permission: "media-tools" },
   { to: "/admin/notice-maker", label: "Notice Maker", icon: FileText, permission: "media-tools" },
   { to: "/admin/omr-generator", label: "OMR Generator", icon: FileText, permission: "media-tools" },
+  { to: "/admin/omr-checker", label: "OMR Auto-Checker", icon: CheckSquare, permission: "media-tools" },
   { section: "Other" },
   { to: "/admin/tc-records", label: "TC Records", icon: FileText, permission: "tc-records" },
   { to: "/admin/popup", label: "Welcome Popup", icon: Megaphone, permission: "popup" },

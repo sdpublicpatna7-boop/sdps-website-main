@@ -1899,3 +1899,215 @@ async def upload_apaar_roster(
 async def clear_apaar_roster(admin: TokenData = Depends(require_permission("site-settings"))):
     await db.apaar_roster.delete_many({})
     return {"status": "success", "message": "APAAR school roster cleared successfully."}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# OMR AUTOMATED ROSTER & EVALUATION MANAGEMENT
+# ─────────────────────────────────────────────────────────────────────────────
+@admin_router.post("/omr/upload-roster")
+async def upload_omr_roster(
+    file: UploadFile = File(...),
+    admin: TokenData = Depends(require_permission("site-settings"))
+):
+    """Upload Excel/CSV file containing student details for pre-printed OMR sheets."""
+    contents = await file.read()
+    filename = file.filename.lower()
+    
+    try:
+        if filename.endswith(".csv"):
+            df = pd.read_csv(io.BytesIO(contents))
+        else:
+            df = pd.read_excel(io.BytesIO(contents))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to read file: {str(e)}")
+        
+    # Standardize column headers
+    df.columns = [str(col).strip().lower().replace(" ", "_").replace(".", "").replace("'", "") for col in df.columns]
+    
+    records = []
+    from pymongo import UpdateOne
+    operations = []
+    
+    for _, row in df.iterrows():
+        name = str(row.get("student_name") or row.get("name") or row.get("candidate_name") or "").strip()
+        f_name = str(row.get("father_name") or row.get("fathers_name") or row.get("father_name") or "").strip()
+        c_name = str(row.get("class") or row.get("class_name") or "").strip()
+        sec = str(row.get("section") or "").strip()
+        roll = str(row.get("roll_no") or row.get("roll") or row.get("roll_number") or "").strip()
+        adm = str(row.get("admission_no") or row.get("adm_no") or row.get("reg_no") or row.get("id") or "").strip()
+        
+        if not name:
+            continue
+            
+        if not adm:
+            adm = f"{c_name}-{sec}-{roll}" if (c_name and roll) else f"SDPS-{new_id()[:6].upper()}"
+            
+        doc = {
+            "id": adm,
+            "admission_no": adm,
+            "student_name": name,
+            "father_name": f_name,
+            "class_name": c_name,
+            "section": sec,
+            "roll_no": roll,
+            "updated_at": now_iso()
+        }
+        
+        operations.append(
+            UpdateOne(
+                {"admission_no": adm},
+                {"$set": doc},
+                upsert=True
+            )
+        )
+        
+    if operations:
+        await db.omr_roster.bulk_write(operations)
+        
+    return {
+        "status": "success",
+        "message": f"Successfully imported {len(operations)} student records for OMR generation.",
+        "count": len(operations)
+    }
+
+
+@admin_router.get("/omr/roster")
+async def get_omr_roster(
+    class_name: Optional[str] = None,
+    section: Optional[str] = None,
+    admin: TokenData = Depends(require_permission("site-settings"))
+):
+    query = {}
+    if class_name:
+        query["class_name"] = class_name
+    if section:
+        query["section"] = section
+        
+    students = await db.omr_roster.find(query).sort([("class_name", 1), ("roll_no", 1)]).to_list(length=5000)
+    for s in students:
+        s["_id"] = str(s.get("_id", ""))
+    return {"status": "success", "students": students, "count": len(students)}
+
+
+@admin_router.delete("/omr/roster/clear")
+async def clear_omr_roster(admin: TokenData = Depends(require_permission("site-settings"))):
+    await db.omr_roster.delete_many({})
+    return {"status": "success", "message": "OMR student roster cleared."}
+
+
+@admin_router.post("/omr/evaluations/save")
+async def save_omr_evaluations(
+    payload: Dict[str, Any] = Body(...),
+    admin: TokenData = Depends(require_permission("site-settings"))
+):
+    """Save batch or single evaluated OMR results to MongoDB."""
+    exam_title = payload.get("exam_title", "General Exam")
+    date_str = payload.get("exam_date", now_iso()[:10])
+    results = payload.get("results", [])
+    
+    from pymongo import UpdateOne
+    operations = []
+    
+    for item in results:
+        booklet_no = item.get("booklet_no") or item.get("serial_no") or new_id()[:8]
+        adm_no = item.get("admission_no") or item.get("student_id") or ""
+        
+        doc = {
+            "booklet_no": booklet_no,
+            "admission_no": adm_no,
+            "student_name": item.get("student_name", "Unknown"),
+            "father_name": item.get("father_name", ""),
+            "class_name": item.get("class_name", ""),
+            "section": item.get("section", ""),
+            "roll_no": item.get("roll_no", ""),
+            "exam_title": exam_title,
+            "exam_date": date_str,
+            "score": item.get("score", 0),
+            "max_marks": item.get("max_marks", 0),
+            "percentage": item.get("percentage", 0),
+            "correct_count": item.get("correct_count", 0),
+            "wrong_count": item.get("wrong_count", 0),
+            "unanswered_count": item.get("unanswered_count", 0),
+            "answers": item.get("answers", {}),
+            "evaluated_at": now_iso()
+        }
+        
+        operations.append(
+            UpdateOne(
+                {"booklet_no": booklet_no, "exam_title": exam_title},
+                {"$set": doc},
+                upsert=True
+            )
+        )
+        
+    if operations:
+        await db.omr_evaluations.bulk_write(operations)
+        
+    return {"status": "success", "message": f"Saved {len(operations)} evaluation records."}
+
+
+@admin_router.get("/omr/evaluations")
+async def get_omr_evaluations(
+    exam_title: Optional[str] = None,
+    class_name: Optional[str] = None,
+    admin: TokenData = Depends(require_permission("site-settings"))
+):
+    query = {}
+    if exam_title:
+        query["exam_title"] = exam_title
+    if class_name:
+        query["class_name"] = class_name
+        
+    records = await db.omr_evaluations.find(query).sort("evaluated_at", -1).to_list(length=5000)
+    for r in records:
+        r["_id"] = str(r.get("_id", ""))
+    return {"status": "success", "evaluations": records, "count": len(records)}
+
+
+@admin_router.get("/omr/export-results")
+async def export_omr_results(
+    exam_title: Optional[str] = None,
+    admin: TokenData = Depends(require_permission("site-settings"))
+):
+    """Export evaluated results as Excel sheet download."""
+    query = {}
+    if exam_title:
+        query["exam_title"] = exam_title
+        
+    records = await db.omr_evaluations.find(query).sort([("class_name", 1), ("roll_no", 1)]).to_list(length=5000)
+    
+    rows = []
+    for r in records:
+        rows.append({
+            "Booklet No": r.get("booklet_no", ""),
+            "Roll No": r.get("roll_no", ""),
+            "Student Name": r.get("student_name", ""),
+            "Father Name": r.get("father_name", ""),
+            "Class": r.get("class_name", ""),
+            "Section": r.get("section", ""),
+            "Exam Title": r.get("exam_title", ""),
+            "Score": r.get("score", 0),
+            "Max Marks": r.get("max_marks", 0),
+            "Percentage (%)": r.get("percentage", 0),
+            "Correct": r.get("correct_count", 0),
+            "Wrong": r.get("wrong_count", 0),
+            "Unanswered": r.get("unanswered_count", 0),
+            "Date": r.get("exam_date", "")
+        })
+        
+    df = pd.DataFrame(rows)
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="OMR_Results")
+    output.seek(0)
+    
+    from fastapi.responses import StreamingResponse
+    headers = {
+        "Content-Disposition": f"attachment; filename=OMR_Results_{exam_title or 'All'}.xlsx"
+    }
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers=headers
+    )
+

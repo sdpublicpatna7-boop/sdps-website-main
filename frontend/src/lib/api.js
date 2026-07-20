@@ -1147,4 +1147,39 @@ export function getBackendUrl() {
   return process.env.REACT_APP_BACKEND_URL || "";
 }
 
+export async function uploadOmrRoster(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await api.post("/admin/omr/upload-roster", formData, {
+    headers: { "Content-Type": "multipart/form-data" }
+  });
+  return res.data;
+}
+
+export async function getOmrRoster(params = {}) {
+  const res = await api.get("/admin/omr/roster", { params });
+  return res.data;
+}
+
+export async function clearOmrRoster() {
+  const res = await api.delete("/admin/omr/roster/clear");
+  return res.data;
+}
+
+export async function saveOmrEvaluations(payload) {
+  const res = await api.post("/admin/omr/evaluations/save", payload);
+  return res.data;
+}
+
+export async function getOmrEvaluations(params = {}) {
+  const res = await api.get("/admin/omr/evaluations", { params });
+  return res.data;
+}
+
+export function getOmrExportUrl(examTitle = "") {
+  const base = getBackendUrl();
+  return `${base}/api/admin/omr/export-results?exam_title=${encodeURIComponent(examTitle)}`;
+}
+
 export default api;
+
