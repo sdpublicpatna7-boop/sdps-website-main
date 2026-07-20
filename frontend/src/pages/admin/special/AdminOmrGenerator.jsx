@@ -512,43 +512,57 @@ export default function AdminOmrGenerator() {
       compress: true,
     });
 
+    // Create a temporary off-screen container for clean renders without layout constraints
+    const tempContainer = document.createElement("div");
+    tempContainer.style.position = "absolute";
+    tempContainer.style.left = "-9999px";
+    tempContainer.style.top = "-9999px";
+    // standard screen rendering scale fits inside typical 800px width
+    tempContainer.style.width = isLandscape ? "1120px" : "800px";
+    tempContainer.style.height = isLandscape ? "800px" : "1120px";
+    document.body.appendChild(tempContainer);
+
     for (let i = 0; i < printAreas.length; i++) {
       const el = printAreas[i];
 
+      // Clone element to avoid modifying the active DOM tree
+      const cloned = el.cloneNode(true);
+      cloned.querySelectorAll(".no-print").forEach((subEl) => subEl.remove());
+      
+      // Enforce clean layout values on the clone
+      cloned.style.width = "100%";
+      cloned.style.height = "100%";
+      cloned.style.margin = "0";
+      cloned.style.padding = isLandscape ? "24px" : "48px"; // exact paddings corresponding to sm:p-6 and A4 standard
+      cloned.style.boxSizing = "border-box";
+      cloned.style.display = "flex";
+      cloned.style.flexDirection = "column";
+      cloned.style.justifyContent = "space-between";
+      cloned.style.border = "none";
+      cloned.style.boxShadow = "none";
+
+      tempContainer.innerHTML = "";
+      tempContainer.appendChild(cloned);
+
+      // Brief delay for the browser layout engine to register the clone element
+      await new Promise((r) => setTimeout(r, 40));
+
       // Render element to canvas at high resolution
-      const canvas = await html2canvas(el, {
-        scale: 2,
+      const canvas = await html2canvas(cloned, {
+        scale: 2.5,                  // Increased scale for ultra-sharp 300+ DPI text and QR/barcodes
         useCORS: true,
         allowTaint: false,
         backgroundColor: "#ffffff",
         logging: false,
-        width: el.scrollWidth,
-        height: el.scrollHeight,
-        windowWidth: el.scrollWidth,
-        windowHeight: el.scrollHeight,
+        width: isLandscape ? 1120 : 800,
+        height: isLandscape ? 800 : 1120,
       });
 
       // Convert canvas to JPEG (smaller than PNG, still high quality)
-      const imgData = canvas.toDataURL("image/jpeg", 0.92);
-
-      // Calculate dimensions to fit the canvas image onto the A4 page
-      const canvasAspect = canvas.width / canvas.height;
-      const pageAspect = pageW / pageH;
-
-      let imgW, imgH;
-      if (canvasAspect > pageAspect) {
-        imgW = pageW;
-        imgH = pageW / canvasAspect;
-      } else {
-        imgH = pageH;
-        imgW = pageH * canvasAspect;
-      }
-
-      const offsetX = (pageW - imgW) / 2;
-      const offsetY = (pageH - imgH) / 2;
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
 
       if (i > 0) pdf.addPage("a4", isLandscape ? "landscape" : "portrait");
-      pdf.addImage(imgData, "JPEG", offsetX, offsetY, imgW, imgH);
+      pdf.addImage(imgData, "JPEG", 0, 0, pageW, pageH);
 
       // Report progress after each page is done
       if (onProgress) onProgress(i + 1, total);
@@ -556,6 +570,9 @@ export default function AdminOmrGenerator() {
       // Yield to the browser event loop so the UI can repaint the progress bar
       await new Promise((r) => setTimeout(r, 0));
     }
+
+    // Cleanup temp container
+    document.body.removeChild(tempContainer);
 
     return pdf.output("blob");
   };
