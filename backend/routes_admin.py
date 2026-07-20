@@ -2574,7 +2574,7 @@ async def export_omr_pdf(
             from playwright.async_api import async_playwright
             
             async with async_playwright() as p:
-                browser = await p.chromium.launch(headless=True)
+                browser = await p.chromium.launch(headless=True, executable_path="/usr/bin/chromium")
                 context = await browser.new_context()
                 page = await context.new_page()
                 
