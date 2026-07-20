@@ -35,7 +35,8 @@ export default function AdminOmrGenerator() {
   const [subjectName, setSubjectName] = useState("SCIENCE");
   const [examDate, setExamDate] = useState(new Date().toISOString().split("T")[0]);
 
-  // 3. Questions Configuration
+  // 3. Sheet Format & Questions Configuration
+  const [omrMode, setOmrMode] = useState("single"); // "single" or "booklet"
   const [numQuestions, setNumQuestions] = useState(40);
   const [numOptions, setNumOptions] = useState(4); // 4 = A,B,C,D; 5 = A,B,C,D,E
   const [optionLabels, setOptionLabels] = useState(["A", "B", "C", "D"]);
@@ -153,6 +154,37 @@ export default function AdminOmrGenerator() {
               <Sliders className="w-4 h-4 text-brand-blue" /> Sheet Configuration
             </h2>
             <span className="text-[11px] text-slate-400 font-mono">Live Preview</span>
+          </div>
+
+          {/* Sheet Format Mode Selector */}
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-150 space-y-2">
+            <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wide block">
+              Sheet Format / Mode
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setOmrMode("single")}
+                className={`py-2 px-3 text-xs font-bold rounded-xl border transition ${
+                  omrMode === "single"
+                    ? "bg-brand-blue text-white border-brand-blue shadow-sm"
+                    : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
+                }`}
+              >
+                Single Sheet (Full A4)
+              </button>
+              <button
+                type="button"
+                onClick={() => setOmrMode("booklet")}
+                className={`py-2 px-3 text-xs font-bold rounded-xl border transition ${
+                  omrMode === "booklet"
+                    ? "bg-brand-blue text-white border-brand-blue shadow-sm"
+                    : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
+                }`}
+              >
+                Booklet (2 Per Page)
+              </button>
+            </div>
           </div>
 
           {/* Questions Setting */}
@@ -416,236 +448,270 @@ export default function AdminOmrGenerator() {
           </div>
         </div>
 
+        {/* Helper function to render sheet content (Single or Booklet copy) */}
+        {(() => {
+          window._renderOmrSheetContent = (isBookletCopy = false) => (
+            <div className="relative">
+              {/* Timing Marks */}
+              {showTimingMarks && (
+                <>
+                  <div className="absolute top-1 left-1 w-3.5 h-3.5 bg-black"></div>
+                  <div className="absolute top-1 right-1 w-3.5 h-3.5 bg-black"></div>
+                  <div className="absolute bottom-1 left-1 w-3.5 h-3.5 bg-black"></div>
+                  <div className="absolute bottom-1 right-1 w-3.5 h-3.5 bg-black"></div>
+                </>
+              )}
+
+              {/* School Header */}
+              <div className="border-b-2 border-black pb-2 mb-2 text-center relative">
+                <div className="flex items-center justify-center gap-3">
+                  {showLogo && schoolLogo && (
+                    <img
+                      src={schoolLogo}
+                      alt="School Logo"
+                      className={`${isBookletCopy ? 'w-10 h-10' : 'w-14 h-14'} object-contain shrink-0`}
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                  )}
+                  <div>
+                    <h1 className={`${isBookletCopy ? 'text-lg sm:text-xl' : 'text-xl sm:text-2xl'} font-black tracking-wider uppercase text-black font-headline leading-tight`}>
+                      {schoolName}
+                    </h1>
+                    <p className={`${isBookletCopy ? 'text-[9.5px]' : 'text-[11px]'} font-semibold uppercase tracking-wide text-black/90`}>
+                      {schoolSubHeader}
+                    </p>
+                    <p className="text-[9.5px] text-black/75">
+                      {schoolAddress}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Examination Title Badge */}
+                <div className="mt-1.5 inline-block border-2 border-black px-4 py-0.5 bg-black text-white font-black text-xs uppercase tracking-widest rounded-sm">
+                  {examTitle} {session && !examTitle.includes(session) && !examTitle.includes("202") ? `(${session})` : ""}
+                </div>
+              </div>
+
+              {/* Sub Header Specs */}
+              <div className="grid grid-cols-4 gap-2 text-[10px] font-bold border border-black p-1.5 mb-2 bg-gray-50 text-center">
+                <div>
+                  <span className="text-black/60 uppercase block text-[8.5px]">Class:</span>
+                  <span className="text-black font-extrabold">{className || "_______"}</span>
+                </div>
+                <div>
+                  <span className="text-black/60 uppercase block text-[8.5px]">Subject:</span>
+                  <span className="text-black font-extrabold">{subjectName || "_______"}</span>
+                </div>
+                <div>
+                  <span className="text-black/60 uppercase block text-[8.5px]">Max Marks:</span>
+                  <span className="text-black font-extrabold">{maxMarks || "___"}</span>
+                </div>
+                <div>
+                  <span className="text-black/60 uppercase block text-[8.5px]">Time Allowed:</span>
+                  <span className="text-black font-extrabold">{timeAllowed || "___"}</span>
+                </div>
+              </div>
+
+              {/* Candidate Info + Roll No Bubble Grid */}
+              <div className="grid grid-cols-12 gap-2 mb-3">
+                {/* Left Column: Candidate Written Inputs & SET Code */}
+                <div className={`${showRollNoBubbleGrid ? 'col-span-7' : 'col-span-12'} space-y-1.5 text-[10px]`}>
+                  {/* Candidate Name Box */}
+                  <div className="border border-black p-1.5">
+                    <span className="font-bold uppercase tracking-wide text-[9px] block mb-0.5">
+                      CANDIDATE NAME (IN CAPITAL LETTERS ONLY):
+                    </span>
+                    <div className="h-6 border-b border-dashed border-black"></div>
+                  </div>
+
+                  {/* Roll No / Class / Sec / Date Row */}
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <div className="border border-black p-1">
+                      <span className="font-bold uppercase text-[8.5px] block">ROLL NO:</span>
+                      <div className="h-4"></div>
+                    </div>
+                    <div className="border border-black p-1">
+                      <span className="font-bold uppercase text-[8.5px] block">SECTION:</span>
+                      <div className="h-4"></div>
+                    </div>
+                    <div className="border border-black p-1">
+                      <span className="font-bold uppercase text-[8.5px] block">DATE:</span>
+                      <div className="h-4 text-right text-[9px] pr-1 font-mono">{examDate}</div>
+                    </div>
+                  </div>
+
+                  {/* Booklet No & Set Selection */}
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {showBookletNo && (
+                      <div className="border border-black p-1">
+                        <span className="font-bold uppercase text-[8.5px] block">BOOKLET NO:</span>
+                        <div className="h-4"></div>
+                      </div>
+                    )}
+
+                    {showSetCode && (
+                      <div className="border border-black p-1 flex flex-col justify-between">
+                        <span className="font-bold uppercase text-[8.5px] block">QUESTION SET:</span>
+                        <div className="flex justify-around items-center py-0.5">
+                          {["A", "B", "C", "D"].map((setCode) => (
+                            <div key={setCode} className="flex items-center gap-1">
+                              <div className="w-3.5 h-3.5 rounded-full border-2 border-black flex items-center justify-center font-bold text-[8px]">
+                                {setCode}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Instructions Box */}
+                  {showInstructions && (
+                    <div className="border border-black p-1.5 bg-gray-50 text-[9px] space-y-0.5">
+                      <div className="font-bold uppercase text-[8.5px] border-b border-black/20 pb-0.5 mb-0.5 flex items-center gap-1">
+                        <Info className="w-3 h-3 text-black shrink-0" /> INSTRUCTIONS FOR CANDIDATE:
+                      </div>
+                      <ul className="list-disc pl-3 text-[8.5px] leading-tight space-y-0.5 text-black/90 font-medium">
+                        <li>Use <strong>BLUE or BLACK Ball Point Pen</strong> only to darken bubbles.</li>
+                        <li>Darken only ONE circle for each question.</li>
+                      </ul>
+                    </div>
+                  )}
+                </div>
+
+                {/* Right Column: Roll Number Grid */}
+                {showRollNoBubbleGrid && (
+                  <div className="col-span-5 border border-black p-1.5 bg-white flex flex-col justify-between">
+                    <div className="text-[9px] font-extrabold uppercase text-center border-b border-black pb-0.5 mb-0.5">
+                      ROLL NUMBER GRID
+                    </div>
+                    
+                    {/* Boxes for digits */}
+                    <div className="flex justify-center gap-1 mb-0.5">
+                      {Array.from({ length: rollNoDigits }).map((_, dIdx) => (
+                        <div key={dIdx} className="w-4 h-4 border-2 border-black bg-gray-50 text-center font-bold text-[9px]"></div>
+                      ))}
+                    </div>
+
+                    {/* 0-9 OMR Grid */}
+                    <div className="space-y-0.5 font-mono text-[8px]">
+                      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((digit) => (
+                        <div key={digit} className="flex justify-center gap-1 items-center">
+                          {Array.from({ length: rollNoDigits }).map((_, dIdx) => (
+                            <div
+                              key={dIdx}
+                              className="w-3.5 h-3.5 rounded-full border-2 border-black flex items-center justify-center font-bold text-[7.5px] bg-white"
+                            >
+                              {digit}
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* OMR Questions Grid Section Header */}
+              <div className="bg-black text-white font-extrabold text-[10px] uppercase tracking-widest text-center py-0.5 mb-2 rounded-sm">
+                ANSWERS / OMR RESPONSE SHEET ({numQuestions} QUESTIONS)
+              </div>
+
+              {/* Questions Columns Grid */}
+              <div className={`grid ${
+                numColumns === 1 ? "grid-cols-1" : numColumns === 3 ? "grid-cols-3" : numColumns === 4 ? "grid-cols-4" : "grid-cols-2"
+              } gap-2 border-t-2 border-b-2 border-black py-2 mb-3`}>
+                {columnsData.map((colQuestions, cIdx) => (
+                  <div key={cIdx} className="space-y-1 border-r border-black/30 last:border-r-0 pr-1">
+                    {/* Column Header */}
+                    <div className="flex items-center text-[9px] font-black uppercase text-black border-b border-black pb-0.5 mb-0.5">
+                      <span className="w-7">Q.No</span>
+                      <span className="flex-1 text-center font-bold tracking-widest">
+                        OPTIONS ({optionLabels.join(" ")})
+                      </span>
+                    </div>
+
+                    {colQuestions.map((qNum) => (
+                      <div key={qNum} className="flex items-center text-[10px] font-mono py-0.5 hover:bg-gray-100">
+                        {/* Question Number */}
+                        <span className="w-7 font-bold text-right pr-1 text-black font-sans">
+                          {qNum.toString().padStart(2, "0")}.
+                        </span>
+
+                        {/* Bubble Options */}
+                        <div className="flex-1 flex justify-around items-center">
+                          {optionLabels.map((label) => (
+                            <div
+                              key={label}
+                              className="w-4.5 h-4.5 rounded-full border-2 border-black flex items-center justify-center font-bold text-[8.5px] text-black bg-white hover:bg-black hover:text-white transition cursor-pointer shrink-0"
+                            >
+                              {label}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+
+              {/* Signatures & Invigilator Footer */}
+              <div className="grid grid-cols-2 gap-3 border border-black p-2 text-[9px] mt-auto">
+                <div className="flex flex-col justify-between h-12 border-r border-black pr-2">
+                  <div className="font-bold uppercase">CANDIDATE SIGNATURE:</div>
+                  <div className="border-t border-dashed border-black pt-0.5 text-center text-black/60 text-[8px]">
+                    (Signature of Candidate inside box)
+                  </div>
+                </div>
+
+                <div className="flex flex-col justify-between h-12">
+                  <div className="font-bold uppercase">INVIGILATOR SIGNATURE:</div>
+                  <div className="border-t border-dashed border-black pt-0.5 text-center text-black/60 text-[8px]">
+                    (Verified Roll No & Signature of Invigilator)
+                  </div>
+                </div>
+              </div>
+
+              {/* Print Footer Note */}
+              <div className="text-[7.5px] text-black/50 text-center mt-1 font-mono uppercase tracking-widest">
+                S.D. PUBLIC SCHOOL OMR ANSWER SHEET — SYSTEM GENERATED HIGH PRECISION TEMPLATE
+              </div>
+            </div>
+          );
+          return null;
+        })()}
+
         {/* Right Preview Area (The Printable OMR Sheet) */}
         <div className="lg:col-span-8 flex justify-center">
           {/* Printable A4 Container */}
-          <div className="omr-print-area bg-white border border-slate-300 shadow-xl rounded-sm text-black p-6 sm:p-8 w-full max-w-[800px] min-h-[1100px] relative font-sans">
+          <div className="omr-print-area bg-white border border-slate-300 shadow-xl rounded-sm text-black p-4 sm:p-6 w-full max-w-[800px] min-h-[1100px] relative font-sans">
             
-            {/* Timing Marks (Corner Alignment Squares for OMR Scanners) */}
-            {showTimingMarks && (
-              <>
-                <div className="absolute top-4 left-4 w-4 h-4 bg-black"></div>
-                <div className="absolute top-4 right-4 w-4 h-4 bg-black"></div>
-                <div className="absolute bottom-4 left-4 w-4 h-4 bg-black"></div>
-                <div className="absolute bottom-4 right-4 w-4 h-4 bg-black"></div>
-              </>
+            {omrMode === "booklet" ? (
+              <div className="space-y-4">
+                {/* Booklet Sheet 1 */}
+                <div className="border border-black p-3 sm:p-4 rounded-sm relative bg-white">
+                  <div className="absolute top-1 right-2 text-[8px] font-mono font-bold uppercase tracking-wider text-black/40">
+                    COPY #1 — BOOKLET SHEET
+                  </div>
+                  {window._renderOmrSheetContent(true)}
+                </div>
+
+                {/* Cut Line */}
+                <div className="border-t-2 border-dashed border-black my-2 py-1 text-center text-[9px] font-mono font-bold text-black flex items-center justify-center gap-2">
+                  <span>✂</span> -------------------- CUT / FOLD HERE FOR TEST BOOKLET -------------------- <span>✂</span>
+                </div>
+
+                {/* Booklet Sheet 2 */}
+                <div className="border border-black p-3 sm:p-4 rounded-sm relative bg-white">
+                  <div className="absolute top-1 right-2 text-[8px] font-mono font-bold uppercase tracking-wider text-black/40">
+                    COPY #2 — BOOKLET SHEET
+                  </div>
+                  {window._renderOmrSheetContent(true)}
+                </div>
+              </div>
+            ) : (
+              window._renderOmrSheetContent(false)
             )}
-
-            {/* School Header */}
-            <div className="border-b-2 border-black pb-3 mb-3 text-center relative">
-              <div className="flex items-center justify-center gap-4">
-                {showLogo && schoolLogo && (
-                  <img
-                    src={schoolLogo}
-                    alt="School Logo"
-                    className="w-14 h-14 object-contain shrink-0"
-                    onError={(e) => { e.target.style.display = 'none'; }}
-                  />
-                )}
-                <div>
-                  <h1 className="text-xl sm:text-2xl font-black tracking-wider uppercase text-black font-headline leading-tight">
-                    {schoolName}
-                  </h1>
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-black/90">
-                    {schoolSubHeader}
-                  </p>
-                  <p className="text-[10px] text-black/75">
-                    {schoolAddress}
-                  </p>
-                </div>
-              </div>
-
-            {/* Examination Title Badge */}
-              <div className="mt-2 inline-block border-2 border-black px-6 py-1 bg-black text-white font-black text-xs uppercase tracking-widest rounded-sm">
-                {examTitle} {session && !examTitle.includes(session) && !examTitle.includes("202") ? `(${session})` : ""}
-              </div>
-            </div>
-
-            {/* Sub Header Specs */}
-            <div className="grid grid-cols-4 gap-2 text-[11px] font-bold border border-black p-2 mb-3 bg-gray-50 text-center">
-              <div>
-                <span className="text-black/60 uppercase block text-[9px]">Class:</span>
-                <span className="text-black font-extrabold">{className || "_______"}</span>
-              </div>
-              <div>
-                <span className="text-black/60 uppercase block text-[9px]">Subject:</span>
-                <span className="text-black font-extrabold">{subjectName || "_______"}</span>
-              </div>
-              <div>
-                <span className="text-black/60 uppercase block text-[9px]">Max Marks:</span>
-                <span className="text-black font-extrabold">{maxMarks || "___"}</span>
-              </div>
-              <div>
-                <span className="text-black/60 uppercase block text-[9px]">Time Allowed:</span>
-                <span className="text-black font-extrabold">{timeAllowed || "___"}</span>
-              </div>
-            </div>
-
-            {/* Candidate Info + Roll No Bubble Grid */}
-            <div className="grid grid-cols-12 gap-3 mb-4">
-              {/* Left Column: Candidate Written Inputs & SET Code */}
-              <div className={`${showRollNoBubbleGrid ? 'col-span-7' : 'col-span-12'} space-y-2 text-[11px]`}>
-                {/* Candidate Name Box */}
-                <div className="border border-black p-2">
-                  <span className="font-bold uppercase tracking-wide text-[10px] block mb-1">
-                    CANDIDATE NAME (IN CAPITAL LETTERS ONLY):
-                  </span>
-                  <div className="h-7 border-b border-dashed border-black"></div>
-                </div>
-
-                {/* Roll No / Class / Sec / Date Row */}
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="border border-black p-1.5">
-                    <span className="font-bold uppercase text-[9px] block">ROLL NO:</span>
-                    <div className="h-5"></div>
-                  </div>
-                  <div className="border border-black p-1.5">
-                    <span className="font-bold uppercase text-[9px] block">SECTION:</span>
-                    <div className="h-5"></div>
-                  </div>
-                  <div className="border border-black p-1.5">
-                    <span className="font-bold uppercase text-[9px] block">DATE:</span>
-                    <div className="h-5 text-right text-[10px] pr-1 font-mono">{examDate}</div>
-                  </div>
-                </div>
-
-                {/* Booklet No & Set Selection */}
-                <div className="grid grid-cols-2 gap-2">
-                  {showBookletNo && (
-                    <div className="border border-black p-1.5">
-                      <span className="font-bold uppercase text-[9px] block">QUESTION BOOKLET NO:</span>
-                      <div className="h-5"></div>
-                    </div>
-                  )}
-
-                  {showSetCode && (
-                    <div className="border border-black p-1.5 flex flex-col justify-between">
-                      <span className="font-bold uppercase text-[9px] block">QUESTION SET:</span>
-                      <div className="flex justify-around items-center py-1">
-                        {["A", "B", "C", "D"].map((setCode) => (
-                          <div key={setCode} className="flex items-center gap-1">
-                            <div className="w-4 h-4 rounded-full border-2 border-black flex items-center justify-center font-bold text-[9px]">
-                              {setCode}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Instructions Box */}
-                {showInstructions && (
-                  <div className="border border-black p-2 bg-gray-50 text-[10px] space-y-1">
-                    <div className="font-bold uppercase text-[9px] border-b border-black/20 pb-0.5 mb-1 flex items-center gap-1">
-                      <Info className="w-3 h-3 text-black shrink-0" /> IMPORTANT INSTRUCTIONS FOR CANDIDATE:
-                    </div>
-                    <ul className="list-disc pl-3 text-[9.5px] leading-tight space-y-0.5 text-black/90 font-medium">
-                      <li>Use <strong>BLUE or BLACK Ball Point Pen</strong> only to darken the bubbles.</li>
-                      <li>Darken only ONE circle for each question. Darkening multiple circles invalidates the response.</li>
-                      <li>Do not make any stray marks or fold the OMR Sheet.</li>
-                    </ul>
-                  </div>
-                )}
-              </div>
-
-              {/* Right Column: Roll Number Grid */}
-              {showRollNoBubbleGrid && (
-                <div className="col-span-5 border border-black p-2 bg-white flex flex-col justify-between">
-                  <div className="text-[10px] font-extrabold uppercase text-center border-b border-black pb-1 mb-1">
-                    ROLL NUMBER GRID
-                  </div>
-                  
-                  {/* Boxes for digits */}
-                  <div className="flex justify-center gap-1 mb-1">
-                    {Array.from({ length: rollNoDigits }).map((_, dIdx) => (
-                      <div key={dIdx} className="w-5 h-5 border-2 border-black bg-gray-50 text-center font-bold text-[10px]"></div>
-                    ))}
-                  </div>
-
-                  {/* 0-9 OMR Grid */}
-                  <div className="space-y-0.5 font-mono text-[9px]">
-                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((digit) => (
-                      <div key={digit} className="flex justify-center gap-1 items-center">
-                        {Array.from({ length: rollNoDigits }).map((_, dIdx) => (
-                          <div
-                            key={dIdx}
-                            className="w-4 h-4 rounded-full border-2 border-black flex items-center justify-center font-bold text-[8px] bg-white"
-                          >
-                            {digit}
-                          </div>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* OMR Questions Grid Section Header */}
-            <div className="bg-black text-white font-extrabold text-[11px] uppercase tracking-widest text-center py-1 mb-3 rounded-sm">
-              ANSWERS / OMR RESPONSE SHEET ({numQuestions} QUESTIONS)
-            </div>
-
-            {/* Questions Columns Grid */}
-            <div className={`grid ${
-              numColumns === 1 ? "grid-cols-1" : numColumns === 3 ? "grid-cols-3" : numColumns === 4 ? "grid-cols-4" : "grid-cols-2"
-            } gap-3 border-t-2 border-b-2 border-black py-3 mb-6`}>
-              {columnsData.map((colQuestions, cIdx) => (
-                <div key={cIdx} className="space-y-1.5 border-r border-black/30 last:border-r-0 pr-2">
-                  {/* Column Header */}
-                  <div className="flex items-center text-[10px] font-black uppercase text-black border-b border-black pb-1 mb-1">
-                    <span className="w-8">Q.No</span>
-                    <span className="flex-1 text-center font-bold tracking-widest">
-                      OPTIONS ({optionLabels.join(" ")})
-                    </span>
-                  </div>
-
-                  {colQuestions.map((qNum) => (
-                    <div key={qNum} className="flex items-center text-[11px] font-mono py-0.5 hover:bg-gray-100">
-                      {/* Question Number */}
-                      <span className="w-8 font-bold text-right pr-2 text-black font-sans">
-                        {qNum.toString().padStart(2, "0")}.
-                      </span>
-
-                      {/* Bubble Options */}
-                      <div className="flex-1 flex justify-around items-center">
-                        {optionLabels.map((label) => (
-                          <div
-                            key={label}
-                            className="w-5 h-5 rounded-full border-2 border-black flex items-center justify-center font-bold text-[9px] text-black bg-white hover:bg-black hover:text-white transition cursor-pointer shrink-0"
-                          >
-                            {label}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-
-            {/* Signatures & Invigilator Footer */}
-            <div className="grid grid-cols-2 gap-4 border border-black p-3 text-[10px] mt-auto">
-              <div className="flex flex-col justify-between h-16 border-r border-black pr-3">
-                <div className="font-bold uppercase">CANDIDATE SIGNATURE:</div>
-                <div className="border-t border-dashed border-black pt-0.5 text-center text-black/60 text-[9px]">
-                  (Signature of Candidate inside box)
-                </div>
-              </div>
-
-              <div className="flex flex-col justify-between h-16">
-                <div className="font-bold uppercase">INVIGILATOR SIGNATURE:</div>
-                <div className="border-t border-dashed border-black pt-0.5 text-center text-black/60 text-[9px]">
-                  (Verified Roll No & Signature of Invigilator)
-                </div>
-              </div>
-            </div>
-
-            {/* Print Footer Note */}
-            <div className="text-[8px] text-black/50 text-center mt-2 font-mono uppercase tracking-widest">
-              S.D. PUBLIC SCHOOL OMR ANSWER SHEET — SYSTEM GENERATED HIGH PRECISION TEMPLATE
-            </div>
           </div>
         </div>
       </div>
