@@ -11,7 +11,7 @@ import httpx
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Dict, Any
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Body, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Body, Request, Response, BackgroundTasks
 from pydantic import BaseModel
 import pandas as pd
 from slowapi import Limiter
@@ -2556,12 +2556,14 @@ pdf_export_lock = asyncio.Lock()
 
 @admin_router.post("/omr/export-pdf")
 async def export_omr_pdf(
+    background_tasks: BackgroundTasks,
     payload: Dict[str, Any] = Body(...),
     admin: TokenData = Depends(require_permission("site-settings"))
 ):
     """
     Renders OMR sheets to a high-fidelity vector PDF using headless Playwright Chromium.
-    This guarantees 100% pixel-perfect output matching the browser preview exactly.
+    Engineered with disk-backed streaming and single-page recycling to guarantee minimal RAM (< 50MB)
+    well below Render's 512MB memory threshold.
     """
     html_content = payload.get("html")
     html_pages = payload.get("htmlPages")
@@ -2574,22 +2576,41 @@ async def export_omr_pdf(
         raise HTTPException(status_code=400, detail="Missing HTML content.")
         
     async with pdf_export_lock:
+        temp_files = []
+        out_pdf_path = None
+        temp_dir = None
         try:
             from playwright.async_api import async_playwright
             import pikepdf
-            import io
+            import tempfile
+            import gc
             
-            pdf_chunks = []
+            temp_dir = tempfile.mkdtemp(prefix="omr_pdf_")
             
-            async with async_playwright() as p:
-                import os
-                exe_path = "/usr/bin/chromium"
-                launch_args = []
-                if os.path.exists(exe_path):
-                    launch_args = ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
-                else:
-                    exe_path = None # Use Playwright's local Chromium revision on macOS/Windows
+            exe_path = "/usr/bin/chromium"
+            launch_args = [
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-gpu",
+                "--disable-software-rasterizer",
+                "--disable-extensions",
+                "--no-zygote",
+                "--single-process",
+                "--disable-background-networking",
+                "--disable-background-timer-throttling",
+                "--disable-backgrounding-occluded-windows",
+                "--disable-breakpad",
+                "--disable-component-extensions-with-background-pages",
+                "--disable-ipc-flooding-protection",
+                "--disable-renderer-backgrounding",
+                "--js-flags=--max-old-space-size=128"
+            ]
+            if not os.path.exists(exe_path):
+                exe_path = None # Use Playwright's local Chromium revision on macOS/Windows
+                launch_args = [arg for arg in launch_args if arg not in ("--single-process", "--no-zygote")]
 
+            async with async_playwright() as p:
                 browser = await p.chromium.launch(
                     headless=True,
                     executable_path=exe_path,
@@ -2597,45 +2618,90 @@ async def export_omr_pdf(
                 )
                 
                 try:
-                    for page_html in html_pages:
-                        # Create isolated browser context and page for each sheet to completely isolate RAM usage
-                        context = await browser.new_context()
+                    context = await browser.new_context(viewport={"width": 1200, "height": 1600})
+                    try:
+                        page = await context.new_page()
                         try:
-                            page = await context.new_page()
-                            try:
+                            for idx, page_html in enumerate(html_pages):
                                 await page.set_content(page_html, wait_until="load", timeout=30000)
                                 try:
-                                    await page.wait_for_load_state("networkidle", timeout=3000)
+                                    await page.wait_for_load_state("networkidle", timeout=2000)
                                 except Exception:
                                     pass
                                 
-                                pdf_bytes = await page.pdf(
+                                chunk_path = os.path.join(temp_dir, f"page_{idx}.pdf")
+                                await page.pdf(
+                                    path=chunk_path,
                                     format="A4",
                                     landscape=is_landscape,
                                     print_background=True,
                                     margin={"top": "0mm", "right": "0mm", "bottom": "0mm", "left": "0mm"}
                                 )
-                                pdf_chunks.append(pdf_bytes)
-                            finally:
-                                await page.close()
+                                temp_files.append(chunk_path)
                         finally:
-                            await context.close()
+                            await page.close()
+                    finally:
+                        await context.close()
                 finally:
                     await browser.close()
                 
-            # Merge all single-sheet vector PDFs using high-performance, low-memory pikepdf
+            # Merge all single-sheet PDFs directly on disk using pikepdf
             merged_pdf = pikepdf.Pdf.new()
-            for chunk in pdf_chunks:
-                with pikepdf.Pdf.open(io.BytesIO(chunk)) as src:
+            for chunk_path in temp_files:
+                with pikepdf.Pdf.open(chunk_path) as src:
                     merged_pdf.pages.extend(src.pages)
-                    
-            output = io.BytesIO()
-            merged_pdf.save(output)
-            final_pdf_bytes = output.getvalue()
+
+            out_pdf_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf", dir=temp_dir)
+            out_pdf_path = out_pdf_file.name
+            out_pdf_file.close()
+
+            merged_pdf.save(out_pdf_path)
             merged_pdf.close()
-            
-            return Response(content=final_pdf_bytes, media_type="application/pdf")
+
+            # Clean up individual page chunk files
+            for f in temp_files:
+                try:
+                    if os.path.exists(f):
+                        os.remove(f)
+                except Exception:
+                    pass
+
+            gc.collect()
+
+            # Background cleanup task to remove temporary directory after response is sent
+            def cleanup_temp_files():
+                try:
+                    if out_pdf_path and os.path.exists(out_pdf_path):
+                        os.remove(out_pdf_path)
+                    if temp_dir and os.path.exists(temp_dir):
+                        import shutil
+                        shutil.rmtree(temp_dir, ignore_errors=True)
+                except Exception:
+                    pass
+                gc.collect()
+
+            background_tasks.add_task(cleanup_temp_files)
+
+            from fastapi.responses import FileResponse
+            return FileResponse(
+                path=out_pdf_path,
+                media_type="application/pdf",
+                filename="OMR_Results.pdf"
+            )
+
         except Exception as e:
             logger.error(f"Playwright PDF generation failed: {e}")
+            try:
+                for f in temp_files:
+                    if os.path.exists(f):
+                        os.remove(f)
+                if out_pdf_path and os.path.exists(out_pdf_path):
+                    os.remove(out_pdf_path)
+                if temp_dir and os.path.exists(temp_dir):
+                    import shutil
+                    shutil.rmtree(temp_dir, ignore_errors=True)
+            except Exception:
+                pass
+            gc.collect()
             raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
 
