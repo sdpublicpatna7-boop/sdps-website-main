@@ -428,6 +428,7 @@ create table if not exists public.birthday_students (
   dob date not null,
   phone text,
   email text,
+  roll_no text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 alter table public.birthday_students enable row level security;

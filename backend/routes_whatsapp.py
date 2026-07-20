@@ -553,6 +553,7 @@ def _parse_birthday_rows(content: bytes, target_date: Optional[date] = None, fil
     contact_col = find_col("contact no", "contact_no", "contact", "mobile", "phone", "whatsapp", "number")
     dob_col = find_col("date of birth", "date_of_birth", "dob", "birth", "birthday", "birthdate")
     admn_col = find_col("admn no", "admn_no", "admission no", "admission_no", "admn", "admission", "adm no", "admno")
+    roll_col = find_col("roll no", "roll_no", "roll", "roll number", "rollno", "s.no", "sl.no", "r.no", "serial no", "roll_num")
 
     if name_col is None or contact_col is None or dob_col is None:
         raise HTTPException(
@@ -598,7 +599,8 @@ def _parse_birthday_rows(content: bytes, target_date: Optional[date] = None, fil
                 "phone": phone,
                 "name": name,
                 "dob": parsed_dob.strftime("%Y-%m-%d"),
-                "admission_no": cell(admn_col) if admn_col is not None else ""
+                "admission_no": cell(admn_col) if admn_col is not None else "",
+                "roll_no": cell(roll_col) if roll_col is not None else ""
             })
         else:
             # Not birthday on target date
@@ -1025,25 +1027,6 @@ async def wa_birthday_campaign_import(
         "imported_count": len(students),
         "skipped_count": skipped,
         "mode": mode
-    } the sheet.")
-
-    if mode == "overwrite":
-        await db.birthday_students.delete_many({})
-        await db.birthday_students.insert_many(students)
-    else:
-        # Append mode
-        for s in students:
-            await db.birthday_students.update_one(
-                {"phone": s["phone"], "name": s["name"]},
-                {"$set": s},
-                upsert=True
-            )
-
-    return {
-        "success": True,
-        "imported_count": len(students),
-        "skipped_count": skipped,
-        "mode": mode
     }
 
 
@@ -1159,6 +1142,9 @@ class StudentUpdateModel(BaseModel):
     mother_name: Optional[str] = ""
     phone: str
     admission_no: Optional[str] = ""
+    roll_no: Optional[str] = ""
+    class_name: Optional[str] = ""
+    section: Optional[str] = ""
     dob: str  # YYYY-MM-DD
     permanent_address: Optional[str] = ""
     current_address: Optional[str] = ""
@@ -1176,6 +1162,8 @@ def serialize_student(doc):
 @wa_router.get("/birthday-campaign/students")
 async def wa_list_birthday_students(
     search: str = "",
+    class_name: str = "",
+    section: str = "",
     page: int = 1,
     limit: int = 20,
     admin: TokenData = Depends(get_superadmin)
@@ -1185,15 +1173,29 @@ async def wa_list_birthday_students(
         search_escaped = re.escape(search.strip())
         query["$or"] = [
             {"name": {"$regex": search_escaped, "$options": "i"}},
+            {"student_name": {"$regex": search_escaped, "$options": "i"}},
             {"admission_no": {"$regex": search_escaped, "$options": "i"}},
+            {"roll_no": {"$regex": search_escaped, "$options": "i"}},
+            {"roll": {"$regex": search_escaped, "$options": "i"}},
             {"phone": {"$regex": search_escaped, "$options": "i"}}
+        ]
+    if class_name:
+        query["$or"] = [
+            {"class_name": {"$regex": f"^{re.escape(class_name.strip())}$", "$options": "i"}},
+            {"class": {"$regex": f"^{re.escape(class_name.strip())}$", "$options": "i"}}
+        ]
+    if section:
+        query["$or"] = [
+            {"section": {"$regex": f"^{re.escape(section.strip())}$", "$options": "i"}},
+            {"sec": {"$regex": f"^{re.escape(section.strip())}$", "$options": "i"}}
         ]
     
     total = await db.birthday_students.count_documents(query)
-    pages = math.ceil(total / limit) if total > 0 else 1
-    skip_val = (page - 1) * limit
-    cursor = db.birthday_students.find(query).skip(skip_val).limit(limit)
-    students_list = await cursor.to_list(limit)
+    effective_limit = limit if limit > 0 else 5000
+    pages = math.ceil(total / effective_limit) if total > 0 else 1
+    skip_val = (page - 1) * effective_limit
+    cursor = db.birthday_students.find(query).skip(skip_val).limit(effective_limit)
+    students_list = await cursor.to_list(effective_limit)
     
     serialized = [serialize_student(s) for s in students_list]
     
@@ -1201,7 +1203,7 @@ async def wa_list_birthday_students(
         "students": serialized,
         "total": total,
         "page": page,
-        "limit": limit,
+        "limit": effective_limit,
         "pages": pages
     }
 
@@ -1217,6 +1219,8 @@ async def wa_create_birthday_student(
     student_dict["contact_no"] = payload.phone
     student_dict["admn_no"] = payload.admission_no
     student_dict["date_of_birth"] = payload.dob
+    student_dict["roll"] = payload.roll_no or ""
+    student_dict["roll_no"] = payload.roll_no or ""
     
     res = await db.birthday_students.insert_one(student_dict)
     created = await db.birthday_students.find_one({"_id": res.inserted_id})
@@ -1240,6 +1244,8 @@ async def wa_update_birthday_student(
     student_dict["contact_no"] = payload.phone
     student_dict["admn_no"] = payload.admission_no
     student_dict["date_of_birth"] = payload.dob
+    student_dict["roll"] = payload.roll_no or ""
+    student_dict["roll_no"] = payload.roll_no or ""
     
     res = await db.birthday_students.update_one(
         {"_id": obj_id},

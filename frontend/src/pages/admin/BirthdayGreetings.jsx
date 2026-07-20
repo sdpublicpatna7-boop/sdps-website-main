@@ -62,6 +62,7 @@ export default function BirthdayGreetings() {
     mother_name: "",
     phone: "",
     admission_no: "",
+    roll_no: "",
     dob: "",
     permanent_address: "",
     current_address: "",
@@ -154,6 +155,7 @@ export default function BirthdayGreetings() {
       mother_name: "",
       phone: "",
       admission_no: "",
+      roll_no: "",
       dob: "",
       permanent_address: "",
       current_address: "",
@@ -171,6 +173,7 @@ export default function BirthdayGreetings() {
       mother_name: student.mother_name || "",
       phone: student.phone || student.contact_no || "",
       admission_no: student.admission_no || student.admn_no || "",
+      roll_no: student.roll_no || student.roll || "",
       dob: student.dob || student.date_of_birth || "",
       permanent_address: student.permanent_address || "",
       current_address: student.current_address || "",
@@ -523,6 +526,7 @@ export default function BirthdayGreetings() {
                       <thead className="bg-slate-50 text-slate-500 font-semibold sticky top-0">
                         <tr>
                           <th className="px-3 py-1.5">Name</th>
+                          <th className="px-3 py-1.5">Roll No</th>
                           <th className="px-3 py-1.5">Phone</th>
                           <th className="px-3 py-1.5">DOB</th>
                           <th className="px-3 py-1.5 text-right">Adm No</th>
@@ -532,6 +536,7 @@ export default function BirthdayGreetings() {
                         {preview.recipients.map((r, i) => (
                           <tr key={i} className="border-t border-black/5">
                             <td className="px-3 py-1.5 text-slate-700">{r.name}</td>
+                            <td className="px-3 py-1.5 text-slate-500 font-mono">{r.roll_no || "—"}</td>
                             <td className="px-3 py-1.5 text-slate-500">{r.phone}</td>
                             <td className="px-3 py-1.5 text-slate-700">{r.dob}</td>
                             <td className="px-3 py-1.5 text-right text-slate-500 font-mono">{r.admission_no || "—"}</td>
@@ -595,6 +600,7 @@ export default function BirthdayGreetings() {
                   <thead className="bg-slate-50 text-slate-500 sticky top-0 border-b border-black/5">
                     <tr>
                       <th className="text-left px-3 py-2.5 font-semibold">Name</th>
+                      <th className="text-left px-3 py-2.5 font-semibold">Roll No</th>
                       <th className="text-left px-3 py-2.5 font-semibold">Phone</th>
                       <th className="text-left px-3 py-2.5 font-semibold">DOB</th>
                       <th className="text-right px-3 py-2.5 font-semibold">Admission No</th>
@@ -604,6 +610,7 @@ export default function BirthdayGreetings() {
                     {dbInfo.birthdays_today.map((s, i) => (
                       <tr key={i} className="border-t border-black/5 hover:bg-slate-50/50">
                         <td className="px-3 py-2 text-slate-700 font-medium">{s.name}</td>
+                        <td className="px-3 py-2 text-slate-500 font-mono">{s.roll_no || s.roll || "—"}</td>
                         <td className="px-3 py-2 text-slate-500">{s.phone}</td>
                         <td className="px-3 py-2 text-slate-700 font-mono">{s.dob}</td>
                         <td className="px-3 py-2 text-right text-slate-500 font-mono">{s.admission_no || "—"}</td>
@@ -686,7 +693,7 @@ export default function BirthdayGreetings() {
                 type="text"
                 value={searchQuery}
                 onChange={handleSearchChange}
-                placeholder="Search by Name, Admission No, or Phone..."
+                placeholder="Search by Name, Roll No, Admission No, or Phone..."
                 className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-blue text-slate-700 bg-slate-50/50"
               />
               <span className="absolute left-3 top-2.5 text-slate-400">
@@ -716,6 +723,7 @@ export default function BirthdayGreetings() {
                   <thead className="bg-slate-50 text-slate-500 sticky top-0 border-b border-black/5">
                     <tr>
                       <th className="px-4 py-3 font-semibold">Name</th>
+                      <th className="px-4 py-3 font-semibold">Roll No</th>
                       <th className="px-4 py-3 font-semibold">Admission No</th>
                       <th className="px-4 py-3 font-semibold">Contact No</th>
                       <th className="px-4 py-3 font-semibold">Date of Birth</th>
@@ -731,6 +739,7 @@ export default function BirthdayGreetings() {
                     {students.map((student) => (
                       <tr key={student.id} className="hover:bg-slate-50/50">
                         <td className="px-4 py-3 font-semibold text-slate-800">{student.name}</td>
+                        <td className="px-4 py-3 font-mono text-slate-600">{student.roll_no || student.roll || "—"}</td>
                         <td className="px-4 py-3 font-mono text-slate-600">{student.admission_no || student.admn_no || "—"}</td>
                         <td className="px-4 py-3 text-slate-600">{student.phone || student.contact_no || "—"}</td>
                         <td className="px-4 py-3 text-slate-800 font-mono">{student.dob || student.date_of_birth || "—"}</td>
@@ -866,6 +875,17 @@ export default function BirthdayGreetings() {
                     type="text"
                     value={currentStudent.admission_no}
                     onChange={(e) => setCurrentStudent({ ...currentStudent, admission_no: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-blue text-slate-700 font-mono bg-slate-50/50"
+                  />
+                </div>
+
+                {/* Roll No */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Roll No</label>
+                  <input
+                    type="text"
+                    value={currentStudent.roll_no}
+                    onChange={(e) => setCurrentStudent({ ...currentStudent, roll_no: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-brand-blue text-slate-700 font-mono bg-slate-50/50"
                   />
                 </div>
