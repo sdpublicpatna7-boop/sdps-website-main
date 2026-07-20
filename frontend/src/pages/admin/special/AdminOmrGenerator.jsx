@@ -1666,16 +1666,43 @@ export default function AdminOmrGenerator() {
       {/* Embedded CSS for High Precision A4 Printing */}
       <style>{`
         @media print {
+          /* Force page flow and visible overflow on all layout wrappers */
+          html, body, #root, main, div, section {
+            overflow: visible !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            background: white !important;
+          }
+
+          /* Hide screen-only layouts, headers, sidebars, buttons, etc. */
+          aside,
+          header,
+          nav,
+          .no-print,
+          .lg:col-span-4 {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
+          }
+
+          /* Make sure the main content is block styled and visible */
           body * {
             visibility: hidden !important;
           }
           .omr-print-area, .omr-print-area * {
             visibility: visible !important;
           }
+
+          /* Style the OMR printable sheets sequentially in relative layout */
           .omr-print-area {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
+            display: block !important;
+            position: relative !important;
             width: 100% !important;
             max-width: 100% !important;
             margin: 0 !important;
@@ -1683,18 +1710,16 @@ export default function AdminOmrGenerator() {
             border: none !important;
             box-shadow: none !important;
             background: white !important;
+            box-sizing: border-box !important;
+            page-break-after: always !important;
+            break-after: page !important;
           }
-          .no-print {
-            display: none !important;
-          }
-          .omr-print-area {
-            page-break-after: always;
-            break-after: page;
-          }
+
           .omr-print-area:last-child {
-            page-break-after: auto;
-            break-after: auto;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
           }
+
           @page {
             size: ${omrMode === 'booklet' ? 'A4 landscape' : 'A4 portrait'};
             margin: 0;
