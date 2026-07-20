@@ -2589,76 +2589,94 @@ async def export_omr_pdf(
             
             browserless_key = os.getenv("BROWSERLESS_API_KEY", "").strip()
             
-            exe_path = "/usr/bin/chromium"
-            launch_args = [
-                "--no-sandbox",
-                "--disable-setuid-sandbox",
-                "--disable-dev-shm-usage",
-                "--disable-gpu",
-                "--disable-software-rasterizer",
-                "--disable-extensions",
-                "--no-zygote",
-                "--single-process",
-                "--disable-background-networking",
-                "--disable-background-timer-throttling",
-                "--disable-backgrounding-occluded-windows",
-                "--disable-breakpad",
-                "--disable-component-extensions-with-background-pages",
-                "--disable-ipc-flooding-protection",
-                "--disable-renderer-backgrounding",
-                "--js-flags=--max-old-space-size=128"
-            ]
-            if not os.path.exists(exe_path):
-                exe_path = None # Use Playwright's local Chromium revision on macOS/Windows
-                launch_args = [arg for arg in launch_args if arg not in ("--single-process", "--no-zygote")]
+            rendered_via_browserless = False
+            if browserless_key:
+                logger.info("Attempting PDF rendering via Browserless.io Cloud REST API...")
+                try:
+                    async with httpx.AsyncClient(timeout=120.0) as client:
+                        for idx, page_html in enumerate(html_pages):
+                            b_url = f"https://chrome.browserless.io/pdf?token={browserless_key}"
+                            b_payload = {
+                                "html": page_html,
+                                "options": {
+                                    "displayHeaderFooter": False,
+                                    "printBackground": True,
+                                    "format": "A4",
+                                    "landscape": is_landscape,
+                                    "margin": {"top": "0mm", "right": "0mm", "bottom": "0mm", "left": "0mm"}
+                                }
+                            }
+                            resp = await client.post(b_url, json=b_payload)
+                            if resp.status_code == 200 and len(resp.content) > 100:
+                                chunk_path = os.path.join(temp_dir, f"page_{idx}.pdf")
+                                with open(chunk_path, "wb") as f:
+                                    f.write(resp.content)
+                                temp_files.append(chunk_path)
+                            else:
+                                raise Exception(f"Browserless REST API returned status {resp.status_code}: {resp.text[:200]}")
+                    rendered_via_browserless = True
+                    logger.info("Successfully rendered PDF via Browserless.io Cloud REST API.")
+                except Exception as b_err:
+                    logger.warning(f"Browserless REST API failed ({b_err}). Falling back to local Playwright Chromium.")
+                    temp_files = [] # Reset temp_files for fallback
 
-            async with async_playwright() as p:
-                if browserless_key:
-                    ws_url = f"wss://chrome.browserless.io?token={browserless_key}"
-                    try:
-                        browser = await p.chromium.connect_over_cdp(ws_url)
-                        logger.info("Successfully connected to Browserless.io cloud Chromium for PDF export.")
-                    except Exception as b_err:
-                        logger.warning(f"Browserless.io connection failed ({b_err}). Falling back to local Chromium.")
-                        browser = await p.chromium.launch(
-                            headless=True,
-                            executable_path=exe_path,
-                            args=launch_args
-                        )
-                else:
+            if not rendered_via_browserless:
+                exe_path = "/usr/bin/chromium"
+                launch_args = [
+                    "--no-sandbox",
+                    "--disable-setuid-sandbox",
+                    "--disable-dev-shm-usage",
+                    "--disable-gpu",
+                    "--disable-software-rasterizer",
+                    "--disable-extensions",
+                    "--no-zygote",
+                    "--single-process",
+                    "--disable-background-networking",
+                    "--disable-background-timer-throttling",
+                    "--disable-backgrounding-occluded-windows",
+                    "--disable-breakpad",
+                    "--disable-component-extensions-with-background-pages",
+                    "--disable-ipc-flooding-protection",
+                    "--disable-renderer-backgrounding",
+                    "--js-flags=--max-old-space-size=128"
+                ]
+                if not os.path.exists(exe_path):
+                    exe_path = None # Use Playwright's local Chromium revision on macOS/Windows
+                    launch_args = [arg for arg in launch_args if arg not in ("--single-process", "--no-zygote")]
+
+                async with async_playwright() as p:
                     browser = await p.chromium.launch(
                         headless=True,
                         executable_path=exe_path,
                         args=launch_args
                     )
-                
-                try:
-                    context = await browser.new_context(viewport={"width": 1200, "height": 1600})
                     try:
-                        page = await context.new_page()
+                        context = await browser.new_context(viewport={"width": 1200, "height": 1600})
                         try:
-                            for idx, page_html in enumerate(html_pages):
-                                await page.set_content(page_html, wait_until="load", timeout=30000)
-                                try:
-                                    await page.wait_for_load_state("networkidle", timeout=2000)
-                                except Exception:
-                                    pass
-                                
-                                chunk_path = os.path.join(temp_dir, f"page_{idx}.pdf")
-                                await page.pdf(
-                                    path=chunk_path,
-                                    format="A4",
-                                    landscape=is_landscape,
-                                    print_background=True,
-                                    margin={"top": "0mm", "right": "0mm", "bottom": "0mm", "left": "0mm"}
-                                )
-                                temp_files.append(chunk_path)
+                            page = await context.new_page()
+                            try:
+                                for idx, page_html in enumerate(html_pages):
+                                    await page.set_content(page_html, wait_until="load", timeout=30000)
+                                    try:
+                                        await page.wait_for_load_state("networkidle", timeout=2000)
+                                    except Exception:
+                                        pass
+                                    
+                                    chunk_path = os.path.join(temp_dir, f"page_{idx}.pdf")
+                                    await page.pdf(
+                                        path=chunk_path,
+                                        format="A4",
+                                        landscape=is_landscape,
+                                        print_background=True,
+                                        margin={"top": "0mm", "right": "0mm", "bottom": "0mm", "left": "0mm"}
+                                    )
+                                    temp_files.append(chunk_path)
+                            finally:
+                                await page.close()
                         finally:
-                            await page.close()
+                            await context.close()
                     finally:
-                        await context.close()
-                finally:
-                    await browser.close()
+                        await browser.close()
                 
             # Merge all single-sheet PDFs directly on disk using pikepdf
             merged_pdf = pikepdf.Pdf.new()
