@@ -626,10 +626,6 @@ export default function AdminOmrGenerator() {
       setExportingPdf(true);
       setPdfProgress({ current: 0, total: 0 });
 
-      if (displayedRoster.length > 0) {
-        await autoSaveBooklets(displayedRoster);
-      }
-
       const pdfBlob = await exportOMRAsBlob((current, total) => {
         setPdfProgress({ current, total });
       });
@@ -645,6 +641,11 @@ export default function AdminOmrGenerator() {
       URL.revokeObjectURL(url);
 
       toast.success(`PDF exported — ${pdfProgress.total} pages, ${(pdfBlob.size / (1024 * 1024)).toFixed(1)} MB`);
+
+      // Index and auto-advance serial numbers ONLY after PDF is successfully created and downloaded to user's device!
+      if (displayedRoster.length > 0) {
+        await autoSaveBooklets(displayedRoster);
+      }
     } catch (err) {
       console.error("PDF export failed:", err);
       toast.error(`PDF export failed: ${err.message}`);
