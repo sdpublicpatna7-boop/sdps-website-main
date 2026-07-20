@@ -1201,5 +1201,20 @@ export function getOmrExportUrl(examTitle = "") {
   return `${base}/api/admin/omr/export-results?exam_title=${encodeURIComponent(examTitle)}`;
 }
 
+export async function addOmrStudent(student) {
+  const res = await api.post("/admin/omr/students", student);
+  return res.data;
+}
+
+export async function updateOmrStudent(studentId, student) {
+  const res = await api.put(`/admin/omr/students/${encodeURIComponent(studentId)}`, student);
+  return res.data;
+}
+
+export async function deleteOmrStudent(studentId) {
+  const res = await api.delete(`/admin/omr/students/${encodeURIComponent(studentId)}`);
+  return res.data;
+}
+
 export default api;
 

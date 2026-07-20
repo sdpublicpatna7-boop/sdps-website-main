@@ -61,6 +61,7 @@ const NAV_ITEMS = [
   { to: "/admin/experience-certificate", label: "Experience Certificate", icon: FileText, permission: "media-tools" },
   { to: "/admin/notice-maker", label: "Notice Maker", icon: FileText, permission: "media-tools" },
   { to: "/admin/omr-generator", label: "OMR Generator", icon: FileText, permission: "media-tools" },
+  { to: "/admin/omr-roster", label: "OMR Student Database", icon: Users, permission: "media-tools" },
   { to: "/admin/omr-checker", label: "OMR Auto-Checker", icon: CheckSquare, permission: "media-tools" },
   { section: "Other" },
   { to: "/admin/tc-records", label: "TC Records", icon: FileText, permission: "tc-records" },

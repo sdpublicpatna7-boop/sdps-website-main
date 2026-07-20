@@ -3,9 +3,9 @@ import { useOutletContext } from "react-router-dom";
 import { 
   Printer, FileText, Settings, Sparkles, RefreshCw, 
   LayoutGrid, Sliders, CheckSquare, Info, ShieldCheck, Download,
-  Save, Copy, Hash, Database, Upload, Trash2
+  Save, Copy, Hash, Database
 } from "lucide-react";
-import { getOmrRoster, saveOmrBooklets, getOmrBooklets, clearOmrBooklets, uploadOmrRoster, clearOmrRoster } from "@/lib/api";
+import { getOmrRoster, saveOmrBooklets, getOmrBooklets, clearOmrBooklets } from "@/lib/api";
 import api from "@/lib/api";
 import { toast } from "sonner";
 
@@ -187,8 +187,6 @@ export default function AdminOmrGenerator() {
   const [roster, setRoster] = useState([]);
   const [loadingRoster, setLoadingRoster] = useState(false);
   const [savingBooklets, setSavingBooklets] = useState(false);
-  const [uploadingRoster, setUploadingRoster] = useState(false);
-  const fileInputRef = useRef(null);
   const [selectedClassFilter, setSelectedClassFilter] = useState("");
   const [selectedSectionFilter, setSelectedSectionFilter] = useState("");
   const [availableClasses, setAvailableClasses] = useState([]);
@@ -230,40 +228,6 @@ export default function AdminOmrGenerator() {
     toast.info("Cleared selected class and student roster. Displaying 1 blank OMR sheet.");
   };
 
-  const handleUploadRoster = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setUploadingRoster(true);
-    try {
-      const res = await uploadOmrRoster(file);
-      toast.success(res.message || "Successfully imported OMR student roster!");
-      // Re-fetch classes & sections silently to update the dropdowns
-      await fetchRoster("", "");
-    } catch (err) {
-      toast.error(err.response?.data?.detail || "Failed to upload OMR student roster.");
-    } finally {
-      setUploadingRoster(false);
-      e.target.value = "";
-    }
-  };
-
-  const handleClearDatabaseRoster = async () => {
-    if (!window.confirm("Are you sure you want to delete ALL OMR student records from the database? This will clear the OMR roster database completely.")) {
-      return;
-    }
-    try {
-      const res = await clearOmrRoster();
-      toast.success(res.message || "OMR database student roster cleared!");
-      setRoster([]);
-      setNumCopies(1);
-      setAvailableClasses([]);
-      setAvailableSections([]);
-      setSelectedClassFilter("");
-      setSelectedSectionFilter("");
-    } catch (err) {
-      toast.error("Failed to clear OMR student database roster.");
-    }
-  };
 
   const handleClearAllBooklets = async () => {
     if (!window.confirm("Are you sure you want to CLEAR ALL stored barcode index mappings from the database? This action cannot be undone.")) {
@@ -674,51 +638,16 @@ export default function AdminOmrGenerator() {
                   Pre-prints Student Name, Roll No, Class & Section from OMR Student Database with auto-bubbled roll number circles and barcode.
                 </p>
 
-                {/* Import / Upload Controls */}
-                <div className="bg-white p-2 rounded-lg border border-emerald-200 flex items-center justify-between gap-2">
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    accept=".csv, .xls, .xlsx"
-                    onChange={handleUploadRoster}
-                    className="hidden"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploadingRoster}
-                    className="flex-1 py-1.5 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 text-[10px] font-bold border border-emerald-300 rounded-lg flex items-center justify-center gap-1 transition shadow-2xs"
+                {/* Manage Database Link */}
+                <div className="bg-white p-2 rounded-lg border border-emerald-200 flex items-center justify-between">
+                  <span className="text-[10px] text-emerald-800 font-semibold">Need to upload/manage student list?</span>
+                  <a
+                    href="/admin/omr-roster"
+                    className="py-1 px-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-[9.5px] font-bold rounded-lg flex items-center gap-1 transition shadow-2xs"
                   >
-                    <Upload className="w-3 h-3 text-emerald-700" />
-                    {uploadingRoster ? "Uploading..." : "Upload Roster"}
-                  </button>
-                  
-                  <button
-                    type="button"
-                    onClick={handleClearDatabaseRoster}
-                    className="py-1.5 px-2 bg-red-50 hover:bg-red-100 text-red-900 text-[10px] font-bold border border-red-200 rounded-lg flex items-center justify-center gap-1 transition shadow-2xs"
-                  >
-                    <Trash2 className="w-3.5 h-3.5 text-red-700" />
-                    Clear DB
-                  </button>
-                </div>
-
-                {/* Excel Import Columns Formatting Guide */}
-                <div className="bg-emerald-150/40 p-2.5 rounded-lg border border-emerald-200 text-[10.5px] space-y-1">
-                  <span className="font-bold text-emerald-900 block uppercase tracking-wide">
-                    Excel/CSV Import Guide:
-                  </span>
-                  <p className="text-emerald-800 leading-snug">
-                    Upload a spreadsheet with these column headers in the first row:
-                  </p>
-                  <div className="grid grid-cols-2 gap-x-3 gap-y-1 font-mono text-[9px] text-slate-800 bg-white/80 p-2 rounded border border-emerald-200">
-                    <div>• <strong className="text-emerald-950">Name</strong> (Student name)</div>
-                    <div>• <strong className="text-emerald-950">Class</strong> (e.g. VI, X)</div>
-                    <div>• <strong className="text-emerald-950">Section</strong> (e.g. A, B)</div>
-                    <div>• <strong className="text-emerald-950">Roll_no</strong> (Roll number)</div>
-                    <div>• <strong className="text-emerald-950">Admn_No</strong> (Admission No)</div>
-                    <div>• <strong className="text-emerald-950">Father_Name</strong> (Optional)</div>
-                  </div>
+                    <Database className="w-3.5 h-3.5" />
+                    Manage Database
+                  </a>
                 </div>
 
                 {/* Class & Section Filters */}

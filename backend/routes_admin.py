@@ -1,6 +1,7 @@
 """Admin API routes (JWT-protected)."""
 import os
 import re
+import math
 import io
 import asyncio
 import logging
@@ -1986,13 +1987,17 @@ async def upload_omr_roster(
 async def get_omr_roster(
     class_name: Optional[str] = None,
     section: Optional[str] = None,
+    search: Optional[str] = "",
+    page: int = 1,
+    limit: int = 0,
     source: Optional[str] = "all",
     admin: TokenData = Depends(require_permission("site-settings"))
 ):
     """
-    Fetch student roster from OMR roster and/or Birthday Module roster.
-    Supports filtering by Class Name and Section.
+    Fetch student roster from OMR roster.
+    Supports filtering by Class Name, Section, and Search.
     Also returns available classes and sections for UI selection.
+    If limit > 0, returns paginated results.
     """
     ROMAN_TO_ARABIC = {
         "I": "1", "II": "2", "III": "3", "IV": "4", "V": "5",
@@ -2047,13 +2052,24 @@ async def get_omr_roster(
     available_classes = sorted(list(raw_classes), key=class_sort_key)
     available_sections = sorted(list(available_sections_set))
 
-    query = {}
-    class_or_conditions = []
+    query_parts = []
+    
+    if search and search.strip():
+        search_escaped = re.escape(search.strip())
+        query_parts.append({
+            "$or": [
+                {"student_name": {"$regex": search_escaped, "$options": "i"}},
+                {"name": {"$regex": search_escaped, "$options": "i"}},
+                {"admission_no": {"$regex": search_escaped, "$options": "i"}},
+                {"roll_no": {"$regex": search_escaped, "$options": "i"}},
+                {"father_name": {"$regex": search_escaped, "$options": "i"}}
+            ]
+        })
+        
     if class_name and class_name.strip() and class_name.upper() != "ALL":
         raw_c = class_name.strip().upper()
         clean_c = re.sub(r'^(CLASS|STD|STANDARD)\s*[\-\s]*', '', raw_c, flags=re.I).strip()
         clean_c_no_dash = re.sub(r'[\-\s]', '', clean_c)
-        
         variants = {raw_c}
         if clean_c:
             variants.add(clean_c)
@@ -2061,129 +2077,249 @@ async def get_omr_roster(
             variants.add(f"CLASS-{clean_c}")
             variants.add(f"STD {clean_c}")
             variants.add(f"STD-{clean_c}")
-            
             if clean_c_no_dash in ROMAN_TO_ARABIC:
                 ar = ROMAN_TO_ARABIC[clean_c_no_dash]
                 variants.update({ar, f"CLASS {ar}", f"CLASS-{ar}", f"STD {ar}", f"STD-{ar}"})
             elif clean_c_no_dash in ARABIC_TO_ROMAN:
                 rm = ARABIC_TO_ROMAN[clean_c_no_dash]
                 variants.update({rm, f"CLASS {rm}", f"CLASS-{rm}", f"STD {rm}", f"STD-{rm}"})
-
+        
         class_fields = ["class_name", "class", "student_class", "std", "standard", "grade", "cls"]
+        cls_conditions = []
         for var in variants:
             escaped = re.escape(var)
             for field in class_fields:
-                class_or_conditions.append({field: {"$regex": f"^{escaped}$", "$options": "i"}})
-                class_or_conditions.append({field: {"$regex": f"^CLASS\\s*[\-\s]*{escaped}$", "$options": "i"}})
-                class_or_conditions.append({field: {"$regex": f"^STD\\s*[\-\s]*{escaped}$", "$options": "i"}})
-
-    sec_or_conditions = []
+                cls_conditions.append({field: {"$regex": f"^{escaped}$", "$options": "i"}})
+                cls_conditions.append({field: {"$regex": f"^CLASS\\s*[\-\s]*{escaped}$", "$options": "i"}})
+                cls_conditions.append({field: {"$regex": f"^STD\\s*[\-\s]*{escaped}$", "$options": "i"}})
+        query_parts.append({"$or": cls_conditions})
+        
     if section and section.strip() and section.upper() != "ALL":
         raw_s = section.strip().upper()
         clean_s = re.sub(r'^(SECTION|SEC)\s*[\-\s]*', '', raw_s, flags=re.I).strip()
-        
         sec_vars = {raw_s}
         if clean_s:
             sec_vars.update({clean_s, f"SECTION {clean_s}", f"SEC {clean_s}", f"SEC-{clean_s}"})
             
         sec_fields = ["section", "sec", "section_name"]
+        sec_conditions = []
         for svar in sec_vars:
             escaped_s = re.escape(svar)
             for sfield in sec_fields:
-                sec_or_conditions.append({sfield: {"$regex": f"^{escaped_s}$", "$options": "i"}})
-                sec_or_conditions.append({sfield: {"$regex": f"^SEC(TION)?\\s*[\-\s]*{escaped_s}$", "$options": "i"}})
-        for sfield in sec_fields:
-            sec_or_conditions.append({sfield: ""})
-            sec_or_conditions.append({sfield: None})
-            sec_or_conditions.append({sfield: {"$exists": False}})
-
-    if class_or_conditions and sec_or_conditions:
-        query["$and"] = [{"$or": class_or_conditions}, {"$or": sec_or_conditions}]
-    elif class_or_conditions:
-        query["$or"] = class_or_conditions
-    elif sec_or_conditions:
-        query["$or"] = sec_or_conditions
-
-    omr_docs = []
-    if class_name and class_name.strip():
-        omr_docs = await db.omr_roster.find(query).to_list(length=5000)
-
-        # Fallback in-memory matcher if db query returns 0 records
-        if not omr_docs:
-            all_omr = await db.omr_roster.find({}).to_list(length=5000)
-            
-            target_c = (class_name or "").strip().upper()
-            clean_target_c = re.sub(r'^(CLASS|STD|STANDARD)\s*[\-\s]*', '', target_c, flags=re.I).strip()
-            clean_target_c_nodash = re.sub(r'[\-\s]', '', clean_target_c)
-            target_ar = ROMAN_TO_ARABIC.get(clean_target_c_nodash, clean_target_c_nodash)
-            target_rm = ARABIC_TO_ROMAN.get(clean_target_c_nodash, clean_target_c_nodash)
-
-            def matches_student(doc):
-                if not target_c or target_c == "ALL":
-                    return True
-                s_class = str(doc.get("class_name") or doc.get("class") or doc.get("student_class") or doc.get("standard") or "").strip().upper()
-                if not s_class:
-                    return True
-                s_clean = re.sub(r'^(CLASS|STD|STANDARD)\s*[\-\s]*', '', s_class, flags=re.I).strip()
-                s_clean_nodash = re.sub(r'[\-\s]', '', s_clean)
-                s_ar = ROMAN_TO_ARABIC.get(s_clean_nodash, s_clean_nodash)
-                s_rm = ARABIC_TO_ROMAN.get(s_clean_nodash, s_clean_nodash)
-
-                return (clean_target_c_nodash in (s_clean_nodash, s_ar, s_rm) or
-                        target_ar in (s_clean_nodash, s_ar, s_rm) or
-                        target_rm in (s_clean_nodash, s_ar, s_rm) or
-                        target_c in s_class or s_class in target_c)
-
-            for d in all_omr:
-                if matches_student(d): omr_docs.append(d)
-
-    seen_adm = set()
-    unified_students = []
-
-    def process_doc(doc):
-        name = str(doc.get("student_name") or doc.get("name") or doc.get("candidate_name") or "").strip()
-        if not name:
-            return
-        roll = str(doc.get("roll_no") or doc.get("roll") or doc.get("roll_number") or "").strip()
-        c_name = str(doc.get("class_name") or doc.get("class") or "").strip()
-        sec = str(doc.get("section") or doc.get("sec") or "").strip()
-        adm = str(doc.get("admission_no") or doc.get("admn_no") or doc.get("id") or "").strip()
-        f_name = str(doc.get("father_name") or doc.get("fathers_name") or "").strip()
+                sec_conditions.append({sfield: {"$regex": f"^{escaped_s}$", "$options": "i"}})
+                sec_conditions.append({sfield: {"$regex": f"^SEC(TION)?\\s*[\-\s]*{escaped_s}$", "$options": "i"}})
+        query_parts.append({"$or": sec_conditions})
         
-        dedup_key = f"{adm.upper()}_{c_name.upper()}_{roll}" if adm else f"{name.upper()}_{c_name.upper()}_{roll}"
-        if dedup_key in seen_adm:
-            return
-        seen_adm.add(dedup_key)
+    query = {}
+    if len(query_parts) == 1:
+        query = query_parts[0]
+    elif len(query_parts) > 1:
+        query["$and"] = query_parts
 
-        unified_students.append({
-            "id": doc.get("id") or str(doc.get("_id", "")),
-            "student_name": name,
-            "roll_no": roll,
-            "class_name": c_name,
-            "section": sec,
-            "admission_no": adm,
-            "father_name": f_name,
-            "source": "omr"
-        })
+    if limit > 0:
+        total = await db.omr_roster.count_documents(query)
+        pages = math.ceil(total / limit) if total > 0 else 1
+        skip_val = (page - 1) * limit
+        cursor = db.omr_roster.find(query).skip(skip_val).limit(limit)
+        students_list = await cursor.to_list(limit)
+        
+        serialized = []
+        for doc in students_list:
+            serialized.append({
+                "id": doc.get("id") or str(doc.get("_id", "")),
+                "student_name": doc.get("student_name") or doc.get("name") or "",
+                "roll_no": doc.get("roll_no") or doc.get("roll") or "",
+                "class_name": doc.get("class_name") or doc.get("class") or "",
+                "section": doc.get("section") or doc.get("sec") or "",
+                "admission_no": doc.get("admission_no") or doc.get("admn_no") or "",
+                "father_name": doc.get("father_name") or doc.get("fathers_name") or "",
+                "source": "omr"
+            })
+            
+        return {
+            "status": "success",
+            "students": serialized,
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "pages": pages,
+            "available_classes": available_classes,
+            "available_sections": available_sections
+        }
+    else:
+        omr_docs = []
+        if class_name and class_name.strip():
+            omr_docs = await db.omr_roster.find(query).to_list(length=5000)
 
-    for d in omr_docs:
-        process_doc(d)
+            if not omr_docs:
+                all_omr = await db.omr_roster.find({}).to_list(length=5000)
+                target_c = (class_name or "").strip().upper()
+                clean_target_c = re.sub(r'^(CLASS|STD|STANDARD)\s*[\-\s]*', '', target_c, flags=re.I).strip()
+                clean_target_c_nodash = re.sub(r'[\-\s]', '', clean_target_c)
+                target_ar = ROMAN_TO_ARABIC.get(clean_target_c_nodash, clean_target_c_nodash)
+                target_rm = ARABIC_TO_ROMAN.get(clean_target_c_nodash, clean_target_c_nodash)
 
-    def sort_key(s):
-        roll_num = 999999
-        if s["roll_no"].isdigit():
-            roll_num = int(s["roll_no"])
-        return (s["class_name"], s["section"], roll_num, s["student_name"])
+                def matches_student(doc):
+                    if not target_c or target_c == "ALL":
+                        return True
+                    s_class = str(doc.get("class_name") or doc.get("class") or doc.get("student_class") or doc.get("standard") or "").strip().upper()
+                    if not s_class:
+                        return True
+                    s_clean = re.sub(r'^(CLASS|STD|STANDARD)\s*[\-\s]*', '', s_class, flags=re.I).strip()
+                    s_clean_nodash = re.sub(r'[\-\s]', '', s_clean)
+                    s_ar = ROMAN_TO_ARABIC.get(s_clean_nodash, s_clean_nodash)
+                    s_rm = ARABIC_TO_ROMAN.get(s_clean_nodash, s_clean_nodash)
 
-    unified_students.sort(key=sort_key)
+                    return (clean_target_c_nodash in (s_clean_nodash, s_ar, s_rm) or
+                            target_ar in (s_clean_nodash, s_ar, s_rm) or
+                            target_rm in (s_clean_nodash, s_ar, s_rm) or
+                            target_c in s_class or s_class in target_c)
 
-    return {
-        "status": "success",
-        "students": unified_students,
-        "count": len(unified_students),
-        "available_classes": available_classes,
-        "available_sections": available_sections
+                for d in all_omr:
+                    if matches_student(d): omr_docs.append(d)
+
+        seen_adm = set()
+        unified_students = []
+
+        def process_doc(doc):
+            name = str(doc.get("student_name") or doc.get("name") or doc.get("candidate_name") or "").strip()
+            if not name:
+                return
+            roll = str(doc.get("roll_no") or doc.get("roll") or doc.get("roll_number") or "").strip()
+            c_name = str(doc.get("class_name") or doc.get("class") or "").strip()
+            sec = str(doc.get("section") or doc.get("sec") or "").strip()
+            adm = str(doc.get("admission_no") or doc.get("admn_no") or doc.get("id") or "").strip()
+            f_name = str(doc.get("father_name") or doc.get("fathers_name") or "").strip()
+            
+            dedup_key = f"{adm.upper()}_{c_name.upper()}_{roll}" if adm else f"{name.upper()}_{c_name.upper()}_{roll}"
+            if dedup_key in seen_adm:
+                return
+            seen_adm.add(dedup_key)
+
+            unified_students.append({
+                "id": doc.get("id") or str(doc.get("_id", "")),
+                "student_name": name,
+                "roll_no": roll,
+                "class_name": c_name,
+                "section": sec,
+                "admission_no": adm,
+                "father_name": f_name,
+                "source": "omr"
+            })
+
+        for d in omr_docs:
+            process_doc(d)
+
+        def sort_key(s):
+            roll_num = 999999
+            if s["roll_no"].isdigit():
+                roll_num = int(s["roll_no"])
+            return (s["class_name"], s["section"], roll_num, s["student_name"])
+
+        unified_students.sort(key=sort_key)
+
+        return {
+            "status": "success",
+            "students": unified_students,
+            "count": len(unified_students),
+            "available_classes": available_classes,
+            "available_sections": available_sections
+        }
+
+
+class OmrStudentSchema(BaseModel):
+    admission_no: str
+    student_name: str
+    roll_no: str
+    class_name: str
+    section: str
+    father_name: Optional[str] = ""
+
+
+@admin_router.post("/omr/students")
+async def add_omr_student(
+    student: OmrStudentSchema,
+    admin: TokenData = Depends(require_permission("site-settings"))
+):
+    adm = student.admission_no.strip()
+    if not adm:
+        raise HTTPException(status_code=400, detail="Admission No is required.")
+        
+    existing = await db.omr_roster.find_one({"admission_no": adm})
+    if existing:
+        raise HTTPException(status_code=400, detail="A student with this Admission No already exists.")
+        
+    doc = {
+        "id": adm,
+        "admission_no": adm,
+        "student_name": student.student_name.strip(),
+        "father_name": student.father_name.strip(),
+        "class_name": student.class_name.strip(),
+        "section": student.section.strip(),
+        "roll_no": student.roll_no.strip(),
+        "updated_at": now_iso()
     }
+    await db.omr_roster.insert_one(doc)
+    return {"status": "success", "message": "Student added successfully to OMR roster."}
+
+
+@admin_router.put("/omr/students/{student_id}")
+async def update_omr_student(
+    student_id: str,
+    student: OmrStudentSchema,
+    admin: TokenData = Depends(require_permission("site-settings"))
+):
+    adm = student.admission_no.strip()
+    if not adm:
+        raise HTTPException(status_code=400, detail="Admission No is required.")
+        
+    from bson import ObjectId
+    query = {"$or": [{"admission_no": student_id}, {"id": student_id}]}
+    try:
+        if ObjectId.is_valid(student_id):
+            query["$or"].append({"_id": ObjectId(student_id)})
+    except Exception:
+        pass
+        
+    existing = await db.omr_roster.find_one(query)
+    if not existing:
+        raise HTTPException(status_code=404, detail="Student record not found.")
+        
+    if adm != existing.get("admission_no"):
+        clash = await db.omr_roster.find_one({"admission_no": adm})
+        if clash:
+            raise HTTPException(status_code=400, detail="Another student with this Admission No already exists.")
+
+    doc = {
+        "admission_no": adm,
+        "student_name": student.student_name.strip(),
+        "father_name": student.father_name.strip(),
+        "class_name": student.class_name.strip(),
+        "section": student.section.strip(),
+        "roll_no": student.roll_no.strip(),
+        "updated_at": now_iso()
+    }
+    await db.omr_roster.update_one({"_id": existing["_id"]}, {"$set": doc})
+    return {"status": "success", "message": "Student updated successfully in OMR roster."}
+
+
+@admin_router.delete("/omr/students/{student_id}")
+async def delete_omr_student(
+    student_id: str,
+    admin: TokenData = Depends(require_permission("site-settings"))
+):
+    from bson import ObjectId
+    query = {"$or": [{"admission_no": student_id}, {"id": student_id}]}
+    try:
+        if ObjectId.is_valid(student_id):
+            query["$or"].append({"_id": ObjectId(student_id)})
+    except Exception:
+        pass
+        
+    res = await db.omr_roster.delete_one(query)
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Student record not found.")
+    return {"status": "success", "message": "Student record deleted from OMR roster."}
 
 
 
