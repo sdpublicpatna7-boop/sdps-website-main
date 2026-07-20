@@ -615,10 +615,6 @@ export default function AdminOmrGenerator() {
       htmlPages.push(pageHtml);
     }
 
-    // 3. Update progress bar state during generation
-    if (onProgress) onProgress(Math.floor(total / 2), total);
-    
-    // Call our backend Playwright Chromium native print endpoint with the array of pages
     const pdfBlob = await exportOmrPdf(htmlPages, isLandscape);
 
     if (onProgress) onProgress(total, total);
@@ -631,15 +627,30 @@ export default function AdminOmrGenerator() {
   const [pdfProgress, setPdfProgress] = useState({ current: 0, total: 0 });
 
   const handleExportPdf = async () => {
+    let timer = null;
     try {
       window.__sdps_suppress_logout = true;
       setExportingPdf(true);
-      setPdfProgress({ current: 0, total: 0 });
 
-      const pdfBlob = await exportOMRAsBlob((current, total) => {
-        setPdfProgress({ current, total });
-      });
+      const printAreas = document.querySelectorAll(".omr-print-area");
+      const totalPages = printAreas.length || 1;
+      setPdfProgress({ current: 1, total: totalPages });
 
+      // Smooth progress timer while waiting for backend PDF response
+      let step = 1;
+      timer = setInterval(() => {
+        if (step < totalPages - 1) {
+          step += 1;
+          setPdfProgress({ current: step, total: totalPages });
+        }
+      }, 750);
+
+      const pdfBlob = await exportOMRAsBlob();
+
+      if (timer) clearInterval(timer);
+      setPdfProgress({ current: totalPages, total: totalPages });
+
+      // Download file to browser
       const url = URL.createObjectURL(pdfBlob);
       const link = document.createElement("a");
       link.href = url;
@@ -650,16 +661,24 @@ export default function AdminOmrGenerator() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      toast.success(`PDF exported — ${pdfProgress.total} pages, ${(pdfBlob.size / (1024 * 1024)).toFixed(1)} MB`);
+      const fileSizeMb = (pdfBlob.size / (1024 * 1024)).toFixed(1);
+      toast.success(`PDF Exported — ${totalPages} pages (${fileSizeMb} MB) downloaded!`);
 
-      // Index and auto-advance serial numbers ONLY after PDF is successfully created and downloaded to user's device!
+      // Close modal popup immediately
+      setExportingPdf(false);
+
+      // Index and auto-advance serial numbers ONLY after PDF is successfully downloaded to user's device!
       if (displayedRoster.length > 0) {
-        await autoSaveBooklets(displayedRoster);
+        await autoSaveBooklets(displayedRoster).catch((err) => {
+          console.warn("Booklet auto-index notice:", err);
+        });
       }
     } catch (err) {
+      if (timer) clearInterval(timer);
       console.error("PDF export failed:", err);
       toast.error(`PDF export failed: ${err.message}`);
     } finally {
+      if (timer) clearInterval(timer);
       setExportingPdf(false);
       setPdfProgress({ current: 0, total: 0 });
       window.__sdps_suppress_logout = false;
