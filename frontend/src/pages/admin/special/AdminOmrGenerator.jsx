@@ -182,6 +182,8 @@ export default function AdminOmrGenerator() {
   const [showBarcode, setShowBarcode] = useState(true);
   const [showInstructions, setShowInstructions] = useState(true);
   const [showTimingMarks, setShowTimingMarks] = useState(true);
+  const [headerFontSize, setHeaderFontSize] = useState(22);
+  const [instructionFontSize, setInstructionFontSize] = useState(7);
 
   // 5. Multi-copy auto-generate & Automated Roster State
   const [numCopies, setNumCopies] = useState(1);
@@ -419,6 +421,8 @@ export default function AdminOmrGenerator() {
         if (typeof s.showBarcode === "boolean") setShowBarcode(s.showBarcode);
         if (typeof s.showInstructions === "boolean") setShowInstructions(s.showInstructions);
         if (typeof s.showTimingMarks === "boolean") setShowTimingMarks(s.showTimingMarks);
+        if (s.headerFontSize !== undefined) setHeaderFontSize(s.headerFontSize);
+        if (s.instructionFontSize !== undefined) setInstructionFontSize(s.instructionFontSize);
         if (s.numCopies) setNumCopies(s.numCopies);
         if (s.candidateInstructions) setCandidateInstructions(s.candidateInstructions);
       }
@@ -446,6 +450,7 @@ export default function AdminOmrGenerator() {
         showLogo, showSchoolHeader, showTopBarcode,
         showRollNoBubbleGrid, showSetCode, showBookletNo,
         showBarcode, showInstructions, showTimingMarks,
+        headerFontSize, instructionFontSize,
         numCopies, candidateInstructions
       };
       localStorage.setItem(OMR_STORAGE_KEY, JSON.stringify(payload));
@@ -457,6 +462,7 @@ export default function AdminOmrGenerator() {
     showLogo, showSchoolHeader, showTopBarcode,
     showRollNoBubbleGrid, showSetCode, showBookletNo,
     showBarcode, showInstructions, showTimingMarks,
+    headerFontSize, instructionFontSize,
     numCopies, candidateInstructions, settingsLoaded
   ]);
 
@@ -1160,6 +1166,22 @@ export default function AdminOmrGenerator() {
             </div>
 
             <div>
+              <div className="flex justify-between items-center mb-1">
+                <label className="text-[11px] font-bold text-slate-600">Header Title Font Size</label>
+                <span className="text-[11px] font-mono font-bold text-brand-blue bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">{headerFontSize}px</span>
+              </div>
+              <input
+                type="range"
+                min="14"
+                max="36"
+                step="1"
+                value={headerFontSize}
+                onChange={(e) => setHeaderFontSize(parseInt(e.target.value))}
+                className="w-full accent-brand-blue cursor-pointer h-1.5 bg-slate-200 rounded-lg"
+              />
+            </div>
+
+            <div>
               <label className="text-[11px] font-bold text-slate-600 block mb-1">
                 Sub-Header / Affiliation Details
               </label>
@@ -1318,7 +1340,20 @@ export default function AdminOmrGenerator() {
               </label>
 
               {showInstructions && (
-                <div className="bg-slate-100 p-2.5 rounded-xl border border-slate-200 space-y-1">
+                <div className="bg-slate-100 p-2.5 rounded-xl border border-slate-200 space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-bold text-slate-700">Instruction Text Font Size:</span>
+                    <span className="text-[10px] font-mono font-bold text-brand-blue bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">{instructionFontSize}px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="4"
+                    max="14"
+                    step="0.5"
+                    value={instructionFontSize}
+                    onChange={(e) => setInstructionFontSize(parseFloat(e.target.value))}
+                    className="w-full accent-brand-blue cursor-pointer h-1.5 bg-slate-200 rounded-lg"
+                  />
                   <span className="text-[10px] font-bold text-slate-700 block">Edit Instructions (1 rule per line):</span>
                   <textarea
                     rows={4}
@@ -1400,7 +1435,10 @@ export default function AdminOmrGenerator() {
                       />
                     )}
                     <div>
-                      <h1 className={`${isBookletCopy ? 'text-base sm:text-lg' : 'text-xl sm:text-2xl'} font-black tracking-wider uppercase text-black font-headline leading-tight`}>
+                      <h1
+                        style={{ fontSize: `${isBookletCopy ? Math.max(12, headerFontSize - 4) : headerFontSize}px` }}
+                        className="font-black tracking-wider uppercase text-black font-headline leading-tight"
+                      >
                         {schoolName}
                       </h1>
                       {schoolSubHeader && (
@@ -1557,11 +1595,17 @@ export default function AdminOmrGenerator() {
 
                   {/* Instructions Box */}
                   {showInstructions && (
-                    <div className="border border-black p-1.5 bg-gray-50 text-[8px]">
-                      <div className="font-bold uppercase text-[8px] border-b border-black/20 pb-0.5 mb-1 flex items-center gap-1">
+                    <div className="border border-black p-1.5 bg-gray-50">
+                      <div
+                        style={{ fontSize: `${Math.max(6, instructionFontSize + 1)}px` }}
+                        className="font-bold uppercase border-b border-black/20 pb-0.5 mb-1 flex items-center gap-1 text-black"
+                      >
                         <Info className="w-3 h-3 text-black shrink-0" /> INSTRUCTIONS FOR CANDIDATE:
                       </div>
-                      <ol className="list-decimal pl-3 text-[7px] leading-[1.15] text-black font-medium grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-0.5">
+                      <ol
+                        style={{ fontSize: `${instructionFontSize}px` }}
+                        className="list-decimal pl-3 leading-[1.15] text-black font-medium grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-0.5"
+                      >
                         {candidateInstructions.map((inst, i) => (
                           <li key={i}>{inst}</li>
                         ))}
