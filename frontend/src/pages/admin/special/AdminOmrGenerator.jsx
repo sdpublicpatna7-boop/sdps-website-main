@@ -16,10 +16,10 @@ export default function AdminOmrGenerator() {
     settings?.school_name || "S.D. PUBLIC SCHOOL"
   );
   const [schoolSubHeader, setSchoolSubHeader] = useState(
-    "Affiliated to CBSE, New Delhi (Affiliation No. 330752)"
+    settings?.cbse_affiliation || "AFFILIATED TO CBSE, NEW DELHI (AFFILIATION NO. 330752)"
   );
   const [schoolAddress, setSchoolAddress] = useState(
-    "Maurya Colony, Transport Nagar, Kumhrar, Patna - 800026"
+    settings?.address || "Maurya Colony, Near R.O.B Kumhrar, Gulzarbagh Road, Patna - 800007"
   );
   const [schoolLogo, setSchoolLogo] = useState(
     settings?.logo_url || "https://sdpublic.org/assets/img/logo.png"
@@ -27,7 +27,7 @@ export default function AdminOmrGenerator() {
   const [showLogo, setShowLogo] = useState(true);
 
   // 2. Examination Header
-  const [examTitle, setExamTitle] = useState("PERIODIC TEST - II (2024-25)");
+  const [examTitle, setExamTitle] = useState("PERIODIC TEST - II");
   const [session, setSession] = useState("2024 - 2025");
   const [maxMarks, setMaxMarks] = useState("40");
   const [timeAllowed, setTimeAllowed] = useState("90 Mins");
@@ -55,6 +55,8 @@ export default function AdminOmrGenerator() {
   useEffect(() => {
     if (settings?.school_name) setSchoolName(settings.school_name);
     if (settings?.logo_url) setSchoolLogo(settings.logo_url);
+    if (settings?.address) setSchoolAddress(settings.address);
+    if (settings?.cbse_affiliation) setSchoolSubHeader(settings.cbse_affiliation);
   }, [settings]);
 
   // Option labels updater when numOptions changes
@@ -453,9 +455,9 @@ export default function AdminOmrGenerator() {
                 </div>
               </div>
 
-              {/* Examination Title Badge */}
+            {/* Examination Title Badge */}
               <div className="mt-2 inline-block border-2 border-black px-6 py-1 bg-black text-white font-black text-xs uppercase tracking-widest rounded-sm">
-                {examTitle} {session ? `(${session})` : ""}
+                {examTitle} {session && !examTitle.includes(session) && !examTitle.includes("202") ? `(${session})` : ""}
               </div>
             </div>
 
@@ -568,7 +570,7 @@ export default function AdminOmrGenerator() {
                         {Array.from({ length: rollNoDigits }).map((_, dIdx) => (
                           <div
                             key={dIdx}
-                            className="w-4 h-4 rounded-full border border-black flex items-center justify-center font-bold text-[8px] bg-white"
+                            className="w-4 h-4 rounded-full border-2 border-black flex items-center justify-center font-bold text-[8px] bg-white"
                           >
                             {digit}
                           </div>
@@ -586,11 +588,13 @@ export default function AdminOmrGenerator() {
             </div>
 
             {/* Questions Columns Grid */}
-            <div className={`grid grid-cols-${numColumns} gap-3 border-t border-b border-black py-3 mb-6`}>
+            <div className={`grid ${
+              numColumns === 1 ? "grid-cols-1" : numColumns === 3 ? "grid-cols-3" : numColumns === 4 ? "grid-cols-4" : "grid-cols-2"
+            } gap-3 border-t-2 border-b-2 border-black py-3 mb-6`}>
               {columnsData.map((colQuestions, cIdx) => (
-                <div key={cIdx} className="space-y-1.5 border-r border-black/20 last:border-r-0 pr-2">
+                <div key={cIdx} className="space-y-1.5 border-r border-black/30 last:border-r-0 pr-2">
                   {/* Column Header */}
-                  <div className="flex items-center text-[10px] font-black uppercase text-black/70 border-b border-black/40 pb-1 mb-1">
+                  <div className="flex items-center text-[10px] font-black uppercase text-black border-b border-black pb-1 mb-1">
                     <span className="w-8">Q.No</span>
                     <span className="flex-1 text-center font-bold tracking-widest">
                       OPTIONS ({optionLabels.join(" ")})
@@ -609,7 +613,7 @@ export default function AdminOmrGenerator() {
                         {optionLabels.map((label) => (
                           <div
                             key={label}
-                            className="w-5 h-5 rounded-full border-1.5 border-black flex items-center justify-center font-bold text-[9px] text-black bg-white hover:bg-black hover:text-white transition cursor-pointer"
+                            className="w-5 h-5 rounded-full border-2 border-black flex items-center justify-center font-bold text-[9px] text-black bg-white hover:bg-black hover:text-white transition cursor-pointer shrink-0"
                           >
                             {label}
                           </div>
