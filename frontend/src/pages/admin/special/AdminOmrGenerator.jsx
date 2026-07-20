@@ -582,25 +582,22 @@ export default function AdminOmrGenerator() {
                 {/* Right Column: Roll Number Grid */}
                 {showRollNoBubbleGrid && (
                   <div className="col-span-5 border border-black p-1.5 bg-white flex flex-col justify-between">
-                    <div className="text-[9px] font-extrabold uppercase text-center border-b border-black pb-0.5 mb-0.5">
+                    <div className="text-[9px] font-extrabold uppercase text-center border-b border-black pb-0.5 mb-1 text-black">
                       ROLL NUMBER GRID
                     </div>
                     
-                    {/* Boxes for digits */}
-                    <div className="flex justify-center gap-1 mb-0.5">
+                    {/* Aligned Column-based Grid */}
+                    <div className="flex justify-center gap-1 sm:gap-1.5 items-center my-auto">
                       {Array.from({ length: rollNoDigits }).map((_, dIdx) => (
-                        <div key={dIdx} className="w-4 h-4 border-2 border-black bg-gray-50 text-center font-bold text-[9px]"></div>
-                      ))}
-                    </div>
+                        <div key={dIdx} className="flex flex-col items-center gap-0.5">
+                          {/* Top Write-in Digit Square Box */}
+                          <div className="w-4 h-4 sm:w-4.5 sm:h-4.5 border-2 border-black bg-gray-50 text-center font-bold text-[8.5px] flex items-center justify-center shrink-0 mb-0.5 rounded-xs"></div>
 
-                    {/* 0-9 OMR Grid */}
-                    <div className="space-y-0.5 font-mono text-[8px]">
-                      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((digit) => (
-                        <div key={digit} className="flex justify-center gap-1 items-center">
-                          {Array.from({ length: rollNoDigits }).map((_, dIdx) => (
+                          {/* 0-9 OMR Bubbles directly underneath in line */}
+                          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((digit) => (
                             <div
-                              key={dIdx}
-                              className="w-3.5 h-3.5 rounded-full border-2 border-black flex items-center justify-center font-bold text-[7.5px] bg-white"
+                              key={digit}
+                              className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 border-black flex items-center justify-center font-bold text-[7.5px] sm:text-[8px] bg-white shrink-0 hover:bg-black hover:text-white transition cursor-pointer"
                             >
                               {digit}
                             </div>
