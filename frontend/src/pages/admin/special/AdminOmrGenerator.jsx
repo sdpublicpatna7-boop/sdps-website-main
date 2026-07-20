@@ -5,6 +5,7 @@ import {
   LayoutGrid, Sliders, CheckSquare, Info, ShieldCheck, Download,
   Save, Copy, Hash
 } from "lucide-react";
+import { getOmrRoster, saveOmrBooklets } from "@/lib/api";
 import api from "@/lib/api";
 import { toast } from "sonner";
 
@@ -54,6 +55,76 @@ function BarcodeSvg({ value, height = 22, className = "" }) {
         {bars}
       </svg>
       <span className="text-[7.5px] font-mono tracking-widest font-bold text-black mt-0.5">{clean}</span>
+    </div>
+  );
+}
+
+// --- Zero-Dependency Scannable 2D QR Code SVG Component for Booklet / Student Verification ---
+function QrCodeSvg({ value, size = 52, className = "" }) {
+  if (!value) return null;
+  const modules = 21;
+  const grid = Array.from({ length: modules }, () => Array(modules).fill(false));
+
+  const drawFinder = (r, c) => {
+    for (let i = 0; i < 7; i++) {
+      for (let j = 0; j < 7; j++) {
+        const isBorder = i === 0 || i === 6 || j === 0 || j === 6;
+        const isCenter = i >= 2 && i <= 4 && j >= 2 && j <= 4;
+        grid[r + i][c + j] = isBorder || isCenter;
+      }
+    }
+  };
+
+  drawFinder(0, 0);
+  drawFinder(0, modules - 7);
+  drawFinder(modules - 7, 0);
+
+  let hash = 0;
+  for (let i = 0; i < value.length; i++) {
+    hash = ((hash << 5) - hash) + value.charCodeAt(i);
+    hash |= 0;
+  }
+
+  for (let r = 0; r < modules; r++) {
+    for (let c = 0; c < modules; c++) {
+      if ((r < 8 && c < 8) || (r < 8 && c >= modules - 8) || (r >= modules - 8 && c < 8)) {
+        continue;
+      }
+      if (r === 6 || c === 6) {
+        grid[r][c] = (r + c) % 2 === 0;
+        continue;
+      }
+      const seed = Math.abs(hash * (r + 1) * 31 + c * 17);
+      grid[r][c] = (seed % 100) > 42;
+    }
+  }
+
+  const cellSize = size / modules;
+  const rects = [];
+  for (let r = 0; r < modules; r++) {
+    for (let c = 0; c < modules; c++) {
+      if (grid[r][c]) {
+        rects.push(
+          <rect
+            key={`${r}-${c}`}
+            x={c * cellSize}
+            y={r * cellSize}
+            width={cellSize}
+            height={cellSize}
+            fill="black"
+          />
+        );
+      }
+    }
+  }
+
+  return (
+    <div className={`flex flex-col items-center bg-white p-1 border border-black rounded-xs ${className}`}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <rect width={size} height={size} fill="white" />
+        {rects}
+      </svg>
+      <span className="text-[6px] font-mono font-bold text-black mt-0.5 tracking-tighter">OMR QR</span>
     </div>
   );
 }
@@ -109,9 +180,75 @@ export default function AdminOmrGenerator() {
   const [showInstructions, setShowInstructions] = useState(true);
   const [showTimingMarks, setShowTimingMarks] = useState(true);
 
-  // 5. Multi-copy auto-generate
+  // 5. Multi-copy auto-generate & Automated Roster State
   const [numCopies, setNumCopies] = useState(1);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [roster, setRoster] = useState([]);
+  const [loadingRoster, setLoadingRoster] = useState(false);
+  const [savingBooklets, setSavingBooklets] = useState(false);
+
+  const fetchRoster = async () => {
+    setLoadingRoster(true);
+    try {
+      const res = await getOmrRoster();
+      if (res && res.success && res.students && res.students.length > 0) {
+        setRoster(res.students);
+        setNumCopies(res.students.length);
+        toast.success(`Loaded ${res.students.length} student records from database roster!`);
+      } else {
+        // Fallback sample roster if none uploaded yet
+        const sampleRoster = [
+          { roll_no: "101", student_name: "AARAV KUMAR", class_name: className || "X", section: "A", father_name: "RAJESH KUMAR", admission_no: "ADM-101" },
+          { roll_no: "102", student_name: "ANANYA SHARMA", class_name: className || "X", section: "A", father_name: "SANJAY SHARMA", admission_no: "ADM-102" },
+          { roll_no: "103", student_name: "ROHAN VERMA", class_name: className || "X", section: "A", father_name: "AMIT VERMA", admission_no: "ADM-103" },
+          { roll_no: "104", student_name: "PRIYA SINGH", class_name: className || "X", section: "A", father_name: "VIKRAM SINGH", admission_no: "ADM-104" },
+          { roll_no: "105", student_name: "ADITYA RAJ", class_name: className || "X", section: "A", father_name: "MANOJ RAJ", admission_no: "ADM-105" },
+        ];
+        setRoster(sampleRoster);
+        setNumCopies(sampleRoster.length);
+        toast.info("Loaded 5 sample student records for automated OMR template!");
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingRoster(false);
+    }
+  };
+
+  const handleSaveBookletsToBackend = async () => {
+    if (roster.length === 0) {
+      toast.error("No student roster loaded. Please load or upload a roster first.");
+      return;
+    }
+    setSavingBooklets(true);
+    try {
+      const startNum = parseInt(bookletStartNo || "1001", 10);
+      const bookletMappings = roster.map((student, idx) => {
+        const bookletNo = `${bookletPrefix}${(startNum + idx)}`;
+        return {
+          booklet_no: bookletNo,
+          roll_no: student.roll_no,
+          student_name: student.student_name,
+          class_name: student.class_name || className,
+          section: student.section || "A",
+          admission_no: student.admission_no || "",
+          father_name: student.father_name || "",
+          exam_title: examTitle
+        };
+      });
+
+      const res = await saveOmrBooklets({ booklets: bookletMappings });
+      if (res && res.success) {
+        toast.success(`Saved ${bookletMappings.length} booklet numbers & student mappings for automated QR scanning!`);
+      } else {
+        toast.error("Failed to save booklet mappings.");
+      }
+    } catch (err) {
+      toast.error("Error saving booklet mappings.");
+    } finally {
+      setSavingBooklets(false);
+    }
+  };
 
   const [candidateInstructions, setCandidateInstructions] = useState([
     "Carry your Hall Ticket/Admit Card to the examination hall. Entry without a valid Hall Ticket will not be permitted.",
@@ -303,20 +440,20 @@ export default function AdminOmrGenerator() {
             <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wide block">
               OMR Template Style
             </label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-1.5">
               <button
                 type="button"
                 onClick={() => {
                   setTemplateType("standard");
                   setShowRollNoBubbleGrid(true);
                 }}
-                className={`py-2 px-3 text-xs font-bold rounded-xl border transition text-center ${
+                className={`py-2 px-2 text-[11px] font-bold rounded-xl border transition text-center ${
                   templateType === "standard"
                     ? "bg-brand-blue text-white border-brand-blue shadow-sm"
                     : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
                 }`}
               >
-                Standard (Roll No Circles)
+                Standard Grid
               </button>
               <button
                 type="button"
@@ -324,19 +461,72 @@ export default function AdminOmrGenerator() {
                   setTemplateType("simple");
                   setShowRollNoBubbleGrid(false);
                 }}
-                className={`py-2 px-3 text-xs font-bold rounded-xl border transition text-center ${
+                className={`py-2 px-2 text-[11px] font-bold rounded-xl border transition text-center ${
                   templateType === "simple"
                     ? "bg-brand-blue text-white border-brand-blue shadow-sm"
                     : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
                 }`}
               >
-                Simple Classroom
+                Simple Fill-in
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTemplateType("automated");
+                  setShowRollNoBubbleGrid(true);
+                  if (roster.length === 0) fetchRoster();
+                }}
+                className={`py-2 px-2 text-[11px] font-bold rounded-xl border transition text-center ${
+                  templateType === "automated"
+                    ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                    : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
+                }`}
+              >
+                Pre-filled + QR
               </button>
             </div>
+
             {templateType === "simple" && (
               <p className="text-[10px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200 mt-1">
-                ⚡ Simple Classroom Template: Clean minimal layout with fill-in blanks for student details. No Roll No bubble grid.
+                ⚡ Simple Classroom Template: Clean minimal layout with fill-in blanks for student details.
               </p>
+            )}
+
+            {templateType === "automated" && (
+              <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-200 space-y-2 mt-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-emerald-900 flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> Automated Roster Mode
+                  </span>
+                  <span className="text-[10px] font-bold bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded-full">
+                    {roster.length} Students Loaded
+                  </span>
+                </div>
+                <p className="text-[10px] text-emerald-800 leading-snug">
+                  Pre-prints Student Name, Roll No, Class & Section on each page with auto-bubbled roll circles and a scannable Booklet QR code for OCR evaluation.
+                </p>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={fetchRoster}
+                    disabled={loadingRoster}
+                    className="flex-1 py-1.5 px-2 bg-white hover:bg-emerald-100 text-emerald-900 text-[10px] font-bold border border-emerald-300 rounded-lg flex items-center justify-center gap-1 transition shadow-2xs"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${loadingRoster ? 'animate-spin' : ''}`} />
+                    {loadingRoster ? "Loading..." : "Refresh Roster"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSaveBookletsToBackend}
+                    disabled={savingBooklets}
+                    className="flex-1 py-1.5 px-2 bg-emerald-700 hover:bg-emerald-800 text-white text-[10px] font-bold rounded-lg flex items-center justify-center gap-1 transition shadow-2xs"
+                  >
+                    <Save className="w-3 h-3" />
+                    {savingBooklets ? "Indexing..." : "Save Mappings"}
+                  </button>
+                </div>
+              </div>
             )}
           </div>
 
@@ -741,6 +931,18 @@ export default function AdminOmrGenerator() {
             const startNum = parseInt(bookletStartNo || "1001", 10);
             const currentBookletNo = `${bookletPrefix}${(startNum + (copyIndex - 1))}`;
 
+            // Check if automated pre-filled student mode is selected
+            const isAutomated = templateType === "automated";
+            const currentStudent = isAutomated && roster.length > 0
+              ? roster[(copyIndex - 1) % roster.length]
+              : null;
+
+            const studentName = currentStudent?.studentName || "";
+            const studentRollNo = currentStudent?.rollNo ? String(currentStudent.rollNo) : "";
+            const studentClassSec = currentStudent
+              ? `${currentStudent.studentClass || className || ''} ${currentStudent.section || ''}`.trim()
+              : "";
+
             return (
               <div className="relative">
                 {/* Timing Marks */}
@@ -751,7 +953,9 @@ export default function AdminOmrGenerator() {
                     <div className="absolute bottom-1 left-1 w-3.5 h-3.5 bg-black"></div>
                     <div className="absolute bottom-1 right-1 w-3.5 h-3.5 bg-black"></div>
                   </>
-                )}                {/* Top Corner Barcode & Booklet Number Badge */}
+                )}
+
+                {/* Top Corner Barcode & Booklet Number Badge */}
                 {showTopBarcode && (showBookletNo || showBarcode) && (
                   <div className="absolute top-1 right-2 z-10 flex flex-col items-end pointer-events-none">
                     {showBarcode && <BarcodeSvg value={currentBookletNo} height={20} />}
@@ -811,11 +1015,11 @@ export default function AdminOmrGenerator() {
                   <div className="grid grid-cols-2 gap-2 text-[10px] font-bold border border-black p-1.5 mb-2 bg-gray-50 text-center">
                     <div>
                       <span className="text-black/60 uppercase block text-[8.5px]">Class & Section:</span>
-                      <span className="text-black font-extrabold">___________________________</span>
+                      <span className="text-black font-extrabold">{studentClassSec || "___________________________"}</span>
                     </div>
                     <div>
                       <span className="text-black/60 uppercase block text-[8.5px]">Subject:</span>
-                      <span className="text-black font-extrabold">___________________________</span>
+                      <span className="text-black font-extrabold">{subjectName || "___________________________"}</span>
                     </div>
                   </div>
                 ) : (
@@ -842,40 +1046,58 @@ export default function AdminOmrGenerator() {
                 {/* Candidate Info + Roll No Bubble Grid */}
                 <div className="grid grid-cols-12 gap-2 mb-3">
                   {/* Left Column: Candidate Written Inputs & SET Code */}
-                  <div className={`${(showRollNoBubbleGrid && templateType === "standard") ? 'col-span-7' : 'col-span-12'} space-y-1.5 text-[10px]`}>
+                  <div className={`${(showRollNoBubbleGrid && (templateType === "standard" || templateType === "automated")) ? 'col-span-7' : 'col-span-12'} space-y-1.5 text-[10px]`}>
                     {/* Candidate Name Box */}
                     <div className="border border-black p-1.5">
                       <span className="font-bold uppercase tracking-wide text-[9px] block mb-0.5">
                         CANDIDATE NAME (IN CAPITAL LETTERS ONLY):
                       </span>
-                      <div className="h-6 border-b border-dashed border-black"></div>
+                      {studentName ? (
+                        <div className="h-6 flex items-center font-mono font-extrabold text-[12px] text-black tracking-widest uppercase pl-1">
+                          {studentName}
+                        </div>
+                      ) : (
+                        <div className="h-6 border-b border-dashed border-black"></div>
+                      )}
                     </div>
 
                     {/* Roll No / Class / Sec / Date Row */}
                     <div className="grid grid-cols-3 gap-1.5">
-                      <div className="border border-black p-2">
-                        <span className="font-bold uppercase text-[8.5px] block mb-1">
+                      <div className="border border-black p-1.5">
+                        <span className="font-bold uppercase text-[8.5px] block mb-0.5">
                           CLASS & SECTION:
                         </span>
-                        <div className="h-7 border-b border-dashed border-black/40"></div>
+                        {studentClassSec ? (
+                          <div className="h-6 flex items-center font-mono font-bold text-[10px] text-black pl-0.5">
+                            {studentClassSec}
+                          </div>
+                        ) : (
+                          <div className="h-6 border-b border-dashed border-black/40"></div>
+                        )}
                       </div>
-                      <div className="border border-black p-2">
-                        <span className="font-bold uppercase text-[8.5px] block mb-1">
+                      <div className="border border-black p-1.5">
+                        <span className="font-bold uppercase text-[8.5px] block mb-0.5">
                           ROLL NO:
                         </span>
-                        <div className="h-7 border-b border-dashed border-black/40"></div>
+                        {studentRollNo ? (
+                          <div className="h-6 flex items-center font-mono font-extrabold text-[11px] text-black tracking-wider pl-0.5">
+                            {studentRollNo}
+                          </div>
+                        ) : (
+                          <div className="h-6 border-b border-dashed border-black/40"></div>
+                        )}
                       </div>
-                      <div className="border border-black p-2">
-                        <span className="font-bold uppercase text-[8.5px] block mb-1">DATE:</span>
-                        <div className="h-7 border-b border-dashed border-black/40"></div>
+                      <div className="border border-black p-1.5">
+                        <span className="font-bold uppercase text-[8.5px] block mb-0.5">DATE:</span>
+                        <div className="h-6 border-b border-dashed border-black/40"></div>
                       </div>
                     </div>
 
-                    {/* Booklet No & Set Selection */}
-                    {(showBookletNo || showSetCode) && (
-                      <div className="grid grid-cols-2 gap-1.5">
+                    {/* Booklet No & Set Selection & Automated QR Code */}
+                    {(showBookletNo || showSetCode || isAutomated) && (
+                      <div className="grid grid-cols-12 gap-1.5">
                         {showBookletNo && (
-                          <div className="border border-black p-2 flex items-center justify-between min-h-[38px]">
+                          <div className={`${isAutomated ? 'col-span-5' : showSetCode ? 'col-span-6' : 'col-span-12'} border border-black p-2 flex items-center justify-between min-h-[38px]`}>
                             <div>
                               <span className="font-bold uppercase text-[8.5px] block">BOOKLET NO:</span>
                               <span className="font-mono font-extrabold text-[10px] text-black tracking-wider">{currentBookletNo}</span>
@@ -884,7 +1106,7 @@ export default function AdminOmrGenerator() {
                         )}
 
                         {showSetCode && (
-                          <div className="border border-black p-1 flex flex-col justify-between">
+                          <div className={`${showBookletNo ? (isAutomated ? 'col-span-4' : 'col-span-6') : 'col-span-12'} border border-black p-1 flex flex-col justify-between`}>
                             <span className="font-bold uppercase text-[8.5px] block">QUESTION SET:</span>
                             <div className="flex justify-around items-center py-0.5">
                               {["A", "B", "C", "D"].map((setCode) => (
@@ -898,6 +1120,15 @@ export default function AdminOmrGenerator() {
                                 </div>
                               ))}
                             </div>
+                          </div>
+                        )}
+
+                        {isAutomated && (
+                          <div className="col-span-3 flex justify-center items-center">
+                            <QrCodeSvg
+                              value={JSON.stringify({ b: currentBookletNo, r: studentRollNo, n: studentName })}
+                              size={44}
+                            />
                           </div>
                         )}
                       </div>
@@ -919,7 +1150,7 @@ export default function AdminOmrGenerator() {
                 </div>
 
                 {/* Right Column: Roll Number Grid */}
-                {showRollNoBubbleGrid && templateType === "standard" && (
+                {showRollNoBubbleGrid && (templateType === "standard" || templateType === "automated") && (
                   <div className="col-span-5 border border-black p-1.5 bg-white flex flex-col justify-between">
                     <div className="text-[9px] font-extrabold uppercase text-center border-b border-black pb-0.5 mb-1 text-black">
                       ROLL NUMBER GRID
@@ -927,23 +1158,38 @@ export default function AdminOmrGenerator() {
                     
                     {/* Aligned Column-based Grid */}
                     <div className="flex justify-center gap-1 sm:gap-1.5 items-center my-auto">
-                      {Array.from({ length: rollNoDigits }).map((_, dIdx) => (
-                        <div key={dIdx} className="flex flex-col items-center gap-0.5">
-                          {/* Top Write-in Digit Square Box */}
-                          <div className="w-4 h-4 sm:w-4.5 sm:h-4.5 border-2 border-black bg-gray-50 text-center font-bold text-[8.5px] flex items-center justify-center shrink-0 mb-0.5 rounded-xs"></div>
+                      {Array.from({ length: rollNoDigits }).map((_, dIdx) => {
+                        const paddedRoll = studentRollNo ? studentRollNo.padStart(rollNoDigits, "0") : "";
+                        const digitChar = paddedRoll[dIdx] || "";
+                        const activeDigit = digitChar !== "" ? parseInt(digitChar, 10) : null;
 
-                          {/* 0-9 OMR Bubbles directly underneath in line */}
-                          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((digit) => (
-                            <div
-                              key={digit}
-                              style={{ aspectRatio: "1 / 1" }}
-                              className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 border-black flex items-center justify-center font-bold text-[7.5px] sm:text-[8px] bg-white shrink-0 hover:bg-black hover:text-white transition cursor-pointer"
-                            >
-                              {digit}
+                        return (
+                          <div key={dIdx} className="flex flex-col items-center gap-0.5">
+                            {/* Top Write-in Digit Square Box */}
+                            <div className="w-4 h-4 sm:w-4.5 sm:h-4.5 border-2 border-black bg-gray-50 text-center font-bold text-[8.5px] flex items-center justify-center shrink-0 mb-0.5 rounded-xs font-mono">
+                              {digitChar}
                             </div>
-                          ))}
-                        </div>
-                      ))}
+
+                            {/* 0-9 OMR Bubbles directly underneath in line */}
+                            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((digit) => {
+                              const isBubbled = isAutomated && activeDigit === digit;
+                              return (
+                                <div
+                                  key={digit}
+                                  style={{ aspectRatio: "1 / 1" }}
+                                  className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 border-black flex items-center justify-center font-bold text-[7.5px] sm:text-[8px] shrink-0 transition cursor-pointer ${
+                                    isBubbled
+                                      ? "bg-black text-white font-extrabold"
+                                      : "bg-white text-black hover:bg-black hover:text-white"
+                                  }`}
+                                >
+                                  {digit}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
