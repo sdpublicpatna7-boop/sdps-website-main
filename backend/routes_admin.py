@@ -2009,10 +2009,15 @@ async def get_omr_roster(
 
     query = {}
     if class_name and class_name.strip() and class_name.upper() != "ALL":
-        escaped_c = re.escape(class_name.strip())
+        raw_val = class_name.strip()
+        escaped_c = re.escape(raw_val)
+        clean_val = re.sub(r'(?i)class', '', raw_val).strip()
+        escaped_clean = re.escape(clean_val) if clean_val else escaped_c
         query["$or"] = [
             {"class_name": {"$regex": f"^{escaped_c}$", "$options": "i"}},
-            {"class": {"$regex": f"^{escaped_c}$", "$options": "i"}}
+            {"class": {"$regex": f"^{escaped_c}$", "$options": "i"}},
+            {"class_name": {"$regex": f".*{escaped_clean}.*", "$options": "i"}},
+            {"class": {"$regex": f".*{escaped_clean}.*", "$options": "i"}}
         ]
     if section and section.strip() and section.upper() != "ALL":
         escaped_s = re.escape(section.strip())
