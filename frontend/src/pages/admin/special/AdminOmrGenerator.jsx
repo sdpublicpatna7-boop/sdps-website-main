@@ -791,7 +791,7 @@ export default function AdminOmrGenerator() {
                   </div>
 
                   {/* Examination Title Badge */}
-                  <div className="mt-1.5 inline-block border-2 border-black px-4 py-0.5 bg-black text-white font-black text-xs uppercase tracking-widest rounded-sm">
+                  <div className="mt-1.5 inline-block border-2 border-black px-5 py-1 bg-black text-white font-black text-sm uppercase tracking-widest rounded-sm">
                     {examTitle} {session && !examTitle.includes(session) && !examTitle.includes("202") ? `(${session})` : ""}
                   </div>
                 </div>
@@ -800,7 +800,7 @@ export default function AdminOmrGenerator() {
                 {/* Standalone Exam Title when school header is hidden */}
                 {!showSchoolHeader && (
                   <div className="border-b-2 border-black pb-2 mb-2 text-center">
-                    <div className="inline-block border-2 border-black px-4 py-0.5 bg-black text-white font-black text-xs uppercase tracking-widest rounded-sm">
+                    <div className="inline-block border-2 border-black px-5 py-1 bg-black text-white font-black text-sm uppercase tracking-widest rounded-sm">
                       {examTitle} {session && !examTitle.includes(session) && !examTitle.includes("202") ? `(${session})` : ""}
                     </div>
                   </div>
