@@ -1484,8 +1484,9 @@ export default function AdminOmrGenerator() {
 
         {/* Right Preview Area (The Printable OMR Sheet) */}
         <div className="lg:col-span-8 flex flex-col items-center gap-6">
-          {Array.from({ length: numCopies }).map((_, copyIdx) => {
+          {Array.from({ length: omrMode === "booklet" ? Math.ceil(numCopies / 2) : numCopies }).map((_, copyIdx) => {
             const sheetSerialOffset = copyIdx;
+            const startNum = parseInt(bookletStartNo || "1001", 10);
             return (
               <div key={copyIdx} className="w-full flex justify-center">
                 {/* Printable A4 Container */}
@@ -1493,7 +1494,11 @@ export default function AdminOmrGenerator() {
                   {/* Copy number label (screen only) */}
                   {numCopies > 1 && (
                     <div className="no-print absolute -top-3 left-4 bg-brand-blue text-white text-[10px] font-bold px-3 py-0.5 rounded-full shadow-md z-30">
-                      Sheet #{copyIdx + 1} — {bookletPrefix}{parseInt(bookletStartNo || "1001", 10) + sheetSerialOffset}
+                      {omrMode === "booklet" ? (
+                        `Page #${copyIdx + 1} — Booklets: ${bookletPrefix}${startNum + sheetSerialOffset * 2}${sheetSerialOffset * 2 + 1 < numCopies ? ' & ' + bookletPrefix + (startNum + sheetSerialOffset * 2 + 1) : ''}`
+                      ) : (
+                        `Sheet #${copyIdx + 1} — ${bookletPrefix}${startNum + sheetSerialOffset}`
+                      )}
                     </div>
                   )}
                   
@@ -1515,12 +1520,18 @@ export default function AdminOmrGenerator() {
                       </div>
 
                       {/* Booklet Sheet 2 (Right Copy) */}
-                      <div className="border border-black p-3 rounded-sm relative bg-white flex flex-col justify-between">
-                        <div className="absolute top-1 left-2 text-[7.5px] font-mono font-bold uppercase tracking-wider text-black/40">
-                          COPY #2 — BOOKLET SHEET
+                      {sheetSerialOffset * 2 + 2 <= numCopies ? (
+                        <div className="border border-black p-3 rounded-sm relative bg-white flex flex-col justify-between">
+                          <div className="absolute top-1 left-2 text-[7.5px] font-mono font-bold uppercase tracking-wider text-black/40">
+                            COPY #2 — BOOKLET SHEET
+                          </div>
+                          {window._renderOmrSheetContent(true, sheetSerialOffset * 2 + 2)}
                         </div>
-                        {window._renderOmrSheetContent(true, sheetSerialOffset * 2 + 2)}
-                      </div>
+                      ) : (
+                        <div className="border border-transparent p-3 rounded-sm relative bg-transparent flex flex-col justify-between">
+                          {/* Empty placeholder to keep left-right layout grid aligned */}
+                        </div>
+                      )}
                     </div>
                   ) : (
                     window._renderOmrSheetContent(false, sheetSerialOffset + 1)
