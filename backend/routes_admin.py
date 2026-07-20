@@ -2111,7 +2111,7 @@ async def save_omr_booklets(
     payload: Dict[str, Any] = Body(...),
     admin: TokenData = Depends(require_permission("site-settings"))
 ):
-    """Save booklet mapping (Booklet Serial No <-> Student Roll No) for automated QR evaluation."""
+    """Save booklet mapping (Booklet Serial No / Barcode <-> Student, Subject & Exam Details) for automated evaluation."""
     booklets = payload.get("booklets", [])
     if not booklets:
         return {"status": "success", "count": 0}
@@ -2120,22 +2120,28 @@ async def save_omr_booklets(
     operations = []
     for b in booklets:
         booklet_no = str(b.get("booklet_no") or "").strip()
+        barcode = str(b.get("barcode") or booklet_no).strip()
+        exam_title = str(b.get("exam_title") or "").strip()
+        subject_name = str(b.get("subject_name") or "").strip()
         if not booklet_no:
             continue
         doc = {
             "booklet_no": booklet_no,
+            "barcode": barcode,
             "roll_no": str(b.get("roll_no") or "").strip(),
             "student_name": str(b.get("student_name") or "").strip(),
             "class_name": str(b.get("class_name") or "").strip(),
             "section": str(b.get("section") or "").strip(),
             "admission_no": str(b.get("admission_no") or "").strip(),
             "father_name": str(b.get("father_name") or "").strip(),
-            "exam_title": str(b.get("exam_title") or "").strip(),
+            "subject_name": subject_name,
+            "exam_title": exam_title,
+            "session": str(b.get("session") or "").strip(),
             "updated_at": now_iso()
         }
         operations.append(
             UpdateOne(
-                {"booklet_no": booklet_no},
+                {"booklet_no": booklet_no, "exam_title": exam_title, "subject_name": subject_name},
                 {"$set": doc},
                 upsert=True
             )
@@ -2144,7 +2150,38 @@ async def save_omr_booklets(
     if operations:
         await db.omr_booklets.bulk_write(operations)
         
-    return {"status": "success", "message": f"Saved {len(operations)} booklet mappings.", "count": len(operations)}
+    return {"status": "success", "message": f"Saved {len(operations)} booklet barcode mappings.", "count": len(operations)}
+
+
+@admin_router.get("/omr/booklets")
+async def list_omr_booklets(
+    exam_title: Optional[str] = None,
+    subject_name: Optional[str] = None,
+    class_name: Optional[str] = None,
+    search: Optional[str] = None,
+    admin: TokenData = Depends(require_permission("site-settings"))
+):
+    """List or search all stored barcode & booklet assignments."""
+    query = {}
+    if exam_title:
+        query["exam_title"] = exam_title
+    if subject_name:
+        query["subject_name"] = subject_name
+    if class_name:
+        query["class_name"] = class_name
+    if search:
+        query["$or"] = [
+            {"booklet_no": {"$regex": search, "$options": "i"}},
+            {"barcode": {"$regex": search, "$options": "i"}},
+            {"student_name": {"$regex": search, "$options": "i"}},
+            {"roll_no": {"$regex": search, "$options": "i"}},
+            {"admission_no": {"$regex": search, "$options": "i"}}
+        ]
+        
+    records = await db.omr_booklets.find(query).sort([("class_name", 1), ("roll_no", 1)]).to_list(length=5000)
+    for r in records:
+        r["_id"] = str(r.get("_id", ""))
+    return {"status": "success", "booklets": records, "count": len(records)}
 
 
 @admin_router.get("/omr/booklet/{booklet_no}")
@@ -2156,6 +2193,7 @@ async def get_omr_booklet(
     record = await db.omr_booklets.find_one({
         "$or": [
             {"booklet_no": booklet_no},
+            {"barcode": booklet_no},
             {"roll_no": booklet_no}
         ]
     })

@@ -1176,6 +1176,11 @@ export async function getOmrBooklet(bookletNo) {
   return res.data;
 }
 
+export async function getOmrBooklets(params = {}) {
+  const res = await api.get("/admin/omr/booklets", { params });
+  return res.data;
+}
+
 export async function saveOmrEvaluations(payload) {
   const res = await api.post("/admin/omr/evaluations/save", payload);
   return res.data;

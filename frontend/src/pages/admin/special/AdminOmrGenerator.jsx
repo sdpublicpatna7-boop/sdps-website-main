@@ -3,9 +3,9 @@ import { useOutletContext } from "react-router-dom";
 import { 
   Printer, FileText, Settings, Sparkles, RefreshCw, 
   LayoutGrid, Sliders, CheckSquare, Info, ShieldCheck, Download,
-  Save, Copy, Hash
+  Save, Copy, Hash, Database
 } from "lucide-react";
-import { getOmrRoster, saveOmrBooklets } from "@/lib/api";
+import { getOmrRoster, saveOmrBooklets, getOmrBooklets } from "@/lib/api";
 import api from "@/lib/api";
 import { toast } from "sonner";
 
@@ -197,6 +197,29 @@ export default function AdminOmrGenerator() {
   const [rollEndFilter, setRollEndFilter] = useState("");
   const [sortRollOrder, setSortRollOrder] = useState("asc");
 
+  // Barcode & Booklet Database Index Modal State
+  const [showBookletsModal, setShowBookletsModal] = useState(false);
+  const [savedBooklets, setSavedBooklets] = useState([]);
+  const [loadingSavedBooklets, setLoadingSavedBooklets] = useState(false);
+  const [bookletSearchQuery, setBookletSearchQuery] = useState("");
+
+  const handleOpenBookletsModal = async () => {
+    setShowBookletsModal(true);
+    fetchSavedBooklets("");
+  };
+
+  const fetchSavedBooklets = async (q = bookletSearchQuery) => {
+    setLoadingSavedBooklets(true);
+    try {
+      const res = await getOmrBooklets({ search: q });
+      setSavedBooklets(res.booklets || []);
+    } catch (err) {
+      toast.error("Failed to query saved barcode mappings.");
+    } finally {
+      setLoadingSavedBooklets(false);
+    }
+  };
+
   // Sorted and Filtered Roster Roll-No wise
   const displayedRoster = useMemo(() => {
     let list = [...roster];
@@ -243,13 +266,16 @@ export default function AdminOmrGenerator() {
         const bookletNo = `${bookletPrefix}${(startNum + idx)}`;
         return {
           booklet_no: bookletNo,
+          barcode: bookletNo,
           roll_no: student.roll_no || student.roll || "",
           student_name: student.student_name || student.name || "",
           class_name: student.class_name || student.class || className,
           section: student.section || student.sec || "A",
           admission_no: student.admission_no || student.admn_no || "",
           father_name: student.father_name || "",
-          exam_title: examTitle
+          subject_name: subjectName,
+          exam_title: examTitle,
+          session: session
         };
       });
       await saveOmrBooklets({ booklets: bookletMappings });
@@ -688,6 +714,15 @@ export default function AdminOmrGenerator() {
                   >
                     <Save className="w-3 h-3" />
                     {savingBooklets ? "Indexing..." : "Save Mappings"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleOpenBookletsModal}
+                    className="py-1.5 px-2 bg-white hover:bg-slate-100 text-slate-800 text-[10px] font-bold border border-slate-300 rounded-lg flex items-center justify-center gap-1 transition shadow-2xs shrink-0"
+                  >
+                    <Database className="w-3 h-3 text-brand-blue" />
+                    View Index
                   </button>
                 </div>
               </div>
@@ -1482,6 +1517,95 @@ export default function AdminOmrGenerator() {
           })}
         </div>
       </div>
+
+      {/* Saved Barcode & Booklet Assignment Index Modal */}
+      {showBookletsModal && (
+        <div className="no-print fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-4xl w-full p-6 space-y-4 max-h-[90vh] flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <Database className="w-5 h-5 text-emerald-600" /> Stored Barcode & Booklet Assignments
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Database records mapping each barcode to student, subject, and examination details.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowBookletsModal(false)}
+                className="text-slate-400 hover:text-slate-700 text-lg font-bold px-2 py-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Search Bar */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Search by Barcode No, Student Name, Roll No, Admission No..."
+                value={bookletSearchQuery}
+                onChange={(e) => setBookletSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && fetchSavedBooklets(bookletSearchQuery)}
+                className="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-300 font-medium focus:outline-none focus:border-emerald-600"
+              />
+              <button
+                onClick={() => fetchSavedBooklets(bookletSearchQuery)}
+                disabled={loadingSavedBooklets}
+                className="px-4 py-2 bg-emerald-700 text-white text-xs font-bold rounded-xl hover:bg-emerald-800 transition cursor-pointer"
+              >
+                {loadingSavedBooklets ? "Searching..." : "Search Index"}
+              </button>
+            </div>
+
+            {/* Table */}
+            <div className="overflow-y-auto flex-1 border border-slate-200 rounded-2xl">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-slate-700 font-bold sticky top-0 border-b border-slate-200">
+                  <tr>
+                    <th className="p-2.5">Barcode / Booklet No</th>
+                    <th className="p-2.5">Student Name</th>
+                    <th className="p-2.5">Roll No</th>
+                    <th className="p-2.5">Class & Sec</th>
+                    <th className="p-2.5">Subject</th>
+                    <th className="p-2.5">Examination</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {savedBooklets.length > 0 ? (
+                    savedBooklets.map((b, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50 font-medium text-slate-800">
+                        <td className="p-2.5 font-mono font-bold text-emerald-700">{b.barcode || b.booklet_no}</td>
+                        <td className="p-2.5 font-semibold">{b.student_name}</td>
+                        <td className="p-2.5 font-mono font-bold">{b.roll_no}</td>
+                        <td className="p-2.5">{b.class_name} {b.section}</td>
+                        <td className="p-2.5 font-bold text-blue-700">{b.subject_name || "-"}</td>
+                        <td className="p-2.5 text-slate-600">{b.exam_title}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="6" className="p-8 text-center text-slate-400 italic">
+                        {loadingSavedBooklets ? "Loading barcode database..." : "No stored barcode assignments found. Click 'Save Mappings' when generating OMRs."}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex justify-between items-center text-xs text-slate-500 pt-2 border-t border-slate-150">
+              <span>Total Indexed: <strong>{savedBooklets.length} Barcodes</strong></span>
+              <button
+                onClick={() => setShowBookletsModal(false)}
+                className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 cursor-pointer"
+              >
+                Close Window
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Embedded CSS for High Precision A4 Printing */}
       <style>{`
