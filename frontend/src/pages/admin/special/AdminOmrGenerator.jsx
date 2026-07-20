@@ -36,6 +36,7 @@ export default function AdminOmrGenerator() {
   const [examDate, setExamDate] = useState(new Date().toISOString().split("T")[0]);
 
   // 3. Sheet Format & Questions Configuration
+  const [templateType, setTemplateType] = useState("standard"); // "standard" or "simple"
   const [omrMode, setOmrMode] = useState("single"); // "single" or "booklet"
   const [numQuestions, setNumQuestions] = useState(40);
   const [numOptions, setNumOptions] = useState(4); // 4 = A,B,C,D; 5 = A,B,C,D,E
@@ -154,6 +155,48 @@ export default function AdminOmrGenerator() {
               <Sliders className="w-4 h-4 text-brand-blue" /> Sheet Configuration
             </h2>
             <span className="text-[11px] text-slate-400 font-mono">Live Preview</span>
+          </div>
+
+          {/* Template Style / Type Selector */}
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-150 space-y-2">
+            <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wide block">
+              OMR Template Style
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setTemplateType("standard");
+                  setShowRollNoBubbleGrid(true);
+                }}
+                className={`py-2 px-3 text-xs font-bold rounded-xl border transition text-center ${
+                  templateType === "standard"
+                    ? "bg-brand-blue text-white border-brand-blue shadow-sm"
+                    : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
+                }`}
+              >
+                Standard (Roll No Circles)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTemplateType("simple");
+                  setShowRollNoBubbleGrid(false);
+                }}
+                className={`py-2 px-3 text-xs font-bold rounded-xl border transition text-center ${
+                  templateType === "simple"
+                    ? "bg-brand-blue text-white border-brand-blue shadow-sm"
+                    : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
+                }`}
+              >
+                Simple Classroom (Handwritten)
+              </button>
+            </div>
+            {templateType === "simple" && (
+              <p className="text-[10px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200 mt-1">
+                ⚡ Simple Classroom Template: Student writes Name, Class, Section & Roll No by hand. No Roll No circles, Max Marks, or Time Allowed are shown.
+              </p>
+            )}
           </div>
 
           {/* Sheet Format Mode Selector */}
@@ -495,29 +538,42 @@ export default function AdminOmrGenerator() {
               </div>
 
               {/* Sub Header Specs */}
-              <div className="grid grid-cols-4 gap-2 text-[10px] font-bold border border-black p-1.5 mb-2 bg-gray-50 text-center">
-                <div>
-                  <span className="text-black/60 uppercase block text-[8.5px]">Class:</span>
-                  <span className="text-black font-extrabold">{className || "_______"}</span>
+              {templateType === "simple" ? (
+                <div className="grid grid-cols-2 gap-2 text-[10px] font-bold border border-black p-1.5 mb-2 bg-gray-50 text-center">
+                  <div>
+                    <span className="text-black/60 uppercase block text-[8.5px]">Class & Section:</span>
+                    <span className="text-black font-extrabold">{className ? `${className}` : "______________"}</span>
+                  </div>
+                  <div>
+                    <span className="text-black/60 uppercase block text-[8.5px]">Subject:</span>
+                    <span className="text-black font-extrabold">{subjectName || "______________"}</span>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-black/60 uppercase block text-[8.5px]">Subject:</span>
-                  <span className="text-black font-extrabold">{subjectName || "_______"}</span>
+              ) : (
+                <div className="grid grid-cols-4 gap-2 text-[10px] font-bold border border-black p-1.5 mb-2 bg-gray-50 text-center">
+                  <div>
+                    <span className="text-black/60 uppercase block text-[8.5px]">Class:</span>
+                    <span className="text-black font-extrabold">{className || "_______"}</span>
+                  </div>
+                  <div>
+                    <span className="text-black/60 uppercase block text-[8.5px]">Subject:</span>
+                    <span className="text-black font-extrabold">{subjectName || "_______"}</span>
+                  </div>
+                  <div>
+                    <span className="text-black/60 uppercase block text-[8.5px]">Max Marks:</span>
+                    <span className="text-black font-extrabold">{maxMarks || "___"}</span>
+                  </div>
+                  <div>
+                    <span className="text-black/60 uppercase block text-[8.5px]">Time Allowed:</span>
+                    <span className="text-black font-extrabold">{timeAllowed || "___"}</span>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-black/60 uppercase block text-[8.5px]">Max Marks:</span>
-                  <span className="text-black font-extrabold">{maxMarks || "___"}</span>
-                </div>
-                <div>
-                  <span className="text-black/60 uppercase block text-[8.5px]">Time Allowed:</span>
-                  <span className="text-black font-extrabold">{timeAllowed || "___"}</span>
-                </div>
-              </div>
+              )}
 
               {/* Candidate Info + Roll No Bubble Grid */}
               <div className="grid grid-cols-12 gap-2 mb-3">
                 {/* Left Column: Candidate Written Inputs & SET Code */}
-                <div className={`${showRollNoBubbleGrid ? 'col-span-7' : 'col-span-12'} space-y-1.5 text-[10px]`}>
+                <div className={`${(showRollNoBubbleGrid && templateType === "standard") ? 'col-span-7' : 'col-span-12'} space-y-1.5 text-[10px]`}>
                   {/* Candidate Name Box */}
                   <div className="border border-black p-1.5">
                     <span className="font-bold uppercase tracking-wide text-[9px] block mb-0.5">
@@ -529,11 +585,13 @@ export default function AdminOmrGenerator() {
                   {/* Roll No / Class / Sec / Date Row */}
                   <div className="grid grid-cols-3 gap-1.5">
                     <div className="border border-black p-1">
-                      <span className="font-bold uppercase text-[8.5px] block">ROLL NO:</span>
+                      <span className="font-bold uppercase text-[8.5px] block">
+                        ROLL NO {templateType === "simple" ? "(HANDWRITTEN)" : ""}:
+                      </span>
                       <div className="h-4"></div>
                     </div>
                     <div className="border border-black p-1">
-                      <span className="font-bold uppercase text-[8.5px] block">SECTION:</span>
+                      <span className="font-bold uppercase text-[8.5px] block">SECTION / CLASS:</span>
                       <div className="h-4"></div>
                     </div>
                     <div className="border border-black p-1">
@@ -543,29 +601,34 @@ export default function AdminOmrGenerator() {
                   </div>
 
                   {/* Booklet No & Set Selection */}
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {showBookletNo && (
-                      <div className="border border-black p-1">
-                        <span className="font-bold uppercase text-[8.5px] block">BOOKLET NO:</span>
-                        <div className="h-4"></div>
-                      </div>
-                    )}
-
-                    {showSetCode && (
-                      <div className="border border-black p-1 flex flex-col justify-between">
-                        <span className="font-bold uppercase text-[8.5px] block">QUESTION SET:</span>
-                        <div className="flex justify-around items-center py-0.5">
-                          {["A", "B", "C", "D"].map((setCode) => (
-                            <div key={setCode} className="flex items-center gap-1">
-                              <div className="w-3.5 h-3.5 rounded-full border-2 border-black flex items-center justify-center font-bold text-[8px]">
-                                {setCode}
-                              </div>
-                            </div>
-                          ))}
+                  {(showBookletNo || showSetCode) && (
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {showBookletNo && (
+                        <div className="border border-black p-1">
+                          <span className="font-bold uppercase text-[8.5px] block">BOOKLET NO:</span>
+                          <div className="h-4"></div>
                         </div>
-                      </div>
-                    )}
-                  </div>
+                      )}
+
+                      {showSetCode && (
+                        <div className="border border-black p-1 flex flex-col justify-between">
+                          <span className="font-bold uppercase text-[8.5px] block">QUESTION SET:</span>
+                          <div className="flex justify-around items-center py-0.5">
+                            {["A", "B", "C", "D"].map((setCode) => (
+                              <div key={setCode} className="flex items-center gap-1">
+                                <div
+                                  style={{ aspectRatio: "1 / 1" }}
+                                  className="w-4 h-4 rounded-full border-2 border-black flex items-center justify-center font-bold text-[8px] shrink-0"
+                                >
+                                  {setCode}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Instructions Box */}
                   {showInstructions && (
@@ -582,7 +645,7 @@ export default function AdminOmrGenerator() {
                 </div>
 
                 {/* Right Column: Roll Number Grid */}
-                {showRollNoBubbleGrid && (
+                {showRollNoBubbleGrid && templateType === "standard" && (
                   <div className="col-span-5 border border-black p-1.5 bg-white flex flex-col justify-between">
                     <div className="text-[9px] font-extrabold uppercase text-center border-b border-black pb-0.5 mb-1 text-black">
                       ROLL NUMBER GRID
@@ -599,6 +662,7 @@ export default function AdminOmrGenerator() {
                           {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((digit) => (
                             <div
                               key={digit}
+                              style={{ aspectRatio: "1 / 1" }}
                               className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 border-black flex items-center justify-center font-bold text-[7.5px] sm:text-[8px] bg-white shrink-0 hover:bg-black hover:text-white transition cursor-pointer"
                             >
                               {digit}
@@ -637,12 +701,13 @@ export default function AdminOmrGenerator() {
                           {qNum.toString().padStart(2, "0")}.
                         </span>
 
-                        {/* Bubble Options */}
-                        <div className="flex-1 flex justify-around items-center">
+                        {/* Uncompressed 1:1 Aspect-Ratio Bubble Options */}
+                        <div className="flex-1 flex justify-around items-center px-1">
                           {optionLabels.map((label) => (
                             <div
                               key={label}
-                              className="w-4.5 h-4.5 rounded-full border-2 border-black flex items-center justify-center font-bold text-[8.5px] text-black bg-white hover:bg-black hover:text-white transition cursor-pointer shrink-0"
+                              style={{ aspectRatio: "1 / 1" }}
+                              className="w-4.5 h-4.5 sm:w-5 sm:h-5 min-w-[18px] min-h-[18px] rounded-full border-2 border-black flex items-center justify-center font-bold text-[8.5px] sm:text-[9px] text-black bg-white hover:bg-black hover:text-white transition cursor-pointer shrink-0"
                             >
                               {label}
                             </div>
