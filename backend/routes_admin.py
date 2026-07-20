@@ -2582,10 +2582,18 @@ async def export_omr_pdf(
             pdf_chunks = []
             
             async with async_playwright() as p:
+                import os
+                exe_path = "/usr/bin/chromium"
+                launch_args = []
+                if os.path.exists(exe_path):
+                    launch_args = ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
+                else:
+                    exe_path = None # Use Playwright's local Chromium revision on macOS/Windows
+
                 browser = await p.chromium.launch(
                     headless=True,
-                    executable_path="/usr/bin/chromium",
-                    args=["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
+                    executable_path=exe_path,
+                    args=launch_args
                 )
                 
                 for page_html in html_pages:
