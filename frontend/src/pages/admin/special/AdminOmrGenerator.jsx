@@ -557,7 +557,11 @@ export default function AdminOmrGenerator() {
         scale: 2,
         useCORS: true,
         logging: false,
-        backgroundColor: "#ffffff"
+        backgroundColor: "#ffffff",
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: el.scrollWidth,
+        windowHeight: el.scrollHeight
       });
 
       const imgData = canvas.toDataURL("image/jpeg", 0.95);
@@ -587,12 +591,15 @@ export default function AdminOmrGenerator() {
     const total = printAreas.length;
     const isLandscape = omrMode === "booklet";
 
-    // 1. Gather minimal stylesheets without bloated redundant CSS blocks
+    // 1. Gather all active document stylesheets and style elements to match look and feel,
+    // converting relative URLs to absolute URLs so Playwright can fetch them over the network.
     let stylesHtml = "";
-    document.querySelectorAll("style").forEach((el) => {
-      const content = el.innerHTML || "";
-      if (content.includes("omr") || content.includes("font") || content.includes("grid") || content.includes("border")) {
-        stylesHtml += `<style>${content}</style>`;
+    document.querySelectorAll("style, link[rel='stylesheet']").forEach((el) => {
+      if (el.tagName === "STYLE") {
+        stylesHtml += el.outerHTML;
+      } else if (el.tagName === "LINK" && el.href) {
+        const absoluteUrl = new URL(el.getAttribute("href"), window.location.origin).href;
+        stylesHtml += `<link rel="stylesheet" href="${absoluteUrl}">`;
       }
     });
 
@@ -1569,6 +1576,7 @@ export default function AdminOmrGenerator() {
                       <img
                         src={schoolLogo}
                         alt="School Logo"
+                        style={{ width: isBookletCopy ? '40px' : '56px', height: isBookletCopy ? '40px' : '56px', maxWidth: isBookletCopy ? '40px' : '56px', maxHeight: isBookletCopy ? '40px' : '56px', objectFit: 'contain', flexShrink: 0 }}
                         className={`${isBookletCopy ? 'w-10 h-10' : 'w-14 h-14'} object-contain shrink-0`}
                         onError={(e) => { e.target.style.display = 'none'; }}
                       />
