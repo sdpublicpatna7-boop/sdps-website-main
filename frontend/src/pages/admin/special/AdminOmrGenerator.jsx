@@ -16,7 +16,7 @@ export default function AdminOmrGenerator() {
     settings?.school_name || "S.D. PUBLIC SCHOOL"
   );
   const [schoolSubHeader, setSchoolSubHeader] = useState(
-    settings?.cbse_affiliation || "AFFILIATED TO CBSE, NEW DELHI (AFFILIATION NO. 330752)"
+    settings?.cbse_affiliation || ""
   );
   const [schoolAddress, setSchoolAddress] = useState(
     settings?.address || "Maurya Colony, Near R.O.B Kumhrar, Gulzarbagh Road, Patna - 800007"
@@ -477,9 +477,11 @@ export default function AdminOmrGenerator() {
                     <h1 className={`${isBookletCopy ? 'text-lg sm:text-xl' : 'text-xl sm:text-2xl'} font-black tracking-wider uppercase text-black font-headline leading-tight`}>
                       {schoolName}
                     </h1>
-                    <p className={`${isBookletCopy ? 'text-[9.5px]' : 'text-[11px]'} font-semibold uppercase tracking-wide text-black/90`}>
-                      {schoolSubHeader}
-                    </p>
+                    {schoolSubHeader && (
+                      <p className={`${isBookletCopy ? 'text-[9.5px]' : 'text-[11px]'} font-semibold uppercase tracking-wide text-black/90`}>
+                        {schoolSubHeader}
+                      </p>
+                    )}
                     <p className="text-[9.5px] text-black/75">
                       {schoolAddress}
                     </p>
