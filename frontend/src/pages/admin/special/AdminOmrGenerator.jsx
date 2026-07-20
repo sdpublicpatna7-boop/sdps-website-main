@@ -536,6 +536,11 @@ export default function AdminOmrGenerator() {
       border: 1px solid #cbd5e1 !important;
       box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1) !important;
       margin: 0 auto !important;
+      width: ${omrMode === 'booklet' ? '297mm' : '210mm'} !important;
+      height: ${omrMode === 'booklet' ? '210mm' : '297mm'} !important;
+      box-sizing: border-box !important;
+      padding: ${omrMode === 'booklet' ? '6mm 6mm' : '12mm 12mm'} !important;
+      overflow: hidden !important;
     }
     @media print {
       body {
@@ -549,7 +554,7 @@ export default function AdminOmrGenerator() {
         box-shadow: none !important;
         page-break-after: always !important;
         break-after: page !important;
-        margin: 0 !important;
+        margin: 0 auto !important;
       }
       .omr-print-area:last-child {
         page-break-after: avoid !important;
@@ -1772,14 +1777,20 @@ export default function AdminOmrGenerator() {
       {/* Embedded CSS for High Precision A4 Printing */}
       <style>{`
         @media print {
-          /* Force page flow and visible overflow on all layout wrappers */
-          html, body, #root, main, div, section {
-            overflow: visible !important;
+          /* Force page flow and remove all margins/paddings/gaps on layout wrappers outside the print area */
+          html, body, #root, main,
+          .space-y-6,
+          .lg:col-span-8,
+          .w-full.flex.justify-center {
+            margin: 0 !important;
+            padding: 0 !important;
+            gap: 0 !important;
+            display: block !important;
+            width: 100% !important;
             height: auto !important;
             min-height: 0 !important;
             max-height: none !important;
-            margin: 0 !important;
-            padding: 0 !important;
+            overflow: visible !important;
             border: none !important;
             box-shadow: none !important;
             background: white !important;
@@ -1797,7 +1808,7 @@ export default function AdminOmrGenerator() {
             overflow: hidden !important;
           }
 
-          /* Make sure the main content is block styled and visible */
+          /* Make sure the main content is visible */
           body * {
             visibility: hidden !important;
           }
@@ -1809,9 +1820,9 @@ export default function AdminOmrGenerator() {
           .omr-print-area {
             display: block !important;
             position: relative !important;
-            width: 100% !important;
-            max-width: 100% !important;
-            margin: 0 !important;
+            width: ${omrMode === 'booklet' ? '297mm' : '210mm'} !important;
+            height: ${omrMode === 'booklet' ? '210mm' : '297mm'} !important;
+            margin: 0 auto !important;
             padding: ${omrMode === 'booklet' ? '6mm 6mm' : '12mm 12mm'} !important;
             border: none !important;
             box-shadow: none !important;
@@ -1819,6 +1830,7 @@ export default function AdminOmrGenerator() {
             box-sizing: border-box !important;
             page-break-after: always !important;
             break-after: page !important;
+            overflow: hidden !important;
           }
 
           .omr-print-area:last-child {
