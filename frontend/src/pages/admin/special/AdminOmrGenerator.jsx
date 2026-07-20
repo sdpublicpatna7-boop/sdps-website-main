@@ -1193,20 +1193,30 @@ export default function AdminOmrGenerator() {
                       </div>
                     </div>
 
-                    {/* Booklet No & Set Selection & Automated QR Code */}
+                    {/* Booklet No & Set Selection & Merged Barcode Box */}
                     {(showBookletNo || showSetCode || isAutomated) && (
                       <div className="grid grid-cols-12 gap-1.5">
                         {showBookletNo && (
-                          <div className={`${isAutomated ? 'col-span-5' : showSetCode ? 'col-span-6' : 'col-span-12'} border border-black p-2 flex items-center justify-between min-h-[38px]`}>
+                          <div className={`${showSetCode ? 'col-span-7' : 'col-span-12'} border border-black p-1.5 flex items-center justify-between bg-white min-h-[44px]`}>
                             <div>
-                              <span className="font-bold uppercase text-[8.5px] block">BOOKLET NO:</span>
-                              <span className="font-mono font-extrabold text-[10px] text-black tracking-wider">{currentBookletNo}</span>
+                              <span className="font-bold uppercase text-[8.5px] text-black block mb-0.5">BOOKLET NO:</span>
+                              <span className="font-mono font-extrabold text-[11px] text-black tracking-wider block">
+                                {currentBookletNo}
+                              </span>
                             </div>
+                            {(showBarcode || isAutomated) && (
+                              <div className="flex flex-col items-end justify-center shrink-0 border-l border-black/20 pl-2">
+                                <BarcodeSvg value={currentBookletNo} height={22} />
+                                <span className="text-[7px] font-mono font-extrabold text-black tracking-widest mt-0.5">
+                                  {currentBookletNo}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         )}
 
                         {showSetCode && (
-                          <div className={`${showBookletNo ? (isAutomated ? 'col-span-4' : 'col-span-6') : 'col-span-12'} border border-black p-1 flex flex-col justify-between`}>
+                          <div className={`${showBookletNo ? 'col-span-5' : 'col-span-12'} border border-black p-1 flex flex-col justify-between min-h-[44px]`}>
                             <span className="font-bold uppercase text-[8.5px] block">QUESTION SET:</span>
                             <div className="flex justify-around items-center py-0.5">
                               {["A", "B", "C", "D"].map((setCode) => (
@@ -1220,18 +1230,6 @@ export default function AdminOmrGenerator() {
                                 </div>
                               ))}
                             </div>
-                          </div>
-                        )}
-
-                        {isAutomated && (
-                          <div className="col-span-4 flex flex-col justify-center items-center p-1 border border-black bg-white">
-                            <BarcodeSvg
-                              value={currentBookletNo}
-                              height={26}
-                            />
-                            <span className="text-[7px] font-mono font-extrabold text-black tracking-widest mt-0.5">
-                              {currentBookletNo}
-                            </span>
                           </div>
                         )}
                       </div>
