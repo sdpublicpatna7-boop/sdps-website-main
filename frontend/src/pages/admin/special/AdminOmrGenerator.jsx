@@ -148,7 +148,7 @@ export default function AdminOmrGenerator() {
   );
   const [showLogo, setShowLogo] = useState(true);
   const [showSchoolHeader, setShowSchoolHeader] = useState(true);
-  const [showTopBarcode, setShowTopBarcode] = useState(true);
+  const [showTopBarcode, setShowTopBarcode] = useState(false);
 
   // 2. Examination Header
   const [examTitle, setExamTitle] = useState("PERIODIC TEST - II");
