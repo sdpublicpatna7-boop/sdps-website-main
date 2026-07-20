@@ -638,7 +638,7 @@ export default function AdminOmrGenerator() {
 
       const el = printAreas[i];
       const canvas = await html2canvas(el, {
-        scale: 3,
+        scale: 4,
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
@@ -648,7 +648,10 @@ export default function AdminOmrGenerator() {
         windowHeight: el.scrollHeight
       });
 
-      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+      // PNG (lossless) instead of JPEG — JPEG's chroma-subsampled compression
+      // softens the edges of solid black bubbles/barcodes/grid lines, which hurts
+      // real-world OMR scanner readability. PNG keeps those edges pixel-sharp.
+      const imgData = canvas.toDataURL("image/png");
       const pdfWidth = isLandscape ? 297 : 210;
       const pdfHeight = isLandscape ? 210 : 297;
 
@@ -656,7 +659,7 @@ export default function AdminOmrGenerator() {
         pdf.addPage("a4", isLandscape ? "landscape" : "portrait");
       }
 
-      pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight, undefined, "FAST");
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight, undefined, "NONE");
     }
 
     return pdf.output("blob");
@@ -1821,7 +1824,7 @@ export default function AdminOmrGenerator() {
                                 <div key={setCode} className="flex items-center">
                                   <div
                                     style={{ aspectRatio: "1 / 1" }}
-                                    className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border border-black flex items-center justify-center font-bold text-[7.5px] shrink-0 text-black bg-white"
+                                    className="w-4 h-4 rounded-full border border-black flex items-center justify-center font-bold text-[7.5px] shrink-0 text-black bg-white"
                                   >
                                     {setCode}
                                   </div>
@@ -1844,7 +1847,7 @@ export default function AdminOmrGenerator() {
                       </div>
                       <ol
                         style={{ fontSize: `${instructionFontSize}px` }}
-                        className="list-decimal pl-3 leading-[1.15] text-black font-medium grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-0.5"
+                        className="list-decimal pl-3 leading-[1.15] text-black font-medium grid grid-cols-2 gap-x-3 gap-y-0.5"
                       >
                         {candidateInstructions.map((inst, i) => (
                           <li key={i}>{inst}</li>
@@ -1862,7 +1865,7 @@ export default function AdminOmrGenerator() {
                     </div>
                     
                     {/* Aligned Column-based Grid */}
-                    <div className="flex justify-center gap-1 sm:gap-1.5 items-center my-auto">
+                    <div className="flex justify-center gap-1.5 items-center my-auto">
                       {Array.from({ length: rollNoDigits }).map((_, dIdx) => {
                         const paddedRoll = studentRollNo ? studentRollNo.padStart(rollNoDigits, "0") : "";
                         const digitChar = paddedRoll[dIdx] || "";
@@ -1871,7 +1874,7 @@ export default function AdminOmrGenerator() {
                         return (
                           <div key={dIdx} className="flex flex-col items-center gap-0.5">
                             {/* Top Write-in Digit Square Box */}
-                            <div className="w-4 h-4 sm:w-4.5 sm:h-4.5 border-2 border-black bg-gray-50 text-center font-bold text-[8.5px] flex items-center justify-center shrink-0 mb-0.5 rounded-xs font-mono">
+                            <div className="w-4.5 h-4.5 border-2 border-black bg-gray-50 text-center font-bold text-[8.5px] flex items-center justify-center shrink-0 mb-0.5 rounded-xs font-mono">
                               {digitChar}
                             </div>
 
@@ -1882,7 +1885,7 @@ export default function AdminOmrGenerator() {
                                 <div
                                   key={digit}
                                   style={{ aspectRatio: "1 / 1" }}
-                                  className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 border-black flex items-center justify-center font-bold text-[7.5px] sm:text-[8px] shrink-0 transition cursor-pointer ${
+                                  className={`w-4 h-4 rounded-full border-2 border-black flex items-center justify-center font-bold text-[8px] shrink-0 transition cursor-pointer ${
                                     isBubbled
                                       ? "bg-black text-white font-extrabold"
                                       : "bg-white text-black hover:bg-black hover:text-white"
@@ -1916,7 +1919,7 @@ export default function AdminOmrGenerator() {
                       <span className="w-7 text-right pr-1 shrink-0">Q.NO</span>
                       <div className="flex-1 flex justify-around items-center px-1">
                         {optionLabels.map((label) => (
-                          <span key={label} className="w-4.5 sm:w-5 text-center font-extrabold text-[8.5px] text-black shrink-0">
+                          <span key={label} className="w-5 text-center font-extrabold text-[8.5px] text-black shrink-0">
                             {label}
                           </span>
                         ))}
@@ -1936,7 +1939,7 @@ export default function AdminOmrGenerator() {
                             <div
                               key={label}
                               style={{ aspectRatio: "1 / 1" }}
-                              className="w-4.5 h-4.5 sm:w-5 sm:h-5 min-w-[18px] min-h-[18px] rounded-full border-2 border-black flex items-center justify-center font-bold text-[8.5px] sm:text-[9px] text-black bg-white hover:bg-black hover:text-white transition cursor-pointer shrink-0"
+                              className="w-5 h-5 min-w-[18px] min-h-[18px] rounded-full border-2 border-black flex items-center justify-center font-bold text-[9px] text-black bg-white hover:bg-black hover:text-white transition cursor-pointer shrink-0"
                             >
                               {label}
                             </div>
@@ -1983,7 +1986,7 @@ export default function AdminOmrGenerator() {
             return (
               <div key={copyIdx} className="w-full flex justify-center">
                 {/* Printable A4 Container */}
-                <div className={`omr-print-area bg-white border border-slate-300 shadow-xl rounded-sm text-black p-4 sm:p-6 w-full relative font-sans flex flex-col ${omrMode === "booklet" ? "max-w-[1150px] aspect-[297/210]" : "max-w-[800px] aspect-[210/297]"}`}>
+                <div className={`omr-print-area bg-white border border-slate-300 shadow-xl rounded-sm text-black p-6 w-full relative font-sans flex flex-col ${omrMode === "booklet" ? "max-w-[1150px] aspect-[297/210]" : "max-w-[800px] aspect-[210/297]"}`}>
                   {/* Copy number label (screen only) */}
                   {numCopies > 1 && (
                     <div className="no-print absolute -top-3 left-4 bg-brand-blue text-white text-[10px] font-bold px-3 py-0.5 rounded-full shadow-md z-30">
