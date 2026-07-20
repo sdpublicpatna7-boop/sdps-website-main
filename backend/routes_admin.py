@@ -1975,18 +1975,115 @@ async def upload_omr_roster(
 async def get_omr_roster(
     class_name: Optional[str] = None,
     section: Optional[str] = None,
+    source: Optional[str] = "all",
     admin: TokenData = Depends(require_permission("site-settings"))
 ):
+    """
+    Fetch student roster from OMR roster and/or Birthday Module roster.
+    Supports filtering by Class Name and Section.
+    Also returns available classes and sections for UI selection.
+    """
+    available_classes_set = set()
+    available_sections_set = set()
+
+    for col in (db.omr_roster, db.birthday_students):
+        try:
+            raw_c = await col.distinct("class_name")
+            for c in raw_c:
+                if c and str(c).strip(): available_classes_set.add(str(c).strip().upper())
+            raw_c2 = await col.distinct("class")
+            for c in raw_c2:
+                if c and str(c).strip(): available_classes_set.add(str(c).strip().upper())
+
+            raw_s = await col.distinct("section")
+            for s in raw_s:
+                if s and str(s).strip(): available_sections_set.add(str(s).strip().upper())
+            raw_s2 = await col.distinct("sec")
+            for s in raw_s2:
+                if s and str(s).strip(): available_sections_set.add(str(s).strip().upper())
+        except Exception:
+            pass
+
+    available_classes = sorted(list(available_classes_set))
+    available_sections = sorted(list(available_sections_set))
+
     query = {}
-    if class_name:
-        query["class_name"] = class_name
-    if section:
-        query["section"] = section
+    if class_name and class_name.strip() and class_name.upper() != "ALL":
+        escaped_c = re.escape(class_name.strip())
+        query["$or"] = [
+            {"class_name": {"$regex": f"^{escaped_c}$", "$options": "i"}},
+            {"class": {"$regex": f"^{escaped_c}$", "$options": "i"}}
+        ]
+    if section and section.strip() and section.upper() != "ALL":
+        escaped_s = re.escape(section.strip())
+        sec_condition = [
+            {"section": {"$regex": f"^{escaped_s}$", "$options": "i"}},
+            {"sec": {"$regex": f"^{escaped_s}$", "$options": "i"}}
+        ]
+        if "$or" in query:
+            class_or = query.pop("$or")
+            query["$and"] = [{"$or": class_or}, {"$or": sec_condition}]
+        else:
+            query["$or"] = sec_condition
+
+    omr_docs = []
+    if source in ("all", "omr"):
+        omr_docs = await db.omr_roster.find(query).to_list(length=5000)
+
+    bday_docs = []
+    if source in ("all", "birthday") or not omr_docs:
+        bday_docs = await db.birthday_students.find(query).to_list(length=5000)
+
+    seen_adm = set()
+    unified_students = []
+
+    def process_doc(doc, is_bday=False):
+        name = str(doc.get("student_name") or doc.get("name") or doc.get("candidate_name") or "").strip()
+        if not name:
+            return
+        roll = str(doc.get("roll_no") or doc.get("roll") or doc.get("roll_number") or "").strip()
+        c_name = str(doc.get("class_name") or doc.get("class") or "").strip()
+        sec = str(doc.get("section") or doc.get("sec") or "").strip()
+        adm = str(doc.get("admission_no") or doc.get("admn_no") or doc.get("id") or "").strip()
+        f_name = str(doc.get("father_name") or doc.get("fathers_name") or "").strip()
         
-    students = await db.omr_roster.find(query).sort([("class_name", 1), ("roll_no", 1)]).to_list(length=5000)
-    for s in students:
-        s["_id"] = str(s.get("_id", ""))
-    return {"status": "success", "students": students, "count": len(students)}
+        dedup_key = f"{adm.upper()}_{c_name.upper()}_{roll}" if adm else f"{name.upper()}_{c_name.upper()}_{roll}"
+        if dedup_key in seen_adm:
+            return
+        seen_adm.add(dedup_key)
+
+        unified_students.append({
+            "id": doc.get("id") or str(doc.get("_id", "")),
+            "student_name": name,
+            "roll_no": roll,
+            "class_name": c_name,
+            "section": sec,
+            "admission_no": adm,
+            "father_name": f_name,
+            "source": "birthday" if is_bday else "omr"
+        })
+
+    for d in omr_docs:
+        process_doc(d, is_bday=False)
+    for d in bday_docs:
+        process_doc(d, is_bday=True)
+
+    def sort_key(s):
+        roll_num = 999999
+        if s["roll_no"].isdigit():
+            roll_num = int(s["roll_no"])
+        return (s["class_name"], s["section"], roll_num, s["student_name"])
+
+    unified_students.sort(key=sort_key)
+
+    return {
+        "status": "success",
+        "students": unified_students,
+        "count": len(unified_students),
+        "available_classes": available_classes,
+        "available_sections": available_sections
+    }
+
 
 
 @admin_router.delete("/omr/roster/clear")

@@ -187,16 +187,53 @@ export default function AdminOmrGenerator() {
   const [roster, setRoster] = useState([]);
   const [loadingRoster, setLoadingRoster] = useState(false);
   const [savingBooklets, setSavingBooklets] = useState(false);
+  const [selectedClassFilter, setSelectedClassFilter] = useState("ALL");
+  const [selectedSectionFilter, setSelectedSectionFilter] = useState("ALL");
+  const [availableClasses, setAvailableClasses] = useState([]);
+  const [availableSections, setAvailableSections] = useState([]);
 
-  const fetchRoster = async () => {
+  const autoSaveBooklets = async (studentList = roster) => {
+    if (!studentList || studentList.length === 0) return;
+    try {
+      const startNum = parseInt(bookletStartNo || "1001", 10);
+      const bookletMappings = studentList.map((student, idx) => {
+        const bookletNo = `${bookletPrefix}${(startNum + idx)}`;
+        return {
+          booklet_no: bookletNo,
+          roll_no: student.roll_no || student.roll || "",
+          student_name: student.student_name || student.name || "",
+          class_name: student.class_name || student.class || className,
+          section: student.section || student.sec || "A",
+          admission_no: student.admission_no || student.admn_no || "",
+          father_name: student.father_name || "",
+          exam_title: examTitle
+        };
+      });
+      await saveOmrBooklets({ booklets: bookletMappings });
+    } catch (err) {
+      console.warn("Auto-save booklet mapping notice:", err);
+    }
+  };
+
+  const fetchRoster = async (cFilter = selectedClassFilter, sFilter = selectedSectionFilter) => {
     setLoadingRoster(true);
     try {
-      const res = await getOmrRoster();
-      if (res && res.success && res.students && res.students.length > 0) {
+      const params = {};
+      if (cFilter && cFilter !== "ALL") params.class_name = cFilter;
+      if (sFilter && sFilter !== "ALL") params.section = sFilter;
+      const res = await getOmrRoster(params);
+      if (res && res.students && res.students.length > 0) {
         setRoster(res.students);
         setNumCopies(res.students.length);
-        toast.success(`Loaded ${res.students.length} student records from database roster!`);
+        if (res.available_classes) setAvailableClasses(res.available_classes);
+        if (res.available_sections) setAvailableSections(res.available_sections);
+        toast.success(`Loaded ${res.students.length} student records from Birthday/OMR roster!`);
+        
+        // Auto-store generated booklet numbers in database for future OMR evaluation
+        autoSaveBooklets(res.students);
       } else {
+        if (res && res.available_classes) setAvailableClasses(res.available_classes);
+        if (res && res.available_sections) setAvailableSections(res.available_sections);
         // Fallback sample roster if none uploaded yet
         const sampleRoster = [
           { roll_no: "101", student_name: "AARAV KUMAR", class_name: className || "X", section: "A", father_name: "RAJESH KUMAR", admission_no: "ADM-101" },
@@ -207,21 +244,35 @@ export default function AdminOmrGenerator() {
         ];
         setRoster(sampleRoster);
         setNumCopies(sampleRoster.length);
-        toast.info("Loaded 5 sample student records for automated OMR template!");
+        toast.info("No matching students found in database. Loaded 5 sample student records.");
+        autoSaveBooklets(sampleRoster);
       }
     } catch (e) {
       console.error(e);
+      toast.error("Error loading student roster.");
     } finally {
       setLoadingRoster(false);
     }
   };
 
-  const handleCopySimpleToAutomated = () => {
+  const handleCopySimpleToAutomated = async () => {
     setTemplateType("automated");
     setSubHeaderLayout("simple");
     setShowRollNoBubbleGrid(false);
-    toast.success("Copied Simple Fill-in layout to Automated Roster Template!");
-    if (roster.length === 0) fetchRoster();
+    toast.success("Applied Simple Fill-in layout to Pre-filled OMR Template!");
+    let currentRoster = roster;
+    if (currentRoster.length === 0) {
+      const res = await getOmrRoster({ class_name: selectedClassFilter, section: selectedSectionFilter });
+      if (res && res.students && res.students.length > 0) {
+        setRoster(res.students);
+        setNumCopies(res.students.length);
+        currentRoster = res.students;
+      }
+    }
+    if (currentRoster.length > 0) {
+      await autoSaveBooklets(currentRoster);
+      toast.success(`Indexed ${currentRoster.length} generated booklet numbers in database for OMR evaluation!`);
+    }
   };
 
   const handleSaveBookletsToBackend = async () => {
@@ -231,27 +282,8 @@ export default function AdminOmrGenerator() {
     }
     setSavingBooklets(true);
     try {
-      const startNum = parseInt(bookletStartNo || "1001", 10);
-      const bookletMappings = roster.map((student, idx) => {
-        const bookletNo = `${bookletPrefix}${(startNum + idx)}`;
-        return {
-          booklet_no: bookletNo,
-          roll_no: student.roll_no,
-          student_name: student.student_name,
-          class_name: student.class_name || className,
-          section: student.section || "A",
-          admission_no: student.admission_no || "",
-          father_name: student.father_name || "",
-          exam_title: examTitle
-        };
-      });
-
-      const res = await saveOmrBooklets({ booklets: bookletMappings });
-      if (res && res.success) {
-        toast.success(`Saved ${bookletMappings.length} booklet numbers & student mappings for automated QR scanning!`);
-      } else {
-        toast.error("Failed to save booklet mappings.");
-      }
+      await autoSaveBooklets(roster);
+      toast.success(`Saved ${roster.length} booklet numbers & student mappings in database for OMR evaluation!`);
     } catch (err) {
       toast.error("Error saving booklet mappings.");
     } finally {
@@ -363,7 +395,10 @@ export default function AdminOmrGenerator() {
     toast.success(`Preset applied: ${count} Questions (${options} Options, ${cols} Cols)`);
   };
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
+    if (roster.length > 0) {
+      await autoSaveBooklets(roster);
+    }
     window.print();
   };
 
@@ -495,6 +530,15 @@ export default function AdminOmrGenerator() {
               </button>
             </div>
 
+            <button
+              type="button"
+              onClick={handleCopySimpleToAutomated}
+              className="w-full py-1.5 px-2 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white text-[10.5px] font-bold rounded-xl flex items-center justify-center gap-1.5 transition shadow-xs mt-2"
+            >
+              <Copy className="w-3.5 h-3.5" />
+              Copy Simple Fill-in Layout to Pre-filled Template
+            </button>
+
             {templateType === "simple" && (
               <p className="text-[10px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200 mt-1">
                 ⚡ Simple Classroom Template: Clean minimal layout with fill-in blanks for student details.
@@ -502,27 +546,78 @@ export default function AdminOmrGenerator() {
             )}
 
             {templateType === "automated" && (
-              <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-200 space-y-2 mt-2">
+              <div className="bg-emerald-50 p-3.5 rounded-xl border border-emerald-200 space-y-3 mt-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold text-emerald-900 flex items-center gap-1">
-                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> Automated Roster Mode
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> Birthday Module Pre-filled Mode
                   </span>
                   <span className="text-[10px] font-bold bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded-full">
                     {roster.length} Students Loaded
                   </span>
                 </div>
                 <p className="text-[10px] text-emerald-800 leading-snug">
-                  Pre-prints Student Name, Roll No, Class & Section on each page with auto-bubbled roll circles and a scannable Booklet Barcode for evaluation.
+                  Pre-prints Student Name, Roll No, Class & Section from Birthday Module with auto-bubbled roll number circles and barcode.
                 </p>
-                <div className="flex gap-2 pt-1">
+
+                {/* Class & Section Filters */}
+                <div className="grid grid-cols-2 gap-2 bg-white p-2 rounded-lg border border-emerald-200">
+                  <div>
+                    <label className="text-[9.5px] font-bold text-emerald-900 block mb-0.5">Filter Class:</label>
+                    <select
+                      value={selectedClassFilter}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSelectedClassFilter(val);
+                        if (val !== "ALL") setClassName(val);
+                        fetchRoster(val, selectedSectionFilter);
+                      }}
+                      className="w-full px-2 py-1 text-[10.5px] rounded-md border border-emerald-300 font-bold focus:outline-none focus:border-emerald-600 bg-white"
+                    >
+                      <option value="ALL">All Classes</option>
+                      {availableClasses.map((c) => (
+                        <option key={c} value={c}>Class {c}</option>
+                      ))}
+                      {availableClasses.length === 0 && (
+                        ["NURSERY", "LKG", "UKG", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"].map((c) => (
+                          <option key={c} value={c}>Class {c}</option>
+                        ))
+                      )}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[9.5px] font-bold text-emerald-900 block mb-0.5">Filter Section:</label>
+                    <select
+                      value={selectedSectionFilter}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSelectedSectionFilter(val);
+                        fetchRoster(selectedClassFilter, val);
+                      }}
+                      className="w-full px-2 py-1 text-[10.5px] rounded-md border border-emerald-300 font-bold focus:outline-none focus:border-emerald-600 bg-white"
+                    >
+                      <option value="ALL">All Sections</option>
+                      {availableSections.map((s) => (
+                        <option key={s} value={s}>Section {s}</option>
+                      ))}
+                      {availableSections.length === 0 && (
+                        ["A", "B", "C", "D", "E"].map((s) => (
+                          <option key={s} value={s}>Section {s}</option>
+                        ))
+                      )}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-0.5">
                   <button
                     type="button"
-                    onClick={fetchRoster}
+                    onClick={() => fetchRoster(selectedClassFilter, selectedSectionFilter)}
                     disabled={loadingRoster}
                     className="flex-1 py-1.5 px-2 bg-white hover:bg-emerald-100 text-emerald-900 text-[10px] font-bold border border-emerald-300 rounded-lg flex items-center justify-center gap-1 transition shadow-2xs"
                   >
                     <RefreshCw className={`w-3 h-3 ${loadingRoster ? 'animate-spin' : ''}`} />
-                    {loadingRoster ? "Loading..." : "Refresh Roster"}
+                    {loadingRoster ? "Fetching..." : "Load Birthday Roster"}
                   </button>
 
                   <button
@@ -946,10 +1041,12 @@ export default function AdminOmrGenerator() {
               ? roster[(copyIndex - 1) % roster.length]
               : null;
 
-            const studentName = currentStudent?.studentName || "";
-            const studentRollNo = currentStudent?.rollNo ? String(currentStudent.rollNo) : "";
+            const studentName = currentStudent?.student_name || currentStudent?.studentName || currentStudent?.name || "";
+            const studentRollNo = (currentStudent?.roll_no !== undefined && currentStudent?.roll_no !== null && currentStudent?.roll_no !== "")
+              ? String(currentStudent.roll_no)
+              : (currentStudent?.roll ? String(currentStudent.roll) : (currentStudent?.rollNo ? String(currentStudent.rollNo) : ""));
             const studentClassSec = currentStudent
-              ? `${currentStudent.studentClass || className || ''} ${currentStudent.section || ''}`.trim()
+              ? `${currentStudent.class_name || currentStudent.class || currentStudent.studentClass || className || ''} ${currentStudent.section || currentStudent.sec || ''}`.trim()
               : "";
 
             return (
