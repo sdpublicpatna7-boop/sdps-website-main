@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
 import { 
   Printer, FileText, Settings, Sparkles, RefreshCw, 
@@ -192,7 +192,50 @@ export default function AdminOmrGenerator() {
   const [availableClasses, setAvailableClasses] = useState([]);
   const [availableSections, setAvailableSections] = useState([]);
 
-  const autoSaveBooklets = async (studentList = roster) => {
+  // Roll Number Range & Sorting State
+  const [rollStartFilter, setRollStartFilter] = useState("");
+  const [rollEndFilter, setRollEndFilter] = useState("");
+  const [sortRollOrder, setSortRollOrder] = useState("asc");
+
+  // Sorted and Filtered Roster Roll-No wise
+  const displayedRoster = useMemo(() => {
+    let list = [...roster];
+
+    // Sort strictly numerical by Roll Number
+    list.sort((a, b) => {
+      const getNum = (item) => {
+        const raw = String(item.roll_no || item.roll || item.rollNo || "").replace(/\D/g, "");
+        return raw ? parseInt(raw, 10) : 999999;
+      };
+      const rA = getNum(a);
+      const rB = getNum(b);
+      return sortRollOrder === "asc" ? rA - rB : rB - rA;
+    });
+
+    // Roll Number Range filtering
+    if (rollStartFilter || rollEndFilter) {
+      const start = rollStartFilter ? parseInt(rollStartFilter, 10) : null;
+      const end = rollEndFilter ? parseInt(rollEndFilter, 10) : null;
+      list = list.filter((s) => {
+        const raw = String(s.roll_no || s.roll || s.rollNo || "").replace(/\D/g, "");
+        const r = raw ? parseInt(raw, 10) : null;
+        if (r === null) return true;
+        if (start !== null && !isNaN(start) && r < start) return false;
+        if (end !== null && !isNaN(end) && r > end) return false;
+        return true;
+      });
+    }
+
+    return list;
+  }, [roster, rollStartFilter, rollEndFilter, sortRollOrder]);
+
+  useEffect(() => {
+    if (templateType === "automated" && displayedRoster.length > 0) {
+      setNumCopies(displayedRoster.length);
+    }
+  }, [templateType, displayedRoster.length]);
+
+  const autoSaveBooklets = async (studentList = displayedRoster) => {
     if (!studentList || studentList.length === 0) return;
     try {
       const startNum = parseInt(bookletStartNo || "1001", 10);
@@ -258,14 +301,14 @@ export default function AdminOmrGenerator() {
   };
 
   const handleSaveBookletsToBackend = async () => {
-    if (roster.length === 0) {
+    if (displayedRoster.length === 0) {
       toast.error("No student roster loaded. Please load or upload a roster first.");
       return;
     }
     setSavingBooklets(true);
     try {
-      await autoSaveBooklets(roster);
-      toast.success(`Saved ${roster.length} booklet numbers & student mappings in database for OMR evaluation!`);
+      await autoSaveBooklets(displayedRoster);
+      toast.success(`Saved ${displayedRoster.length} booklet numbers & student mappings in database for OMR evaluation!`);
     } catch (err) {
       toast.error("Error saving booklet mappings.");
     } finally {
@@ -378,8 +421,8 @@ export default function AdminOmrGenerator() {
   };
 
   const handlePrint = async () => {
-    if (roster.length > 0) {
-      await autoSaveBooklets(roster);
+    if (displayedRoster.length > 0) {
+      await autoSaveBooklets(displayedRoster);
     }
     window.print();
   };
@@ -533,7 +576,7 @@ export default function AdminOmrGenerator() {
                     <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> Birthday Module Pre-filled Mode
                   </span>
                   <span className="text-[10px] font-bold bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded-full">
-                    {roster.length} Students Loaded
+                    {displayedRoster.length} Active ({roster.length} Total)
                   </span>
                 </div>
                 <p className="text-[10px] text-emerald-800 leading-snug">
@@ -589,6 +632,40 @@ export default function AdminOmrGenerator() {
                         ))
                       )}
                     </select>
+                  </div>
+                </div>
+
+                {/* Roll No Range & Sort Filter */}
+                <div className="bg-white p-2 rounded-lg border border-emerald-200 space-y-1.5">
+                  <div className="flex items-center justify-between text-[9.5px] font-bold text-emerald-900">
+                    <span>Roll No Range / Sort:</span>
+                    <button
+                      type="button"
+                      onClick={() => setSortRollOrder(sortRollOrder === "asc" ? "desc" : "asc")}
+                      className="text-[9px] text-emerald-800 font-bold hover:underline bg-emerald-100/70 px-1.5 py-0.5 rounded border border-emerald-300"
+                    >
+                      {sortRollOrder === "asc" ? "Roll 1 → 50 (Asc)" : "Roll 50 → 1 (Desc)"}
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <input
+                        type="number"
+                        placeholder="Roll Start (e.g. 1)"
+                        value={rollStartFilter}
+                        onChange={(e) => setRollStartFilter(e.target.value)}
+                        className="w-full px-2 py-1 text-[10px] rounded-md border border-emerald-300 font-bold focus:outline-none focus:border-emerald-600 bg-white"
+                      />
+                    </div>
+                    <div>
+                      <input
+                        type="number"
+                        placeholder="Roll End (e.g. 30)"
+                        value={rollEndFilter}
+                        onChange={(e) => setRollEndFilter(e.target.value)}
+                        className="w-full px-2 py-1 text-[10px] rounded-md border border-emerald-300 font-bold focus:outline-none focus:border-emerald-600 bg-white"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -1020,8 +1097,8 @@ export default function AdminOmrGenerator() {
 
             // Check if automated pre-filled student mode is selected
             const isAutomated = templateType === "automated";
-            const currentStudent = isAutomated && roster.length > 0
-              ? roster[(copyIndex - 1) % roster.length]
+            const currentStudent = isAutomated && displayedRoster.length > 0
+              ? displayedRoster[(copyIndex - 1) % displayedRoster.length]
               : null;
 
             const studentName = currentStudent?.student_name || currentStudent?.studentName || currentStudent?.name || "";
