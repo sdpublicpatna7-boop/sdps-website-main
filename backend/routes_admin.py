@@ -2587,6 +2587,8 @@ async def export_omr_pdf(
             
             temp_dir = tempfile.mkdtemp(prefix="omr_pdf_")
             
+            browserless_key = os.getenv("BROWSERLESS_API_KEY", "").strip()
+            
             exe_path = "/usr/bin/chromium"
             launch_args = [
                 "--no-sandbox",
@@ -2611,11 +2613,24 @@ async def export_omr_pdf(
                 launch_args = [arg for arg in launch_args if arg not in ("--single-process", "--no-zygote")]
 
             async with async_playwright() as p:
-                browser = await p.chromium.launch(
-                    headless=True,
-                    executable_path=exe_path,
-                    args=launch_args
-                )
+                if browserless_key:
+                    ws_url = f"wss://chrome.browserless.io?token={browserless_key}"
+                    try:
+                        browser = await p.chromium.connect_over_cdp(ws_url)
+                        logger.info("Successfully connected to Browserless.io cloud Chromium for PDF export.")
+                    except Exception as b_err:
+                        logger.warning(f"Browserless.io connection failed ({b_err}). Falling back to local Chromium.")
+                        browser = await p.chromium.launch(
+                            headless=True,
+                            executable_path=exe_path,
+                            args=launch_args
+                        )
+                else:
+                    browser = await p.chromium.launch(
+                        headless=True,
+                        executable_path=exe_path,
+                        args=launch_args
+                    )
                 
                 try:
                     context = await browser.new_context(viewport={"width": 1200, "height": 1600})
