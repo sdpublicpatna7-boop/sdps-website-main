@@ -1868,7 +1868,7 @@ export default function AdminOmrGenerator() {
             gap: 0 !important;
             display: block !important;
             width: 100% !important;
-            height: 100% !important;
+            height: auto !important;
             min-height: 0 !important;
             max-height: none !important;
             overflow: visible !important;
