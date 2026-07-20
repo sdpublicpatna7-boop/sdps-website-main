@@ -1995,6 +1995,65 @@ async def clear_omr_roster(admin: TokenData = Depends(require_permission("site-s
     return {"status": "success", "message": "OMR student roster cleared."}
 
 
+@admin_router.post("/omr/booklets/save")
+async def save_omr_booklets(
+    payload: Dict[str, Any] = Body(...),
+    admin: TokenData = Depends(require_permission("site-settings"))
+):
+    """Save booklet mapping (Booklet Serial No <-> Student Roll No) for automated QR evaluation."""
+    booklets = payload.get("booklets", [])
+    if not booklets:
+        return {"status": "success", "count": 0}
+        
+    from pymongo import UpdateOne
+    operations = []
+    for b in booklets:
+        booklet_no = str(b.get("booklet_no") or "").strip()
+        if not booklet_no:
+            continue
+        doc = {
+            "booklet_no": booklet_no,
+            "roll_no": str(b.get("roll_no") or "").strip(),
+            "student_name": str(b.get("student_name") or "").strip(),
+            "class_name": str(b.get("class_name") or "").strip(),
+            "section": str(b.get("section") or "").strip(),
+            "admission_no": str(b.get("admission_no") or "").strip(),
+            "father_name": str(b.get("father_name") or "").strip(),
+            "exam_title": str(b.get("exam_title") or "").strip(),
+            "updated_at": now_iso()
+        }
+        operations.append(
+            UpdateOne(
+                {"booklet_no": booklet_no},
+                {"$set": doc},
+                upsert=True
+            )
+        )
+        
+    if operations:
+        await db.omr_booklets.bulk_write(operations)
+        
+    return {"status": "success", "message": f"Saved {len(operations)} booklet mappings.", "count": len(operations)}
+
+
+@admin_router.get("/omr/booklet/{booklet_no}")
+async def get_omr_booklet(
+    booklet_no: str,
+    admin: TokenData = Depends(require_permission("site-settings"))
+):
+    """Lookup student details by booklet number or roll number."""
+    record = await db.omr_booklets.find_one({
+        "$or": [
+            {"booklet_no": booklet_no},
+            {"roll_no": booklet_no}
+        ]
+    })
+    if record:
+        record["_id"] = str(record.get("_id", ""))
+        return {"status": "success", "found": True, "student": record}
+    return {"status": "success", "found": False}
+
+
 @admin_router.post("/omr/evaluations/save")
 async def save_omr_evaluations(
     payload: Dict[str, Any] = Body(...),

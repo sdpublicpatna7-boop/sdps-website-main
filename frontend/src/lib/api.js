@@ -1166,6 +1166,16 @@ export async function clearOmrRoster() {
   return res.data;
 }
 
+export async function saveOmrBooklets(payload) {
+  const res = await api.post("/admin/omr/booklets/save", payload);
+  return res.data;
+}
+
+export async function getOmrBooklet(bookletNo) {
+  const res = await api.get(`/admin/omr/booklet/${encodeURIComponent(bookletNo)}`);
+  return res.data;
+}
+
 export async function saveOmrEvaluations(payload) {
   const res = await api.post("/admin/omr/evaluations/save", payload);
   return res.data;
