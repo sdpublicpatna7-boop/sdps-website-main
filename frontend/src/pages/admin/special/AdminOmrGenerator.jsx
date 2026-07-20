@@ -160,7 +160,8 @@ export default function AdminOmrGenerator() {
   const [examDate, setExamDate] = useState(new Date().toISOString().split("T")[0]);
 
   // 3. Sheet Format & Questions Configuration
-  const [templateType, setTemplateType] = useState("standard"); // "standard" or "simple"
+  const [templateType, setTemplateType] = useState("standard"); // "standard", "simple", "automated"
+  const [subHeaderLayout, setSubHeaderLayout] = useState("standard"); // "standard" or "simple"
   const [omrMode, setOmrMode] = useState("single"); // "single" or "booklet"
   const [numQuestions, setNumQuestions] = useState(40);
   const [numOptions, setNumOptions] = useState(4); // 4 = A,B,C,D; 5 = A,B,C,D,E
@@ -213,6 +214,14 @@ export default function AdminOmrGenerator() {
     } finally {
       setLoadingRoster(false);
     }
+  };
+
+  const handleCopySimpleToAutomated = () => {
+    setTemplateType("automated");
+    setSubHeaderLayout("simple");
+    setShowRollNoBubbleGrid(false);
+    toast.success("Copied Simple Fill-in layout to Automated Roster Template!");
+    if (roster.length === 0) fetchRoster();
   };
 
   const handleSaveBookletsToBackend = async () => {
