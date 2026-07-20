@@ -8,8 +8,7 @@ import {
 import { getOmrRoster, saveOmrBooklets, getOmrBooklets, clearOmrBooklets, exportOmrPdf, getNextBookletSerial } from "@/lib/api";
 import api from "@/lib/api";
 import { toast } from "sonner";
-import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
+// html2canvas and jsPDF removed — PDF export now uses the browser's native print engine
 
 const OMR_STORAGE_KEY = "sdps_omr_last_settings";
 
@@ -613,158 +612,37 @@ export default function AdminOmrGenerator() {
     window.print();
   };
 
-  /**
-   * Client-Side Direct High-Res PDF Generator (Zero-Server Fallback)
-   * Uses jsPDF + html2canvas directly in the user's browser memory
-   */
-  const exportClientSidePdf = async (onProgress) => {
-    const printAreas = document.querySelectorAll(".omr-print-area");
-    if (printAreas.length === 0) {
-      throw new Error("No OMR sheets rendered to export.");
-    }
-
-    const total = printAreas.length;
-    const isLandscape = omrMode === "booklet";
-
-    const pdf = new jsPDF({
-      orientation: isLandscape ? "landscape" : "portrait",
-      unit: "mm",
-      format: "a4",
-      compress: true
-    });
-
-    for (let i = 0; i < total; i++) {
-      if (onProgress) onProgress(i + 1, total);
-
-      const el = printAreas[i];
-
-      // Get the element's true position relative to the document
-      // (not the viewport). html2canvas needs these to clip the capture
-      // correctly when the page is scrolled.
-      const rect = el.getBoundingClientRect();
-      const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
-      const scrollTop  = window.pageYOffset || document.documentElement.scrollTop;
-      const elDocTop   = rect.top  + scrollTop;
-      const elDocLeft  = rect.left + scrollLeft;
-
-      // A4 at 96 dpi base: 794 × 1123 px portrait, 1123 × 794 px landscape.
-      // Locking windowWidth/windowHeight to these exact values means Tailwind
-      // always sees the same breakpoint during capture regardless of screen size.
-      const a4PxW = isLandscape ? 1123 : 794;
-      const a4PxH = isLandscape ? 794  : 1123;
-
-      const canvas = await html2canvas(el, {
-        scale: 4,                  // → ~380 DPI on A4
-        useCORS: true,
-        allowTaint: false,
-        logging: false,
-        backgroundColor: "#ffffff",
-        // Tell html2canvas where the element actually lives in the document
-        scrollX: -elDocLeft,
-        scrollY: -elDocTop,
-        // Fix the virtual viewport to exact A4 so no responsive class ever fires
-        windowWidth:  a4PxW,
-        windowHeight: a4PxH,
-        // Capture exactly the element's rendered size
-        width:  el.offsetWidth,
-        height: el.offsetHeight,
-        x: 0,
-        y: 0,
-      });
-
-      // PNG (lossless) — keeps bubble/barcode/grid edges pixel-sharp for scanning.
-      // JPEG's chroma-subsampled compression softens solid black edges.
-      const imgData = canvas.toDataURL("image/png");
-      const pdfWidth  = isLandscape ? 297 : 210;
-      const pdfHeight = isLandscape ? 210 : 297;
-
-      if (i > 0) {
-        pdf.addPage("a4", isLandscape ? "landscape" : "portrait");
-      }
-
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight, undefined, "NONE");
-    }
-
-    return pdf.output("blob");
-  };
-
-  /**
-   * exportOMRAsBlob — 100% Client-Side High-Res PDF Processing
-   * Processes the PDF entirely inside the user's Mac browser memory.
-   * Zero backend HTTP requests, zero rate limits, zero server payload errors!
-   */
-  const exportOMRAsBlob = async (onProgress) => {
-    return await exportClientSidePdf(onProgress);
-  };
-
-  /** PDF Export state */
+  /** PDF Export state (kept for UI compatibility) */
   const [exportingPdf, setExportingPdf] = useState(false);
   const [pdfProgress, setPdfProgress] = useState({ current: 0, total: 0 });
 
+  /**
+   * Export as PDF — uses the browser's native print engine (same as Print button).
+   * html2canvas/jsPDF can never faithfully reproduce a fluid CSS layout at A4 dimensions;
+   * the browser's own print renderer handles all CSS, fonts, SVG, and aspect ratios perfectly.
+   * User chooses "Save as PDF" in the print dialog to get a file.
+   */
   const handleExportPdf = async () => {
-    let timer = null;
     try {
       window.__sdps_suppress_logout = true;
       setExportingPdf(true);
 
-      const printAreas = document.querySelectorAll(".omr-print-area");
-      const totalPages = printAreas.length || 1;
-      setPdfProgress({ current: 1, total: totalPages });
-
-      // Smooth progress timer while waiting for backend PDF response
-      let step = 1;
-      timer = setInterval(() => {
-        if (step < totalPages - 1) {
-          step += 1;
-          setPdfProgress({ current: step, total: totalPages });
-        }
-      }, 750);
-
-      const pdfBlob = await exportOMRAsBlob();
-
-      if (timer) clearInterval(timer);
-      setPdfProgress({ current: totalPages, total: totalPages });
-
-      // Generate Blob URL and open directly in a new tab (matching gungunerp.in method!)
-      const pdfFileBlob = pdfBlob instanceof Blob ? pdfBlob : new Blob([pdfBlob], { type: "application/pdf" });
-      const url = window.URL.createObjectURL(pdfFileBlob);
-      
-      // Open PDF Blob in a new tab
-      const pdfWindow = window.open(url, "_blank");
-      if (!pdfWindow) {
-        // Fallback download if popups blocked by browser
-        const link = document.createElement("a");
-        link.style.display = "none";
-        link.href = url;
-        const fileName = `OMR_${className || "Sheets"}_${selectedSectionFilter || ""}_${numQuestions}Q.pdf`.replace(/[^a-zA-Z0-9_\-\.]/g, "_");
-        link.setAttribute("download", fileName);
-        document.body.appendChild(link);
-        link.click();
-        setTimeout(() => {
-          try {
-            if (document.body.contains(link)) document.body.removeChild(link);
-          } catch (e) { /* ignore cleanup */ }
-        }, 15000);
-      }
-
-      const fileSizeMb = (pdfBlob.size / (1024 * 1024)).toFixed(1);
-      toast.success(`PDF Exported — ${totalPages} pages (${fileSizeMb} MB) downloaded!`);
-
-      // Close modal popup immediately
-      setExportingPdf(false);
-
-      // Index and auto-advance serial numbers ONLY after PDF is successfully downloaded to user's device!
+      // Save booklet index before printing (same as handlePrint)
       if (displayedRoster.length > 0) {
         await autoSaveBooklets(displayedRoster).catch((err) => {
           console.warn("Booklet auto-index notice:", err);
         });
       }
+
+      toast.success("Opening print dialog — choose 'Save as PDF' to export.");
+
+      // Small delay so the toast is visible before the print dialog blocks the UI
+      await new Promise((r) => setTimeout(r, 300));
+      window.print();
     } catch (err) {
-      if (timer) clearInterval(timer);
       console.error("PDF export failed:", err);
-      toast.error(`PDF export failed: ${err.message}`);
+      toast.error(`Export failed: ${err.message}`);
     } finally {
-      if (timer) clearInterval(timer);
       setExportingPdf(false);
       setPdfProgress({ current: 0, total: 0 });
       window.__sdps_suppress_logout = false;
@@ -834,9 +712,7 @@ export default function AdminOmrGenerator() {
             className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition shadow-md shadow-emerald-700/20 cursor-pointer disabled:opacity-60 disabled:cursor-wait"
           >
             {exportingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-            {exportingPdf
-              ? (pdfProgress.total > 0 ? `Page ${pdfProgress.current}/${pdfProgress.total}` : "Preparing…")
-              : "Export as PDF"}
+            {exportingPdf ? "Preparing…" : "Export as PDF"}
           </button>
 
           <button
@@ -863,27 +739,11 @@ export default function AdminOmrGenerator() {
               <Loader2 className="w-8 h-8 text-emerald-700 animate-spin" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-900">Generating PDF</h3>
+              <h3 className="text-lg font-bold text-slate-900">Opening Print Dialog</h3>
               <p className="text-sm text-slate-500 mt-1">
-                {pdfProgress.total > 0
-                  ? `Rendering page ${pdfProgress.current} of ${pdfProgress.total}`
-                  : "Preparing sheets\u2026"}
+                Saving booklet index… then select <strong>Save as PDF</strong> in the print dialog.
               </p>
             </div>
-            {pdfProgress.total > 0 && (
-              <div className="space-y-2">
-                <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full transition-all duration-300 ease-out"
-                    style={{ width: `${Math.round((pdfProgress.current / pdfProgress.total) * 100)}%` }}
-                  />
-                </div>
-                <div className="flex justify-between text-xs font-semibold text-slate-600">
-                  <span>{pdfProgress.current} / {pdfProgress.total} pages</span>
-                  <span>{Math.round((pdfProgress.current / pdfProgress.total) * 100)}%</span>
-                </div>
-              </div>
-            )}
             <p className="text-[11px] text-slate-400">Please don't close or navigate away from this page.</p>
           </div>
         </div>
