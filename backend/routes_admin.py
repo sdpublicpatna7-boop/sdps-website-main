@@ -2011,22 +2011,21 @@ async def get_omr_roster(
     raw_classes = set()
     available_sections_set = set()
 
-    for col in (db.omr_roster, db.birthday_students):
-        try:
-            for field in ("class_name", "class"):
-                distinct_vals = await col.distinct(field)
-                for val in distinct_vals:
-                    if val and str(val).strip():
-                        raw_classes.add(clean_class_name(str(val)))
+    try:
+        for field in ("class_name", "class"):
+            distinct_vals = await db.birthday_students.distinct(field)
+            for val in distinct_vals:
+                if val and str(val).strip():
+                    raw_classes.add(clean_class_name(str(val)))
 
-            raw_s = await col.distinct("section")
-            for s in raw_s:
-                if s and str(s).strip(): available_sections_set.add(str(s).strip().upper())
-            raw_s2 = await col.distinct("sec")
-            for s in raw_s2:
-                if s and str(s).strip(): available_sections_set.add(str(s).strip().upper())
-        except Exception:
-            pass
+        raw_s = await db.birthday_students.distinct("section")
+        for s in raw_s:
+            if s and str(s).strip(): available_sections_set.add(str(s).strip().upper())
+        raw_s2 = await db.birthday_students.distinct("sec")
+        for s in raw_s2:
+            if s and str(s).strip(): available_sections_set.add(str(s).strip().upper())
+    except Exception:
+        pass
 
     CLASS_ORDER = ["Class Nursery", "Class LKG", "Class UKG", "Class I", "Class II", "Class III", "Class IV", "Class V", "Class VI", "Class VII", "Class VIII", "Class IX", "Class X", "Class XI", "Class XII"]
     def class_sort_key(c):
@@ -2094,18 +2093,11 @@ async def get_omr_roster(
     elif sec_or_conditions:
         query["$or"] = sec_or_conditions
 
-    omr_docs = []
-    if source in ("all", "omr"):
-        omr_docs = await db.omr_roster.find(query).to_list(length=5000)
-
-    bday_docs = []
-    if source in ("all", "birthday") or not omr_docs:
-        bday_docs = await db.birthday_students.find(query).to_list(length=5000)
+    bday_docs = await db.birthday_students.find(query).to_list(length=5000)
 
     # Fallback in-memory matcher if db query returns 0 records
-    if not omr_docs and not bday_docs:
+    if not bday_docs:
         all_bday = await db.birthday_students.find({}).to_list(length=5000)
-        all_omr = await db.omr_roster.find({}).to_list(length=5000)
         
         target_c = (class_name or "").strip().upper()
         clean_target_c = re.sub(r'^(CLASS|STD|STANDARD)\s*[\-\s]*', '', target_c, flags=re.I).strip()
@@ -2129,15 +2121,13 @@ async def get_omr_roster(
                     target_rm in (s_clean_nodash, s_ar, s_rm) or
                     target_c in s_class or s_class in target_c)
 
-        for d in all_omr:
-            if matches_student(d): omr_docs.append(d)
         for d in all_bday:
             if matches_student(d): bday_docs.append(d)
 
     seen_adm = set()
     unified_students = []
 
-    def process_doc(doc, is_bday=False):
+    def process_doc(doc):
         name = str(doc.get("student_name") or doc.get("name") or doc.get("candidate_name") or "").strip()
         if not name:
             return
@@ -2160,13 +2150,11 @@ async def get_omr_roster(
             "section": sec,
             "admission_no": adm,
             "father_name": f_name,
-            "source": "birthday" if is_bday else "omr"
+            "source": "birthday"
         })
 
-    for d in omr_docs:
-        process_doc(d, is_bday=False)
     for d in bday_docs:
-        process_doc(d, is_bday=True)
+        process_doc(d)
 
     def sort_key(s):
         roll_num = 999999
