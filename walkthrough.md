@@ -87,4 +87,9 @@ We have successfully completed the native refactoring of the school election por
   * Added `<link rel="manifest">` inside the head of the main index layout template.
   * Designed and registered a customized `service-worker.js` with a Network-First cache fallback strategy to ensure high performance and reliable offline page capabilities for the entire web portal.
   * Affected files: [index.html](file:///Users/aarav/Downloads/sdps-website-main/frontend/public/index.html), [index.js](file:///Users/aarav/Downloads/sdps-website-main/frontend/src/index.js), [manifest.json](file:///Users/aarav/Downloads/sdps-website-main/frontend/public/manifest.json), [service-worker.js](file:///Users/aarav/Downloads/sdps-website-main/frontend/public/service-worker.js).
+* **Color Contrast and Typography Fix**:
+  * Removed the hardcoded dark color (`color: #0a0f24`) from base elements `h1, h2, h3, h4, h5, h6` in `index.css`. Changed them to `color: inherit;`.
+  * This resolves accessibility and contrast issues by allowing headings inside colored backgrounds (like the dark blue CTA banners) to properly inherit colors (e.g. `text-white`) from their parent containers instead of rendering in illegible dark blue/black text.
+  * Affected files: [index.css](file:///Users/aarav/Downloads/sdps-website-main/frontend/src/index.css).
+
 
