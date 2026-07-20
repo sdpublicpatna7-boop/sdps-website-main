@@ -2027,20 +2027,22 @@ async def get_omr_roster(
             variants.add(f"CLASS {clean_c}")
             variants.add(f"CLASS-{clean_c}")
             variants.add(f"STD {clean_c}")
+            variants.add(f"STD-{clean_c}")
             
             if clean_c_no_dash in ROMAN_TO_ARABIC:
                 ar = ROMAN_TO_ARABIC[clean_c_no_dash]
-                variants.update({ar, f"CLASS {ar}", f"CLASS-{ar}", f"STD {ar}"})
+                variants.update({ar, f"CLASS {ar}", f"CLASS-{ar}", f"STD {ar}", f"STD-{ar}"})
             elif clean_c_no_dash in ARABIC_TO_ROMAN:
                 rm = ARABIC_TO_ROMAN[clean_c_no_dash]
-                variants.update({rm, f"CLASS {rm}", f"CLASS-{rm}", f"STD {rm}"})
+                variants.update({rm, f"CLASS {rm}", f"CLASS-{rm}", f"STD {rm}", f"STD-{rm}"})
 
         class_fields = ["class_name", "class", "student_class", "std", "standard", "grade", "cls"]
         for var in variants:
             escaped = re.escape(var)
             for field in class_fields:
                 class_or_conditions.append({field: {"$regex": f"^{escaped}$", "$options": "i"}})
-                class_or_conditions.append({field: {"$regex": f".*{escaped}.*", "$options": "i"}})
+                class_or_conditions.append({field: {"$regex": f"^CLASS\\s*[\-\s]*{escaped}$", "$options": "i"}})
+                class_or_conditions.append({field: {"$regex": f"^STD\\s*[\-\s]*{escaped}$", "$options": "i"}})
 
     sec_or_conditions = []
     if section and section.strip() and section.upper() != "ALL":
@@ -2056,7 +2058,11 @@ async def get_omr_roster(
             escaped_s = re.escape(svar)
             for sfield in sec_fields:
                 sec_or_conditions.append({sfield: {"$regex": f"^{escaped_s}$", "$options": "i"}})
-                sec_or_conditions.append({sfield: {"$regex": f".*{escaped_s}.*", "$options": "i"}})
+                sec_or_conditions.append({sfield: {"$regex": f"^SEC(TION)?\\s*[\-\s]*{escaped_s}$", "$options": "i"}})
+        for sfield in sec_fields:
+            sec_or_conditions.append({sfield: ""})
+            sec_or_conditions.append({sfield: None})
+            sec_or_conditions.append({sfield: {"$exists": False}})
 
     if class_or_conditions and sec_or_conditions:
         query["$and"] = [{"$or": class_or_conditions}, {"$or": sec_or_conditions}]
@@ -2072,6 +2078,38 @@ async def get_omr_roster(
     bday_docs = []
     if source in ("all", "birthday") or not omr_docs:
         bday_docs = await db.birthday_students.find(query).to_list(length=5000)
+
+    # Fallback in-memory matcher if db query returns 0 records
+    if not omr_docs and not bday_docs:
+        all_bday = await db.birthday_students.find({}).to_list(length=5000)
+        all_omr = await db.omr_roster.find({}).to_list(length=5000)
+        
+        target_c = (class_name or "").strip().upper()
+        clean_target_c = re.sub(r'^(CLASS|STD|STANDARD)\s*[\-\s]*', '', target_c, flags=re.I).strip()
+        clean_target_c_nodash = re.sub(r'[\-\s]', '', clean_target_c)
+        target_ar = ROMAN_TO_ARABIC.get(clean_target_c_nodash, clean_target_c_nodash)
+        target_rm = ARABIC_TO_ROMAN.get(clean_target_c_nodash, clean_target_c_nodash)
+
+        def matches_student(doc):
+            if not target_c or target_c == "ALL":
+                return True
+            s_class = str(doc.get("class_name") or doc.get("class") or doc.get("student_class") or doc.get("standard") or "").strip().upper()
+            if not s_class:
+                return True
+            s_clean = re.sub(r'^(CLASS|STD|STANDARD)\s*[\-\s]*', '', s_class, flags=re.I).strip()
+            s_clean_nodash = re.sub(r'[\-\s]', '', s_clean)
+            s_ar = ROMAN_TO_ARABIC.get(s_clean_nodash, s_clean_nodash)
+            s_rm = ARABIC_TO_ROMAN.get(s_clean_nodash, s_clean_nodash)
+
+            return (clean_target_c_nodash in (s_clean_nodash, s_ar, s_rm) or
+                    target_ar in (s_clean_nodash, s_ar, s_rm) or
+                    target_rm in (s_clean_nodash, s_ar, s_rm) or
+                    target_c in s_class or s_class in target_c)
+
+        for d in all_omr:
+            if matches_student(d): omr_docs.append(d)
+        for d in all_bday:
+            if matches_student(d): bday_docs.append(d)
 
     seen_adm = set()
     unified_students = []
