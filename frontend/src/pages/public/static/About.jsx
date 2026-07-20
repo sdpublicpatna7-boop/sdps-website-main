@@ -1,6 +1,6 @@
 import { useOutletContext } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Award, Compass, Shield, BookOpen, GraduationCap, MapPin, Mail, Phone, Landmark } from "lucide-react";
+import { Award, Compass, Shield, BookOpen, GraduationCap, MapPin, Mail, Phone, Landmark, Check } from "lucide-react";
 import PageHero from "@/components/layout/PageHero";
 import SEO from "@/components/layout/SEO";
 import { optimizeCloudinary, parseImageTransform } from "@/lib/api";
@@ -144,7 +144,9 @@ export function About() {
                   { title: "Lifelong Learners", desc: "Prepare students to face future global challenges with resilience and adaptability." }
                 ].map((item, idx) => (
                   <div key={idx} className="flex gap-3 items-start">
-                    <div className="w-5 h-5 rounded-full bg-brand-orange/20 text-brand-orange flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</div>
+                    <div className="w-5 h-5 rounded-full bg-brand-orange/20 text-brand-orange flex items-center justify-center shrink-0 mt-0.5">
+                      <Check className="w-3.5 h-3.5 stroke-[3]" />
+                    </div>
                     <div>
                       <div className="text-sm font-bold text-brand-ink">{item.title}</div>
                       <div className="text-xs text-brand-ink/70 mt-0.5 leading-relaxed">{item.desc}</div>

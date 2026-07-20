@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import api, { parseImageTransform } from "../../lib/api";
-import { Trophy, Shield, Lightbulb, Dumbbell, Zap, Target, Activity, Users, UserCheck, Sparkles } from "lucide-react";
+import { Trophy, Shield, Lightbulb, Dumbbell, Zap, Target, Activity, Users, UserCheck, Sparkles, Phone } from "lucide-react";
 
 const BACKEND = process.env.REACT_APP_BACKEND_URL || "";
 function fullUrl(u) { return u?.startsWith("http") ? u : `${BACKEND}${u}`; }
@@ -61,7 +61,7 @@ export default function KheloPatna() {
             world-class sports infrastructure and professional coaching directly to our students.
           </p>
           <div className="mt-8 flex flex-wrap gap-3 justify-center">
-            <a href="tel:+919955190262" className="btn-primary">📞 Contact School</a>
+            <a href="tel:+919955190262" className="btn-primary flex items-center gap-2"><Phone className="w-4 h-4" /> Contact School</a>
             <a href="#features" className="btn-glass">Explore Partnership ↓</a>
           </div>
         </div>
@@ -199,8 +199,8 @@ export default function KheloPatna() {
             <Link to="/admissions" className="bg-white text-brand-blue font-headline font-bold px-8 py-3 rounded-xl hover:bg-brand-paper transition">
               Apply for Admission →
             </Link>
-            <a href="tel:+919955190262" className="border-2 border-white/40 text-white font-headline font-bold px-8 py-3 rounded-xl hover:bg-white/10 transition">
-              📞 Call Us
+            <a href="tel:+919955190262" className="border-2 border-white/40 text-white font-headline font-bold px-8 py-3 rounded-xl hover:bg-white/10 transition flex items-center gap-2 justify-center">
+              <Phone className="w-4 h-4" /> Call Us
             </a>
           </div>
         </div>

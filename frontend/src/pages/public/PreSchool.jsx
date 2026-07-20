@@ -26,7 +26,7 @@ export default function PreSchool() {
       <section className="relative max-w-7xl mx-auto px-6 pt-20 pb-16 text-center">
         <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", bounce: 0.5 }}>
           <div className="inline-block px-4 py-1.5 rounded-full bg-white/70 backdrop-blur-sm border border-brand-lotus/30 text-brand-lotus text-xs uppercase tracking-[0.2em] font-bold mb-6">
-            🎈 Tiny Tots World
+            <Smile className="inline-block w-4 h-4 mr-1.5 align-text-bottom text-brand-lotus" /> Tiny Tots World
           </div>
           <h1 className="font-playful text-6xl sm:text-7xl lg:text-8xl text-brand-blue leading-[1.05]">
             Hello, <span className="text-brand-orange">little</span><br />

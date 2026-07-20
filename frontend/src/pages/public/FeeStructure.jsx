@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../lib/api";
+import { MessageSquare, Phone, Mail, FileText } from "lucide-react";
 
 function toEmbedUrl(url) {
   if (!url) return url;
@@ -19,7 +20,9 @@ function PdfEmbed({ url, title, height = "680px" }) {
   const embedUrl = toEmbedUrl(url);
   if (!embedUrl) return (
     <div className="bg-brand-paper rounded-2xl p-10 text-center border border-black/5">
-      <div className="text-4xl mb-3">📄</div>
+      <div className="text-brand-blue mb-3 flex justify-center">
+        <FileText className="w-10 h-10" />
+      </div>
       <p className="text-brand-ink/50 text-sm mb-2">Document not available yet.</p>
       <p className="text-xs text-brand-ink/40">Contact the school office for current fee details.</p>
     </div>
@@ -87,13 +90,19 @@ export default function FeeStructure() {
 
         {/* Help */}
         <div className="bg-brand-paper rounded-2xl border border-black/5 p-6 flex flex-col sm:flex-row items-center gap-5">
-          <div className="text-4xl">💬</div>
+          <div className="w-12 h-12 rounded-xl bg-brand-blue/10 flex items-center justify-center text-brand-blue shrink-0">
+            <MessageSquare className="w-6 h-6" />
+          </div>
           <div className="flex-1">
             <div className="font-headline font-semibold text-brand-ink mb-1">Need Help?</div>
             <p className="text-sm text-brand-ink/60">For queries regarding fees or payment options, contact our accounts office.</p>
             <div className="mt-3 flex flex-wrap gap-4">
-              <a href="tel:+919955190262" className="text-sm font-semibold text-brand-blue hover:underline">📞 +91 99551 90262</a>
-              <a href="mailto:helpdesk@sdpublic.org" className="text-sm font-semibold text-brand-blue hover:underline">✉️ helpdesk@sdpublic.org</a>
+              <a href="tel:+919955190262" className="text-sm font-semibold text-brand-blue hover:underline flex items-center gap-1.5">
+                <Phone className="w-3.5 h-3.5" /> +91 99551 90262
+              </a>
+              <a href="mailto:helpdesk@sdpublic.org" className="text-sm font-semibold text-brand-blue hover:underline flex items-center gap-1.5">
+                <Mail className="w-3.5 h-3.5" /> helpdesk@sdpublic.org
+              </a>
             </div>
           </div>
           <Link to="/fee-payment" className="btn-primary text-sm shrink-0">Pay Fees Online →</Link>

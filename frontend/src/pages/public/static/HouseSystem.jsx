@@ -1,4 +1,5 @@
 import PageHero from "@/components/layout/PageHero";
+import { Check } from "lucide-react";
 
 export function HouseSystem() {
   const houses = [
@@ -92,7 +93,7 @@ export function HouseSystem() {
                 "To celebrate diversity, while building unity through House events and activities.",
               ].map((pt, i) => (
                 <li key={i} className="flex items-start gap-3 text-sm text-brand-ink/70">
-                  <span className="text-brand-orange font-bold mt-0.5">✓</span>{pt}
+                  <Check className="w-4 h-4 text-brand-orange shrink-0 mt-0.5" />{pt}
                 </li>
               ))}
             </ul>

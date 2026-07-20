@@ -95,14 +95,18 @@ export function AdminStaffUsers() {
       {/* Role explanation */}
       <div className="grid md:grid-cols-2 gap-4 mb-6">
         <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
-          <div className="font-headline font-semibold text-red-700 mb-1">🔴 Superadmin</div>
+          <div className="font-headline font-semibold text-red-700 mb-1 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-red-600 shrink-0" /> Superadmin
+          </div>
           <p className="text-xs text-red-600">
             Full access to all features — content, admissions, settings, fee structures, staff
             management, and all modules.
           </p>
         </div>
         <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
-          <div className="font-headline font-semibold text-emerald-700 mb-1">🟢 Staff</div>
+          <div className="font-headline font-semibold text-emerald-700 mb-1 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" /> Staff
+          </div>
           <p className="text-xs text-emerald-600">
             Granular access — access is restricted only to the specific modules checked and authorized by a superadmin.
           </p>

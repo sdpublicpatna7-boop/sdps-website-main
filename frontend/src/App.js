@@ -113,6 +113,7 @@ const AdminSalaryCertificate = lazy(() => import("@/pages/admin/special/AdminSal
 const AdminExperienceCertificate = lazy(() => import("@/pages/admin/special/AdminExperienceCertificate"));
 const AdminNoticeMaker = lazy(() => import("@/pages/admin/special/AdminNoticeMaker"));
 const AdminApaarManager = lazy(() => import("@/pages/admin/special/AdminApaarManager"));
+const AdminOmrGenerator = lazy(() => import("@/pages/admin/special/AdminOmrGenerator"));
 
 function AdminLoading() {
   return (
@@ -222,6 +223,7 @@ function App() {
                 <Route path="salary-certificate" element={<AdminSalaryCertificate />} />
                 <Route path="experience-certificate" element={<AdminExperienceCertificate />} />
                 <Route path="notice-maker" element={<AdminNoticeMaker />} />
+                <Route path="omr-generator" element={<Suspense fallback={<AdminLoading />}><AdminOmrGenerator /></Suspense>} />
                 <Route path="apaar" element={<Suspense fallback={<AdminLoading />}><AdminApaarManager /></Suspense>} />
                 <Route path="site-settings" element={<AdminSiteSettings />} />
                 <Route path="integration-keys" element={<AdminIntegrationKeys />} />

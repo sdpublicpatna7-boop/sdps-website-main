@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import PageHero, { DocEmbed, fullUrl } from "@/components/layout/PageHero";
 import api from "@/lib/api";
-import { Bed, Utensils, BookOpen, Trophy, HeartPulse, ShieldAlert } from "lucide-react";
+import { Bed, Utensils, BookOpen, Trophy, HeartPulse, ShieldAlert, Instagram, Shield, Phone, Mail } from "lucide-react";
 
 export function Hostel() {
   const [siteSettings, setSiteSettings] = useState(null);
@@ -59,7 +59,7 @@ export function Hostel() {
                 className="w-full h-80" frameBorder="0" scrolling="no" allowTransparency title="Hostel Life at SDPS" />
             </div>
             <a href="https://www.instagram.com/p/DITC1ktSLAY/" target="_blank" rel="noreferrer"
-              className="text-xs text-brand-blue flex items-center gap-1 mt-2 hover:underline">📸 View on Instagram</a>
+              className="text-xs text-brand-blue flex items-center gap-1 mt-2 hover:underline"><Instagram className="w-3.5 h-3.5" /> View on Instagram</a>
           </div>
           <div className="space-y-3">
             {[
@@ -195,7 +195,9 @@ export function Hostel() {
       <section className="py-14 bg-white">
         <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-6">
           <div className="bg-brand-paper rounded-3xl p-7">
-            <h3 className="font-headline text-xl font-semibold mb-3">🛡️ Safety & Security</h3>
+            <h3 className="font-headline text-xl font-semibold mb-3 flex items-center gap-2">
+              <Shield className="w-5 h-5 text-brand-blue" /> Safety & Security
+            </h3>
             <p className="text-brand-ink/70 text-sm leading-relaxed">
               Hostel premises under <strong>24/7 CCTV surveillance</strong> with trained security personnel.
               Regular fire drills and safety workshops are conducted to ensure student safety.
@@ -205,9 +207,15 @@ export function Hostel() {
             <h3 className="font-headline text-xl font-semibold mb-3">Contact Warden</h3>
             <p className="text-white/80 text-sm mb-4">For hostel admissions, fees, or any residential queries:</p>
             <div className="space-y-2">
-              <a href="tel:+919955190262" className="flex items-center gap-2 text-sm font-semibold bg-white/10 rounded-xl px-4 py-2 hover:bg-white/20 transition">📞 +91 99551 90262</a>
-              <a href="tel:+919955190162" className="flex items-center gap-2 text-sm font-semibold bg-white/10 rounded-xl px-4 py-2 hover:bg-white/20 transition">📞 +91 99551 90162</a>
-              <a href="mailto:helpdesk@sdpublic.org" className="flex items-center gap-2 text-sm font-semibold bg-white/10 rounded-xl px-4 py-2 hover:bg-white/20 transition">✉️ helpdesk@sdpublic.org</a>
+              <a href="tel:+919955190262" className="flex items-center gap-2 text-sm font-semibold bg-white/10 rounded-xl px-4 py-2 hover:bg-white/20 transition">
+                <Phone className="w-4 h-4" /> +91 99551 90262
+              </a>
+              <a href="tel:+919955190162" className="flex items-center gap-2 text-sm font-semibold bg-white/10 rounded-xl px-4 py-2 hover:bg-white/20 transition">
+                <Phone className="w-4 h-4" /> +91 99551 90162
+              </a>
+              <a href="mailto:helpdesk@sdpublic.org" className="flex items-center gap-2 text-sm font-semibold bg-white/10 rounded-xl px-4 py-2 hover:bg-white/20 transition">
+                <Mail className="w-4 h-4" /> helpdesk@sdpublic.org
+              </a>
             </div>
           </div>
         </div>

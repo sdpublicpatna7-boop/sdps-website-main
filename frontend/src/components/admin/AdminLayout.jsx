@@ -7,7 +7,7 @@ import {
   GraduationCap, Award, FileText, CreditCard, Settings, LogOut,
   MessageSquare, Megaphone, ScrollText, FilePlus, Home, Hotel,
   BookOpen, Shield, EyeOff, ClipboardList, BookMarked, UserCog,
-  Menu, X, Star, Cake, Link2 as LinkIcon, Fingerprint
+  Menu, X, Star, Cake, Link2 as LinkIcon, Fingerprint, Lock
 } from "lucide-react";
 import { useAuth } from "../../lib/auth";
 import { startPinger } from "../../lib/pinger";
@@ -60,6 +60,7 @@ const NAV_ITEMS = [
   { to: "/admin/salary-certificate", label: "Salary Certificate", icon: FileText, permission: "media-tools" },
   { to: "/admin/experience-certificate", label: "Experience Certificate", icon: FileText, permission: "media-tools" },
   { to: "/admin/notice-maker", label: "Notice Maker", icon: FileText, permission: "media-tools" },
+  { to: "/admin/omr-generator", label: "OMR Generator", icon: FileText, permission: "media-tools" },
   { section: "Other" },
   { to: "/admin/tc-records", label: "TC Records", icon: FileText, permission: "tc-records" },
   { to: "/admin/popup", label: "Welcome Popup", icon: Megaphone, permission: "popup" },
@@ -502,7 +503,7 @@ export default function AdminLayout() {
       <main className="flex-1 p-4 sm:p-6 md:p-8 max-w-full overflow-x-hidden bg-slate-50/50">
         {isStaff && (
           <div className="mb-6 bg-emerald-50 border border-emerald-200 rounded-2xl px-5 py-3 flex items-center gap-3 shadow-sm">
-            <span className="text-emerald-600 text-lg">🔒</span>
+            <Lock className="w-5 h-5 text-emerald-600 shrink-0" />
             <div>
               <div className="text-sm font-semibold text-emerald-700">Staff Access</div>
               <div className="text-xs text-emerald-600 text-emerald-700/80">

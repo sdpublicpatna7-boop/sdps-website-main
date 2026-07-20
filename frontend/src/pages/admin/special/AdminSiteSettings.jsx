@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import { toast, Toaster } from "sonner";
-import { Save } from "lucide-react";
+import { Save, CreditCard, FileText } from "lucide-react";
 import { ImageOrUrlField, FileOrUrlField } from "@/components/admin/SharedFields";
 
 export function AdminSiteSettings() {
@@ -58,7 +58,7 @@ export function AdminSiteSettings() {
         </div>
         <div className="border border-amber-200 bg-amber-50 rounded-xl p-4">
           <h3 className="font-headline font-semibold text-amber-800 mb-1 flex items-center gap-2">
-            <span>💳</span> Fee Payment Portal URL
+            <CreditCard className="w-5 h-5 text-amber-700" /> Fee Payment Portal URL
           </h3>
           <p className="text-xs text-amber-700 mb-3">
             Students will be redirected to this external URL when they click "Pay Fees Online". Set
@@ -87,7 +87,7 @@ export function AdminSiteSettings() {
         {/* Document Embeds, PDFs & Images */}
         <div className="border border-brand-blue/20 bg-brand-blue/5 rounded-xl p-5 space-y-4">
           <h3 className="font-headline font-semibold text-brand-blue flex items-center gap-2">
-            <span>📄</span> Document Embeds, PDFs &amp; Site Images
+            <FileText className="w-5 h-5" /> Document Embeds, PDFs &amp; Site Images
           </h3>
           <p className="text-xs text-brand-ink/60">
             Upload files/images from your device or paste a URL. These are shown inline or as design elements on public pages.

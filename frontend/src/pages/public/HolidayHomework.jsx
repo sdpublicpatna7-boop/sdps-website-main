@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../../lib/api";
-import { BookOpen, Palette, MessageCircle, Download, ChevronDown, ChevronUp, Check, Phone, Mail, Calendar } from "lucide-react";
+import { BookOpen, Palette, MessageCircle, Download, ChevronDown, ChevronUp, Check, Phone, Mail, Calendar, Clock } from "lucide-react";
 
 const BACKEND = process.env.REACT_APP_BACKEND_URL || "";
 function fullUrl(u) { return u?.startsWith("http") ? u : `${BACKEND}${u}`; }
@@ -173,7 +173,8 @@ function HomeworkDetail({ hw }) {
             )}
             {hw.doubt_timing && (
               <div className="flex items-center gap-2 bg-white/10 rounded-xl px-4 py-2.5 text-sm">
-                🕐 Available: {hw.doubt_timing}
+                <Clock className="w-4 h-4 shrink-0" />
+                <span>Available: {hw.doubt_timing}</span>
               </div>
             )}
           </div>

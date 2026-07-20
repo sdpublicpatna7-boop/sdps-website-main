@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import api, { parseImageTransform } from "../../lib/api";
 import { toast, Toaster } from "sonner";
-import { Loader2, Check, Award, Heart, Sparkles, GraduationCap, MessageSquare, FileText, Calendar, CreditCard } from "lucide-react";
+import { Loader2, Check, Award, Heart, Sparkles, GraduationCap, MessageSquare, FileText, Calendar, CreditCard, Phone, Download, ClipboardList, Edit, CheckCircle } from "lucide-react";
 import { ImageOrUrlField, FileOrUrlField } from "../../components/admin/ResourceManager";
 import SEO from "../../components/layout/SEO";
 
@@ -220,7 +220,7 @@ export function AdmissionForm() {
       <div className="min-h-[60vh] flex items-center justify-center px-4">
         <div className="bg-white rounded-3xl p-10 max-w-md text-center border border-black/5 shadow-sm">
           <div className="w-16 h-16 rounded-full bg-brand-blue/10 flex items-center justify-center mx-auto mb-4">
-            <span className="text-3xl">💳</span>
+            <CreditCard className="w-8 h-8 text-brand-blue" />
           </div>
           <h2 className="font-headline text-2xl font-semibold text-brand-ink">One Last Step</h2>
           <p className="text-brand-ink/70 text-sm mt-3 mb-6 leading-relaxed">
@@ -432,15 +432,15 @@ export function AdmissionsLanding() {
           </p>
           <div className="mt-6 flex flex-wrap gap-3 justify-center">
             <a href="tel:+919955190262" className="btn-primary flex items-center gap-2">
-              📞 9955190262
+              <Phone className="w-4 h-4" /> 9955190262
             </a>
             <a href="tel:+919955190162" className="btn-glass flex items-center gap-2">
-              📞 9955190162
+              <Phone className="w-4 h-4" /> 9955190162
             </a>
           </div>
         </div>
       </section>
-
+ 
       {/* Easy Admission Process */}
       <section className="py-14 bg-white">
         <div className="max-w-5xl mx-auto px-6">
@@ -448,22 +448,24 @@ export function AdmissionsLanding() {
           <h2 className="section-title text-center mb-10">3 Simple Steps to Join SDPS</h2>
           <div className="grid md:grid-cols-3 gap-6">
             {[
-              { step: "1", icon: "📋", title: "Fill Registration Form", desc: "Available at school office or apply online through our admission form.", action: "/admission-form", label: "Apply Online" },
-              { step: "2", icon: "✏️", title: "Entrance Test", desc: "If applicable for the class applied. Our team will guide you through the process.", action: "/admission-enquiry", label: "Enquire Now" },
-              { step: "3", icon: "✅", title: "Admission Confirmation", desc: "Document submission and fee payment to secure your child's seat at SDPS.", action: "/fee-structure", label: "View Fee Structure" },
+              { step: "1", icon: ClipboardList, title: "Fill Registration Form", desc: "Available at school office or apply online through our admission form.", action: "/admission-form", label: "Apply Online" },
+              { step: "2", icon: Edit, title: "Entrance Test", desc: "If applicable for the class applied. Our team will guide you through the process.", action: "/admission-enquiry", label: "Enquire Now" },
+              { step: "3", icon: CheckCircle, title: "Admission Confirmation", desc: "Document submission and fee payment to secure your child's seat at SDPS.", action: "/fee-structure", label: "View Fee Structure" },
             ].map((s, i) => (
-              <div key={i} className="bg-white rounded-3xl border border-black/5 p-7 text-center beam-card hover:-translate-y-1 hover:shadow-xl transition-all">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-brand-blue to-brand-orange text-white text-xl font-bold font-headline mx-auto flex items-center justify-center mb-4 shadow-md">
-                  {s.step}
+              <div key={i} className="bg-white rounded-3xl border border-black/5 p-7 text-center beam-card hover:-translate-y-1 hover:shadow-xl transition-all flex flex-col justify-between items-center">
+                <div>
+                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-brand-blue to-brand-orange text-white text-xl font-bold font-headline mx-auto flex items-center justify-center mb-4 shadow-md">
+                    {s.step}
+                  </div>
+                  <div className="text-brand-blue mb-4 flex justify-center"><s.icon className="w-10 h-10" /></div>
+                  <h3 className="font-headline font-semibold text-lg text-brand-ink mb-2">{s.title}</h3>
+                  <p className="text-sm text-brand-ink/60 mb-4">{s.desc}</p>
                 </div>
-                <div className="text-3xl mb-3">{s.icon}</div>
-                <h3 className="font-headline font-semibold text-lg text-brand-ink mb-2">{s.title}</h3>
-                <p className="text-sm text-brand-ink/60 mb-4">{s.desc}</p>
                 <Link to={s.action} className="inline-block text-sm font-semibold text-brand-blue hover:underline">{s.label} →</Link>
               </div>
             ))}
           </div>
-
+ 
           {/* Admission image */}
           <div className="mt-10 rounded-3xl overflow-hidden shadow-xl text-center">
             <img src={openButtonUrl} alt="Admission Open"
@@ -473,19 +475,19 @@ export function AdmissionsLanding() {
           </div>
         </div>
       </section>
-
+ 
       {/* Download Prospectus */}
       <section className="py-10 bg-brand-paper">
         <div className="max-w-5xl mx-auto px-6">
           <div className="bg-white rounded-3xl border border-black/5 p-7 flex flex-col md:flex-row items-center gap-6 shadow-sm">
-            <div className="text-5xl shrink-0">📄</div>
+            <FileText className="w-12 h-12 text-brand-blue shrink-0" />
             <div className="flex-1 text-center md:text-left">
               <h3 className="font-headline text-xl font-semibold text-brand-ink mb-1">Download Our School Prospectus</h3>
               <p className="text-sm text-brand-ink/60">Get complete information about our school, facilities, curriculum, and values in our detailed prospectus.</p>
             </div>
             <a href={prospectusUrl} target="_blank" rel="noreferrer"
               className="btn-primary shrink-0 flex items-center gap-2">
-              📥 Download Prospectus
+              <Download className="w-4 h-4" /> Download Prospectus
             </a>
           </div>
         </div>
@@ -552,7 +554,7 @@ export function AdmissionsLanding() {
                   "Outdoor Play & Field Trips", "Focus on life skills",
                 ].map((h, i) => (
                   <div key={i} className="bg-brand-paper rounded-xl px-3 py-2.5 text-xs font-semibold text-brand-ink flex items-center gap-2">
-                    <span className="text-brand-orange">✓</span>{h}
+                    <Check className="w-3.5 h-3.5 text-brand-orange shrink-0" />{h}
                   </div>
                 ))}
               </div>

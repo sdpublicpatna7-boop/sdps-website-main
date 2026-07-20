@@ -725,8 +725,8 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
                     <span className="text-[10px] text-slate-400 font-medium">Loaded automatically</span>
                   </div>
                 ) : (
-                  <div className="text-[10px] text-slate-500 flex items-center gap-1 bg-amber-50/50 border border-amber-100/70 p-2.5 rounded-xl">
-                    <span>⚠️</span> No signature image saved for {selectedRolePreset} yet.
+                  <div className="text-[10px] text-slate-500 flex items-center gap-1.5 bg-amber-50/50 border border-amber-100/70 p-2.5 rounded-xl">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" /> No signature image saved for {selectedRolePreset} yet.
                   </div>
                 )}
 
@@ -798,7 +798,7 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
           {/* PDF Attachment Section */}
           <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
             <h3 className="text-xs font-bold text-slate-800 border-b border-slate-100 pb-2 uppercase tracking-wide flex items-center gap-1.5">
-              <span>📄</span> PDF Notice Attachment
+              <FileText className="w-4 h-4 text-slate-600" /> PDF Notice Attachment
             </h3>
             
             {pdfUrl ? (

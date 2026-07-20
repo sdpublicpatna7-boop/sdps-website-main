@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import api from "@/lib/api";
 import { toast, Toaster } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plug, CheckCircle2 } from "lucide-react";
 
 const STATUS_META = {
   ok: { label: "Connected", cls: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-500" },
@@ -116,7 +116,7 @@ export function AdminIntegrationKeys() {
             <div className="flex items-center justify-between gap-3 mb-3">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-slate-50 flex items-center justify-center text-base">
-                  {ig.icon || "🔌"}
+                  {ig.icon || <Plug className="w-5 h-5 text-slate-500" />}
                 </div>
                 <div>
                   <h3 className="font-headline font-semibold text-brand-ink leading-tight">
@@ -159,8 +159,8 @@ export function AdminIntegrationKeys() {
                   </div>
                 ) : wa.connected ? (
                   <div className="flex items-center justify-between gap-3 flex-wrap">
-                    <div className="text-xs text-emerald-700 font-medium">
-                      ✅ Linked
+                    <div className="text-xs text-emerald-700 font-medium flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Linked
                       {wa.user?.id
                         ? ` · ${wa.user.id.split(":")[0].replace("@s.whatsapp.net", "")}`
                         : ""}

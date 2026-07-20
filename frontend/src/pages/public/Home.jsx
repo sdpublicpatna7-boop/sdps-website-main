@@ -486,8 +486,8 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative">
           <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
             <div className="overline text-brand-lotus font-bold mb-3">Tiny Tots Section</div>
-            <h2 className="font-playful text-5xl sm:text-6xl text-brand-blue leading-tight">
-              Where <span className="text-brand-orange font-bold">tiny dreams</span> take their first <span className="text-brand-lotus font-bold">flight</span> 🎈
+            <h2 className="font-playful text-5xl sm:text-6xl text-brand-blue leading-tight flex flex-wrap items-center gap-x-2 gap-y-1">
+              Where <span className="text-brand-orange font-bold">tiny dreams</span> take their first <span className="text-brand-lotus font-bold">flight</span> <Sparkles className="inline-block w-8 h-8 text-brand-lotus animate-pulse" />
             </h2>
             <p className="mt-5 text-slate-600 leading-relaxed max-w-lg">
               Our Pre-School is a vibrant world of stories, songs, art and play — where curious little ones
@@ -510,8 +510,8 @@ export default function Home() {
                 onError={(e) => { e.target.src = "https://sdpublic.org/img/feature.jpg"; }}
               />
             </div>
-            <div className="absolute -bottom-4 -right-4 bg-brand-orange text-white px-5 py-3 rounded-2xl shadow-xl font-playful text-lg animate-wiggle border border-brand-orange-light/20 z-10">
-              Fun Learning! ✨
+            <div className="absolute -bottom-4 -right-4 bg-brand-orange text-white px-5 py-3 rounded-2xl shadow-xl font-playful text-lg animate-wiggle border border-brand-orange-light/20 z-10 flex items-center gap-1.5">
+              Fun Learning! <Sparkles className="w-5 h-5 text-amber-200 animate-pulse" />
             </div>
           </motion.div>
         </div>

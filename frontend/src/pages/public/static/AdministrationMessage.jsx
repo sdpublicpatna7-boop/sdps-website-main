@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 import PageHero from "@/components/layout/PageHero";
 import api, { parseImageTransform } from "@/lib/api";
+import { User } from "lucide-react";
 
 export function AdministrationMessage() {
   const { settings } = useOutletContext() || {};
@@ -109,8 +110,8 @@ export function AdministrationMessage() {
                     onError={e => { e.target.style.display="none"; }}
                   />
                 ) : (
-                  <div className="w-full h-full bg-brand-blue/10 flex items-center justify-center text-4xl">
-                    {i % 2 === 0 ? "👨‍💼" : "👩‍💼"}
+                  <div className="w-full h-full bg-brand-blue/10 flex items-center justify-center text-brand-blue">
+                    <User className="w-12 h-12" />
                   </div>
                 )}
               </div>

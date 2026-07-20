@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../lib/api";
+import { AlertTriangle, Phone } from "lucide-react";
 
 export default function AdmissionsEligibility() {
   const [rows, setRows] = useState([]);
@@ -90,7 +91,9 @@ export default function AdmissionsEligibility() {
         {/* Important Notes */}
         <div className="mt-8 grid md:grid-cols-2 gap-5">
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
-            <div className="font-headline font-semibold text-amber-800 mb-2">⚠️ Important Notes</div>
+            <div className="font-headline font-semibold text-amber-800 mb-2 flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-600" /> Important Notes
+            </div>
             <p className="text-sm text-amber-700">The minimum age limit to appear for the CBSE Class 10th board exam is <strong>14 years</strong>, which means the candidate must have completed 14 years of age as on <strong>31st December</strong> of the year of examination.</p>
             <p className="text-sm text-amber-700 mt-2">Admission is open to all, subject to seat availability and school norms.</p>
           </div>
@@ -98,7 +101,9 @@ export default function AdmissionsEligibility() {
             <div className="font-headline font-semibold text-brand-blue">Have Questions?</div>
             <p className="text-sm text-brand-ink/60">Contact our admission office for any queries regarding eligibility or the admission process.</p>
             <div className="flex flex-col gap-2">
-              <a href="tel:+919955190262" className="btn-primary text-sm text-center">📞 Call Now: +91 99551 90262</a>
+              <a href="tel:+919955190262" className="btn-primary text-sm text-center flex items-center justify-center gap-2">
+                <Phone className="w-4 h-4" /> Call Now: +91 99551 90262
+              </a>
               <Link to="/admission-form" className="btn-glass text-sm text-center">Apply Now →</Link>
             </div>
           </div>

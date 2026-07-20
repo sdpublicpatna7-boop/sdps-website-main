@@ -65,6 +65,36 @@ We have successfully completed the native refactoring of the school election por
   * Cleaned up the PDF document body by stripping out the email-specific greetings (e.g. "Dear Principal, Please find below..."), which are now cleanly contained only within the cover email itself.
   * Overrode the page margins inside `pdf_service.py` to `12mm` and bypassed the duplicate school letterhead headers/footers specifically when compiling `"Salary Slip"` documents.
   * Affected files: [email_service.py](file:///Users/aarav/Downloads/sdps-website-main/backend/email_service.py), [pdf_service.py](file:///Users/aarav/Downloads/sdps-website-main/backend/pdf_service.py).
+### 4. Comprehensive Emoji Replacement with Lucide SVG Icons
+- **Goal**: Replaced all raw unicode emoji characters with scalable, modern Lucide React SVG icons across all public and admin views for a consistent premium look.
+- **Modified Components**:
+  - `KheloPatna.jsx`: Replaced phone emojis with Lucide `<Phone />`.
+  - `FeeStructure.jsx`: Replaced message, phone, mail, and document emojis with `<MessageSquare />`, `<Phone />`, `<Mail />`, and `<FileText />`.
+  - `PreSchool.jsx`: Replaced balloon emoji with `<Smile />`.
+  - `Home.jsx`: Replaced balloon and sparkles emojis with `<Sparkles />`.
+  - `AdmissionsEligibility.jsx`: Replaced warning and phone emojis with `<AlertTriangle />` and `<Phone />`.
+  - `SalAssistant.jsx`: Replaced waving hand emoji with `<Sparkles className="animate-pulse" />`.
+  - `About.jsx`, `Academics.jsx`, `HouseSystem.jsx`, `Admissions.jsx`: Replaced text checkmarks (`✓`) with styled `<Check />` Lucide SVG components.
+  - `HolidayHomework.jsx` & `AdminHolidayHomework.jsx`: Replaced clock and chat emojis with `<Clock />` and `<MessageSquare />`.
+  - `AdminExamPapers.jsx`: Replaced pencil emoji with `<Edit2 />`.
+  - `AdminAdministrationMembers.jsx`: Replaced avatar emoji (`👤`) with `<User />`.
+  - `AdminStaffUsers.jsx`: Replaced red/green circle emojis (`🔴`/`🟢`) with clean Tailwind CSS indicator dots.
+  - `AdminLayout.jsx`: Replaced lock emoji (`🔒`) with `<Lock />`.
+  - `Dashboard.jsx`: Replaced admin greeting wave (`👋`) with an animated `<Sparkles />` icon.
+  - `AdminSiteSettings.jsx`: Replaced credit card and document emojis (`💳`/`📄`) with `<CreditCard />` and `<FileText />`.
+  - `AdminNoticeMaker.jsx`: Replaced warning and document emojis with `<AlertTriangle />` and `<FileText />`.
+  - `AdminIntegrationKeys.jsx`: Replaced fallback plug and checkmark emojis with `<Plug />` and `<CheckCircle2 />`.
+
+### 5. OMR Answer Sheet Generator Module (`/admin/omr-generator`)
+- **Goal**: Built a dynamic, machine-readable OMR Answer Sheet Generator inside the admin panel.
+- **Key Features**:
+  - **Dynamic Question Count & Options**: Enter any question count (e.g. 20, 40, 50, 100 Qs) and options per question (3, 4, or 5 options: A, B, C, D, E).
+  - **Flexible Layout Grid**: Switch between 1, 2, 3, or 4 column grid layouts to cleanly fit question sets on standard A4 paper.
+  - **Customizable Headers**: Dynamic School Header (Logo, School Name, CBSE Affiliation, Address) and Examination Header (Exam Title, Class, Section, Subject, Date, Max Marks, Time Allowed, Session).
+  - **Roll Number Grid**: Interactive 0-9 digit Roll Number bubble grid with customizable digit count (3 to 10 digits).
+  - **Student Details & Set Code**: Includes Candidate Name box, Section, Question Booklet No., SET A/B/C/D selection, candidate signature, and invigilator signature boxes.
+  - **Machine Alignment Marks**: Includes optical corner timing marks for machine readability.
+  - **A4 Print Ready**: Fully styled with print-optimized CSS (`@media print`) and a one-click **"Print / Save as PDF"** button.
 * **APAAR Consent Module Bug Fixes**:
   * Removed the `"Transgender"` choice option from the public-facing APAAR Card registration consent form's Gender selection dropdown.
   * Refactored the backend class name queries in both the Submissions tally endpoint and the School Roster student list endpoint. Replaced strict regex boundaries (`^class_name$`) with a precise word-boundary search (`(?:\b|[^a-zA-Z])class_name(?:\b|[^a-zA-Z])`) that correctly filters out overlapping Roman numerals (e.g. preventing `"I"` from matching `"IX"` or `"XI"`) while successfully finding entries with suffixes/prefixes (like `"Class I"`, `"I A"`, or `"I-A"`).

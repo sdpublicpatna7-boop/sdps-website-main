@@ -1,4 +1,5 @@
 import ResourceManager from "@/components/admin/ResourceManager";
+import { User } from "lucide-react";
 
 export function AdminAdministrationMembers() {
   return (
@@ -57,8 +58,8 @@ export function AdminAdministrationMembers() {
                   className="w-10 h-10 rounded-full object-cover object-top border border-slate-200 bg-white"
                 />
               ) : (
-                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-lg">
-                  👤
+                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                  <User className="w-5 h-5" />
                 </div>
               ),
           },

@@ -45,8 +45,8 @@ export default function AdminDashboard() {
         <div className="absolute bottom-0 left-0 w-60 h-60 bg-brand-orange/5 rounded-full blur-3xl -ml-20 -mb-20"></div>
         
         <div className="relative z-10">
-          <h1 className="font-headline text-3xl md:text-4xl font-bold tracking-tight text-white">
-            {greeting}, <span className="text-brand-orange-light">{adminName}</span> 👋
+          <h1 className="font-headline text-3xl md:text-4xl font-bold tracking-tight text-white flex flex-wrap items-center gap-2">
+            {greeting}, <span className="text-brand-orange-light">{adminName}</span> <Sparkles className="w-7 h-7 text-brand-gold animate-pulse" />
           </h1>
           <p className="text-slate-300 text-sm md:text-base mt-2 max-w-xl">
             Here's a live overview of S.D. Public School's web portal activity and content modules.

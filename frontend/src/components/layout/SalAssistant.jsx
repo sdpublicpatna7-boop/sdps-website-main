@@ -6,7 +6,7 @@ import api from "../../lib/api";
 
 const AVATAR_SRC = "/sal-assistant.png"; // full-body robot
 const AVATAR_DP  = "/sal-dp.png";         // face/dp for chat header & bubbles
-const GREETING = "Hello, I'm **Sal**! 👋 Your SDPS AI Assistant. How may I help you today?";
+const GREETING = "Hello, I'm **Sal**! Your SDPS AI Assistant. How may I help you today?";
 
 const SUGGESTIONS = [
   "How do I apply for admission?",
@@ -315,7 +315,9 @@ export default function SalAssistant() {
                   <X className="w-3 h-3 text-slate-600" />
                 </button>
                 <p className="text-sm text-slate-700 leading-snug">
-                  <span className="font-bold text-brand-blue">Hi, I'm Sal! 👋</span><br />
+                  <span className="font-bold text-brand-blue flex items-center gap-1">
+                    Hi, I'm Sal! <Sparkles className="w-4 h-4 text-brand-orange animate-pulse" />
+                  </span>
                   I can answer your questions about SDPS. Ask me anything!
                 </p>
                 <span

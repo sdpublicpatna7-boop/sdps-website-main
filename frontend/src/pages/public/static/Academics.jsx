@@ -2,7 +2,7 @@ import { useOutletContext } from "react-router-dom";
 import PageHero from "@/components/layout/PageHero";
 import SEO from "@/components/layout/SEO";
 import { parseImageTransform } from "@/lib/api";
-import { Palette, FlaskConical, Sprout, BookOpen, Orbit, Trophy, Monitor, Laptop, BookOpenCheck, Music, Bus, Home } from "lucide-react";
+import { Palette, FlaskConical, Sprout, BookOpen, Orbit, Trophy, Monitor, Laptop, BookOpenCheck, Music, Bus, Home, Check } from "lucide-react";
 
 export function Academics() {
   const { settings } = useOutletContext() || {};
@@ -81,7 +81,7 @@ export function Academics() {
                   <p className="text-sm text-brand-ink/70 mb-3">{c.desc}</p>
                 </div>
                 <ul className="space-y-1 pt-2 border-t border-slate-100">
-                  {c.features.map((f, j) => <li key={j} className="text-xs text-brand-ink/60 flex items-center gap-1.5"><span className="text-brand-orange">✓</span>{f}</li>)}
+                  {c.features.map((f, j) => <li key={j} className="text-xs text-brand-ink/60 flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-brand-orange shrink-0" />{f}</li>)}
                 </ul>
               </div>
             ))}

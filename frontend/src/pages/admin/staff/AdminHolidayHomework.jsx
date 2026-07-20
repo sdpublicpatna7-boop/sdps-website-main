@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import api from "@/lib/api";
 import { toast, Toaster } from "sonner";
-import { Plus, Trash2, Edit2, Save, Loader2, BookOpen, Palette } from "lucide-react";
+import { Plus, Trash2, Edit2, Save, Loader2, BookOpen, Palette, MessageSquare } from "lucide-react";
 import { FileOrUrlField } from "@/components/admin/ResourceManager";
 import { CLASSES, SUBJECTS, VACATION_TYPES } from "./shared";
 
@@ -534,8 +534,8 @@ export function AdminHolidayHomework() {
 
               {/* Doubt Contact */}
               <div className="border border-brand-blue/20 bg-brand-blue/5 rounded-2xl p-5">
-                <div className="font-headline font-semibold text-brand-blue mb-3">
-                  💬 Doubt / Query Contact
+                <div className="font-headline font-semibold text-brand-blue mb-3 flex items-center gap-1.5">
+                  <MessageSquare className="w-5 h-5" /> Doubt / Query Contact
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
