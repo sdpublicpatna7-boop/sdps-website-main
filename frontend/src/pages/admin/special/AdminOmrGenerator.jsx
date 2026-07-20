@@ -3,9 +3,9 @@ import { useOutletContext } from "react-router-dom";
 import { 
   Printer, FileText, Settings, Sparkles, RefreshCw, 
   LayoutGrid, Sliders, CheckSquare, Info, ShieldCheck, Download,
-  Save, Copy, Hash, Database
+  Save, Copy, Hash, Database, Upload, Trash2
 } from "lucide-react";
-import { getOmrRoster, saveOmrBooklets, getOmrBooklets, clearOmrBooklets } from "@/lib/api";
+import { getOmrRoster, saveOmrBooklets, getOmrBooklets, clearOmrBooklets, uploadOmrRoster, clearOmrRoster } from "@/lib/api";
 import api from "@/lib/api";
 import { toast } from "sonner";
 
@@ -187,6 +187,8 @@ export default function AdminOmrGenerator() {
   const [roster, setRoster] = useState([]);
   const [loadingRoster, setLoadingRoster] = useState(false);
   const [savingBooklets, setSavingBooklets] = useState(false);
+  const [uploadingRoster, setUploadingRoster] = useState(false);
+  const fileInputRef = useRef(null);
   const [selectedClassFilter, setSelectedClassFilter] = useState("");
   const [selectedSectionFilter, setSelectedSectionFilter] = useState("");
   const [availableClasses, setAvailableClasses] = useState([]);
@@ -226,6 +228,41 @@ export default function AdminOmrGenerator() {
     setSelectedClassFilter("");
     setSelectedSectionFilter("");
     toast.info("Cleared selected class and student roster. Displaying 1 blank OMR sheet.");
+  };
+
+  const handleUploadRoster = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadingRoster(true);
+    try {
+      const res = await uploadOmrRoster(file);
+      toast.success(res.message || "Successfully imported OMR student roster!");
+      // Re-fetch classes & sections silently to update the dropdowns
+      await fetchRoster("", "");
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Failed to upload OMR student roster.");
+    } finally {
+      setUploadingRoster(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleClearDatabaseRoster = async () => {
+    if (!window.confirm("Are you sure you want to delete ALL OMR student records from the database? This will clear the OMR roster database completely.")) {
+      return;
+    }
+    try {
+      const res = await clearOmrRoster();
+      toast.success(res.message || "OMR database student roster cleared!");
+      setRoster([]);
+      setNumCopies(1);
+      setAvailableClasses([]);
+      setAvailableSections([]);
+      setSelectedClassFilter("");
+      setSelectedSectionFilter("");
+    } catch (err) {
+      toast.error("Failed to clear OMR student database roster.");
+    }
   };
 
   const handleClearAllBooklets = async () => {
@@ -627,15 +664,44 @@ export default function AdminOmrGenerator() {
               <div className="bg-emerald-50 p-3.5 rounded-xl border border-emerald-200 space-y-3 mt-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold text-emerald-900 flex items-center gap-1">
-                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> Birthday Module Pre-filled Mode
+                    <Database className="w-3.5 h-3.5 text-emerald-600" /> OMR Student Database Mode
                   </span>
                   <span className="text-[10px] font-bold bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded-full">
                     {displayedRoster.length} Active ({roster.length} Total)
                   </span>
                 </div>
                 <p className="text-[10px] text-emerald-800 leading-snug">
-                  Pre-prints Student Name, Roll No, Class & Section from Birthday Module with auto-bubbled roll number circles and barcode.
+                  Pre-prints Student Name, Roll No, Class & Section from OMR Student Database with auto-bubbled roll number circles and barcode.
                 </p>
+
+                {/* Import / Upload Controls */}
+                <div className="bg-white p-2 rounded-lg border border-emerald-200 flex items-center justify-between gap-2">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept=".csv, .xls, .xlsx"
+                    onChange={handleUploadRoster}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingRoster}
+                    className="flex-1 py-1.5 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 text-[10px] font-bold border border-emerald-300 rounded-lg flex items-center justify-center gap-1 transition shadow-2xs"
+                  >
+                    <Upload className="w-3 h-3 text-emerald-700" />
+                    {uploadingRoster ? "Uploading..." : "Upload Roster"}
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={handleClearDatabaseRoster}
+                    className="py-1.5 px-2 bg-red-50 hover:bg-red-100 text-red-900 text-[10px] font-bold border border-red-200 rounded-lg flex items-center justify-center gap-1 transition shadow-2xs"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-red-700" />
+                    Clear DB
+                  </button>
+                </div>
 
                 {/* Class & Section Filters */}
                 <div className="grid grid-cols-2 gap-2 bg-white p-2 rounded-lg border border-emerald-200">
