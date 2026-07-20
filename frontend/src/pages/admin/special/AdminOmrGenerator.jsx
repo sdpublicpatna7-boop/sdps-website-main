@@ -503,7 +503,7 @@ export default function AdminOmrGenerator() {
                   </span>
                 </div>
                 <p className="text-[10px] text-emerald-800 leading-snug">
-                  Pre-prints Student Name, Roll No, Class & Section on each page with auto-bubbled roll circles and a scannable Booklet QR code for OCR evaluation.
+                  Pre-prints Student Name, Roll No, Class & Section on each page with auto-bubbled roll circles and a scannable Booklet Barcode for evaluation.
                 </p>
                 <div className="flex gap-2 pt-1">
                   <button
@@ -1124,11 +1124,14 @@ export default function AdminOmrGenerator() {
                         )}
 
                         {isAutomated && (
-                          <div className="col-span-3 flex justify-center items-center">
-                            <QrCodeSvg
-                              value={JSON.stringify({ b: currentBookletNo, r: studentRollNo, n: studentName })}
-                              size={44}
+                          <div className="col-span-4 flex flex-col justify-center items-center p-1 border border-black bg-white">
+                            <BarcodeSvg
+                              value={currentBookletNo}
+                              height={26}
                             />
+                            <span className="text-[7px] font-mono font-extrabold text-black tracking-widest mt-0.5">
+                              {currentBookletNo}
+                            </span>
                           </div>
                         )}
                       </div>
