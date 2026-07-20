@@ -1,5 +1,6 @@
 """Admin API routes (JWT-protected)."""
 import os
+import re
 import io
 import asyncio
 import logging
@@ -2034,8 +2035,8 @@ async def get_omr_roster(
         raw_s2 = await db.omr_roster.distinct("sec")
         for s in raw_s2:
             if s and str(s).strip(): available_sections_set.add(str(s).strip().upper())
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error(f"Error querying distinct classes/sections: {e}", exc_info=True)
 
     CLASS_ORDER = ["Class Nursery", "Class LKG", "Class UKG", "Class I", "Class II", "Class III", "Class IV", "Class V", "Class VI", "Class VII", "Class VIII", "Class IX", "Class X", "Class XI", "Class XII"]
     def class_sort_key(c):
