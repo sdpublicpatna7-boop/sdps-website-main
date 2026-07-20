@@ -2593,9 +2593,9 @@ async def export_omr_pdf(
             if browserless_key:
                 logger.info(f"Attempting concurrent PDF rendering for {len(html_pages)} pages via Browserless.io Cloud REST API...")
                 try:
-                    limits = httpx.Limits(max_keepalive_connections=20, max_connections=30)
+                    limits = httpx.Limits(max_keepalive_connections=5, max_connections=10)
                     async with httpx.AsyncClient(timeout=120.0, limits=limits) as client:
-                        semaphore = asyncio.Semaphore(8) # Process 8 pages in parallel concurrently
+                        semaphore = asyncio.Semaphore(2) # Concurrency of 2 to stay within Browserless rate limits
                         
                         async def render_single_page(idx, page_html):
                             async with semaphore:
@@ -2610,14 +2610,28 @@ async def export_omr_pdf(
                                         "margin": {"top": "0mm", "right": "0mm", "bottom": "0mm", "left": "0mm"}
                                     }
                                 }
-                                resp = await client.post(b_url, json=b_payload)
-                                if resp.status_code == 200 and len(resp.content) > 100:
-                                    chunk_path = os.path.join(temp_dir, f"page_{idx:05d}.pdf")
-                                    with open(chunk_path, "wb") as f:
-                                        f.write(resp.content)
-                                    return chunk_path
-                                else:
-                                    raise Exception(f"Browserless REST API page {idx} error {resp.status_code}: {resp.text[:200]}")
+                                
+                                max_retries = 3
+                                for attempt in range(max_retries):
+                                    try:
+                                        resp = await client.post(b_url, json=b_payload)
+                                        if resp.status_code == 200 and len(resp.content) > 100:
+                                            chunk_path = os.path.join(temp_dir, f"page_{idx:05d}.pdf")
+                                            with open(chunk_path, "wb") as f:
+                                                f.write(resp.content)
+                                            return chunk_path
+                                        elif resp.status_code == 429:
+                                            logger.warning(f"Browserless 429 rate limit hit for page {idx}. Retrying in {(attempt + 1) * 1.5}s...")
+                                            await asyncio.sleep((attempt + 1) * 1.5)
+                                            continue
+                                        else:
+                                            raise Exception(f"Browserless REST API page {idx} status {resp.status_code}: {resp.text[:200]}")
+                                    except httpx.HTTPError as h_err:
+                                        if attempt == max_retries - 1:
+                                            raise h_err
+                                        await asyncio.sleep(1.0 * (attempt + 1))
+                                
+                                raise Exception(f"Browserless REST API page {idx} failed after {max_retries} retries.")
 
                         tasks = [render_single_page(idx, page_html) for idx, page_html in enumerate(html_pages)]
                         temp_files = list(await asyncio.gather(*tasks))
