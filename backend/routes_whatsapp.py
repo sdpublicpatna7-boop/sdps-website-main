@@ -880,32 +880,27 @@ def _parse_all_students(content: bytes, filename: str = ""):
             h_norm = h.replace("_", " ").strip()
             for cand in candidates:
                 cand_norm = cand.replace("_", " ").strip()
-                if h_norm == cand_norm:
-                    return col_i
-        for col_i, h in enumerate(headers):
-            h_norm = h.replace("_", " ").strip()
-            for cand in candidates:
-                cand_norm = cand.replace("_", " ").strip()
-                if cand_norm in h_norm:
-                    if cand_norm == "name" and ("father" in h_norm or "mother" in h_norm or "guardian" in h_norm):
-                        continue
+                if cand_norm == h_norm or cand_norm in h_norm:
                     return col_i
         return None
 
-    name_col = find_col("name", "student name", "child name", "first name")
-    father_col = find_col("father name", "father_name", "father", "guardian")
+    name_col = find_col("student name", "student_name", "candidate name", "full name", "child name", "first name", "name", "student")
+    father_col = find_col("father name", "father_name", "fathers name", "father's name", "father", "guardian", "parent name")
     mother_col = find_col("mother name", "mother_name", "mother")
-    contact_col = find_col("contact no", "contact_no", "contact", "mobile", "phone", "whatsapp", "number")
-    admn_col = find_col("admn no", "admn_no", "admission no", "admission_no", "admn", "admission", "adm no", "admno")
+    contact_col = find_col("contact no", "contact_no", "contact", "mobile", "phone", "whatsapp", "number", "parent phone", "parent mobile")
+    admn_col = find_col("admn no", "admn_no", "admission no", "admission_no", "admn", "admission", "adm no", "admno", "reg no", "registration no", "student id", "id")
     dob_col = find_col("date of birth", "date_of_birth", "dob", "birth", "birthday", "birthdate")
+    roll_col = find_col("roll no", "roll_no", "roll", "roll number", "rollno", "s.no", "sl.no", "r.no", "serial no", "roll_num")
+    class_col = find_col("class name", "class_name", "class", "grade", "std", "standard")
+    section_col = find_col("section name", "section_name", "section", "sec", "sec.")
     perm_addr_col = find_col("permanent address", "permanent_address", "perm address", "permanent")
     curr_addr_col = find_col("current address", "current_address", "curr address", "current")
     biometric_col = find_col("biometric")
 
-    if name_col is None or contact_col is None or dob_col is None:
+    if name_col is None:
         raise HTTPException(
             status_code=400,
-            detail="File must contain Name, Contact No, and Date of Birth (DOB) columns.",
+            detail="Excel file must contain a Student Name column (e.g., 'Name' or 'Student Name').",
         )
 
     students = []
@@ -925,34 +920,38 @@ def _parse_all_students(content: bytes, filename: str = ""):
             skipped += 1
             continue
 
-        phone = _digits_only(cell(contact_col))
-        if len(phone) < 10:
-            skipped += 1
-            continue
-
-        raw_dob = cell(dob_col)
-        parsed_dob = _parse_dob_val(raw_dob)
-        if not parsed_dob:
-            skipped += 1
-            continue
+        phone = _digits_only(cell(contact_col)) if contact_col is not None else ""
+        raw_dob = cell(dob_col) if dob_col is not None else ""
+        parsed_dob = _parse_dob_val(raw_dob) if raw_dob else None
+        dob_str = parsed_dob.strftime("%Y-%m-%d") if parsed_dob else ""
 
         admn = cell(admn_col)
         father = cell(father_col)
         mother = cell(mother_col)
+        roll = cell(roll_col)
+        c_name = cell(class_col)
+        sec = cell(section_col)
         perm_addr = cell(perm_addr_col)
         curr_addr = cell(curr_addr_col)
         biometric = cell(biometric_col)
 
         students.append({
             "name": name,
+            "student_name": name,
             "father_name": father,
             "mother_name": mother,
             "phone": phone,
             "contact_no": phone,
             "admission_no": admn,
             "admn_no": admn,
-            "dob": parsed_dob.strftime("%Y-%m-%d"),
-            "date_of_birth": parsed_dob.strftime("%Y-%m-%d"),
+            "roll_no": roll,
+            "roll": roll,
+            "class_name": c_name,
+            "class": c_name,
+            "section": sec,
+            "sec": sec,
+            "dob": dob_str,
+            "date_of_birth": dob_str,
             "permanent_address": perm_addr,
             "current_address": curr_addr,
             "biometric": biometric
@@ -983,6 +982,50 @@ async def wa_birthday_campaign_import(
     students, skipped = _parse_all_students(raw, file.filename)
     if not students:
         raise HTTPException(status_code=400, detail="No valid students found in the sheet.")
+
+    from pymongo import UpdateOne
+
+    if mode == "overwrite":
+        await db.birthday_students.delete_many({})
+        await db.birthday_students.insert_many(students)
+    else:
+        # Append mode
+        for s in students:
+            query_filter = {"admission_no": s["admission_no"]} if s["admission_no"] else {"phone": s["phone"], "name": s["name"]}
+            await db.birthday_students.update_one(
+                query_filter,
+                {"$set": s},
+                upsert=True
+            )
+
+    # Automatically sync with OMR student roster for pre-filled OMR generation
+    omr_operations = []
+    for s in students:
+        adm = s.get("admission_no") or f"{s.get('class_name')}-{s.get('section')}-{s.get('roll_no')}"
+        if not adm or adm == "--":
+            adm = f"SDPS-{s['name'].replace(' ', '')[:4].upper()}"
+        doc = {
+            "id": adm,
+            "admission_no": adm,
+            "student_name": s.get("name") or s.get("student_name") or "",
+            "father_name": s.get("father_name") or "",
+            "class_name": s.get("class_name") or "",
+            "section": s.get("section") or "",
+            "roll_no": s.get("roll_no") or "",
+            "updated_at": now_iso()
+        }
+        omr_operations.append(
+            UpdateOne({"admission_no": adm}, {"$set": doc}, upsert=True)
+        )
+    if omr_operations:
+        await db.omr_roster.bulk_write(omr_operations)
+
+    return {
+        "success": True,
+        "imported_count": len(students),
+        "skipped_count": skipped,
+        "mode": mode
+    } the sheet.")
 
     if mode == "overwrite":
         await db.birthday_students.delete_many({})
