@@ -2419,26 +2419,34 @@ async def get_next_booklet_serial(
     prefix: str = "SDP-",
     admin: TokenData = Depends(require_permission("site-settings"))
 ):
-    """Find highest numeric booklet suffix in database to ensure serial numbers never collide or reassign."""
-    clean_prefix = (prefix or "SDP-").strip()
-    records = await db.omr_booklets.find({"booklet_no": {"$regex": f"^{re.escape(clean_prefix)}"}}).to_list(length=10000)
-    max_num = 1000
+    """Find highest numeric booklet suffix in database across all records so serial numbers NEVER collide or re-use 1001."""
+    clean_prefix = (prefix or "").strip()
+    records = await db.omr_booklets.find({}).to_list(length=50000)
+    
+    max_num_all = 1000
+    max_num_prefix = 1000
+    
     for r in records:
         b_no = str(r.get("booklet_no", "")).strip()
         match = re.search(r"(\d+)$", b_no)
         if match:
             try:
                 num = int(match.group(1), 10)
-                if num > max_num:
-                    max_num = num
+                if num > max_num_all:
+                    max_num_all = num
+                if clean_prefix and (b_no.startswith(clean_prefix) or clean_prefix in b_no):
+                    if num > max_num_prefix:
+                        max_num_prefix = num
             except ValueError:
                 pass
-    next_num = max_num + 1
+                
+    highest = max(max_num_prefix, max_num_all)
+    next_num = highest + 1
     return {
         "status": "success",
         "next_start_no": str(next_num),
         "next_booklet_no": f"{clean_prefix}{next_num}",
-        "max_assigned": max_num
+        "max_assigned": highest
     }
 
 

@@ -293,7 +293,11 @@ export default function AdminOmrGenerator() {
     try {
       const res = await getNextBookletSerial(prefix);
       if (res && res.next_start_no) {
-        setBookletStartNo(res.next_start_no);
+        setBookletStartNo((current) => {
+          const currNum = parseInt(current || "1001", 10);
+          const nextNum = parseInt(res.next_start_no, 10);
+          return (nextNum > currNum || currNum === 1001) ? res.next_start_no : current;
+        });
       }
     } catch (e) {
       /* ignore network notice */
@@ -301,6 +305,12 @@ export default function AdminOmrGenerator() {
       setSyncingNextSerial(false);
     }
   }, [bookletPrefix]);
+
+  useEffect(() => {
+    if (settingsLoaded) {
+      syncLatestBookletSerial(bookletPrefix);
+    }
+  }, [bookletPrefix, settingsLoaded, syncLatestBookletSerial]);
 
   const autoSaveBooklets = async (studentList = displayedRoster) => {
     if (!autoIndexBooklets) return;
