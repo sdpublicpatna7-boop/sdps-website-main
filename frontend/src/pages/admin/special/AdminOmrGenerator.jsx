@@ -867,7 +867,7 @@ export default function AdminOmrGenerator() {
                       </div>
                       <div className="border border-black p-2">
                         <span className="font-bold uppercase text-[8.5px] block mb-1">DATE:</span>
-                        <div className="h-7 text-right text-[9px] pr-1 font-mono flex items-end justify-end">{examDate}</div>
+                        <div className="h-7 border-b border-dashed border-black/40"></div>
                       </div>
                     </div>
 
