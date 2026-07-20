@@ -2012,18 +2012,27 @@ async def get_omr_roster(
         raw_val = class_name.strip()
         escaped_c = re.escape(raw_val)
         clean_val = re.sub(r'(?i)class', '', raw_val).strip()
-        escaped_clean = re.escape(clean_val) if clean_val else escaped_c
+        clean_val_no_dash = re.sub(r'[\-\s]', '', clean_val).strip()
+        escaped_clean = re.escape(clean_val_no_dash) if clean_val_no_dash else escaped_c
         query["$or"] = [
             {"class_name": {"$regex": f"^{escaped_c}$", "$options": "i"}},
             {"class": {"$regex": f"^{escaped_c}$", "$options": "i"}},
             {"class_name": {"$regex": f".*{escaped_clean}.*", "$options": "i"}},
-            {"class": {"$regex": f".*{escaped_clean}.*", "$options": "i"}}
+            {"class": {"$regex": f".*{escaped_clean}.*", "$options": "i"}},
+            {"student_class": {"$regex": f".*{escaped_clean}.*", "$options": "i"}},
+            {"standard": {"$regex": f".*{escaped_clean}.*", "$options": "i"}}
         ]
     if section and section.strip() and section.upper() != "ALL":
-        escaped_s = re.escape(section.strip())
+        raw_s = section.strip()
+        escaped_s = re.escape(raw_s)
+        clean_s = re.sub(r'(?i)section|sec', '', raw_s).strip()
+        clean_s_no_dash = re.sub(r'[\-\s]', '', clean_s).strip()
+        escaped_clean_s = re.escape(clean_s_no_dash) if clean_s_no_dash else escaped_s
         sec_condition = [
             {"section": {"$regex": f"^{escaped_s}$", "$options": "i"}},
-            {"sec": {"$regex": f"^{escaped_s}$", "$options": "i"}}
+            {"sec": {"$regex": f"^{escaped_s}$", "$options": "i"}},
+            {"section": {"$regex": f".*{escaped_clean_s}.*", "$options": "i"}},
+            {"sec": {"$regex": f".*{escaped_clean_s}.*", "$options": "i"}}
         ]
         if "$or" in query:
             class_or = query.pop("$or")

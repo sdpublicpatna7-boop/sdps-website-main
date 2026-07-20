@@ -230,36 +230,21 @@ export default function AdminOmrGenerator() {
         setNumCopies(res.students.length);
         if (res.available_classes) setAvailableClasses(res.available_classes);
         if (res.available_sections) setAvailableSections(res.available_sections);
-        toast.success(`Loaded ${res.students.length} student records!`);
+        toast.success(`Loaded ${res.students.length} student records for Class ${cFilter !== 'ALL' ? cFilter : ''}!`);
         
         autoSaveBooklets(res.students).catch(() => {});
       } else {
         if (res && res.available_classes) setAvailableClasses(res.available_classes);
         if (res && res.available_sections) setAvailableSections(res.available_sections);
-        // Fallback student roster so preview always displays nicely
-        const sampleRoster = [
-          { roll_no: "101", student_name: "AARAV KUMAR", class_name: className || "IX", section: "A", father_name: "RAJESH KUMAR", admission_no: "ADM-101" },
-          { roll_no: "102", student_name: "ANANYA SHARMA", class_name: className || "IX", section: "A", father_name: "SANJAY SHARMA", admission_no: "ADM-102" },
-          { roll_no: "103", student_name: "ROHAN VERMA", class_name: className || "IX", section: "A", father_name: "AMIT VERMA", admission_no: "ADM-103" },
-          { roll_no: "104", student_name: "PRIYA SINGH", class_name: className || "IX", section: "A", father_name: "VIKRAM SINGH", admission_no: "ADM-104" },
-          { roll_no: "105", student_name: "ADITYA RAJ", class_name: className || "IX", section: "A", father_name: "MANOJ RAJ", admission_no: "ADM-105" },
-        ];
-        setRoster(sampleRoster);
-        setNumCopies(sampleRoster.length);
-        toast.info("Loaded 5 student records for preview.");
-        autoSaveBooklets(sampleRoster).catch(() => {});
+        setRoster([]);
+        setNumCopies(1);
+        toast.info(`No matching student records found for Class ${cFilter !== 'ALL' ? cFilter : ''} ${sFilter !== 'ALL' ? 'Section ' + sFilter : ''}.`);
       }
     } catch (e) {
       console.error(e);
-      const sampleRoster = [
-        { roll_no: "101", student_name: "AARAV KUMAR", class_name: className || "IX", section: "A", father_name: "RAJESH KUMAR", admission_no: "ADM-101" },
-        { roll_no: "102", student_name: "ANANYA SHARMA", class_name: className || "IX", section: "A", father_name: "SANJAY SHARMA", admission_no: "ADM-102" },
-        { roll_no: "103", student_name: "ROHAN VERMA", class_name: className || "IX", section: "A", father_name: "AMIT VERMA", admission_no: "ADM-103" },
-        { roll_no: "104", student_name: "PRIYA SINGH", class_name: className || "IX", section: "A", father_name: "VIKRAM SINGH", admission_no: "ADM-104" },
-        { roll_no: "105", student_name: "ADITYA RAJ", class_name: className || "IX", section: "A", father_name: "MANOJ RAJ", admission_no: "ADM-105" },
-      ];
-      setRoster(sampleRoster);
-      setNumCopies(sampleRoster.length);
+      setRoster([]);
+      setNumCopies(1);
+      toast.error("Could not query student roster.");
     } finally {
       setLoadingRoster(false);
     }
@@ -570,7 +555,9 @@ export default function AdminOmrGenerator() {
                     >
                       <option value="ALL">All Classes</option>
                       {availableClasses.map((c) => (
-                        <option key={c} value={c}>Class {c}</option>
+                        <option key={c} value={c}>
+                          {c.toUpperCase().startsWith("CLASS") ? c : `Class ${c}`}
+                        </option>
                       ))}
                       {availableClasses.length === 0 && (
                         ["NURSERY", "LKG", "UKG", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"].map((c) => (
@@ -592,7 +579,9 @@ export default function AdminOmrGenerator() {
                     >
                       <option value="ALL">All Sections</option>
                       {availableSections.map((s) => (
-                        <option key={s} value={s}>Section {s}</option>
+                        <option key={s} value={s}>
+                          {s.toUpperCase().startsWith("SECTION") || s.toUpperCase().startsWith("SEC") ? s : `Section ${s}`}
+                        </option>
                       ))}
                       {availableSections.length === 0 && (
                         ["A", "B", "C", "D", "E"].map((s) => (
