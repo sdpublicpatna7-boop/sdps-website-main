@@ -1792,19 +1792,19 @@ export default function AdminOmrGenerator() {
 
                     {/* Booklet No & Set Selection & Merged Barcode Box */}
                     {(showBookletNo || showSetCode || isAutomated) && (
-                      <div className="grid grid-cols-12 gap-1.5">
+                      <div className="grid grid-cols-12 gap-1.5 mb-2">
                         {showBookletNo && (
-                          <div className={`${showSetCode ? 'col-span-7' : 'col-span-12'} border border-black p-1 flex items-center justify-between bg-white min-h-[44px] overflow-hidden`}>
-                            <div className="min-w-0 flex-1 pr-1">
-                              <span className="font-bold uppercase text-[8px] text-black block mb-0.5 whitespace-nowrap">BOOKLET NO:</span>
-                              <span className="font-mono font-extrabold text-[9.5px] sm:text-[10px] text-black tracking-tight block whitespace-nowrap overflow-hidden">
+                          <div className={`${showSetCode ? 'col-span-8' : 'col-span-12'} border border-black p-1.5 flex items-center justify-between bg-white min-h-[42px] overflow-hidden`}>
+                            <div className="flex flex-col justify-center min-w-0 pr-2">
+                              <span className="font-bold uppercase text-[7.5px] text-black leading-none block mb-0.5 whitespace-nowrap">BOOKLET NO:</span>
+                              <span className="font-mono font-black text-[10px] text-black tracking-tighter leading-none block whitespace-nowrap">
                                 {currentBookletNo}
                               </span>
                             </div>
                             {(showBarcode || isAutomated) && (
-                              <div className="flex flex-col items-end justify-center shrink-0 border-l border-black/20 pl-1.5">
-                                <BarcodeSvg value={currentBookletNo} height={20} />
-                                <span className="text-[6.5px] font-mono font-extrabold text-black tracking-tighter mt-0.5 whitespace-nowrap">
+                              <div className="flex flex-col items-center justify-center shrink-0 border-l border-black/20 pl-2">
+                                <BarcodeSvg value={currentBookletNo} height={18} />
+                                <span className="text-[6.5px] font-mono font-extrabold text-black tracking-tighter mt-0.5 whitespace-nowrap leading-none">
                                   {currentBookletNo}
                                 </span>
                               </div>
@@ -1813,14 +1813,14 @@ export default function AdminOmrGenerator() {
                         )}
 
                         {showSetCode && (
-                          <div className={`${showBookletNo ? 'col-span-5' : 'col-span-12'} border border-black p-1 flex flex-col justify-between min-h-[44px] bg-white`}>
-                            <span className="font-bold uppercase text-[8px] block text-black whitespace-nowrap">QUESTION SET:</span>
+                          <div className={`${showBookletNo ? 'col-span-4' : 'col-span-12'} border border-black p-1 flex flex-col justify-between min-h-[42px] bg-white`}>
+                            <span className="font-bold uppercase text-[7.5px] block text-black whitespace-nowrap leading-none text-center">QUESTION SET:</span>
                             <div className="flex justify-around items-center py-0.5">
                               {["A", "B", "C", "D"].map((setCode) => (
                                 <div key={setCode} className="flex items-center">
                                   <div
                                     style={{ aspectRatio: "1 / 1" }}
-                                    className="w-4 h-4 rounded-full border border-black flex items-center justify-center font-bold text-[8px] shrink-0 text-black bg-white"
+                                    className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border border-black flex items-center justify-center font-bold text-[7.5px] shrink-0 text-black bg-white"
                                   >
                                     {setCode}
                                   </div>
