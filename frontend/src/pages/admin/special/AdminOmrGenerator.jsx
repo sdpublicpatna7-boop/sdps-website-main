@@ -1829,7 +1829,7 @@ export default function AdminOmrGenerator() {
       <style>{`
         @media print {
           /* Force page flow and remove all margins/paddings/gaps on layout wrappers outside the print area */
-          html, body, #root, main,
+          html, body, #root, #root > div, main,
           .space-y-6,
           .lg:col-span-8,
           .w-full.flex.justify-center {
@@ -1838,7 +1838,7 @@ export default function AdminOmrGenerator() {
             gap: 0 !important;
             display: block !important;
             width: 100% !important;
-            height: auto !important;
+            height: 100% !important;
             min-height: 0 !important;
             max-height: none !important;
             overflow: visible !important;
@@ -1872,8 +1872,10 @@ export default function AdminOmrGenerator() {
             display: flex !important;
             flex-direction: column !important;
             position: relative !important;
-            width: ${omrMode === 'booklet' ? '297mm' : '210mm'} !important;
-            height: ${omrMode === 'booklet' ? '210mm' : '297mm'} !important;
+            width: 100% !important;
+            height: 100% !important;
+            max-width: ${omrMode === 'booklet' ? '297mm' : '210mm'} !important;
+            max-height: ${omrMode === 'booklet' ? '210mm' : '297mm'} !important;
             margin: 0 auto !important;
             padding: ${omrMode === 'booklet' ? '6mm 6mm' : '12mm 12mm'} !important;
             border: none !important;
