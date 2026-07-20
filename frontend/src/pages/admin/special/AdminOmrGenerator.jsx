@@ -703,6 +703,24 @@ export default function AdminOmrGenerator() {
                   </button>
                 </div>
 
+                {/* Excel Import Columns Formatting Guide */}
+                <div className="bg-emerald-150/40 p-2.5 rounded-lg border border-emerald-200 text-[10.5px] space-y-1">
+                  <span className="font-bold text-emerald-900 block uppercase tracking-wide">
+                    Excel/CSV Import Guide:
+                  </span>
+                  <p className="text-emerald-800 leading-snug">
+                    Upload a spreadsheet with these column headers in the first row:
+                  </p>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-1 font-mono text-[9px] text-slate-800 bg-white/80 p-2 rounded border border-emerald-200">
+                    <div>• <strong className="text-emerald-950">Name</strong> (Student name)</div>
+                    <div>• <strong className="text-emerald-950">Class</strong> (e.g. VI, X)</div>
+                    <div>• <strong className="text-emerald-950">Section</strong> (e.g. A, B)</div>
+                    <div>• <strong className="text-emerald-950">Roll_no</strong> (Roll number)</div>
+                    <div>• <strong className="text-emerald-950">Admn_No</strong> (Admission No)</div>
+                    <div>• <strong className="text-emerald-950">Father_Name</strong> (Optional)</div>
+                  </div>
+                </div>
+
                 {/* Class & Section Filters */}
                 <div className="grid grid-cols-2 gap-2 bg-white p-2 rounded-lg border border-emerald-200">
                   <div>

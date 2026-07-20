@@ -1924,17 +1924,27 @@ async def upload_omr_roster(
     # Standardize column headers
     df.columns = [str(col).strip().lower().replace(" ", "_").replace(".", "").replace("'", "") for col in df.columns]
     
+    def clean_val(val):
+        if pd.isna(val):
+            return ""
+        s = str(val).strip()
+        if s.endswith(".0"):
+            s = s[:-2]
+        if s.lower() == "nan":
+            return ""
+        return s
+
     records = []
     from pymongo import UpdateOne
     operations = []
     
     for _, row in df.iterrows():
-        name = str(row.get("student_name") or row.get("name") or row.get("candidate_name") or "").strip()
-        f_name = str(row.get("father_name") or row.get("fathers_name") or row.get("father_name") or "").strip()
-        c_name = str(row.get("class") or row.get("class_name") or "").strip()
-        sec = str(row.get("section") or "").strip()
-        roll = str(row.get("roll_no") or row.get("roll") or row.get("roll_number") or "").strip()
-        adm = str(row.get("admission_no") or row.get("adm_no") or row.get("reg_no") or row.get("id") or "").strip()
+        name = clean_val(row.get("student_name") or row.get("name") or row.get("candidate_name"))
+        f_name = clean_val(row.get("father_name") or row.get("fathers_name"))
+        c_name = clean_val(row.get("class") or row.get("class_name"))
+        sec = clean_val(row.get("section"))
+        roll = clean_val(row.get("roll_no") or row.get("roll") or row.get("roll_number"))
+        adm = clean_val(row.get("admn_no") or row.get("admission_no") or row.get("adm_no") or row.get("reg_no") or row.get("id"))
         
         if not name:
             continue
