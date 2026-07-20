@@ -1343,7 +1343,7 @@ export default function AdminOmrGenerator() {
               : "";
 
             return (
-              <div className="relative">
+              <div className="relative flex-1 flex flex-col justify-between">
                 {/* Timing Marks */}
                 {showTimingMarks && (
                   <>
@@ -1674,7 +1674,7 @@ export default function AdminOmrGenerator() {
             return (
               <div key={copyIdx} className="w-full flex justify-center">
                 {/* Printable A4 Container */}
-                <div className={`omr-print-area bg-white border border-slate-300 shadow-xl rounded-sm text-black p-4 sm:p-6 w-full relative font-sans ${omrMode === "booklet" ? "max-w-[1150px] min-h-[750px]" : "max-w-[800px] min-h-[1100px]"}`}>
+                <div className={`omr-print-area bg-white border border-slate-300 shadow-xl rounded-sm text-black p-4 sm:p-6 w-full relative font-sans flex flex-col ${omrMode === "booklet" ? "max-w-[1150px] aspect-[297/210]" : "max-w-[800px] aspect-[210/297]"}`}>
                   {/* Copy number label (screen only) */}
                   {numCopies > 1 && (
                     <div className="no-print absolute -top-3 left-4 bg-brand-blue text-white text-[10px] font-bold px-3 py-0.5 rounded-full shadow-md z-30">
@@ -1687,7 +1687,7 @@ export default function AdminOmrGenerator() {
                   )}
                   
                   {omrMode === "booklet" ? (
-                    <div className="grid grid-cols-2 gap-4 relative items-stretch">
+                    <div className="grid grid-cols-2 gap-4 relative items-stretch flex-1">
                       {/* Booklet Sheet 1 (Left Copy) */}
                       <div className="border border-black p-3 rounded-sm relative bg-white flex flex-col justify-between">
                         <div className="absolute top-1 left-2 text-[7.5px] font-mono font-bold uppercase tracking-wider text-black/40">
@@ -1869,7 +1869,8 @@ export default function AdminOmrGenerator() {
 
           /* Style the OMR printable sheets sequentially in relative layout */
           .omr-print-area {
-            display: block !important;
+            display: flex !important;
+            flex-direction: column !important;
             position: relative !important;
             width: ${omrMode === 'booklet' ? '297mm' : '210mm'} !important;
             height: ${omrMode === 'booklet' ? '210mm' : '297mm'} !important;
