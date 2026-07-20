@@ -2550,6 +2550,10 @@ async def export_omr_results(
     )
 
 
+# Global lock to serialize PDF exports, preventing concurrent Chromium instances from exceeding 512MB RAM
+pdf_export_lock = asyncio.Lock()
+
+
 @admin_router.post("/omr/export-pdf")
 async def export_omr_pdf(
     payload: Dict[str, Any] = Body(...),
@@ -2565,32 +2569,33 @@ async def export_omr_pdf(
     if not html_content:
         raise HTTPException(status_code=400, detail="Missing HTML content.")
         
-    try:
-        from playwright.async_api import async_playwright
-        
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
-            context = await browser.new_context()
-            page = await context.new_page()
+    async with pdf_export_lock:
+        try:
+            from playwright.async_api import async_playwright
             
-            # Load the full HTML document
-            await page.set_content(html_content)
-            
-            # Wait for all stylesheets, external images, and fonts to load completely
-            await page.wait_for_load_state("networkidle")
-            
-            # Generate the vector PDF using Chromium's native PrintToPDF engine
-            pdf_bytes = await page.pdf(
-                format="A4",
-                landscape=is_landscape,
-                print_background=True,
-                margin={"top": "0mm", "right": "0mm", "bottom": "0mm", "left": "0mm"}
-            )
-            
-            await browser.close()
-            
-        return Response(content=pdf_bytes, media_type="application/pdf")
-    except Exception as e:
-        logger.error(f"Playwright PDF generation failed: {e}")
-        raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
+            async with async_playwright() as p:
+                browser = await p.chromium.launch(headless=True)
+                context = await browser.new_context()
+                page = await context.new_page()
+                
+                # Load the full HTML document
+                await page.set_content(html_content)
+                
+                # Wait for all stylesheets, external images, and fonts to load completely
+                await page.wait_for_load_state("networkidle")
+                
+                # Generate the vector PDF using Chromium's native PrintToPDF engine
+                pdf_bytes = await page.pdf(
+                    format="A4",
+                    landscape=is_landscape,
+                    print_background=True,
+                    margin={"top": "0mm", "right": "0mm", "bottom": "0mm", "left": "0mm"}
+                )
+                
+                await browser.close()
+                
+            return Response(content=pdf_bytes, media_type="application/pdf")
+        except Exception as e:
+            logger.error(f"Playwright PDF generation failed: {e}")
+            raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
 
