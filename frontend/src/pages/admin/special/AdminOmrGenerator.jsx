@@ -663,91 +663,12 @@ export default function AdminOmrGenerator() {
   };
 
   /**
-   * exportOMRAsBlob — Captures all rendered OMR sheets from the DOM
-   * and returns a high-resolution PDF as a Promise<Blob>.
+   * exportOMRAsBlob — 100% Client-Side High-Res PDF Processing
+   * Processes the PDF entirely inside the user's Mac browser memory.
+   * Zero backend HTTP requests, zero rate limits, zero server payload errors!
    */
   const exportOMRAsBlob = async (onProgress) => {
-    const printAreas = document.querySelectorAll(".omr-print-area");
-    if (printAreas.length === 0) {
-      throw new Error("No OMR sheets rendered to export.");
-    }
-
-    const total = printAreas.length;
-    const isLandscape = omrMode === "booklet";
-
-    // 1. Gather all active document stylesheets and style elements to match look and feel,
-    // converting relative URLs to absolute URLs so Playwright can fetch them over the network.
-    let stylesHtml = "";
-    document.querySelectorAll("style, link[rel='stylesheet']").forEach((el) => {
-      if (el.tagName === "STYLE") {
-        stylesHtml += el.outerHTML;
-      } else if (el.tagName === "LINK" && el.href) {
-        const absoluteUrl = new URL(el.getAttribute("href"), window.location.origin).href;
-        stylesHtml += `<link rel="stylesheet" href="${absoluteUrl}">`;
-      }
-    });
-
-    // 2. Clone each sheet, build individual document HTMLs
-    const htmlPages = [];
-    for (let i = 0; i < printAreas.length; i++) {
-      const el = printAreas[i];
-      const cloned = el.cloneNode(true);
-      cloned.querySelectorAll(".no-print").forEach((subEl) => subEl.remove());
-      
-      cloned.querySelectorAll("img").forEach((img) => {
-        if (img.getAttribute("src")) {
-          img.src = new URL(img.getAttribute("src"), window.location.origin).href;
-        }
-      });
-      
-      cloned.style.width = isLandscape ? "297mm" : "210mm";
-      cloned.style.height = isLandscape ? "210mm" : "297mm";
-      cloned.style.margin = "0 auto";
-      cloned.style.padding = isLandscape ? "4mm" : "6mm";
-      cloned.style.boxSizing = "border-box";
-      cloned.style.display = "flex";
-      cloned.style.flexDirection = "column";
-      cloned.style.justifyContent = "space-between";
-      cloned.style.border = "none";
-      cloned.style.boxShadow = "none";
-      cloned.style.background = "white";
-
-      const pageHtml = `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <title>OMR Sheet Page ${i + 1}</title>
-            ${stylesHtml}
-            <style>
-              html, body {
-                margin: 0 !important;
-                padding: 0 !important;
-                background: white !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-              }
-              .omr-print-area {
-                box-shadow: none !important;
-                border: none !important;
-              }
-            </style>
-          </head>
-          <body>
-            ${cloned.outerHTML}
-          </body>
-        </html>
-      `;
-      htmlPages.push(pageHtml);
-    }
-
-    try {
-      const pdfBlob = await exportOmrPdf(htmlPages, isLandscape);
-      return pdfBlob;
-    } catch (backendErr) {
-      console.warn("Backend PDF rendering notice, engaging high-res client-side PDF engine:", backendErr);
-      return await exportClientSidePdf(onProgress);
-    }
+    return await exportClientSidePdf(onProgress);
   };
 
   /** PDF Export state */
