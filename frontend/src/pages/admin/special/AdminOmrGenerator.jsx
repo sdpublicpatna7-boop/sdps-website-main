@@ -482,6 +482,105 @@ export default function AdminOmrGenerator() {
     window.print();
   };
 
+  const handleExportHtmlBlob = async () => {
+    if (displayedRoster.length > 0) {
+      await autoSaveBooklets(displayedRoster);
+    }
+    
+    const printAreas = document.querySelectorAll(".omr-print-area");
+    if (printAreas.length === 0) {
+      toast.error("No OMR sheets generated to export.");
+      return;
+    }
+
+    let cssStyles = "";
+    document.querySelectorAll("style, link[rel='stylesheet']").forEach((el) => {
+      if (el.tagName === "STYLE") {
+        cssStyles += el.innerHTML;
+      }
+    });
+
+    let stylesheetLinks = "";
+    document.querySelectorAll("link[rel='stylesheet']").forEach((el) => {
+      stylesheetLinks += `<link rel="stylesheet" href="${el.href}">`;
+    });
+
+    let printAreasHtml = "";
+    printAreas.forEach((el) => {
+      const cloned = el.cloneNode(true);
+      cloned.querySelectorAll(".no-print").forEach((subEl) => subEl.remove());
+      printAreasHtml += cloned.outerHTML + "\n";
+    });
+
+    const fullHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>OMR Sheets Export</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  ${stylesheetLinks}
+  <style>
+    ${cssStyles}
+    body {
+      background-color: #f1f5f9;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    .omr-print-area {
+      background: white !important;
+      border: 1px solid #cbd5e1 !important;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1) !important;
+      margin: 0 auto !important;
+    }
+    @media print {
+      body {
+        background-color: white !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: block !important;
+      }
+      .omr-print-area {
+        border: none !important;
+        box-shadow: none !important;
+        page-break-after: always !important;
+        break-after: page !important;
+        margin: 0 !important;
+      }
+      .omr-print-area:last-child {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+      @page {
+        size: ${omrMode === 'booklet' ? 'A4 landscape' : 'A4 portrait'};
+        margin: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  ${printAreasHtml}
+</body>
+</html>`;
+
+    const blob = new Blob([fullHtml], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    
+    const fileName = `OMR_${className || "Sheets"}_${sectionName || ""}_${numQuestions}Q.html`.replace(/__+/g, "_");
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("Successfully exported portable OMR HTML file!");
+  };
+
   // Generate Questions Array
   const questions = Array.from({ length: numQuestions }, (_, i) => i + 1);
 
@@ -540,8 +639,15 @@ export default function AdminOmrGenerator() {
           </button>
 
           <button
+            onClick={handleExportHtmlBlob}
+            className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition shadow-md shadow-emerald-700/20 cursor-pointer"
+          >
+            <Download className="w-4 h-4" /> Export Standalone File
+          </button>
+
+          <button
             onClick={handlePrint}
-            className="flex items-center gap-2 bg-brand-blue text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-brand-blue/90 transition shadow-md shadow-brand-blue/20"
+            className="flex items-center gap-2 bg-brand-blue text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-brand-blue/90 transition shadow-md shadow-brand-blue/20 cursor-pointer"
           >
             <Printer className="w-4 h-4" /> Print / Save as PDF
           </button>
@@ -1496,7 +1602,7 @@ export default function AdminOmrGenerator() {
 
               {/* Print Footer Note */}
               <div className="text-[7.5px] text-black/50 text-center mt-1 font-mono uppercase tracking-widest">
-                S.D. PUBLIC SCHOOL OMR ANSWER SHEET — SYSTEM GENERATED HIGH PRECISION TEMPLATE
+                S.D. PUBLIC SCHOOL OMR ANSWER SHEET — SYSTEM GENERATED HIGH PRECISION
               </div>
             </div>
           );
