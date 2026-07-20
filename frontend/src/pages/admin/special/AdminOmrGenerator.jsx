@@ -3,11 +3,13 @@ import { useOutletContext } from "react-router-dom";
 import { 
   Printer, FileText, Settings, Sparkles, RefreshCw, 
   LayoutGrid, Sliders, CheckSquare, Info, ShieldCheck, Download,
-  Save, Copy, Hash, Database
+  Save, Copy, Hash, Database, Loader2
 } from "lucide-react";
 import { getOmrRoster, saveOmrBooklets, getOmrBooklets, clearOmrBooklets } from "@/lib/api";
 import api from "@/lib/api";
 import { toast } from "sonner";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 
 const OMR_STORAGE_KEY = "sdps_omr_last_settings";
 
@@ -482,108 +484,114 @@ export default function AdminOmrGenerator() {
     window.print();
   };
 
-  const handleExportHtmlBlob = async () => {
-    if (displayedRoster.length > 0) {
-      await autoSaveBooklets(displayedRoster);
-    }
-    
+  /**
+   * exportOMRAsBlob — Captures all rendered OMR sheets from the DOM
+   * and returns a high-resolution PDF as a Promise<Blob>.
+   *
+   * - Does NOT open the browser print dialog.
+   * - Does NOT trigger an automatic download.
+   * - Returns Promise<Blob> (application/pdf).
+   * - Preserves exact A4 layout, fonts, barcodes, QR codes, bubbles, borders.
+   * - 300 DPI equivalent output (scale factor 2 on standard screens).
+   * - Multi-page: each .omr-print-area becomes one PDF page.
+   */
+  const exportOMRAsBlob = async () => {
     const printAreas = document.querySelectorAll(".omr-print-area");
     if (printAreas.length === 0) {
-      toast.error("No OMR sheets generated to export.");
-      return;
+      throw new Error("No OMR sheets rendered to export.");
     }
 
-    let cssStyles = "";
-    document.querySelectorAll("style, link[rel='stylesheet']").forEach((el) => {
-      if (el.tagName === "STYLE") {
-        cssStyles += el.innerHTML;
-      }
+    // A4 dimensions in mm
+    const isLandscape = omrMode === "booklet";
+    const pageW = isLandscape ? 297 : 210;
+    const pageH = isLandscape ? 210 : 297;
+
+    const pdf = new jsPDF({
+      orientation: isLandscape ? "landscape" : "portrait",
+      unit: "mm",
+      format: "a4",
+      compress: true,
     });
 
-    let stylesheetLinks = "";
-    document.querySelectorAll("link[rel='stylesheet']").forEach((el) => {
-      stylesheetLinks += `<link rel="stylesheet" href="${el.href}">`;
-    });
+    for (let i = 0; i < printAreas.length; i++) {
+      const el = printAreas[i];
 
-    let printAreasHtml = "";
-    printAreas.forEach((el) => {
-      const cloned = el.cloneNode(true);
-      cloned.querySelectorAll(".no-print").forEach((subEl) => subEl.remove());
-      printAreasHtml += cloned.outerHTML + "\n";
-    });
+      // Render element to canvas at high resolution
+      const canvas = await html2canvas(el, {
+        scale: 2,                    // 2× for crisp 300 DPI-equivalent output
+        useCORS: true,               // allow cross-origin images (school logo)
+        allowTaint: false,
+        backgroundColor: "#ffffff",
+        logging: false,
+        // Capture the full element dimensions
+        width: el.scrollWidth,
+        height: el.scrollHeight,
+        windowWidth: el.scrollWidth,
+        windowHeight: el.scrollHeight,
+      });
 
-    const fullHtml = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>OMR Sheets Export</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  ${stylesheetLinks}
-  <style>
-    ${cssStyles}
-    body {
-      background-color: #f1f5f9;
-      margin: 0;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 20px;
-      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    }
-    .omr-print-area {
-      background: white !important;
-      border: 1px solid #cbd5e1 !important;
-      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1) !important;
-      margin: 0 auto !important;
-      width: ${omrMode === 'booklet' ? '297mm' : '210mm'} !important;
-      height: ${omrMode === 'booklet' ? '210mm' : '297mm'} !important;
-      box-sizing: border-box !important;
-      padding: ${omrMode === 'booklet' ? '6mm 6mm' : '12mm 12mm'} !important;
-      overflow: hidden !important;
-    }
-    @media print {
-      body {
-        background-color: white !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        display: block !important;
-      }
-      .omr-print-area {
-        border: none !important;
-        box-shadow: none !important;
-        page-break-after: always !important;
-        break-after: page !important;
-        margin: 0 auto !important;
-      }
-      .omr-print-area:last-child {
-        page-break-after: avoid !important;
-        break-after: avoid !important;
-      }
-      @page {
-        size: ${omrMode === 'booklet' ? 'A4 landscape' : 'A4 portrait'};
-        margin: 0;
-      }
-    }
-  </style>
-</head>
-<body>
-  ${printAreasHtml}
-</body>
-</html>`;
+      // Convert canvas to JPEG (smaller than PNG, still high quality)
+      const imgData = canvas.toDataURL("image/jpeg", 0.92);
 
-    const blob = new Blob([fullHtml], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    
-    const fileName = `OMR_${className || "Sheets"}_${sectionName || ""}_${numQuestions}Q.html`.replace(/__+/g, "_");
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    toast.success("Successfully exported portable OMR HTML file!");
+      // Calculate dimensions to fit the canvas image onto the A4 page
+      // preserving aspect ratio and filling the page
+      const canvasAspect = canvas.width / canvas.height;
+      const pageAspect = pageW / pageH;
+
+      let imgW, imgH;
+      if (canvasAspect > pageAspect) {
+        // Canvas is wider relative to page — fit by width
+        imgW = pageW;
+        imgH = pageW / canvasAspect;
+      } else {
+        // Canvas is taller relative to page — fit by height
+        imgH = pageH;
+        imgW = pageH * canvasAspect;
+      }
+
+      // Center the image on the page
+      const offsetX = (pageW - imgW) / 2;
+      const offsetY = (pageH - imgH) / 2;
+
+      if (i > 0) pdf.addPage("a4", isLandscape ? "landscape" : "portrait");
+      pdf.addImage(imgData, "JPEG", offsetX, offsetY, imgW, imgH);
+    }
+
+    // Return as Blob without triggering download or print dialog
+    return pdf.output("blob");
+  };
+
+  /** Wrapper: calls exportOMRAsBlob() and triggers a file download. */
+  const [exportingPdf, setExportingPdf] = useState(false);
+
+  const handleExportPdf = async () => {
+    try {
+      setExportingPdf(true);
+      toast.loading("Generating high-resolution PDF…", { id: "pdf-export" });
+
+      if (displayedRoster.length > 0) {
+        await autoSaveBooklets(displayedRoster);
+      }
+
+      const pdfBlob = await exportOMRAsBlob();
+
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      const fileName = `OMR_${className || "Sheets"}_${sectionName || ""}_${numQuestions}Q.pdf`.replace(/__+/g, "_");
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success(`PDF exported — ${(pdfBlob.size / (1024 * 1024)).toFixed(1)} MB`, { id: "pdf-export" });
+    } catch (err) {
+      console.error("PDF export failed:", err);
+      toast.error(`PDF export failed: ${err.message}`, { id: "pdf-export" });
+    } finally {
+      setExportingPdf(false);
+    }
   };
 
   // Generate Questions Array
@@ -644,10 +652,12 @@ export default function AdminOmrGenerator() {
           </button>
 
           <button
-            onClick={handleExportHtmlBlob}
-            className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition shadow-md shadow-emerald-700/20 cursor-pointer"
+            onClick={handleExportPdf}
+            disabled={exportingPdf}
+            className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition shadow-md shadow-emerald-700/20 cursor-pointer disabled:opacity-60 disabled:cursor-wait"
           >
-            <Download className="w-4 h-4" /> Export Standalone File
+            {exportingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            {exportingPdf ? "Generating PDF…" : "Export as PDF"}
           </button>
 
           <button
