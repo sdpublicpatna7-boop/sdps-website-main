@@ -1,11 +1,14 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useOutletContext } from "react-router-dom";
 import { 
   Printer, FileText, Settings, Sparkles, RefreshCw, 
-  LayoutGrid, Sliders, CheckSquare, Info, ShieldCheck, Download
+  LayoutGrid, Sliders, CheckSquare, Info, ShieldCheck, Download,
+  Save, Copy, Hash
 } from "lucide-react";
 import api from "@/lib/api";
 import { toast } from "sonner";
+
+const OMR_STORAGE_KEY = "sdps_omr_last_settings";
 
 // --- Lightweight Zero-Dependency Code39 SVG Barcode Component ---
 function BarcodeSvg({ value, height = 22, className = "" }) {
@@ -73,6 +76,8 @@ export default function AdminOmrGenerator() {
     settings?.logo_url || "https://sdpublic.org/assets/img/logo.png"
   );
   const [showLogo, setShowLogo] = useState(true);
+  const [showSchoolHeader, setShowSchoolHeader] = useState(true);
+  const [showTopBarcode, setShowTopBarcode] = useState(true);
 
   // 2. Examination Header
   const [examTitle, setExamTitle] = useState("PERIODIC TEST - II");
@@ -104,6 +109,10 @@ export default function AdminOmrGenerator() {
   const [showInstructions, setShowInstructions] = useState(true);
   const [showTimingMarks, setShowTimingMarks] = useState(true);
 
+  // 5. Multi-copy auto-generate
+  const [numCopies, setNumCopies] = useState(1);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+
   const [candidateInstructions, setCandidateInstructions] = useState([
     "Carry your Hall Ticket/Admit Card to the examination hall. Entry without a valid Hall Ticket will not be permitted.",
     "Verify that your Name, Class, Section, Roll Number, Subject, and Examination Details on the OMR Sheet exactly match your Hall Ticket. In case of any discrepancy, inform the Invigilator immediately.",
@@ -122,13 +131,76 @@ export default function AdminOmrGenerator() {
     "Submit the OMR sheet only when instructed by the Invigilator. Ensure your Hall Ticket remains with you after the examination unless instructed otherwise."
   ]);
 
-  // Sync settings when loaded
+  // Load last saved settings from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(OMR_STORAGE_KEY);
+      if (saved) {
+        const s = JSON.parse(saved);
+        if (s.examTitle) setExamTitle(s.examTitle);
+        if (s.session) setSession(s.session);
+        if (s.maxMarks) setMaxMarks(s.maxMarks);
+        if (s.timeAllowed) setTimeAllowed(s.timeAllowed);
+        if (s.className) setClassName(s.className);
+        if (s.subjectName) setSubjectName(s.subjectName);
+        if (s.templateType) setTemplateType(s.templateType);
+        if (s.omrMode) setOmrMode(s.omrMode);
+        if (s.numQuestions) setNumQuestions(s.numQuestions);
+        if (s.numOptions) setNumOptions(s.numOptions);
+        if (s.numColumns) setNumColumns(s.numColumns);
+        if (s.rollNoDigits) setRollNoDigits(s.rollNoDigits);
+        if (s.bookletPrefix !== undefined) setBookletPrefix(s.bookletPrefix);
+        if (s.bookletStartNo !== undefined) setBookletStartNo(s.bookletStartNo);
+        if (typeof s.showLogo === "boolean") setShowLogo(s.showLogo);
+        if (typeof s.showSchoolHeader === "boolean") setShowSchoolHeader(s.showSchoolHeader);
+        if (typeof s.showTopBarcode === "boolean") setShowTopBarcode(s.showTopBarcode);
+        if (typeof s.showRollNoBubbleGrid === "boolean") setShowRollNoBubbleGrid(s.showRollNoBubbleGrid);
+        if (typeof s.showSetCode === "boolean") setShowSetCode(s.showSetCode);
+        if (typeof s.showBookletNo === "boolean") setShowBookletNo(s.showBookletNo);
+        if (typeof s.showBarcode === "boolean") setShowBarcode(s.showBarcode);
+        if (typeof s.showInstructions === "boolean") setShowInstructions(s.showInstructions);
+        if (typeof s.showTimingMarks === "boolean") setShowTimingMarks(s.showTimingMarks);
+        if (s.numCopies) setNumCopies(s.numCopies);
+        if (s.candidateInstructions) setCandidateInstructions(s.candidateInstructions);
+      }
+    } catch (e) { /* ignore corrupt storage */ }
+    setSettingsLoaded(true);
+  }, []);
+
+  // Sync settings when loaded from backend
   useEffect(() => {
     if (settings?.school_name) setSchoolName(settings.school_name);
     if (settings?.logo_url) setSchoolLogo(settings.logo_url);
     if (settings?.address) setSchoolAddress(settings.address);
     if (settings?.cbse_affiliation) setSchoolSubHeader(settings.cbse_affiliation);
   }, [settings]);
+
+  // Auto-save settings to localStorage whenever they change
+  const saveSettings = useCallback(() => {
+    if (!settingsLoaded) return;
+    try {
+      const payload = {
+        examTitle, session, maxMarks, timeAllowed, className, subjectName,
+        templateType, omrMode, numQuestions, numOptions, numColumns,
+        rollNoDigits, bookletPrefix, bookletStartNo,
+        showLogo, showSchoolHeader, showTopBarcode,
+        showRollNoBubbleGrid, showSetCode, showBookletNo,
+        showBarcode, showInstructions, showTimingMarks,
+        numCopies, candidateInstructions
+      };
+      localStorage.setItem(OMR_STORAGE_KEY, JSON.stringify(payload));
+    } catch (e) { /* quota exceeded */ }
+  }, [
+    examTitle, session, maxMarks, timeAllowed, className, subjectName,
+    templateType, omrMode, numQuestions, numOptions, numColumns,
+    rollNoDigits, bookletPrefix, bookletStartNo,
+    showLogo, showSchoolHeader, showTopBarcode,
+    showRollNoBubbleGrid, showSetCode, showBookletNo,
+    showBarcode, showInstructions, showTimingMarks,
+    numCopies, candidateInstructions, settingsLoaded
+  ]);
+
+  useEffect(() => { saveSettings(); }, [saveSettings]);
 
   // Option labels updater when numOptions changes
   useEffect(() => {
@@ -492,11 +564,60 @@ export default function AdminOmrGenerator() {
             </div>
           </div>
 
+          {/* Auto-Generate Multiple Copies */}
+          <div className="space-y-3 bg-gradient-to-br from-emerald-50 to-teal-50 p-4 rounded-2xl border border-emerald-200">
+            <h3 className="text-xs font-bold text-emerald-800 uppercase tracking-wide flex items-center gap-1.5">
+              <Copy className="w-4 h-4 text-emerald-600" /> Auto-Generate Numbered Copies
+            </h3>
+            <p className="text-[10px] text-emerald-700 leading-snug">
+              Generate multiple OMR sheets at once, each with its own auto-incrementing serial/booklet number. Set the count below and hit Print.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] font-bold text-emerald-700 block mb-1">No. of Copies</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="200"
+                  value={numCopies}
+                  onChange={(e) => setNumCopies(Math.max(1, Math.min(200, parseInt(e.target.value) || 1)))}
+                  className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-emerald-300 font-bold focus:outline-none focus:border-emerald-500 bg-white"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-emerald-700 block mb-1">Serial Range</label>
+                <div className="px-2.5 py-1.5 text-xs rounded-xl border border-emerald-200 bg-emerald-100/50 font-mono font-bold text-emerald-800">
+                  {bookletPrefix}{bookletStartNo} → {bookletPrefix}{parseInt(bookletStartNo || "1001", 10) + numCopies - 1}
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Display Options Toggles */}
           <div className="space-y-2 bg-slate-50 p-4 rounded-2xl border border-slate-150">
             <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">
               Features & Display Toggles
             </h3>
+
+            <label className="flex items-center justify-between text-xs font-medium text-slate-700 cursor-pointer">
+              <span>Show School Header (Name, Address, Logo)</span>
+              <input
+                type="checkbox"
+                checked={showSchoolHeader}
+                onChange={(e) => setShowSchoolHeader(e.target.checked)}
+                className="rounded text-brand-blue focus:ring-brand-blue"
+              />
+            </label>
+
+            <label className="flex items-center justify-between text-xs font-medium text-slate-700 cursor-pointer">
+              <span>Show Top Corner Barcode Badge</span>
+              <input
+                type="checkbox"
+                checked={showTopBarcode}
+                onChange={(e) => setShowTopBarcode(e.target.checked)}
+                className="rounded text-brand-blue focus:ring-brand-blue"
+              />
+            </label>
             
             <label className="flex items-center justify-between text-xs font-medium text-slate-700 cursor-pointer">
               <span>Show School Logo</span>
@@ -631,7 +752,7 @@ export default function AdminOmrGenerator() {
                     <div className="absolute bottom-1 right-1 w-3.5 h-3.5 bg-black"></div>
                   </>
                 )}                {/* Top Corner Barcode & Booklet Number Badge */}
-                {(showBookletNo || showBarcode) && (
+                {showTopBarcode && (showBookletNo || showBarcode) && (
                   <div className="absolute top-1 right-2 z-10 flex flex-col items-end pointer-events-none">
                     {showBarcode && <BarcodeSvg value={currentBookletNo} height={20} />}
                     {showBookletNo && (
@@ -643,6 +764,7 @@ export default function AdminOmrGenerator() {
                 )}
 
                 {/* School Header */}
+                {showSchoolHeader && (
                 <div className="border-b-2 border-black pb-2 mb-2 text-center relative">
                   <div className="flex items-center justify-center gap-3">
                     {showLogo && schoolLogo && (
@@ -673,6 +795,16 @@ export default function AdminOmrGenerator() {
                     {examTitle} {session && !examTitle.includes(session) && !examTitle.includes("202") ? `(${session})` : ""}
                   </div>
                 </div>
+                )}
+
+                {/* Standalone Exam Title when school header is hidden */}
+                {!showSchoolHeader && (
+                  <div className="border-b-2 border-black pb-2 mb-2 text-center">
+                    <div className="inline-block border-2 border-black px-4 py-0.5 bg-black text-white font-black text-xs uppercase tracking-widest rounded-sm">
+                      {examTitle} {session && !examTitle.includes(session) && !examTitle.includes("202") ? `(${session})` : ""}
+                    </div>
+                  </div>
+                )}
 
                 {/* Sub Header Specs */}
                 {templateType === "simple" ? (
@@ -892,39 +1024,52 @@ export default function AdminOmrGenerator() {
       })()}
 
         {/* Right Preview Area (The Printable OMR Sheet) */}
-        <div className="lg:col-span-8 flex justify-center">
-          {/* Printable A4 Container */}
-          <div className={`omr-print-area bg-white border border-slate-300 shadow-xl rounded-sm text-black p-4 sm:p-6 w-full relative font-sans ${omrMode === "booklet" ? "max-w-[1150px] min-h-[750px]" : "max-w-[800px] min-h-[1100px]"}`}>
-            
-            {omrMode === "booklet" ? (
-              <div className="grid grid-cols-2 gap-4 relative items-stretch">
-                {/* Booklet Sheet 1 (Left Copy) */}
-                <div className="border border-black p-3 rounded-sm relative bg-white flex flex-col justify-between">
-                  <div className="absolute top-1 left-2 text-[7.5px] font-mono font-bold uppercase tracking-wider text-black/40">
-                    COPY #1 — BOOKLET SHEET
-                  </div>
-                  {window._renderOmrSheetContent(true, 1)}
-                </div>
+        <div className="lg:col-span-8 flex flex-col items-center gap-6">
+          {Array.from({ length: numCopies }).map((_, copyIdx) => {
+            const sheetSerialOffset = copyIdx;
+            return (
+              <div key={copyIdx} className="w-full flex justify-center">
+                {/* Printable A4 Container */}
+                <div className={`omr-print-area bg-white border border-slate-300 shadow-xl rounded-sm text-black p-4 sm:p-6 w-full relative font-sans ${omrMode === "booklet" ? "max-w-[1150px] min-h-[750px]" : "max-w-[800px] min-h-[1100px]"}`}>
+                  {/* Copy number label (screen only) */}
+                  {numCopies > 1 && (
+                    <div className="no-print absolute -top-3 left-4 bg-brand-blue text-white text-[10px] font-bold px-3 py-0.5 rounded-full shadow-md z-30">
+                      Sheet #{copyIdx + 1} — {bookletPrefix}{parseInt(bookletStartNo || "1001", 10) + sheetSerialOffset}
+                    </div>
+                  )}
+                  
+                  {omrMode === "booklet" ? (
+                    <div className="grid grid-cols-2 gap-4 relative items-stretch">
+                      {/* Booklet Sheet 1 (Left Copy) */}
+                      <div className="border border-black p-3 rounded-sm relative bg-white flex flex-col justify-between">
+                        <div className="absolute top-1 left-2 text-[7.5px] font-mono font-bold uppercase tracking-wider text-black/40">
+                          COPY #1 — BOOKLET SHEET
+                        </div>
+                        {window._renderOmrSheetContent(true, sheetSerialOffset * 2 + 1)}
+                      </div>
 
-                {/* Vertical Cut / Fold Line in Center */}
-                <div className="absolute left-1/2 top-0 bottom-0 border-l-2 border-dashed border-black transform -translate-x-1/2 flex flex-col justify-center items-center pointer-events-none z-20">
-                  <div className="bg-white px-1 py-1 text-[8px] font-mono font-bold text-black border border-black rounded-sm uppercase tracking-widest whitespace-nowrap shadow-xs" style={{ writingMode: 'vertical-rl' }}>
-                    ✂ CUT / FOLD HERE FOR TEST BOOKLET ✂
-                  </div>
-                </div>
+                      {/* Vertical Cut / Fold Line in Center */}
+                      <div className="absolute left-1/2 top-0 bottom-0 border-l-2 border-dashed border-black transform -translate-x-1/2 flex flex-col justify-center items-center pointer-events-none z-20">
+                        <div className="bg-white px-1 py-1 text-[8px] font-mono font-bold text-black border border-black rounded-sm uppercase tracking-widest whitespace-nowrap shadow-xs" style={{ writingMode: 'vertical-rl' }}>
+                          ✂ CUT / FOLD HERE FOR TEST BOOKLET ✂
+                        </div>
+                      </div>
 
-                {/* Booklet Sheet 2 (Right Copy) */}
-                <div className="border border-black p-3 rounded-sm relative bg-white flex flex-col justify-between">
-                  <div className="absolute top-1 left-2 text-[7.5px] font-mono font-bold uppercase tracking-wider text-black/40">
-                    COPY #2 — BOOKLET SHEET
-                  </div>
-                  {window._renderOmrSheetContent(true, 2)}
+                      {/* Booklet Sheet 2 (Right Copy) */}
+                      <div className="border border-black p-3 rounded-sm relative bg-white flex flex-col justify-between">
+                        <div className="absolute top-1 left-2 text-[7.5px] font-mono font-bold uppercase tracking-wider text-black/40">
+                          COPY #2 — BOOKLET SHEET
+                        </div>
+                        {window._renderOmrSheetContent(true, sheetSerialOffset * 2 + 2)}
+                      </div>
+                    </div>
+                  ) : (
+                    window._renderOmrSheetContent(false, sheetSerialOffset + 1)
+                  )}
                 </div>
               </div>
-            ) : (
-              window._renderOmrSheetContent(false, 1)
-            )}
-          </div>
+            );
+          })}
         </div>
       </div>
 
@@ -951,6 +1096,14 @@ export default function AdminOmrGenerator() {
           }
           .no-print {
             display: none !important;
+          }
+          .omr-print-area {
+            page-break-after: always;
+            break-after: page;
+          }
+          .omr-print-area:last-child {
+            page-break-after: auto;
+            break-after: auto;
           }
           @page {
             size: ${omrMode === 'booklet' ? 'A4 landscape' : 'A4 portrait'};
