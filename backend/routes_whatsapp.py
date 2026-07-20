@@ -883,7 +883,15 @@ def _parse_all_students(content: bytes, filename: str = ""):
             h_norm = h.replace("_", " ").strip()
             for cand in candidates:
                 cand_norm = cand.replace("_", " ").strip()
-                if cand_norm == h_norm or cand_norm in h_norm:
+                if cand_norm == h_norm:
+                    return col_i
+        for col_i, h in enumerate(headers):
+            h_norm = h.replace("_", " ").strip()
+            for cand in candidates:
+                cand_norm = cand.replace("_", " ").strip()
+                if cand_norm == "name" and ("class" in h_norm or "father" in h_norm or "mother" in h_norm or "parent" in h_norm or "guardian" in h_norm):
+                    continue
+                if cand_norm in h_norm:
                     return col_i
         return None
 
@@ -894,8 +902,8 @@ def _parse_all_students(content: bytes, filename: str = ""):
     admn_col = find_col("admn no", "admn_no", "admission no", "admission_no", "admn", "admission", "adm no", "admno", "reg no", "registration no", "student id", "id")
     dob_col = find_col("date of birth", "date_of_birth", "dob", "birth", "birthday", "birthdate")
     roll_col = find_col("roll no", "roll_no", "roll", "roll number", "rollno", "s.no", "sl.no", "r.no", "serial no", "roll_num")
-    class_col = find_col("class name", "class_name", "class", "grade", "std", "standard")
-    section_col = find_col("section name", "section_name", "section", "sec", "sec.")
+    class_col = find_col("class name", "class_name", "class", "grade", "std", "standard", "cls", "st")
+    section_col = find_col("section name", "section_name", "section", "sec", "sec.", "sec_name", "sec name")
     perm_addr_col = find_col("permanent address", "permanent_address", "perm address", "permanent")
     curr_addr_col = find_col("current address", "current_address", "curr address", "current")
     biometric_col = find_col("biometric")
@@ -934,6 +942,14 @@ def _parse_all_students(content: bytes, filename: str = ""):
         roll = cell(roll_col)
         c_name = cell(class_col)
         sec = cell(section_col)
+
+        # Handle combined Class & Section values (e.g., "IX A", "IX-A", "Class 9 B")
+        if c_name and not sec:
+            m = re.search(r"^(.*?)\s*[\-\/\s]+\s*([A-Ea-e])$", c_name.strip())
+            if m:
+                c_name = m.group(1).strip()
+                sec = m.group(2).strip().upper()
+
         perm_addr = cell(perm_addr_col)
         curr_addr = cell(curr_addr_col)
         biometric = cell(biometric_col)
