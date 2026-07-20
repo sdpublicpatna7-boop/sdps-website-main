@@ -1746,48 +1746,48 @@ export default function AdminOmrGenerator() {
                   {/* Left Column: Candidate Written Inputs & SET Code */}
                   <div className={`${(showRollNoBubbleGrid && (templateType === "standard" || templateType === "automated")) ? 'col-span-7' : 'col-span-12'} space-y-1.5 text-[10px]`}>
                     {/* Candidate Name Box */}
-                    <div className="border border-black p-1.5">
-                      <span className="font-bold uppercase tracking-wide text-[9px] block mb-0.5">
+                    <div className="border border-black p-1.5 bg-white">
+                      <span className="font-bold uppercase tracking-wide text-[8.5px] block mb-0.5 leading-none">
                         CANDIDATE NAME (IN CAPITAL LETTERS ONLY):
                       </span>
                       {studentName ? (
-                        <div className="h-6 flex items-center font-mono font-extrabold text-[12px] text-black tracking-widest uppercase pl-1">
+                        <div className="h-5 flex items-center font-mono font-extrabold text-[11px] text-black tracking-widest uppercase pl-1">
                           {studentName}
                         </div>
                       ) : (
-                        <div className="h-6 border-b border-dashed border-black"></div>
+                        <div className="h-5 border-b border-dashed border-black"></div>
                       )}
                     </div>
 
                     {/* Roll No / Class / Sec / Date Row */}
                     <div className="grid grid-cols-3 gap-1.5">
-                      <div className="border border-black p-1.5">
-                        <span className="font-bold uppercase text-[8.5px] block mb-0.5">
+                      <div className="border border-black p-1.5 bg-white">
+                        <span className="font-bold uppercase text-[8px] block mb-0.5 leading-none">
                           CLASS & SECTION:
                         </span>
                         {studentClassSec ? (
-                          <div className="h-6 flex items-center font-mono font-bold text-[10px] text-black pl-0.5">
+                          <div className="h-5 flex items-center font-mono font-bold text-[10px] text-black pl-0.5">
                             {studentClassSec}
                           </div>
                         ) : (
-                          <div className="h-6 border-b border-dashed border-black/40"></div>
+                          <div className="h-5 border-b border-dashed border-black/40"></div>
                         )}
                       </div>
-                      <div className="border border-black p-1.5">
-                        <span className="font-bold uppercase text-[8.5px] block mb-0.5">
+                      <div className="border border-black p-1.5 bg-white">
+                        <span className="font-bold uppercase text-[8px] block mb-0.5 leading-none">
                           ROLL NO:
                         </span>
                         {studentRollNo ? (
-                          <div className="h-6 flex items-center font-mono font-extrabold text-[11px] text-black tracking-wider pl-0.5">
+                          <div className="h-5 flex items-center font-mono font-extrabold text-[10.5px] text-black tracking-wider pl-0.5">
                             {studentRollNo}
                           </div>
                         ) : (
-                          <div className="h-6 border-b border-dashed border-black/40"></div>
+                          <div className="h-5 border-b border-dashed border-black/40"></div>
                         )}
                       </div>
-                      <div className="border border-black p-1.5">
-                        <span className="font-bold uppercase text-[8.5px] block mb-0.5">DATE:</span>
-                        <div className="h-6 border-b border-dashed border-black/40"></div>
+                      <div className="border border-black p-1.5 bg-white">
+                        <span className="font-bold uppercase text-[8px] block mb-0.5 leading-none">DATE:</span>
+                        <div className="h-5 border-b border-dashed border-black/40"></div>
                       </div>
                     </div>
 
@@ -1795,17 +1795,17 @@ export default function AdminOmrGenerator() {
                     {(showBookletNo || showSetCode || isAutomated) && (
                       <div className="grid grid-cols-12 gap-1.5 mb-2">
                         {showBookletNo && (
-                          <div className={`${showSetCode ? 'col-span-8' : 'col-span-12'} border border-black p-1.5 flex items-center justify-between bg-white min-h-[42px] overflow-hidden`}>
-                            <div className="flex flex-col justify-center min-w-0 pr-2">
-                              <span className="font-bold uppercase text-[7.5px] text-black leading-none block mb-0.5 whitespace-nowrap">BOOKLET NO:</span>
-                              <span className="font-mono font-black text-[10px] text-black tracking-tighter leading-none block whitespace-nowrap">
+                          <div className={`${showSetCode ? 'col-span-8' : 'col-span-12'} border border-black px-2 py-1 flex items-center justify-between bg-white min-h-[38px] overflow-hidden`}>
+                            <div className="flex flex-col justify-start min-w-0 pr-2 pb-0.5">
+                              <span className="font-bold uppercase text-[7.5px] text-black leading-tight block whitespace-nowrap">BOOKLET NO:</span>
+                              <span className="font-mono font-black text-[10px] text-black tracking-tighter leading-tight block whitespace-nowrap -mt-0.5">
                                 {currentBookletNo}
                               </span>
                             </div>
                             {(showBarcode || isAutomated) && (
                               <div className="flex flex-col items-center justify-center shrink-0 border-l border-black/20 pl-2">
-                                <BarcodeSvg value={currentBookletNo} height={18} />
-                                <span className="text-[6.5px] font-mono font-extrabold text-black tracking-tighter mt-0.5 whitespace-nowrap leading-none">
+                                <BarcodeSvg value={currentBookletNo} height={16} />
+                                <span className="text-[6.5px] font-mono font-extrabold text-black tracking-tighter whitespace-nowrap leading-none">
                                   {currentBookletNo}
                                 </span>
                               </div>
@@ -1814,8 +1814,8 @@ export default function AdminOmrGenerator() {
                         )}
 
                         {showSetCode && (
-                          <div className={`${showBookletNo ? 'col-span-4' : 'col-span-12'} border border-black p-1 flex flex-col justify-between min-h-[42px] bg-white`}>
-                            <span className="font-bold uppercase text-[7.5px] block text-black whitespace-nowrap leading-none text-center">QUESTION SET:</span>
+                          <div className={`${showBookletNo ? 'col-span-4' : 'col-span-12'} border border-black px-1.5 py-1 flex flex-col justify-between min-h-[38px] bg-white`}>
+                            <span className="font-bold uppercase text-[7.5px] block text-black whitespace-nowrap leading-tight text-center">QUESTION SET:</span>
                             <div className="flex justify-around items-center py-0.5">
                               {["A", "B", "C", "D"].map((setCode) => (
                                 <div key={setCode} className="flex items-center">
