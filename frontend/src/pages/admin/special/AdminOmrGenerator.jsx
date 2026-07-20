@@ -5,7 +5,7 @@ import {
   LayoutGrid, Sliders, CheckSquare, Info, ShieldCheck, Download,
   Save, Copy, Hash, Database, Loader2
 } from "lucide-react";
-import { getOmrRoster, saveOmrBooklets, getOmrBooklets, clearOmrBooklets, exportOmrPdf } from "@/lib/api";
+import { getOmrRoster, saveOmrBooklets, getOmrBooklets, clearOmrBooklets, exportOmrPdf, getNextBookletSerial } from "@/lib/api";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
@@ -184,6 +184,8 @@ export default function AdminOmrGenerator() {
   const [showTimingMarks, setShowTimingMarks] = useState(true);
   const [headerFontSize, setHeaderFontSize] = useState(22);
   const [instructionFontSize, setInstructionFontSize] = useState(7);
+  const [autoIndexBooklets, setAutoIndexBooklets] = useState(true);
+  const [syncingNextSerial, setSyncingNextSerial] = useState(false);
 
   // 5. Multi-copy auto-generate & Automated Roster State
   const [numCopies, setNumCopies] = useState(1);
@@ -286,7 +288,22 @@ export default function AdminOmrGenerator() {
 
   // Roster fetching is triggered on demand when user selects class and clicks "Load Birthday Roster"
 
+  const syncLatestBookletSerial = useCallback(async (prefix = bookletPrefix) => {
+    setSyncingNextSerial(true);
+    try {
+      const res = await getNextBookletSerial(prefix);
+      if (res && res.next_start_no) {
+        setBookletStartNo(res.next_start_no);
+      }
+    } catch (e) {
+      /* ignore network notice */
+    } finally {
+      setSyncingNextSerial(false);
+    }
+  }, [bookletPrefix]);
+
   const autoSaveBooklets = async (studentList = displayedRoster) => {
+    if (!autoIndexBooklets) return;
     if (!studentList || studentList.length === 0) return;
     try {
       const startNum = parseInt(bookletStartNo || "1001", 10);
@@ -307,6 +324,14 @@ export default function AdminOmrGenerator() {
         };
       });
       await saveOmrBooklets({ booklets: bookletMappings });
+
+      // Automatically advance start number for the next batch so booklet numbers are never reassigned!
+      const nextAvailableStart = startNum + studentList.length;
+      setBookletStartNo(String(nextAvailableStart));
+
+      toast.success(
+        `Indexed ${studentList.length} booklets to student roster for ${subjectName}! Next serial auto-set to ${bookletPrefix}${nextAvailableStart}.`
+      );
     } catch (err) {
       console.warn("Auto-save booklet mapping notice:", err);
     }
@@ -425,12 +450,14 @@ export default function AdminOmrGenerator() {
         if (typeof s.showTimingMarks === "boolean") setShowTimingMarks(s.showTimingMarks);
         if (s.headerFontSize !== undefined) setHeaderFontSize(s.headerFontSize);
         if (s.instructionFontSize !== undefined) setInstructionFontSize(s.instructionFontSize);
+        if (typeof s.autoIndexBooklets === "boolean") setAutoIndexBooklets(s.autoIndexBooklets);
         if (s.numCopies) setNumCopies(s.numCopies);
         if (s.candidateInstructions) setCandidateInstructions(s.candidateInstructions);
       }
     } catch (e) { /* ignore corrupt storage */ }
     setSettingsLoaded(true);
     fetchRoster("", "");
+    syncLatestBookletSerial();
   }, []);
 
   // Sync settings when loaded from backend
@@ -452,7 +479,7 @@ export default function AdminOmrGenerator() {
         showLogo, showSchoolHeader, showTopBarcode,
         showRollNoBubbleGrid, showSetCode, showBookletNo,
         showBarcode, showInstructions, showTimingMarks,
-        headerFontSize, instructionFontSize,
+        headerFontSize, instructionFontSize, autoIndexBooklets,
         numCopies, candidateInstructions
       };
       localStorage.setItem(OMR_STORAGE_KEY, JSON.stringify(payload));
@@ -464,7 +491,7 @@ export default function AdminOmrGenerator() {
     showLogo, showSchoolHeader, showTopBarcode,
     showRollNoBubbleGrid, showSetCode, showBookletNo,
     showBarcode, showInstructions, showTimingMarks,
-    headerFontSize, instructionFontSize,
+    headerFontSize, instructionFontSize, autoIndexBooklets,
     numCopies, candidateInstructions, settingsLoaded
   ]);
 
@@ -1292,17 +1319,34 @@ export default function AdminOmrGenerator() {
             </label>
 
             {/* Booklet & Barcode Configuration Sub-section */}
-            <div className="pt-2 border-t border-slate-200 space-y-2 mt-2">
+            <div className="pt-2 border-t border-slate-200 space-y-2.5 mt-2">
               <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wide block">
                 Booklet No. & Barcode Controls
               </label>
+              
+              <label className="flex items-center justify-between text-xs font-medium text-slate-700 cursor-pointer bg-blue-50/70 p-2 rounded-xl border border-blue-200">
+                <span className="flex items-center gap-1.5 font-bold text-brand-blue text-[11px]">
+                  <Database className="w-3.5 h-3.5 text-brand-blue shrink-0" />
+                  Index & Auto-Advance Serials
+                </span>
+                <input
+                  type="checkbox"
+                  checked={autoIndexBooklets}
+                  onChange={(e) => setAutoIndexBooklets(e.target.checked)}
+                  className="rounded text-brand-blue focus:ring-brand-blue"
+                />
+              </label>
+
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] font-bold text-slate-600 block mb-1">Prefix</label>
                   <input
                     type="text"
                     value={bookletPrefix}
-                    onChange={(e) => setBookletPrefix(e.target.value)}
+                    onChange={(e) => {
+                      setBookletPrefix(e.target.value);
+                      syncLatestBookletSerial(e.target.value);
+                    }}
                     placeholder="e.g. SDP-"
                     className="w-full px-2.5 py-1 text-xs rounded-xl border border-slate-300 font-semibold focus:outline-none focus:border-brand-blue"
                   />
@@ -1317,6 +1361,22 @@ export default function AdminOmrGenerator() {
                     className="w-full px-2.5 py-1 text-xs rounded-xl border border-slate-300 font-semibold focus:outline-none focus:border-brand-blue"
                   />
                 </div>
+              </div>
+
+              <div className="flex items-center justify-between text-[10px] bg-slate-100 p-2 rounded-xl border border-slate-200">
+                <span className="font-semibold text-slate-700">
+                  Next Serial: <strong className="font-mono text-brand-blue">{bookletPrefix}{bookletStartNo}</strong>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => syncLatestBookletSerial(bookletPrefix)}
+                  disabled={syncingNextSerial}
+                  className="font-bold text-brand-blue hover:text-blue-700 flex items-center gap-1 bg-white px-2 py-0.5 rounded-lg border border-slate-300 transition shadow-2xs"
+                  title="Query database for highest assigned booklet number and set next serial"
+                >
+                  <RefreshCw className={`w-3 h-3 ${syncingNextSerial ? 'animate-spin' : ''}`} />
+                  Sync Latest
+                </button>
               </div>
 
               <label className="flex items-center justify-between text-xs font-medium text-slate-700 cursor-pointer pt-1">

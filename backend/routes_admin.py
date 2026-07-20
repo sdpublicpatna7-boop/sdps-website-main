@@ -2414,6 +2414,34 @@ async def clear_omr_booklets(admin: TokenData = Depends(require_permission("site
     return {"status": "success", "message": f"Cleared {res.deleted_count} stored booklet barcode mappings.", "count": res.deleted_count}
 
 
+@admin_router.get("/omr/booklets/next-serial")
+async def get_next_booklet_serial(
+    prefix: str = "SDP-",
+    admin: TokenData = Depends(require_permission("site-settings"))
+):
+    """Find highest numeric booklet suffix in database to ensure serial numbers never collide or reassign."""
+    clean_prefix = (prefix or "SDP-").strip()
+    records = await db.omr_booklets.find({"booklet_no": {"$regex": f"^{re.escape(clean_prefix)}"}}).to_list(length=10000)
+    max_num = 1000
+    for r in records:
+        b_no = str(r.get("booklet_no", "")).strip()
+        match = re.search(r"(\d+)$", b_no)
+        if match:
+            try:
+                num = int(match.group(1), 10)
+                if num > max_num:
+                    max_num = num
+            except ValueError:
+                pass
+    next_num = max_num + 1
+    return {
+        "status": "success",
+        "next_start_no": str(next_num),
+        "next_booklet_no": f"{clean_prefix}{next_num}",
+        "max_assigned": max_num
+    }
+
+
 @admin_router.get("/omr/booklet/{booklet_no}")
 async def get_omr_booklet(
     booklet_no: str,

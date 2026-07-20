@@ -1186,6 +1186,11 @@ export async function clearOmrBooklets() {
   return res.data;
 }
 
+export async function getNextBookletSerial(prefix = "SDP-") {
+  const res = await api.get("/admin/omr/booklets/next-serial", { params: { prefix } });
+  return res.data;
+}
+
 export async function saveOmrEvaluations(payload) {
   const res = await api.post("/admin/omr/evaluations/save", payload);
   return res.data;
