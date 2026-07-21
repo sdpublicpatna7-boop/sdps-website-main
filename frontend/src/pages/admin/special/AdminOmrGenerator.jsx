@@ -631,164 +631,92 @@ export default function AdminOmrGenerator() {
     try {
       window.__sdps_suppress_logout = true;
       setExportingPdf(true);
-
-      const printAreas = document.querySelectorAll(".omr-print-area");
-      if (!printAreas.length) throw new Error("No OMR sheets found to export.");
-
-      const total = printAreas.length;
-      const isLandscape = omrMode === "booklet";
-
-      // A4 base dimensions at 96dpi
-      const A4_W_PX = isLandscape ? 1123 : 794;
-      const A4_H_PX = isLandscape ? 794  : 1123;
-      const SCALE   = 4; // final DPI ≈ 384
-
-      setPdfProgress({ current: 0, total });
-
-      // Save booklet index before export
-      if (displayedRoster.length > 0) {
-        await autoSaveBooklets(displayedRoster).catch((err) =>
-          console.warn("Booklet auto-index notice:", err)
-        );
+      const sheets = [...document.querySelectorAll(".omr-print-area")];
+      if (!sheets.length) {
+        throw new Error("No OMR sheets found.");
       }
-
+      if (displayedRoster.length) {
+        await autoSaveBooklets(displayedRoster).catch(() => {});
+      }
       const { jsPDF } = await import("jspdf");
-      const html2canvas  = (await import("html2canvas")).default;
-
+      const html2canvas = (await import("html2canvas")).default;
+      await document.fonts.ready;
+      const isLandscape = omrMode === "booklet";
       const pdf = new jsPDF({
         orientation: isLandscape ? "landscape" : "portrait",
         unit: "mm",
         format: "a4",
-        compress: false,
+        compress: true
       });
-
-      for (let i = 0; i < total; i++) {
-        setPdfProgress({ current: i + 1, total });
-
-        const sourceEl = printAreas[i];
-
-        // ── 1. Create an isolated iframe at exact A4 pixel size ──────────────
-        const iframe = document.createElement("iframe");
-        iframe.style.cssText = `
-          position: fixed;
-          top: -9999px;
-          left: -9999px;
-          width: ${A4_W_PX}px;
-          height: ${A4_H_PX}px;
-          border: none;
-          visibility: hidden;
-          pointer-events: none;
-        `;
-        document.body.appendChild(iframe);
-
-        // ── 2. Clone the sheet HTML into the iframe ──────────────────────────
-        const iDoc = iframe.contentDocument;
-        iDoc.open();
-        iDoc.write(`<!DOCTYPE html><html><head>
-          <meta charset="utf-8"/>
-          <meta name="viewport" content="width=${A4_W_PX}"/>
-        </head><body style="margin:0;padding:0;background:white;width:${A4_W_PX}px;height:${A4_H_PX}px;overflow:hidden;"></body></html>`);
-        iDoc.close();
-
-        // Copy all stylesheets from the parent page into the iframe
-        const stylePromises = [];
-        document.querySelectorAll('link[rel="stylesheet"], style').forEach((node) => {
-          if (node.tagName === "STYLE") {
-            const s = iDoc.createElement("style");
-            s.textContent = node.textContent;
-            iDoc.head.appendChild(s);
-          } else if (node.href) {
-            stylePromises.push(
-              fetch(node.href)
-                .then((r) => r.text())
-                .then((css) => {
-                  const s = iDoc.createElement("style");
-                  s.textContent = css;
-                  iDoc.head.appendChild(s);
-                })
-                .catch(() => {}) // skip cross-origin sheets
-            );
-          }
+      for (let i = 0; i < sheets.length; i++) {
+        setPdfProgress({
+          current: i + 1,
+          total: sheets.length
         });
-        await Promise.all(stylePromises);
-
-        // Deep-clone the OMR sheet and force it to fill the iframe exactly
-        const clone = sourceEl.cloneNode(true);
-        clone.style.cssText = `
-          position: absolute !important;
-          top: 0 !important; left: 0 !important;
-          width: ${A4_W_PX}px !important;
-          height: ${A4_H_PX}px !important;
-          max-width: none !important;
-          max-height: none !important;
-          aspect-ratio: unset !important;
-          margin: 0 !important;
-          padding: ${isLandscape ? "19px" : "23px"} !important;
-          border: none !important;
-          box-shadow: none !important;
-          border-radius: 0 !important;
-          overflow: hidden !important;
-          background: white !important;
-          box-sizing: border-box !important;
-          display: flex !important;
-          flex-direction: column !important;
-        `;
-        iDoc.body.appendChild(clone);
-
-        // Brief paint settle
-        await new Promise((r) => setTimeout(r, 120));
-
-        // ── 3. Capture at 4× scale (lossless PNG) ───────────────────────────
-        const canvas = await html2canvas(iDoc.body, {
-          scale: SCALE,
+        const sheet = sheets[i];
+        await Promise.all(
+          [...sheet.querySelectorAll("img")].map(img =>
+            img.decode().catch(() => {})
+          )
+        );
+        const rect = sheet.getBoundingClientRect();
+        const clone = sheet.cloneNode(true);
+        clone.style.position = "fixed";
+        clone.style.left = "-100000px";
+        clone.style.top = "0";
+        clone.style.margin = "0";
+        clone.style.transform = "none";
+        clone.style.boxShadow = "none";
+        clone.style.width = rect.width + "px";
+        clone.style.height = rect.height + "px";
+        clone.querySelectorAll("*").forEach(el => {
+          el.style.animation = "none";
+          el.style.transition = "none";
+        });
+        document.body.appendChild(clone);
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        const canvas = await html2canvas(clone, {
+          scale: Math.max(2, window.devicePixelRatio * 2),
+          backgroundColor: "#ffffff",
           useCORS: true,
           allowTaint: false,
           logging: false,
-          backgroundColor: "#ffffff",
-          width:  A4_W_PX,
-          height: A4_H_PX,
           scrollX: 0,
           scrollY: 0,
-          windowWidth:  A4_W_PX,
-          windowHeight: A4_H_PX,
+          width: rect.width,
+          height: rect.height,
+          windowWidth: document.documentElement.clientWidth,
+          windowHeight: document.documentElement.clientHeight
         });
-
-        document.body.removeChild(iframe);
-
-        // ── 4. PNG → jsPDF ───────────────────────────────────────────────────
-        const imgData  = canvas.toDataURL("image/png");
-        const pdfW = isLandscape ? 297 : 210;
-        const pdfH = isLandscape ? 210 : 297;
-
-        if (i > 0) pdf.addPage("a4", isLandscape ? "landscape" : "portrait");
-        pdf.addImage(imgData, "PNG", 0, 0, pdfW, pdfH, undefined, "NONE");
+        clone.remove();
+        const img = canvas.toDataURL("image/png");
+        if (i !== 0)
+          pdf.addPage("a4", isLandscape ? "landscape" : "portrait");
+        pdf.addImage(
+          img,
+          "PNG",
+          0,
+          0,
+          isLandscape ? 297 : 210,
+          isLandscape ? 210 : 297,
+          undefined,
+          "FAST"
+        );
       }
-
-      // ── 5. Blob → new tab ────────────────────────────────────────────────
       const blob = pdf.output("blob");
-      const url  = URL.createObjectURL(blob);
-      const tab  = window.open(url, "_blank");
-      if (!tab) {
-        // Popup blocked — fallback to direct download
-        const a = document.createElement("a");
-        a.href = url;
-        const name = `OMR_${className || "Sheet"}_${numQuestions}Q.pdf`.replace(/[^a-zA-Z0-9_\-.]/g, "_");
-        a.download = name;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 30000);
-        toast.success("PDF downloaded (popups were blocked).");
-      } else {
-        setTimeout(() => URL.revokeObjectURL(url), 60000);
-        toast.success(`PDF ready — ${total} page${total > 1 ? "s" : ""} at ~384 DPI`);
-      }
-
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      toast.success("PDF exported successfully.");
     } catch (err) {
-      console.error("PDF export failed:", err);
-      toast.error(`Export failed: ${err.message}`);
+      console.error(err);
+      toast.error(err.message);
     } finally {
       setExportingPdf(false);
-      setPdfProgress({ current: 0, total: 0 });
+      setPdfProgress({
+        current: 0,
+        total: 0
+      });
       window.__sdps_suppress_logout = false;
     }
   };
@@ -2026,7 +1954,13 @@ export default function AdminOmrGenerator() {
             return (
               <div key={copyIdx} className="w-full flex justify-center">
                 {/* Printable A4 Container */}
-                <div className={`omr-print-area bg-white border border-slate-300 shadow-xl rounded-sm text-black p-6 w-full relative font-sans flex flex-col ${omrMode === "booklet" ? "max-w-[1150px] aspect-[297/210]" : "max-w-[800px] aspect-[210/297]"}`}>
+                <div
+                  style={{
+                    width: omrMode === "booklet" ? "297mm" : "210mm",
+                    height: omrMode === "booklet" ? "210mm" : "297mm"
+                  }}
+                  className="omr-print-area bg-white border border-slate-300 shadow-xl rounded-sm text-black p-6 relative font-sans flex flex-col max-w-full"
+                >
                   {/* Copy number label (screen only) */}
                   {numCopies > 1 && (
                     <div className="no-print absolute -top-3 left-4 bg-brand-blue text-white text-[10px] font-bold px-3 py-0.5 rounded-full shadow-md z-30">
