@@ -230,45 +230,45 @@ export function AdminSiteSettings() {
               </h3>
             </div>
             <p className="text-xs text-slate-500">
-              Download high-resolution official SDPS Original Logo and SDG 1 Logo in PNG & Animated GIF formats anytime.
+              Download high-resolution official SDPS Real School Logo and SDG 1 Logo in PNG & Animated GIF formats anytime.
             </p>
             
-            {/* Category 1: SDPS Original Logo */}
+            {/* Category 1: Real SDPS Official School Logo */}
             <div className="space-y-2">
               <div className="text-[11px] font-extrabold uppercase tracking-wider text-brand-blue">
-                1. SDPS Original Logo (Classic Crest)
+                1. SDPS Real Official School Logo
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {/* Original PNG */}
+                {/* Real Logo HD PNG */}
                 <div className="p-3 bg-white rounded-xl border border-slate-200/90 flex items-center justify-between shadow-xs">
                   <div className="flex items-center gap-3">
-                    <img src="/logo-original.png" alt="Original Logo HD" className="w-10 h-10 object-contain rounded-lg border border-slate-100 p-0.5 bg-slate-50" />
+                    <img src="/logo-real-original.png" alt="Real Official Logo HD" className="w-10 h-10 object-contain rounded-lg border border-slate-100 p-0.5 bg-slate-50" />
                     <div>
-                      <div className="text-xs font-bold text-slate-900">Original Logo (HD)</div>
-                      <div className="text-[10px] text-slate-400">PNG Format · Classic Emblem</div>
+                      <div className="text-xs font-bold text-slate-900">Real School Logo (HD)</div>
+                      <div className="text-[10px] text-slate-400">PNG Format · 1585×1600 HD</div>
                     </div>
                   </div>
                   <a
-                    href="/logo-original.png"
-                    download="SDPS_Original_Logo_Classic.png"
+                    href="/logo-real-original.png"
+                    download="SDPS_Real_School_Logo_HD.png"
                     className="px-3 py-1.5 bg-brand-blue text-white text-xs font-semibold rounded-lg hover:bg-brand-blue-light transition inline-flex items-center gap-1.5 shrink-0"
                   >
                     <Download className="w-3.5 h-3.5" /> Download
                   </a>
                 </div>
 
-                {/* Original Animated GIF */}
+                {/* Real Logo Animated GIF */}
                 <div className="p-3 bg-white rounded-xl border border-slate-200/90 flex items-center justify-between shadow-xs">
                   <div className="flex items-center gap-3">
-                    <img src="/logo-original-animated.gif" alt="Original Logo Animated GIF" className="w-10 h-10 object-contain rounded-lg border border-slate-100 p-0.5 bg-slate-50" />
+                    <img src="/logo-real-animated.gif" alt="Real Logo Animated GIF" className="w-10 h-10 object-contain rounded-lg border border-slate-100 p-0.5 bg-slate-50" />
                     <div>
-                      <div className="text-xs font-bold text-slate-900">Original Animated GIF</div>
+                      <div className="text-xs font-bold text-slate-900">Real Logo Animated GIF</div>
                       <div className="text-[10px] text-slate-400">GIF Format · Bounce & Sweep</div>
                     </div>
                   </div>
                   <a
-                    href="/logo-original-animated.gif"
-                    download="SDPS_Original_Logo_Animated.gif"
+                    href="/logo-real-animated.gif"
+                    download="SDPS_Real_School_Logo_Animated.gif"
                     className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition inline-flex items-center gap-1.5 shrink-0"
                   >
                     <Download className="w-3.5 h-3.5" /> Download
