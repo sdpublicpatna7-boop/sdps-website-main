@@ -1756,33 +1756,33 @@ export default function AdminOmrGenerator() {
 
                 {/* Sub Header Specs */}
                 {templateType === "simple" || templateType === "automated" || subHeaderLayout === "simple" ? (
-                  <div className="grid grid-cols-2 gap-2 text-[10px] font-bold border border-black px-2 py-1 mb-2 bg-gray-50 text-center items-center">
-                    <div className="flex flex-col items-center justify-center">
-                      <span className="text-black/70 uppercase block text-[8px] leading-none mb-0.5">Class & Section:</span>
-                      <span className="text-black font-extrabold text-[11px] leading-none block">{studentClassSec || className || "___________________________"}</span>
+                  <div className="grid grid-cols-2 gap-2 text-[10px] font-bold border border-black px-3 py-1.5 mb-2 bg-gray-50 text-center items-center min-h-[38px]">
+                    <div className="flex flex-col items-center justify-center space-y-0.5">
+                      <span className="text-black/70 uppercase block text-[8px] tracking-wider leading-tight">CLASS & SECTION:</span>
+                      <span className="text-black font-extrabold text-[11px] leading-tight block">{studentClassSec || className || "___________________________"}</span>
                     </div>
-                    <div className="flex flex-col items-center justify-center">
-                      <span className="text-black/70 uppercase block text-[8px] leading-none mb-0.5">Subject:</span>
-                      <span className="text-black font-extrabold text-[11px] leading-none block">{subjectName || "___________________________"}</span>
+                    <div className="flex flex-col items-center justify-center space-y-0.5">
+                      <span className="text-black/70 uppercase block text-[8px] tracking-wider leading-tight">SUBJECT:</span>
+                      <span className="text-black font-extrabold text-[11px] leading-tight block">{subjectName || "___________________________"}</span>
                     </div>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-4 gap-2 text-[10px] font-bold border border-black px-2 py-1 mb-2 bg-gray-50 text-center items-center">
-                    <div className="flex flex-col items-center justify-center">
-                      <span className="text-black/70 uppercase block text-[8px] leading-none mb-0.5">Class:</span>
-                      <span className="text-black font-extrabold text-[10.5px] leading-none block">{className || "_______"}</span>
+                  <div className="grid grid-cols-4 gap-2 text-[10px] font-bold border border-black px-2 py-1.5 mb-2 bg-gray-50 text-center items-center min-h-[38px]">
+                    <div className="flex flex-col items-center justify-center space-y-0.5">
+                      <span className="text-black/70 uppercase block text-[8px] tracking-wider leading-tight">CLASS:</span>
+                      <span className="text-black font-extrabold text-[10.5px] leading-tight block">{className || "_______"}</span>
                     </div>
-                    <div className="flex flex-col items-center justify-center">
-                      <span className="text-black/70 uppercase block text-[8px] leading-none mb-0.5">Subject:</span>
-                      <span className="text-black font-extrabold text-[10.5px] leading-none block">{subjectName || "_______"}</span>
+                    <div className="flex flex-col items-center justify-center space-y-0.5">
+                      <span className="text-black/70 uppercase block text-[8px] tracking-wider leading-tight">SUBJECT:</span>
+                      <span className="text-black font-extrabold text-[10.5px] leading-tight block">{subjectName || "_______"}</span>
                     </div>
-                    <div className="flex flex-col items-center justify-center">
-                      <span className="text-black/70 uppercase block text-[8px] leading-none mb-0.5">Max Marks:</span>
-                      <span className="text-black font-extrabold text-[10.5px] leading-none block">{maxMarks || "___"}</span>
+                    <div className="flex flex-col items-center justify-center space-y-0.5">
+                      <span className="text-black/70 uppercase block text-[8px] tracking-wider leading-tight">MAX MARKS:</span>
+                      <span className="text-black font-extrabold text-[10.5px] leading-tight block">{maxMarks || "___"}</span>
                     </div>
-                    <div className="flex flex-col items-center justify-center">
-                      <span className="text-black/70 uppercase block text-[8px] leading-none mb-0.5">Time Allowed:</span>
-                      <span className="text-black font-extrabold text-[10.5px] leading-none block">{timeAllowed || "___"}</span>
+                    <div className="flex flex-col items-center justify-center space-y-0.5">
+                      <span className="text-black/70 uppercase block text-[8px] tracking-wider leading-tight">TIME ALLOWED:</span>
+                      <span className="text-black font-extrabold text-[10.5px] leading-tight block">{timeAllowed || "___"}</span>
                     </div>
                   </div>
                 )}
