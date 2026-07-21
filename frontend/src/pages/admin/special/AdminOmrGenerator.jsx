@@ -2046,7 +2046,7 @@ export default function AdminOmrGenerator() {
             const sheetSerialOffset = copyIdx;
             const startNum = parseInt(bookletStartNo || "1001", 10);
             return (
-              <div key={copyIdx} className="w-full flex justify-center">
+              <div key={copyIdx} className="w-full flex justify-center omr-sheet-wrapper">
                 {/* Printable A4 Container */}
                 <div
                   style={{
@@ -2241,6 +2241,19 @@ export default function AdminOmrGenerator() {
             min-height: 0 !important;
           }
 
+          .omr-sheet-wrapper {
+            break-after: page !important;
+            page-break-after: always !important;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+          }
+
+          .omr-sheet-wrapper:last-child,
+          .omr-sheet-wrapper:last-of-type {
+            break-after: avoid !important;
+            page-break-after: avoid !important;
+          }
+
           .omr-print-area {
             visibility: visible !important;
             display: flex !important;
@@ -2253,6 +2266,8 @@ export default function AdminOmrGenerator() {
             /* Prevent breaking inside sheet */
             break-inside: avoid !important;
             page-break-inside: avoid !important;
+            break-after: avoid !important;
+            page-break-after: avoid !important;
             /* Override all screen constraints */
             min-width: 0 !important;
             max-width: none !important;
@@ -2269,14 +2284,6 @@ export default function AdminOmrGenerator() {
             background: white !important;
             box-sizing: border-box !important;
             overflow: hidden !important;
-            /* Force a new print page after each sheet */
-            break-after: page !important;
-            page-break-after: always !important;
-          }
-
-          .omr-print-area:last-child {
-            break-after: avoid !important;
-            page-break-after: avoid !important;
           }
 
           .omr-print-area * {
