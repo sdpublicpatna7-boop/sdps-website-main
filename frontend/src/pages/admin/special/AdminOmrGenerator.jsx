@@ -2022,74 +2022,67 @@ export default function AdminOmrGenerator() {
 
       {/* Embedded CSS for High Precision A4 Printing */}
       <style>{`
+        @page {
+          size: ${omrMode === 'booklet' ? 'A4 landscape' : 'A4 portrait'};
+          margin: 0mm;
+        }
+
         @media print {
-          /* Force page flow and remove all margins/paddings/gaps on layout wrappers outside the print area */
-          html, body, #root, #root > div, main,
-          .space-y-6,
-          .lg:col-span-8,
-          .w-full.flex.justify-center {
+          html, body {
             margin: 0 !important;
             padding: 0 !important;
-            gap: 0 !important;
-            display: block !important;
-            width: 100% !important;
-            height: auto !important;
-            min-height: 0 !important;
-            max-height: none !important;
-            overflow: visible !important;
-            border: none !important;
-            box-shadow: none !important;
             background: white !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
 
-          /* Hide screen-only layouts, headers, sidebars, buttons, etc. */
-          aside,
-          header,
-          nav,
-          .no-print,
-          .lg:col-span-4 {
-            display: none !important;
-            width: 0 !important;
-            height: 0 !important;
-            overflow: hidden !important;
-          }
+          /* Hide everything except OMR content */
+          body * { visibility: hidden !important; }
+          aside, header, nav, .no-print, .lg\\:col-span-4 { display: none !important; }
 
-          /* Make sure the main content is visible */
-          body * {
-            visibility: hidden !important;
-          }
-          .omr-print-area, .omr-print-area * {
-            visibility: visible !important;
-          }
-
-          /* Style the OMR printable sheets sequentially in relative layout */
+          /*
+           * THE KEY TRICK:
+           * Each sheet is a 100vw × 100vh block in normal document flow.
+           * The browser page-breaks between them naturally because each one
+           * exactly fills one @page. No fixed/absolute positioning needed.
+           */
           .omr-print-area {
+            visibility: visible !important;
             display: flex !important;
             flex-direction: column !important;
             position: relative !important;
-            width: 100% !important;
-            height: 100% !important;
-            max-width: ${omrMode === 'booklet' ? '297mm' : '210mm'} !important;
-            max-height: ${omrMode === 'booklet' ? '210mm' : '297mm'} !important;
-            margin: 0 auto !important;
-            padding: ${omrMode === 'booklet' ? '4mm 4mm' : '6mm 6mm'} !important;
+            /* Exactly one page */
+            width:  ${omrMode === 'booklet' ? '297mm' : '210mm'} !important;
+            height: ${omrMode === 'booklet' ? '210mm' : '297mm'} !important;
+            /* Override all screen constraints */
+            min-width: 0 !important;
+            max-width: none !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            aspect-ratio: unset !important;
+            /* No gaps between pages */
+            margin: 0 !important;
+            padding: ${omrMode === 'booklet' ? '5mm' : '6mm'} !important;
+            /* No visual chrome */
             border: none !important;
             box-shadow: none !important;
+            border-radius: 0 !important;
+            outline: none !important;
             background: white !important;
             box-sizing: border-box !important;
-            page-break-after: always !important;
-            break-after: page !important;
             overflow: hidden !important;
+            /* Force a new print page after each sheet */
+            break-after: page !important;
+            page-break-after: always !important;
           }
 
           .omr-print-area:last-child {
-            page-break-after: avoid !important;
             break-after: avoid !important;
+            page-break-after: avoid !important;
           }
 
-          @page {
-            size: ${omrMode === 'booklet' ? 'A4 landscape' : 'A4 portrait'};
-            margin: 0;
+          .omr-print-area * {
+            visibility: visible !important;
           }
         }
       `}</style>
