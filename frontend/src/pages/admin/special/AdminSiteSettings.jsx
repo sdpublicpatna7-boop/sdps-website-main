@@ -222,7 +222,7 @@ export function AdminSiteSettings() {
           </div>
 
           {/* Download Official Brand Assets & Logos */}
-          <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-3">
+          <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-4">
             <div className="flex items-center gap-2">
               <Download className="w-4 h-4 text-brand-blue" />
               <h3 className="font-headline font-bold text-xs text-slate-800 uppercase tracking-wide">
@@ -230,44 +230,94 @@ export function AdminSiteSettings() {
               </h3>
             </div>
             <p className="text-xs text-slate-500">
-              Download high-resolution official school logos anytime for print, media, or social posts.
+              Download high-resolution official SDPS Original Logo and SDG 1 Logo in PNG & Animated GIF formats anytime.
             </p>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-              {/* 1. Original High-Res Logo */}
-              <div className="p-3 bg-white rounded-xl border border-slate-200/90 flex items-center justify-between shadow-xs">
-                <div className="flex items-center gap-3">
-                  <img src="/logo512.png" alt="Original Logo" className="w-10 h-10 object-contain rounded-lg border border-slate-100 p-0.5 bg-slate-50" />
-                  <div>
-                    <div className="text-xs font-bold text-slate-900">Original HD Logo</div>
-                    <div className="text-[10px] text-slate-400">PNG Format · 512×512 HD</div>
-                  </div>
-                </div>
-                <a
-                  href="/logo512.png"
-                  download="SDPS_Official_Logo_HighRes.png"
-                  className="px-3 py-1.5 bg-brand-blue text-white text-xs font-semibold rounded-lg hover:bg-brand-blue-light transition inline-flex items-center gap-1.5 shrink-0"
-                >
-                  <Download className="w-3.5 h-3.5" /> Download
-                </a>
+            {/* Category 1: SDPS Original Logo */}
+            <div className="space-y-2">
+              <div className="text-[11px] font-extrabold uppercase tracking-wider text-brand-blue">
+                1. SDPS Original Logo (Classic Crest)
               </div>
-
-              {/* 2. Animated Bouncing Logo GIF */}
-              <div className="p-3 bg-white rounded-xl border border-slate-200/90 flex items-center justify-between shadow-xs">
-                <div className="flex items-center gap-3">
-                  <img src="/logo-animated.gif" alt="Animated Logo" className="w-10 h-10 object-contain rounded-lg border border-slate-100 p-0.5 bg-slate-50" />
-                  <div>
-                    <div className="text-xs font-bold text-slate-900">Animated Logo GIF</div>
-                    <div className="text-[10px] text-slate-400">GIF Format · Light Sweep Sheen</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Original PNG */}
+                <div className="p-3 bg-white rounded-xl border border-slate-200/90 flex items-center justify-between shadow-xs">
+                  <div className="flex items-center gap-3">
+                    <img src="/logo-original.png" alt="Original Logo HD" className="w-10 h-10 object-contain rounded-lg border border-slate-100 p-0.5 bg-slate-50" />
+                    <div>
+                      <div className="text-xs font-bold text-slate-900">Original Logo (HD)</div>
+                      <div className="text-[10px] text-slate-400">PNG Format · Classic Emblem</div>
+                    </div>
                   </div>
+                  <a
+                    href="/logo-original.png"
+                    download="SDPS_Original_Logo_Classic.png"
+                    className="px-3 py-1.5 bg-brand-blue text-white text-xs font-semibold rounded-lg hover:bg-brand-blue-light transition inline-flex items-center gap-1.5 shrink-0"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Download
+                  </a>
                 </div>
-                <a
-                  href="/logo-animated.gif"
-                  download="SDPS_Logo_Animated_Bouncing.gif"
-                  className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition inline-flex items-center gap-1.5 shrink-0"
-                >
-                  <Download className="w-3.5 h-3.5" /> Download
-                </a>
+
+                {/* Original Animated GIF */}
+                <div className="p-3 bg-white rounded-xl border border-slate-200/90 flex items-center justify-between shadow-xs">
+                  <div className="flex items-center gap-3">
+                    <img src="/logo-original-animated.gif" alt="Original Logo Animated GIF" className="w-10 h-10 object-contain rounded-lg border border-slate-100 p-0.5 bg-slate-50" />
+                    <div>
+                      <div className="text-xs font-bold text-slate-900">Original Animated GIF</div>
+                      <div className="text-[10px] text-slate-400">GIF Format · Bounce & Sweep</div>
+                    </div>
+                  </div>
+                  <a
+                    href="/logo-original-animated.gif"
+                    download="SDPS_Original_Logo_Animated.gif"
+                    className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition inline-flex items-center gap-1.5 shrink-0"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Download
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {/* Category 2: SDPS SDG 1 Logo */}
+            <div className="space-y-2 pt-2">
+              <div className="text-[11px] font-extrabold uppercase tracking-wider text-brand-orange">
+                2. SDPS SDG 1 Logo (With Sustainable Goals Ring)
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* SDG PNG */}
+                <div className="p-3 bg-white rounded-xl border border-slate-200/90 flex items-center justify-between shadow-xs">
+                  <div className="flex items-center gap-3">
+                    <img src="/logo512.png" alt="SDG Logo HD" className="w-10 h-10 object-contain rounded-lg border border-slate-100 p-0.5 bg-slate-50" />
+                    <div>
+                      <div className="text-xs font-bold text-slate-900">SDG 1 Logo (HD)</div>
+                      <div className="text-[10px] text-slate-400">PNG Format · SDG Ring</div>
+                    </div>
+                  </div>
+                  <a
+                    href="/logo512.png"
+                    download="SDPS_SDG_Logo_HighRes.png"
+                    className="px-3 py-1.5 bg-brand-blue text-white text-xs font-semibold rounded-lg hover:bg-brand-blue-light transition inline-flex items-center gap-1.5 shrink-0"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Download
+                  </a>
+                </div>
+
+                {/* SDG Animated GIF */}
+                <div className="p-3 bg-white rounded-xl border border-slate-200/90 flex items-center justify-between shadow-xs">
+                  <div className="flex items-center gap-3">
+                    <img src="/logo-sdg-animated.gif" alt="SDG Logo Animated GIF" className="w-10 h-10 object-contain rounded-lg border border-slate-100 p-0.5 bg-slate-50" />
+                    <div>
+                      <div className="text-xs font-bold text-slate-900">SDG 1 Animated GIF</div>
+                      <div className="text-[10px] text-slate-400">GIF Format · Bounce & Sweep</div>
+                    </div>
+                  </div>
+                  <a
+                    href="/logo-sdg-animated.gif"
+                    download="SDPS_SDG_Logo_Animated.gif"
+                    className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition inline-flex items-center gap-1.5 shrink-0"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Download
+                  </a>
+                </div>
               </div>
             </div>
           </div>
