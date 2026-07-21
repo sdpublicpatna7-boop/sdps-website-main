@@ -1817,23 +1817,23 @@ export default function AdminOmrGenerator() {
                   {/* Left Column: Candidate Written Inputs & SET Code */}
                   <div className={`${(showRollNoBubbleGrid && (templateType === "standard" || templateType === "automated")) ? 'col-span-7' : 'col-span-12'} space-y-1.5 text-[10px]`}>
                     {/* Candidate Name Box */}
-                    <div className="border border-black p-1.5 bg-white">
-                      <span className="font-bold uppercase tracking-wide text-[8.5px] block mb-0.5 leading-none">
+                    <div className="border border-black px-2 py-1.5 bg-white min-h-[38px] flex flex-col justify-center">
+                      <span className="font-bold uppercase tracking-wide text-[8px] block leading-none text-black mb-1">
                         CANDIDATE NAME (IN CAPITAL LETTERS ONLY):
                       </span>
                       {studentName ? (
-                        <div className="h-5 flex items-center font-mono font-extrabold text-[11px] text-black tracking-widest uppercase pl-1">
+                        <div className="h-5 flex items-center font-mono font-extrabold text-[11px] text-black tracking-widest uppercase pl-0.5">
                           {studentName}
                         </div>
                       ) : (
-                        <div className="h-5 border-b border-dashed border-black"></div>
+                        <div className="h-4 border-b border-dashed border-black"></div>
                       )}
                     </div>
 
                     {/* Roll No / Class / Sec / Date Row */}
                     <div className="grid grid-cols-3 gap-1.5">
-                      <div className="border border-black p-1.5 bg-white">
-                        <span className="font-bold uppercase text-[8px] block mb-0.5 leading-none">
+                      <div className="border border-black px-2 py-1.5 bg-white min-h-[38px] flex flex-col justify-center">
+                        <span className="font-bold uppercase text-[7.5px] block leading-none text-black mb-1">
                           CLASS & SECTION:
                         </span>
                         {studentClassSec ? (
@@ -1841,11 +1841,11 @@ export default function AdminOmrGenerator() {
                             {studentClassSec}
                           </div>
                         ) : (
-                          <div className="h-5 border-b border-dashed border-black/40"></div>
+                          <div className="h-4 border-b border-dashed border-black/40"></div>
                         )}
                       </div>
-                      <div className="border border-black p-1.5 bg-white">
-                        <span className="font-bold uppercase text-[8px] block mb-0.5 leading-none">
+                      <div className="border border-black px-2 py-1.5 bg-white min-h-[38px] flex flex-col justify-center">
+                        <span className="font-bold uppercase text-[7.5px] block leading-none text-black mb-1">
                           ROLL NO:
                         </span>
                         {studentRollNo ? (
@@ -1853,12 +1853,12 @@ export default function AdminOmrGenerator() {
                             {studentRollNo}
                           </div>
                         ) : (
-                          <div className="h-5 border-b border-dashed border-black/40"></div>
+                          <div className="h-4 border-b border-dashed border-black/40"></div>
                         )}
                       </div>
-                      <div className="border border-black p-1.5 bg-white">
-                        <span className="font-bold uppercase text-[8px] block mb-0.5 leading-none">DATE:</span>
-                        <div className="h-5 border-b border-dashed border-black/40"></div>
+                      <div className="border border-black px-2 py-1.5 bg-white min-h-[38px] flex flex-col justify-center">
+                        <span className="font-bold uppercase text-[7.5px] block leading-none text-black mb-1">DATE:</span>
+                        <div className="h-4 border-b border-dashed border-black/40"></div>
                       </div>
                     </div>
 
@@ -1866,10 +1866,10 @@ export default function AdminOmrGenerator() {
                     {(showBookletNo || showSetCode || isAutomated) && (
                       <div className="grid grid-cols-12 gap-1.5 mb-2">
                         {showBookletNo && (
-                          <div className={`${showSetCode ? 'col-span-8' : 'col-span-12'} border border-black px-2 py-1 flex items-center justify-between bg-white min-h-[38px] overflow-hidden`}>
-                            <div className="flex flex-col justify-start min-w-0 pr-2 pb-0.5">
-                              <span className="font-bold uppercase text-[7.5px] text-black leading-tight block whitespace-nowrap">BOOKLET NO:</span>
-                              <span className="font-mono font-black text-[10px] text-black tracking-tighter leading-tight block whitespace-nowrap -mt-0.5">
+                          <div className={`${showSetCode ? 'col-span-8' : 'col-span-12'} border border-black px-2 py-1 flex items-center justify-between bg-white min-h-[42px] overflow-hidden`}>
+                            <div className="flex flex-col justify-center min-w-0 pr-2 space-y-0.5">
+                              <span className="font-bold uppercase text-[7.5px] text-black leading-none block whitespace-nowrap">BOOKLET NO:</span>
+                              <span className="font-mono font-black text-[10.5px] text-black tracking-tighter leading-none block whitespace-nowrap">
                                 {currentBookletNo}
                               </span>
                             </div>
@@ -1882,14 +1882,14 @@ export default function AdminOmrGenerator() {
                         )}
 
                         {showSetCode && (
-                          <div className={`${showBookletNo ? 'col-span-4' : 'col-span-12'} border border-black px-1.5 py-1 flex flex-col justify-between min-h-[38px] bg-white`}>
-                            <span className="font-bold uppercase text-[7.5px] block text-black whitespace-nowrap leading-tight text-center">QUESTION SET:</span>
-                            <div className="flex justify-around items-center py-0.5">
+                          <div className={`${showBookletNo ? 'col-span-4' : 'col-span-12'} border border-black px-1 py-1 flex flex-col justify-center gap-1 min-h-[42px] bg-white`}>
+                            <span className="font-bold uppercase text-[7px] block text-black whitespace-nowrap leading-none text-center">QUESTION SET:</span>
+                            <div className="flex justify-around items-center px-0.5">
                               {["A", "B", "C", "D"].map((setCode) => (
                                 <div key={setCode} className="flex items-center">
                                   <div
                                     style={{ aspectRatio: "1 / 1" }}
-                                    className="w-4 h-4 rounded-full border border-black flex items-center justify-center font-bold text-[7.5px] shrink-0 text-black bg-white"
+                                    className="w-3.5 h-3.5 rounded-full border border-black flex items-center justify-center font-bold text-[7px] shrink-0 text-black bg-white"
                                   >
                                     {setCode}
                                   </div>
