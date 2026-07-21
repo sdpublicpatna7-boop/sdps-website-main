@@ -669,9 +669,12 @@ export default function AdminOmrGenerator() {
     }
     .omr-print-area {
       width: ${isLandscape ? "297mm" : "210mm"} !important;
-      height: ${isLandscape ? "210mm" : "297mm"} !important;
+      height: ${isLandscape ? "204mm" : "287mm"} !important;
+      max-height: ${isLandscape ? "204mm" : "287mm"} !important;
       padding: ${isLandscape ? "4mm" : "3mm 4mm"} !important;
       box-sizing: border-box !important;
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
       break-after: page !important;
       page-break-after: always !important;
     }
@@ -2233,9 +2236,13 @@ export default function AdminOmrGenerator() {
             display: flex !important;
             flex-direction: column !important;
             position: relative !important;
-            /* Exactly one page */
+            /* Exactly one page with safety buffer for browser subpixel rounding */
             width:  ${omrMode === 'booklet' ? '297mm' : '210mm'} !important;
-            height: ${omrMode === 'booklet' ? '210mm' : '297mm'} !important;
+            height: ${omrMode === 'booklet' ? '204mm' : '287mm'} !important;
+            max-height: ${omrMode === 'booklet' ? '204mm' : '287mm'} !important;
+            /* Prevent breaking inside sheet */
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
             /* Override all screen constraints */
             min-width: 0 !important;
             max-width: none !important;
