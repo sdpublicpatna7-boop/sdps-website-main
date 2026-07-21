@@ -109,7 +109,7 @@ export default function Navbar({ settings, hideAdmissionBanner = false }) {
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3" data-testid="brand-logo-link">
             {formattedLogo ? (
-              <div className="w-12 h-12 rounded-full ring-1 ring-brand-gold/40 overflow-hidden p-0.5 bg-white flex items-center justify-center relative shrink-0">
+              <div className="w-12 h-12 rounded-full ring-1 ring-brand-gold/40 overflow-hidden p-0.5 bg-white flex items-center justify-center relative shrink-0 animate-logo-bounce logo-shine-wrapper">
                 <img
                   src={formattedLogo}
                   alt="SDPS"

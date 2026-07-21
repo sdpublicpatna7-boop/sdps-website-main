@@ -453,3 +453,52 @@ code {
     background: rgba(212,175,55,0.35);
     color: var(--sdps-ink);
 }
+
+/* ==========================================================================
+   Animated Bouncing Logo & Light Sweep Sheen Utility Classes
+   ========================================================================== */
+@keyframes logo-bounce {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes logo-shine-sweep {
+  0% {
+    transform: translateX(-150%) rotate(25deg);
+  }
+  40%, 100% {
+    transform: translateX(250%) rotate(25deg);
+  }
+}
+
+.animate-logo-bounce {
+  animation: logo-bounce 2.6s ease-in-out infinite;
+}
+
+.logo-shine-wrapper {
+  position: relative;
+  overflow: hidden;
+}
+
+.logo-shine-wrapper::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 60%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.8) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(25deg);
+  pointer-events: none;
+  animation: logo-shine-sweep 3.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
