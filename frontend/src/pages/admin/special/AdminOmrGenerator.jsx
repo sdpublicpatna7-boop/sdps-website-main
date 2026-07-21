@@ -2242,10 +2242,17 @@ export default function AdminOmrGenerator() {
           }
 
           .omr-sheet-wrapper {
-            break-after: page !important;
-            page-break-after: always !important;
+            width: ${omrMode === 'booklet' ? '297mm' : '210mm'} !important;
+            height: ${omrMode === 'booklet' ? '210mm' : '297mm'} !important;
+            max-height: ${omrMode === 'booklet' ? '210mm' : '297mm'} !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
+            overflow: hidden !important;
             break-inside: avoid !important;
             page-break-inside: avoid !important;
+            break-after: page !important;
+            page-break-after: always !important;
           }
 
           .omr-sheet-wrapper:last-child,
@@ -2258,24 +2265,19 @@ export default function AdminOmrGenerator() {
             visibility: visible !important;
             display: flex !important;
             flex-direction: column !important;
+            justify-content: space-between !important;
             position: relative !important;
-            /* Exactly one page with safety buffer for browser subpixel rounding */
-            width:  ${omrMode === 'booklet' ? '297mm' : '210mm'} !important;
-            height: ${omrMode === 'booklet' ? '204mm' : '287mm'} !important;
-            max-height: ${omrMode === 'booklet' ? '204mm' : '287mm'} !important;
-            /* Prevent breaking inside sheet */
-            break-inside: avoid !important;
-            page-break-inside: avoid !important;
-            break-after: avoid !important;
-            page-break-after: avoid !important;
+            width: 100% !important;
+            height: 100% !important;
+            max-height: 100% !important;
             /* Override all screen constraints */
             min-width: 0 !important;
             max-width: none !important;
             min-height: 0 !important;
             aspect-ratio: unset !important;
-            /* No gaps between pages */
-            margin: 0 auto !important;
-            padding: ${omrMode === 'booklet' ? '4mm' : '3mm 4mm'} !important;
+            /* Exact page inner padding */
+            margin: 0 !important;
+            padding: ${omrMode === 'booklet' ? '4mm' : '4mm 5mm'} !important;
             /* No visual chrome */
             border: none !important;
             box-shadow: none !important;
