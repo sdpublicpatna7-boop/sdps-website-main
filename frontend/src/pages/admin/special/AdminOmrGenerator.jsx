@@ -670,6 +670,7 @@ export default function AdminOmrGenerator() {
     .omr-print-area {
       width: ${isLandscape ? "297mm" : "210mm"} !important;
       height: ${isLandscape ? "210mm" : "297mm"} !important;
+      padding: ${isLandscape ? "4mm" : "3mm 4mm"} !important;
       box-sizing: border-box !important;
       break-after: page !important;
       page-break-after: always !important;
@@ -1969,9 +1970,9 @@ export default function AdminOmrGenerator() {
               {/* Questions Columns Grid — flex-1 + content-start so it expands to fill space, no dead gap before footer */}
               <div className={`grid flex-1 content-start ${
                 numColumns === 1 ? "grid-cols-1" : numColumns === 3 ? "grid-cols-3" : numColumns === 4 ? "grid-cols-4" : "grid-cols-2"
-              } gap-2 border-t-2 border-b-2 border-black py-2 mb-2`}>
+              } gap-2 border-t-2 border-b-2 border-black py-1 mb-1`}>
                 {columnsData.map((colQuestions, cIdx) => (
-                  <div key={cIdx} className="space-y-1 border-r border-black/30 last:border-r-0 pr-1">
+                  <div key={cIdx} className="space-y-0.5 border-r border-black/30 last:border-r-0 pr-1">
                     {/* Column Header */}
                     <div className="flex items-center text-[8.5px] font-black uppercase text-black border-b border-black pb-0.5 mb-0.5">
                       <span className="w-7 text-right pr-1 shrink-0">Q.NO</span>
@@ -1985,7 +1986,7 @@ export default function AdminOmrGenerator() {
                     </div>
 
                     {colQuestions.map((qNum) => (
-                      <div key={qNum} className="flex items-center text-[10px] font-mono py-0.5 hover:bg-gray-100">
+                      <div key={qNum} className="flex items-center text-[10px] font-mono py-[1px] hover:bg-gray-100">
                         {/* Question Number */}
                         <span className="w-7 font-bold text-right pr-1 text-black font-sans">
                           {qNum.toString().padStart(2, "0")}.
@@ -2243,7 +2244,7 @@ export default function AdminOmrGenerator() {
             aspect-ratio: unset !important;
             /* No gaps between pages */
             margin: 0 !important;
-            padding: ${omrMode === 'booklet' ? '5mm' : '6mm'} !important;
+            padding: ${omrMode === 'booklet' ? '4mm' : '3mm 4mm'} !important;
             /* No visual chrome */
             border: none !important;
             box-shadow: none !important;
