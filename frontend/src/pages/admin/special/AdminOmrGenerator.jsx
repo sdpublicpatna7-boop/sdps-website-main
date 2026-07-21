@@ -1806,7 +1806,7 @@ export default function AdminOmrGenerator() {
                 )}
 
                 {/* Candidate Info + Roll No Bubble Grid */}
-                <div className="grid grid-cols-12 gap-2 mb-3">
+                <div className="grid grid-cols-12 gap-2 mb-1.5">
                   {/* Left Column: Candidate Written Inputs & SET Code */}
                   <div className={`${(showRollNoBubbleGrid && (templateType === "standard" || templateType === "automated")) ? 'col-span-7' : 'col-span-12'} space-y-1.5 text-[10px]`}>
                     {/* Candidate Name Box */}
@@ -2049,7 +2049,7 @@ export default function AdminOmrGenerator() {
                     width: omrMode === "booklet" ? "297mm" : "210mm",
                     height: omrMode === "booklet" ? "210mm" : "297mm"
                   }}
-                  className="omr-print-area bg-white border border-slate-300 shadow-xl rounded-sm text-black p-6 relative font-sans flex flex-col max-w-full"
+                  className="omr-print-area bg-white border border-slate-300 shadow-xl rounded-sm text-black p-4 relative font-sans flex flex-col max-w-full"
                 >
                   {/* Copy number label (screen only) */}
                   {numCopies > 1 && (
