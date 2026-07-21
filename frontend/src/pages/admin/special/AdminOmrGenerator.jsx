@@ -2216,21 +2216,31 @@ export default function AdminOmrGenerator() {
           html, body {
             margin: 0 !important;
             padding: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
             background: white !important;
+            overflow: visible !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
 
-          /* Hide everything except OMR content */
-          body * { visibility: hidden !important; }
-          aside, header, nav, .no-print, .lg\\:col-span-4 { display: none !important; }
+          /* Hide UI Chrome and Navigation Elements */
+          aside, header, nav, footer, .no-print, .lg\\:col-span-4, button, form {
+            display: none !important;
+          }
 
-          /*
-           * THE KEY TRICK:
-           * Each sheet is a 100vw × 100vh block in normal document flow.
-           * The browser page-breaks between them naturally because each one
-           * exactly fills one @page. No fixed/absolute positioning needed.
-           */
+          /* Reset all wrapper containers so they don't introduce top/bottom offsets */
+          #root, #root > *, .App, main, div:has(> .omr-print-area), div:has(> div > .omr-print-area) {
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            background: transparent !important;
+            width: 100% !important;
+            height: auto !important;
+            min-height: 0 !important;
+          }
+
           .omr-print-area {
             visibility: visible !important;
             display: flex !important;
@@ -2247,10 +2257,9 @@ export default function AdminOmrGenerator() {
             min-width: 0 !important;
             max-width: none !important;
             min-height: 0 !important;
-            max-height: none !important;
             aspect-ratio: unset !important;
             /* No gaps between pages */
-            margin: 0 !important;
+            margin: 0 auto !important;
             padding: ${omrMode === 'booklet' ? '4mm' : '3mm 4mm'} !important;
             /* No visual chrome */
             border: none !important;
