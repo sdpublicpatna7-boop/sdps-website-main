@@ -1791,10 +1791,10 @@ export default function AdminOmrGenerator() {
                 ANSWERS / OMR RESPONSE SHEET ({numQuestions} QUESTIONS)
               </div>
 
-              {/* Questions Columns Grid */}
-              <div className={`grid ${
+              {/* Questions Columns Grid — flex-1 + content-start so it expands to fill space, no dead gap before footer */}
+              <div className={`grid flex-1 content-start ${
                 numColumns === 1 ? "grid-cols-1" : numColumns === 3 ? "grid-cols-3" : numColumns === 4 ? "grid-cols-4" : "grid-cols-2"
-              } gap-2 border-t-2 border-b-2 border-black py-2 mb-3`}>
+              } gap-2 border-t-2 border-b-2 border-black py-2 mb-2`}>
                 {columnsData.map((colQuestions, cIdx) => (
                   <div key={cIdx} className="space-y-1 border-r border-black/30 last:border-r-0 pr-1">
                     {/* Column Header */}
@@ -1835,15 +1835,15 @@ export default function AdminOmrGenerator() {
               </div>
 
               {/* Signatures & Invigilator Footer */}
-              <div className="grid grid-cols-2 gap-3 border border-black p-2 text-[9px] mt-auto">
-                <div className="flex flex-col justify-between h-12 border-r border-black pr-2">
+              <div className="grid grid-cols-2 gap-3 border border-black p-2 text-[9px]">
+                <div className="flex flex-col justify-between h-9 border-r border-black pr-2">
                   <div className="font-bold uppercase">CANDIDATE SIGNATURE:</div>
                   <div className="border-t border-dashed border-black pt-0.5 text-center text-black/60 text-[8px]">
                     (Signature of Candidate inside box)
                   </div>
                 </div>
 
-                <div className="flex flex-col justify-between h-12">
+                <div className="flex flex-col justify-between h-9">
                   <div className="font-bold uppercase">INVIGILATOR SIGNATURE:</div>
                   <div className="border-t border-dashed border-black pt-0.5 text-center text-black/60 text-[8px]">
                     (Verified Roll No & Signature of Invigilator)
