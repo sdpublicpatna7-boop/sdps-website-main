@@ -8,7 +8,7 @@ import {
 import { getOmrRoster, saveOmrBooklets, getOmrBooklets, clearOmrBooklets, exportOmrPdf, getNextBookletSerial } from "@/lib/api";
 import api from "@/lib/api";
 import { toast } from "sonner";
-// html2canvas and jsPDF removed — PDF export now uses the browser's native print engine
+// html2canvas and jsPDF are loaded dynamically inside handleExportPdf (on-demand, not at startup)
 
 const OMR_STORAGE_KEY = "sdps_omr_last_settings";
 
@@ -612,33 +612,177 @@ export default function AdminOmrGenerator() {
     window.print();
   };
 
-  /** PDF Export state (kept for UI compatibility) */
+  /** PDF Export state */
   const [exportingPdf, setExportingPdf] = useState(false);
   const [pdfProgress, setPdfProgress] = useState({ current: 0, total: 0 });
 
   /**
-   * Export as PDF — uses the browser's native print engine (same as Print button).
-   * html2canvas/jsPDF can never faithfully reproduce a fluid CSS layout at A4 dimensions;
-   * the browser's own print renderer handles all CSS, fonts, SVG, and aspect ratios perfectly.
-   * User chooses "Save as PDF" in the print dialog to get a file.
+   * High-Quality PDF Export via Blob → New Tab
+   *
+   * Strategy: render each .omr-print-area into a hidden iframe sized to exact
+   * A4 pixels (794 × 1123 at 96 dpi base), capture with html2canvas at scale 4
+   * (→ ~384 dpi), encode as lossless PNG, embed in jsPDF, open blob URL in new tab.
+   *
+   * The iframe approach is critical: it gives html2canvas a clean, isolated
+   * viewport at exactly A4 dimensions so Tailwind breakpoints, flex sizing, and
+   * aspect-ratio constraints all resolve identically to what you see on screen.
    */
   const handleExportPdf = async () => {
     try {
       window.__sdps_suppress_logout = true;
       setExportingPdf(true);
 
-      // Save booklet index before printing (same as handlePrint)
+      const printAreas = document.querySelectorAll(".omr-print-area");
+      if (!printAreas.length) throw new Error("No OMR sheets found to export.");
+
+      const total = printAreas.length;
+      const isLandscape = omrMode === "booklet";
+
+      // A4 base dimensions at 96dpi
+      const A4_W_PX = isLandscape ? 1123 : 794;
+      const A4_H_PX = isLandscape ? 794  : 1123;
+      const SCALE   = 4; // final DPI ≈ 384
+
+      setPdfProgress({ current: 0, total });
+
+      // Save booklet index before export
       if (displayedRoster.length > 0) {
-        await autoSaveBooklets(displayedRoster).catch((err) => {
-          console.warn("Booklet auto-index notice:", err);
-        });
+        await autoSaveBooklets(displayedRoster).catch((err) =>
+          console.warn("Booklet auto-index notice:", err)
+        );
       }
 
-      toast.success("Opening print dialog — choose 'Save as PDF' to export.");
+      const { jsPDF } = await import("jspdf");
+      const html2canvas  = (await import("html2canvas")).default;
 
-      // Small delay so the toast is visible before the print dialog blocks the UI
-      await new Promise((r) => setTimeout(r, 300));
-      window.print();
+      const pdf = new jsPDF({
+        orientation: isLandscape ? "landscape" : "portrait",
+        unit: "mm",
+        format: "a4",
+        compress: false,
+      });
+
+      for (let i = 0; i < total; i++) {
+        setPdfProgress({ current: i + 1, total });
+
+        const sourceEl = printAreas[i];
+
+        // ── 1. Create an isolated iframe at exact A4 pixel size ──────────────
+        const iframe = document.createElement("iframe");
+        iframe.style.cssText = `
+          position: fixed;
+          top: -9999px;
+          left: -9999px;
+          width: ${A4_W_PX}px;
+          height: ${A4_H_PX}px;
+          border: none;
+          visibility: hidden;
+          pointer-events: none;
+        `;
+        document.body.appendChild(iframe);
+
+        // ── 2. Clone the sheet HTML into the iframe ──────────────────────────
+        const iDoc = iframe.contentDocument;
+        iDoc.open();
+        iDoc.write(`<!DOCTYPE html><html><head>
+          <meta charset="utf-8"/>
+          <meta name="viewport" content="width=${A4_W_PX}"/>
+        </head><body style="margin:0;padding:0;background:white;width:${A4_W_PX}px;height:${A4_H_PX}px;overflow:hidden;"></body></html>`);
+        iDoc.close();
+
+        // Copy all stylesheets from the parent page into the iframe
+        const stylePromises = [];
+        document.querySelectorAll('link[rel="stylesheet"], style').forEach((node) => {
+          if (node.tagName === "STYLE") {
+            const s = iDoc.createElement("style");
+            s.textContent = node.textContent;
+            iDoc.head.appendChild(s);
+          } else if (node.href) {
+            stylePromises.push(
+              fetch(node.href)
+                .then((r) => r.text())
+                .then((css) => {
+                  const s = iDoc.createElement("style");
+                  s.textContent = css;
+                  iDoc.head.appendChild(s);
+                })
+                .catch(() => {}) // skip cross-origin sheets
+            );
+          }
+        });
+        await Promise.all(stylePromises);
+
+        // Deep-clone the OMR sheet and force it to fill the iframe exactly
+        const clone = sourceEl.cloneNode(true);
+        clone.style.cssText = `
+          position: absolute !important;
+          top: 0 !important; left: 0 !important;
+          width: ${A4_W_PX}px !important;
+          height: ${A4_H_PX}px !important;
+          max-width: none !important;
+          max-height: none !important;
+          aspect-ratio: unset !important;
+          margin: 0 !important;
+          padding: ${isLandscape ? "19px" : "23px"} !important;
+          border: none !important;
+          box-shadow: none !important;
+          border-radius: 0 !important;
+          overflow: hidden !important;
+          background: white !important;
+          box-sizing: border-box !important;
+          display: flex !important;
+          flex-direction: column !important;
+        `;
+        iDoc.body.appendChild(clone);
+
+        // Brief paint settle
+        await new Promise((r) => setTimeout(r, 120));
+
+        // ── 3. Capture at 4× scale (lossless PNG) ───────────────────────────
+        const canvas = await html2canvas(iDoc.body, {
+          scale: SCALE,
+          useCORS: true,
+          allowTaint: false,
+          logging: false,
+          backgroundColor: "#ffffff",
+          width:  A4_W_PX,
+          height: A4_H_PX,
+          scrollX: 0,
+          scrollY: 0,
+          windowWidth:  A4_W_PX,
+          windowHeight: A4_H_PX,
+        });
+
+        document.body.removeChild(iframe);
+
+        // ── 4. PNG → jsPDF ───────────────────────────────────────────────────
+        const imgData  = canvas.toDataURL("image/png");
+        const pdfW = isLandscape ? 297 : 210;
+        const pdfH = isLandscape ? 210 : 297;
+
+        if (i > 0) pdf.addPage("a4", isLandscape ? "landscape" : "portrait");
+        pdf.addImage(imgData, "PNG", 0, 0, pdfW, pdfH, undefined, "NONE");
+      }
+
+      // ── 5. Blob → new tab ────────────────────────────────────────────────
+      const blob = pdf.output("blob");
+      const url  = URL.createObjectURL(blob);
+      const tab  = window.open(url, "_blank");
+      if (!tab) {
+        // Popup blocked — fallback to direct download
+        const a = document.createElement("a");
+        a.href = url;
+        const name = `OMR_${className || "Sheet"}_${numQuestions}Q.pdf`.replace(/[^a-zA-Z0-9_\-.]/g, "_");
+        a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 30000);
+        toast.success("PDF downloaded (popups were blocked).");
+      } else {
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+        toast.success(`PDF ready — ${total} page${total > 1 ? "s" : ""} at ~384 DPI`);
+      }
+
     } catch (err) {
       console.error("PDF export failed:", err);
       toast.error(`Export failed: ${err.message}`);
@@ -739,11 +883,27 @@ export default function AdminOmrGenerator() {
               <Loader2 className="w-8 h-8 text-emerald-700 animate-spin" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-900">Opening Print Dialog</h3>
+              <h3 className="text-lg font-bold text-slate-900">Generating High-Res PDF</h3>
               <p className="text-sm text-slate-500 mt-1">
-                Saving booklet index… then select <strong>Save as PDF</strong> in the print dialog.
+                {pdfProgress.total > 0
+                  ? `Rendering page ${pdfProgress.current} of ${pdfProgress.total} at ~384 DPI…`
+                  : "Preparing sheets…"}
               </p>
             </div>
+            {pdfProgress.total > 0 && (
+              <div className="space-y-2">
+                <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full transition-all duration-300 ease-out"
+                    style={{ width: `${Math.round((pdfProgress.current / pdfProgress.total) * 100)}%` }}
+                  />
+                </div>
+                <div className="flex justify-between text-xs font-semibold text-slate-600">
+                  <span>{pdfProgress.current} / {pdfProgress.total} pages</span>
+                  <span>{Math.round((pdfProgress.current / pdfProgress.total) * 100)}%</span>
+                </div>
+              </div>
+            )}
             <p className="text-[11px] text-slate-400">Please don't close or navigate away from this page.</p>
           </div>
         </div>
