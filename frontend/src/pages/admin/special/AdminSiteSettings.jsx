@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import { toast, Toaster } from "sonner";
-import { Save, CreditCard, FileText } from "lucide-react";
+import { Save, CreditCard, FileText, Download } from "lucide-react";
 import { ImageOrUrlField, FileOrUrlField } from "@/components/admin/SharedFields";
 
 export function AdminSiteSettings() {
@@ -219,6 +219,57 @@ export function AdminSiteSettings() {
               subDir="misc"
               aspect="logo"
             />
+          </div>
+
+          {/* Download Official Brand Assets & Logos */}
+          <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-3">
+            <div className="flex items-center gap-2">
+              <Download className="w-4 h-4 text-brand-blue" />
+              <h3 className="font-headline font-bold text-xs text-slate-800 uppercase tracking-wide">
+                Download Official School Logos & Assets
+              </h3>
+            </div>
+            <p className="text-xs text-slate-500">
+              Download high-resolution official school logos anytime for print, media, or social posts.
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+              {/* 1. Original High-Res Logo */}
+              <div className="p-3 bg-white rounded-xl border border-slate-200/90 flex items-center justify-between shadow-xs">
+                <div className="flex items-center gap-3">
+                  <img src="/logo512.png" alt="Original Logo" className="w-10 h-10 object-contain rounded-lg border border-slate-100 p-0.5 bg-slate-50" />
+                  <div>
+                    <div className="text-xs font-bold text-slate-900">Original HD Logo</div>
+                    <div className="text-[10px] text-slate-400">PNG Format · 512×512 HD</div>
+                  </div>
+                </div>
+                <a
+                  href="/logo512.png"
+                  download="SDPS_Official_Logo_HighRes.png"
+                  className="px-3 py-1.5 bg-brand-blue text-white text-xs font-semibold rounded-lg hover:bg-brand-blue-light transition inline-flex items-center gap-1.5 shrink-0"
+                >
+                  <Download className="w-3.5 h-3.5" /> Download
+                </a>
+              </div>
+
+              {/* 2. Animated Bouncing Logo GIF */}
+              <div className="p-3 bg-white rounded-xl border border-slate-200/90 flex items-center justify-between shadow-xs">
+                <div className="flex items-center gap-3">
+                  <img src="/logo-animated.gif" alt="Animated Logo" className="w-10 h-10 object-contain rounded-lg border border-slate-100 p-0.5 bg-slate-50" />
+                  <div>
+                    <div className="text-xs font-bold text-slate-900">Animated Logo GIF</div>
+                    <div className="text-[10px] text-slate-400">GIF Format · Light Sweep Sheen</div>
+                  </div>
+                </div>
+                <a
+                  href="/logo-animated.gif"
+                  download="SDPS_Logo_Animated_Bouncing.gif"
+                  className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition inline-flex items-center gap-1.5 shrink-0"
+                >
+                  <Download className="w-3.5 h-3.5" /> Download
+                </a>
+              </div>
+            </div>
           </div>
 
           {/* Homepage Hero Banner */}
