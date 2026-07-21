@@ -875,10 +875,17 @@ export default function AdminOmrGenerator() {
           <button
             onClick={handleExportPdf}
             disabled={exportingPdf}
-            className="flex items-center gap-2 bg-brand-blue hover:bg-brand-blue/90 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition shadow-md shadow-brand-blue/20 cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+            className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition shadow-md shadow-emerald-700/20 cursor-pointer disabled:opacity-60 disabled:cursor-wait"
           >
-            {exportingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
-            {exportingPdf ? "Generating PDF Blob…" : "Print / Export PDF (Blob)"}
+            {exportingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            {exportingPdf ? "Preparing…" : "Export as PDF"}
+          </button>
+
+          <button
+            onClick={handlePrint}
+            className="flex items-center gap-2 bg-brand-blue text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-brand-blue/90 transition shadow-md shadow-brand-blue/20 cursor-pointer"
+          >
+            <Printer className="w-4 h-4" /> Print / Save as PDF
           </button>
 
           <button
