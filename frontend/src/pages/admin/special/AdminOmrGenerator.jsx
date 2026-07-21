@@ -638,24 +638,109 @@ export default function AdminOmrGenerator() {
       if (displayedRoster.length) {
         await autoSaveBooklets(displayedRoster).catch(() => {});
       }
+
+      const isLandscape = omrMode === "booklet";
+
+      // 1. Collect all styles for standalone HTML payload
+      let inlineCss = "";
+      document.querySelectorAll("style, link[rel='stylesheet']").forEach((node) => {
+        if (node.tagName === "STYLE") {
+          inlineCss += node.textContent + "\n";
+        }
+      });
+
+      const sheetsHtml = sheets
+        .map((s) => s.outerHTML)
+        .join('\n<div style="page-break-after: always; break-after: page;"></div>\n');
+
+      const fullHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @page {
+      size: ${isLandscape ? "A4 landscape" : "A4 portrait"};
+      margin: 0mm;
+    }
+    body {
+      margin: 0 !important;
+      padding: 0 !important;
+      background: white !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .omr-print-area {
+      width: ${isLandscape ? "297mm" : "210mm"} !important;
+      height: ${isLandscape ? "210mm" : "297mm"} !important;
+      box-sizing: border-box !important;
+      break-after: page !important;
+      page-break-after: always !important;
+    }
+    ${inlineCss}
+  </style>
+</head>
+<body>
+  ${sheetsHtml}
+</body>
+</html>`;
+
+      // 2. Try Gotenberg 100% Free Cloud API first
+      try {
+        const formData = new FormData();
+        formData.append("files", new Blob([fullHtml], { type: "text/html" }), "index.html");
+        formData.append("paperWidth", isLandscape ? "11.69" : "8.27");
+        formData.append("paperHeight", isLandscape ? "8.27" : "11.69");
+        formData.append("marginTop", "0");
+        formData.append("marginBottom", "0");
+        formData.append("marginLeft", "0");
+        formData.append("marginRight", "0");
+        formData.append("printBackground", "true");
+        if (isLandscape) formData.append("landscape", "true");
+
+        const res = await fetch("https://demo.gotenberg.dev/forms/chromium/convert/html", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (res.ok) {
+          const pdfBlob = await res.blob();
+          const url = URL.createObjectURL(pdfBlob);
+          const pdfWindow = window.open(url, "_blank");
+          if (!pdfWindow) {
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `OMR_${className || "Sheets"}_${numQuestions}Q.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => document.body.removeChild(a), 10000);
+          }
+          setTimeout(() => URL.revokeObjectURL(url), 60000);
+          toast.success("Vector PDF Blob exported via Gotenberg API!");
+          return;
+        }
+      } catch (gotenbergErr) {
+        console.warn("Gotenberg API notice — using client-side renderer fallback:", gotenbergErr);
+      }
+
+      // 3. Fallback to client-side fixed clone canvas capture if API is offline
       const { jsPDF } = await import("jspdf");
       const html2canvas = (await import("html2canvas")).default;
       await document.fonts.ready;
-      const isLandscape = omrMode === "booklet";
       const pdf = new jsPDF({
         orientation: isLandscape ? "landscape" : "portrait",
         unit: "mm",
         format: "a4",
-        compress: true
+        compress: true,
       });
       for (let i = 0; i < sheets.length; i++) {
         setPdfProgress({
           current: i + 1,
-          total: sheets.length
+          total: sheets.length,
         });
         const sheet = sheets[i];
         await Promise.all(
-          [...sheet.querySelectorAll("img")].map(img =>
+          [...sheet.querySelectorAll("img")].map((img) =>
             img.decode().catch(() => {})
           )
         );
@@ -669,12 +754,12 @@ export default function AdminOmrGenerator() {
         clone.style.boxShadow = "none";
         clone.style.width = rect.width + "px";
         clone.style.height = rect.height + "px";
-        clone.querySelectorAll("*").forEach(el => {
+        clone.querySelectorAll("*").forEach((el) => {
           el.style.animation = "none";
           el.style.transition = "none";
         });
         document.body.appendChild(clone);
-        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
         const canvas = await html2canvas(clone, {
           scale: Math.max(2, window.devicePixelRatio * 2),
           backgroundColor: "#ffffff",
@@ -686,7 +771,7 @@ export default function AdminOmrGenerator() {
           width: rect.width,
           height: rect.height,
           windowWidth: document.documentElement.clientWidth,
-          windowHeight: document.documentElement.clientHeight
+          windowHeight: document.documentElement.clientHeight,
         });
         clone.remove();
         const img = canvas.toDataURL("image/png");
@@ -715,7 +800,7 @@ export default function AdminOmrGenerator() {
       setExportingPdf(false);
       setPdfProgress({
         current: 0,
-        total: 0
+        total: 0,
       });
       window.__sdps_suppress_logout = false;
     }
