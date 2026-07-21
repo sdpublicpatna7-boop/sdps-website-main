@@ -13,7 +13,7 @@ import { toast } from "sonner";
 const OMR_STORAGE_KEY = "sdps_omr_last_settings";
 
 // --- Lightweight Zero-Dependency Code39 SVG Barcode Component ---
-function BarcodeSvg({ value, height = 22, className = "" }) {
+function BarcodeSvg({ value, height = 22, showText = true, className = "" }) {
   if (!value) return null;
   const clean = String(value).toUpperCase().replace(/[^A-Z0-9\-\. ]/g, "");
   if (!clean) return null;
@@ -55,7 +55,7 @@ function BarcodeSvg({ value, height = 22, className = "" }) {
       <svg width={svgWidth} height={height} viewBox={`0 0 ${svgWidth} ${height}`} className="block">
         {bars}
       </svg>
-      <span className="text-[7.5px] font-mono tracking-widest font-bold text-black mt-0.5">{clean}</span>
+      {showText && <span className="text-[7px] font-mono tracking-tighter font-extrabold text-black leading-none mt-0.5">{clean}</span>}
     </div>
   );
 }
@@ -1756,33 +1756,33 @@ export default function AdminOmrGenerator() {
 
                 {/* Sub Header Specs */}
                 {templateType === "simple" || templateType === "automated" || subHeaderLayout === "simple" ? (
-                  <div className="grid grid-cols-2 gap-2 text-[10px] font-bold border border-black p-1.5 mb-2 bg-gray-50 text-center">
-                    <div>
-                      <span className="text-black/60 uppercase block text-[8.5px]">Class & Section:</span>
-                      <span className="text-black font-extrabold">{studentClassSec || className || "___________________________"}</span>
+                  <div className="grid grid-cols-2 gap-2 text-[10px] font-bold border border-black px-2 py-1 mb-2 bg-gray-50 text-center items-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <span className="text-black/70 uppercase block text-[8px] leading-none mb-0.5">Class & Section:</span>
+                      <span className="text-black font-extrabold text-[11px] leading-none block">{studentClassSec || className || "___________________________"}</span>
                     </div>
-                    <div>
-                      <span className="text-black/60 uppercase block text-[8.5px]">Subject:</span>
-                      <span className="text-black font-extrabold">{subjectName || "___________________________"}</span>
+                    <div className="flex flex-col items-center justify-center">
+                      <span className="text-black/70 uppercase block text-[8px] leading-none mb-0.5">Subject:</span>
+                      <span className="text-black font-extrabold text-[11px] leading-none block">{subjectName || "___________________________"}</span>
                     </div>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-4 gap-2 text-[10px] font-bold border border-black p-1.5 mb-2 bg-gray-50 text-center">
-                    <div>
-                      <span className="text-black/60 uppercase block text-[8.5px]">Class:</span>
-                      <span className="text-black font-extrabold">{className || "_______"}</span>
+                  <div className="grid grid-cols-4 gap-2 text-[10px] font-bold border border-black px-2 py-1 mb-2 bg-gray-50 text-center items-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <span className="text-black/70 uppercase block text-[8px] leading-none mb-0.5">Class:</span>
+                      <span className="text-black font-extrabold text-[10.5px] leading-none block">{className || "_______"}</span>
                     </div>
-                    <div>
-                      <span className="text-black/60 uppercase block text-[8.5px]">Subject:</span>
-                      <span className="text-black font-extrabold">{subjectName || "_______"}</span>
+                    <div className="flex flex-col items-center justify-center">
+                      <span className="text-black/70 uppercase block text-[8px] leading-none mb-0.5">Subject:</span>
+                      <span className="text-black font-extrabold text-[10.5px] leading-none block">{subjectName || "_______"}</span>
                     </div>
-                    <div>
-                      <span className="text-black/60 uppercase block text-[8.5px]">Max Marks:</span>
-                      <span className="text-black font-extrabold">{maxMarks || "___"}</span>
+                    <div className="flex flex-col items-center justify-center">
+                      <span className="text-black/70 uppercase block text-[8px] leading-none mb-0.5">Max Marks:</span>
+                      <span className="text-black font-extrabold text-[10.5px] leading-none block">{maxMarks || "___"}</span>
                     </div>
-                    <div>
-                      <span className="text-black/60 uppercase block text-[8.5px]">Time Allowed:</span>
-                      <span className="text-black font-extrabold">{timeAllowed || "___"}</span>
+                    <div className="flex flex-col items-center justify-center">
+                      <span className="text-black/70 uppercase block text-[8px] leading-none mb-0.5">Time Allowed:</span>
+                      <span className="text-black font-extrabold text-[10.5px] leading-none block">{timeAllowed || "___"}</span>
                     </div>
                   </div>
                 )}
@@ -1850,10 +1850,7 @@ export default function AdminOmrGenerator() {
                             </div>
                             {(showBarcode || isAutomated) && (
                               <div className="flex flex-col items-center justify-center shrink-0 border-l border-black/20 pl-2">
-                                <BarcodeSvg value={currentBookletNo} height={16} />
-                                <span className="text-[6.5px] font-mono font-extrabold text-black tracking-tighter whitespace-nowrap leading-none">
-                                  {currentBookletNo}
-                                </span>
+                                <BarcodeSvg value={currentBookletNo} height={16} showText={true} />
                               </div>
                             )}
                           </div>
