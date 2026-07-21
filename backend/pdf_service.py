@@ -28,6 +28,29 @@ def html_to_pdf(html_content: str) -> bytes:
     return pdf_bytes
 
 
+async def generate_playwright_pdf(html_content: str, is_landscape: bool = False) -> bytes:
+    """
+    Generate 100% vector-sharp A4 PDF Blob using Playwright Headless Chromium.
+    Returns binary PDF bytes (application/pdf).
+    """
+    from playwright.async_api import async_playwright
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(
+            headless=True,
+            args=["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
+        )
+        page = await browser.new_page()
+        await page.set_content(html_content, wait_until="networkidle")
+        pdf_bytes = await page.pdf(
+            format="A4",
+            landscape=is_landscape,
+            print_background=True,
+            margin={"top": "0mm", "right": "0mm", "bottom": "0mm", "left": "0mm"}
+        )
+        await browser.close()
+        return pdf_bytes
+
+
 def protect_pdf(pdf_bytes: bytes) -> bytes:
     """
     Apply owner-password encryption to PDF with edit restrictions.

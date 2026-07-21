@@ -639,10 +639,89 @@ export default function AdminOmrGenerator() {
         await autoSaveBooklets(displayedRoster).catch(() => {});
       }
 
+      const isLandscape = omrMode === "booklet";
+
+      // Collect inline CSS for standalone page payload
+      let inlineCss = "";
+      document.querySelectorAll("style, link[rel='stylesheet']").forEach((node) => {
+        if (node.tagName === "STYLE") {
+          inlineCss += node.textContent + "\n";
+        }
+      });
+
+      const htmlPages = sheets.map(
+        (sheet) => `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @page {
+      size: ${isLandscape ? "A4 landscape" : "A4 portrait"};
+      margin: 0mm;
+    }
+    body {
+      margin: 0 !important;
+      padding: 0 !important;
+      background: white !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .omr-print-area {
+      width: ${isLandscape ? "297mm" : "210mm"} !important;
+      height: ${isLandscape ? "210mm" : "297mm"} !important;
+      box-sizing: border-box !important;
+      break-after: page !important;
+      page-break-after: always !important;
+    }
+    ${inlineCss}
+  </style>
+</head>
+<body>
+  ${sheet.outerHTML}
+</body>
+</html>`
+      );
+
+      // 1. Try Backend Playwright Headless Chromium Engine (/api/admin/omr/export-pdf)
+      try {
+        const token = localStorage.getItem("token") || localStorage.getItem("adminToken");
+        const response = await fetch("/api/admin/omr/export-pdf", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            htmlPages,
+            isLandscape,
+          }),
+        });
+
+        if (response.ok) {
+          const pdfBlob = await response.blob();
+          const url = URL.createObjectURL(pdfBlob);
+          const win = window.open(url, "_blank");
+          if (!win) {
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `OMR_${className || "Sheet"}_${numQuestions}Q.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => document.body.removeChild(a), 10000);
+          }
+          setTimeout(() => URL.revokeObjectURL(url), 60000);
+          toast.success("Vector PDF exported via Playwright Chromium!");
+          return;
+        }
+      } catch (playwrightErr) {
+        console.warn("Backend Playwright API notice — fallback to client renderer:", playwrightErr);
+      }
+
+      // 2. Client-side fallback high-resolution canvas capture
       const { jsPDF } = await import("jspdf");
       const html2canvas = (await import("html2canvas")).default;
       await document.fonts.ready;
-      const isLandscape = omrMode === "booklet";
       const pdf = new jsPDF({
         orientation: isLandscape ? "landscape" : "portrait",
         unit: "mm",
