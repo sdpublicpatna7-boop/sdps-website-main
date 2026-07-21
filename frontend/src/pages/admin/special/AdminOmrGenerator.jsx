@@ -685,42 +685,54 @@ export default function AdminOmrGenerator() {
 </body>
 </html>`;
 
-      // 2. Try Gotenberg 100% Free Cloud API first
+      // 2. Submit to Gotenberg Free API via DataTransfer Form to bypass browser CORS restrictions
       try {
-        const formData = new FormData();
-        formData.append("files", new Blob([fullHtml], { type: "text/html" }), "index.html");
-        formData.append("paperWidth", isLandscape ? "11.69" : "8.27");
-        formData.append("paperHeight", isLandscape ? "8.27" : "11.69");
-        formData.append("marginTop", "0");
-        formData.append("marginBottom", "0");
-        formData.append("marginLeft", "0");
-        formData.append("marginRight", "0");
-        formData.append("printBackground", "true");
-        if (isLandscape) formData.append("landscape", "true");
+        const form = document.createElement("form");
+        form.action = "https://demo.gotenberg.dev/forms/chromium/convert/html";
+        form.method = "POST";
+        form.target = "_blank";
+        form.enctype = "multipart/form-data";
+        form.style.display = "none";
 
-        const res = await fetch("https://demo.gotenberg.dev/forms/chromium/convert/html", {
-          method: "POST",
-          body: formData,
+        const params = {
+          paperWidth: isLandscape ? "11.69" : "8.27",
+          paperHeight: isLandscape ? "8.27" : "11.69",
+          marginTop: "0",
+          marginBottom: "0",
+          marginLeft: "0",
+          marginRight: "0",
+          printBackground: "true",
+          ...(isLandscape ? { landscape: "true" } : {})
+        };
+
+        Object.entries(params).forEach(([name, value]) => {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = name;
+          input.value = value;
+          form.appendChild(input);
         });
 
-        if (res.ok) {
-          const pdfBlob = await res.blob();
-          const url = URL.createObjectURL(pdfBlob);
-          const pdfWindow = window.open(url, "_blank");
-          if (!pdfWindow) {
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `OMR_${className || "Sheets"}_${numQuestions}Q.pdf`;
-            document.body.appendChild(a);
-            a.click();
-            setTimeout(() => document.body.removeChild(a), 10000);
-          }
-          setTimeout(() => URL.revokeObjectURL(url), 60000);
-          toast.success("Vector PDF Blob exported via Gotenberg API!");
-          return;
-        }
+        const fileInput = document.createElement("input");
+        fileInput.type = "file";
+        fileInput.name = "files";
+
+        const dt = new DataTransfer();
+        dt.items.add(new File([fullHtml], "index.html", { type: "text/html" }));
+        fileInput.files = dt.files;
+        form.appendChild(fileInput);
+
+        document.body.appendChild(form);
+        form.submit();
+
+        setTimeout(() => {
+          if (document.body.contains(form)) document.body.removeChild(form);
+        }, 5000);
+
+        toast.success("Vector PDF opening in new tab via Gotenberg API!");
+        return;
       } catch (gotenbergErr) {
-        console.warn("Gotenberg API notice — using client-side renderer fallback:", gotenbergErr);
+        console.warn("Gotenberg API form notice — using client-side renderer fallback:", gotenbergErr);
       }
 
       // 3. Fallback to client-side fixed clone canvas capture if API is offline
