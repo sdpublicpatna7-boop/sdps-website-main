@@ -639,112 +639,17 @@ export default function AdminOmrGenerator() {
         await autoSaveBooklets(displayedRoster).catch(() => {});
       }
 
-      const isLandscape = omrMode === "booklet";
-
-      // 1. Collect all styles for standalone HTML payload
-      let inlineCss = "";
-      document.querySelectorAll("style, link[rel='stylesheet']").forEach((node) => {
-        if (node.tagName === "STYLE") {
-          inlineCss += node.textContent + "\n";
-        }
-      });
-
-      const sheetsHtml = sheets
-        .map((s) => s.outerHTML)
-        .join('\n<div style="page-break-after: always; break-after: page;"></div>\n');
-
-      const fullHtml = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8"/>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    @page {
-      size: ${isLandscape ? "A4 landscape" : "A4 portrait"};
-      margin: 0mm;
-    }
-    body {
-      margin: 0 !important;
-      padding: 0 !important;
-      background: white !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    .omr-print-area {
-      width: ${isLandscape ? "297mm" : "210mm"} !important;
-      height: ${isLandscape ? "210mm" : "297mm"} !important;
-      box-sizing: border-box !important;
-      break-after: page !important;
-      page-break-after: always !important;
-    }
-    ${inlineCss}
-  </style>
-</head>
-<body>
-  ${sheetsHtml}
-</body>
-</html>`;
-
-      // 2. Submit to Gotenberg Free API via DataTransfer Form to bypass browser CORS restrictions
-      try {
-        const form = document.createElement("form");
-        form.action = "https://demo.gotenberg.dev/forms/chromium/convert/html";
-        form.method = "POST";
-        form.target = "_blank";
-        form.enctype = "multipart/form-data";
-        form.style.display = "none";
-
-        const params = {
-          paperWidth: isLandscape ? "11.69" : "8.27",
-          paperHeight: isLandscape ? "8.27" : "11.69",
-          marginTop: "0",
-          marginBottom: "0",
-          marginLeft: "0",
-          marginRight: "0",
-          printBackground: "true",
-          ...(isLandscape ? { landscape: "true" } : {})
-        };
-
-        Object.entries(params).forEach(([name, value]) => {
-          const input = document.createElement("input");
-          input.type = "hidden";
-          input.name = name;
-          input.value = value;
-          form.appendChild(input);
-        });
-
-        const fileInput = document.createElement("input");
-        fileInput.type = "file";
-        fileInput.name = "files";
-
-        const dt = new DataTransfer();
-        dt.items.add(new File([fullHtml], "index.html", { type: "text/html" }));
-        fileInput.files = dt.files;
-        form.appendChild(fileInput);
-
-        document.body.appendChild(form);
-        form.submit();
-
-        setTimeout(() => {
-          if (document.body.contains(form)) document.body.removeChild(form);
-        }, 5000);
-
-        toast.success("Vector PDF opening in new tab via Gotenberg API!");
-        return;
-      } catch (gotenbergErr) {
-        console.warn("Gotenberg API form notice — using client-side renderer fallback:", gotenbergErr);
-      }
-
-      // 3. Fallback to client-side fixed clone canvas capture if API is offline
       const { jsPDF } = await import("jspdf");
       const html2canvas = (await import("html2canvas")).default;
       await document.fonts.ready;
+      const isLandscape = omrMode === "booklet";
       const pdf = new jsPDF({
         orientation: isLandscape ? "landscape" : "portrait",
         unit: "mm",
         format: "a4",
         compress: true,
       });
+
       for (let i = 0; i < sheets.length; i++) {
         setPdfProgress({
           current: i + 1,
@@ -800,9 +705,18 @@ export default function AdminOmrGenerator() {
           "FAST"
         );
       }
+
       const blob = pdf.output("blob");
       const url = URL.createObjectURL(blob);
-      window.open(url, "_blank");
+      const win = window.open(url, "_blank");
+      if (!win) {
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `OMR_${className || "Sheet"}_${numQuestions}Q.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => document.body.removeChild(a), 10000);
+      }
       setTimeout(() => URL.revokeObjectURL(url), 60000);
       toast.success("PDF exported successfully.");
     } catch (err) {
