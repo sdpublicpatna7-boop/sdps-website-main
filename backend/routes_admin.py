@@ -2809,7 +2809,7 @@ async def get_message_logs(
     search: Optional[str] = "",
     page: int = 1,
     limit: int = 30,
-    user: TokenData = Depends(get_admin_user)
+    user: TokenData = Depends(get_current_admin)
 ):
     """Fetch paginated email & WhatsApp message logs with search and filters."""
     query = {}
@@ -2870,7 +2870,7 @@ async def get_message_logs(
 @admin_router.get("/message-logs/{log_id}")
 async def get_message_log_detail(
     log_id: str,
-    user: TokenData = Depends(get_admin_user)
+    user: TokenData = Depends(get_current_admin)
 ):
     """Fetch full detail for a specific email/WhatsApp message log item."""
     log_item = await db.message_logs.find_one({"id": log_id}, {"_id": 0})
@@ -2882,7 +2882,7 @@ async def get_message_log_detail(
 @admin_router.post("/message-logs/{log_id}/resend")
 async def resend_message_from_log(
     log_id: str,
-    user: TokenData = Depends(get_admin_user)
+    user: TokenData = Depends(get_current_admin)
 ):
     """Re-send an email or WhatsApp message from a log entry."""
     log_item = await db.message_logs.find_one({"id": log_id}, {"_id": 0})
