@@ -70,7 +70,7 @@ const NAV_ITEMS = [
   { to: "/admin/whatsapp-marketing", label: "WhatsApp Marketing", icon: Megaphone, permission: "whatsapp" },
   { to: "/admin/fee-reminders", label: "Fee Reminders", icon: CreditCard, permission: "whatsapp" },
   { to: "/admin/birthday-greetings", label: "Birthday Greetings", icon: Cake, permission: "whatsapp" },
-  { to: "/admin/message-logs", label: "Email & WhatsApp Logs", icon: ScrollText, permission: "whatsapp" },
+  { to: "/admin/message-logs", label: "Email & WhatsApp Logs", icon: ScrollText },
   { to: "/admin/site-settings", label: "Site Settings", icon: Settings, permission: "site-settings" },
   { to: "/admin/apaar", label: "APAAR ID Manager", icon: Fingerprint, permission: "site-settings" },
   { to: "/admin/link-shortener", label: "Link Shortener", icon: LinkIcon, permission: "site-settings" },
