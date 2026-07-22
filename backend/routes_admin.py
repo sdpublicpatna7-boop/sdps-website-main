@@ -2802,6 +2802,7 @@ async def export_omr_pdf(
 # ==============================================================================
 
 @admin_router.get("/message-logs")
+@admin_router.get("/admin/message-logs")
 async def get_message_logs(
     channel: Optional[str] = "all",
     status: Optional[str] = "all",
