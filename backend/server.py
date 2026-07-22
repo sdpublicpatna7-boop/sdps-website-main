@@ -228,10 +228,12 @@ async def seed_defaults():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from routes_whatsapp import init_db as init_wa, run_daily_birthday_campaign_loop
+    from message_logger import init_db as init_msg
     init_public(db)
     init_admin(db)
     init_qp(db)
     init_wa(db)
+    init_msg(db)
     await seed_defaults()
     logger.info("SDPS backend ready")
     ka_task = asyncio.create_task(_keepalive_loop())

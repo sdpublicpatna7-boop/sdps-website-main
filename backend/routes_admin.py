@@ -2796,3 +2796,136 @@ async def export_omr_pdf(
             gc.collect()
             raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
 
+
+# ==============================================================================
+# EMAIL & WHATSAPP MESSAGE LOGS ENDPOINTS
+# ==============================================================================
+
+@admin_router.get("/message-logs")
+async def get_message_logs(
+    channel: Optional[str] = "all",
+    status: Optional[str] = "all",
+    search: Optional[str] = "",
+    page: int = 1,
+    limit: int = 30,
+    user: TokenData = Depends(get_admin_user)
+):
+    """Fetch paginated email & WhatsApp message logs with search and filters."""
+    query = {}
+    
+    if channel and channel.lower() != "all":
+        query["channel"] = channel.lower()
+        
+    if status and status.lower() != "all":
+        query["status"] = status.lower()
+        
+    if search:
+        regex_pattern = {"$regex": search, "$options": "i"}
+        query["$or"] = [
+            {"recipient": regex_pattern},
+            {"recipient_name": regex_pattern},
+            {"subject": regex_pattern},
+            {"message_content": regex_pattern},
+            {"error_details": regex_pattern},
+            {"provider": regex_pattern}
+        ]
+
+    # Calculate overall stats across all message logs
+    total_all = await db.message_logs.count_documents({})
+    total_emails = await db.message_logs.count_documents({"channel": "email"})
+    total_whatsapp = await db.message_logs.count_documents({"channel": "whatsapp"})
+    total_sent = await db.message_logs.count_documents({"status": "sent"})
+    total_failed = await db.message_logs.count_documents({"status": "failed"})
+    total_mocked = await db.message_logs.count_documents({"status": "mocked"})
+    
+    attempts = total_sent + total_failed
+    success_rate = round((total_sent / attempts * 100), 1) if attempts > 0 else 100.0
+
+    # Paginated filtered query
+    total_filtered = await db.message_logs.count_documents(query)
+    skip = (max(1, page) - 1) * limit
+    
+    cursor = db.message_logs.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit)
+    logs = await cursor.to_list(length=limit)
+
+    return {
+        "logs": logs,
+        "total": total_filtered,
+        "page": page,
+        "limit": limit,
+        "pages": max(1, math.ceil(total_filtered / limit)) if total_filtered > 0 else 1,
+        "stats": {
+            "total_all": total_all,
+            "total_emails": total_emails,
+            "total_whatsapp": total_whatsapp,
+            "total_sent": total_sent,
+            "total_failed": total_failed,
+            "total_mocked": total_mocked,
+            "success_rate": success_rate
+        }
+    }
+
+
+@admin_router.get("/message-logs/{log_id}")
+async def get_message_log_detail(
+    log_id: str,
+    user: TokenData = Depends(get_admin_user)
+):
+    """Fetch full detail for a specific email/WhatsApp message log item."""
+    log_item = await db.message_logs.find_one({"id": log_id}, {"_id": 0})
+    if not log_item:
+        raise HTTPException(status_code=404, detail="Message log not found")
+    return log_item
+
+
+@admin_router.post("/message-logs/{log_id}/resend")
+async def resend_message_from_log(
+    log_id: str,
+    user: TokenData = Depends(get_admin_user)
+):
+    """Re-send an email or WhatsApp message from a log entry."""
+    log_item = await db.message_logs.find_one({"id": log_id}, {"_id": 0})
+    if not log_item:
+        raise HTTPException(status_code=404, detail="Message log not found")
+        
+    channel = log_item.get("channel", "email").lower()
+    recipient = log_item.get("recipient", "")
+    subject = log_item.get("subject", "Resent Message")
+    content = log_item.get("message_content", "")
+
+    if not recipient or not content:
+        raise HTTPException(status_code=400, detail="Cannot resend message: missing recipient or content")
+
+    if channel == "email":
+        from email_service import send_email
+        res = await send_email(recipient, f"[Resent] {subject}", content)
+    elif channel == "whatsapp":
+        from whatsapp_service import send_whatsapp_text
+        res = await send_whatsapp_text(recipient, content, subject=f"[Resent] {subject}")
+    else:
+        raise HTTPException(status_code=400, detail=f"Unsupported message channel: {channel}")
+
+    return {
+        "success": res.get("success", False),
+        "message": res.get("message", "Resend attempt complete"),
+        "result": res
+    }
+
+
+@admin_router.delete("/message-logs/clear")
+async def clear_message_logs(
+    channel: Optional[str] = "all",
+    user: TokenData = Depends(get_superadmin)
+):
+    """Clear message logs (superadmin only)."""
+    query = {}
+    if channel and channel.lower() != "all":
+        query["channel"] = channel.lower()
+    
+    result = await db.message_logs.delete_many(query)
+    return {
+        "success": True,
+        "deleted_count": result.deleted_count,
+        "message": f"Cleared {result.deleted_count} message logs."
+    }
+

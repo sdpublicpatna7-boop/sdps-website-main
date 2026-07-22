@@ -116,6 +116,7 @@ const AdminApaarManager = lazy(() => import("@/pages/admin/special/AdminApaarMan
 const AdminOmrGenerator = lazy(() => import("@/pages/admin/special/AdminOmrGenerator"));
 const AdminOmrRoster = lazy(() => import("@/pages/admin/special/AdminOmrRoster"));
 const AdminOmrChecker = lazy(() => import("@/pages/admin/special/AdminOmrChecker"));
+const AdminMessageLogs = lazy(() => import("@/pages/admin/special/AdminMessageLogs"));
 
 function AdminLoading() {
   return (
@@ -219,6 +220,7 @@ function App() {
                 <Route path="whatsapp-marketing" element={<WhatsAppMarketing />} />
                 <Route path="fee-reminders" element={<FeeReminders />} />
                 <Route path="birthday-greetings" element={<BirthdayGreetings />} />
+                <Route path="message-logs" element={<Suspense fallback={<AdminLoading />}><AdminMessageLogs /></Suspense>} />
                 <Route path="educators" element={<AdminEducators />} />
                 <Route path="thumbnail-generator" element={<AdminThumbnailGenerator />} />
                 <Route path="salary-slip" element={<AdminSalarySlip />} />

@@ -32,6 +32,8 @@ SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
 LOGO_URL = "https://sdpublic.org/assets/img/logo.png"
 
 
+from message_logger import log_message
+
 # ── MailerCloud API (simple emails without attachments) ───────────────────────
 
 async def send_email(to_email: str, subject: str, html_content: str) -> dict:
@@ -41,11 +43,16 @@ async def send_email(to_email: str, subject: str, html_content: str) -> dict:
     """
     if not MAILERCLOUD_API_KEY:
         logger.warning(f"[EMAIL MOCK] To: {to_email} | Subject: {subject}")
-        return {
+        res = {
             "success": False,
             "message": "Email service not configured (MAILERCLOUD_API_KEY missing)",
             "mocked": True
         }
+        try:
+            await log_message("email", to_email, subject, html_content, "mocked", provider="mock", error_details="MAILERCLOUD_API_KEY missing")
+        except Exception:
+            pass
+        return res
 
     payload = {
         "version": "1.0",
@@ -74,13 +81,28 @@ async def send_email(to_email: str, subject: str, html_content: str) -> dict:
         data = resp.json()
         logger.info(f"MailerCloud response for '{subject}' to {to_email}: HTTP {resp.status_code} | body: {data}")
         if resp.status_code in (200, 201) and data.get("statusCode") == 1000:
-            return {"success": True, "message": "sent", "mailercloud_response": data}
+            res = {"success": True, "message": "sent", "mailercloud_response": data}
+            try:
+                await log_message("email", to_email, subject, html_content, "sent", provider="mailercloud")
+            except Exception:
+                pass
+            return res
         error_msg = data.get("message") or f"HTTP {resp.status_code} / statusCode {data.get('statusCode')}"
         logger.error(f"MailerCloud error {resp.status_code}: {data}")
-        return {"success": False, "message": error_msg, "mailercloud_response": data}
+        res = {"success": False, "message": error_msg, "mailercloud_response": data}
+        try:
+            await log_message("email", to_email, subject, html_content, "failed", provider="mailercloud", error_details=str(error_msg))
+        except Exception:
+            pass
+        return res
     except Exception as e:
         logger.error(f"MailerCloud request failed: {e}")
-        return {"success": False, "message": str(e)}
+        res = {"success": False, "message": str(e)}
+        try:
+            await log_message("email", to_email, subject, html_content, "failed", provider="mailercloud", error_details=str(e))
+        except Exception:
+            pass
+        return res
 
 
 # ── SMTP (emails with PDF attachments — instant delivery) ─────────────────────
@@ -130,7 +152,15 @@ async def send_email_with_attachment(
         )
 
         logger.info(f"SMTP email sent: '{subject}' to {to_email} with attachment {pdf_filename}")
-        return {"success": True, "message": "sent via SMTP", "method": "smtp"}
+        res = {"success": True, "message": "sent via SMTP", "method": "smtp"}
+        try:
+            await log_message(
+                "email", to_email, subject, html_body, "sent",
+                provider="smtp", metadata={"attachment": pdf_filename}, recipient_name=to_name
+            )
+        except Exception:
+            pass
+        return res
 
     except Exception as e:
         logger.error(f"SMTP send failed: {e}")
