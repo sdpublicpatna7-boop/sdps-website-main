@@ -239,22 +239,31 @@ export function AdminSiteSettings() {
                 1. SDPS Real Official School Logo
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {/* Real Logo HD PNG */}
+                {/* Real Logo HD JPEG & PNG */}
                 <div className="p-3 bg-white rounded-xl border border-slate-200/90 flex items-center justify-between shadow-xs">
                   <div className="flex items-center gap-3">
-                    <img src="/logo-real-original.png" alt="Real Official Logo HD" className="w-10 h-10 object-contain rounded-lg border border-slate-100 p-0.5 bg-slate-50" />
+                    <img src="/logo-real-original.jpg" alt="Real Official Logo HD" className="w-10 h-10 object-contain rounded-lg border border-slate-100 p-0.5 bg-slate-50" />
                     <div>
                       <div className="text-xs font-bold text-slate-900">Real School Logo (HD)</div>
-                      <div className="text-[10px] text-slate-400">PNG Format · 1585×1600 HD</div>
+                      <div className="text-[10px] text-slate-400">Original JPEG / PNG · 1585×1600</div>
                     </div>
                   </div>
-                  <a
-                    href="/logo-real-original.png"
-                    download="SDPS_Real_School_Logo_HD.png"
-                    className="px-3 py-1.5 bg-brand-blue text-white text-xs font-semibold rounded-lg hover:bg-brand-blue-light transition inline-flex items-center gap-1.5 shrink-0"
-                  >
-                    <Download className="w-3.5 h-3.5" /> Download
-                  </a>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <a
+                      href="/logo-real-original.jpg"
+                      download="SDPS_Real_School_Logo_HD.jpg"
+                      className="px-2.5 py-1.5 bg-brand-blue text-white text-[11px] font-semibold rounded-lg hover:bg-brand-blue-light transition inline-flex items-center gap-1"
+                    >
+                      <Download className="w-3 h-3" /> JPG
+                    </a>
+                    <a
+                      href="/logo-real-original.png"
+                      download="SDPS_Real_School_Logo_HD.png"
+                      className="px-2.5 py-1.5 bg-slate-800 text-white text-[11px] font-semibold rounded-lg hover:bg-slate-700 transition inline-flex items-center gap-1"
+                    >
+                      <Download className="w-3 h-3" /> PNG
+                    </a>
+                  </div>
                 </div>
 
                 {/* Real Logo Animated GIF */}
@@ -271,7 +280,7 @@ export function AdminSiteSettings() {
                     download="SDPS_Real_School_Logo_Animated.gif"
                     className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition inline-flex items-center gap-1.5 shrink-0"
                   >
-                    <Download className="w-3.5 h-3.5" /> Download
+                    <Download className="w-3.5 h-3.5" /> GIF
                   </a>
                 </div>
               </div>
