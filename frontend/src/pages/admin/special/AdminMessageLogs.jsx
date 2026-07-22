@@ -4,7 +4,7 @@ import { toast, Toaster } from "sonner";
 import {
   Mail, MessageSquare, Send, CheckCircle2, XCircle, AlertCircle,
   RefreshCw, Search, Eye, RotateCw, Trash2, Filter, ChevronLeft, ChevronRight,
-  FileText, ShieldAlert, Sparkles, Phone, Server
+  FileText, ShieldAlert, Sparkles, Phone, Server, ScrollText
 } from "lucide-react";
 import SEO from "@/components/layout/SEO";
 
