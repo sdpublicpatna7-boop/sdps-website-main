@@ -6,6 +6,7 @@ import { AuthProvider } from "@/lib/auth";
 import { VoteProvider } from "@/context/VoteContext";
 
 import PublicLayout from "@/components/layout/PublicLayout";
+import RouteSEOManager from "@/components/layout/RouteSEOManager";
 
 // Lazy-loaded Public Pages
 const Home = lazy(() => import("@/pages/public/Home"));
@@ -132,6 +133,7 @@ function App() {
       <HelmetProvider>
         <AuthProvider>
           <BrowserRouter>
+            <RouteSEOManager />
             <Routes>
               {/* Kiosk Elections Portal (no header/footer layout) */}
               <Route path="/elections" element={<VoteProvider><Suspense fallback={<div>Loading...</div>}><ElectionAuth /></Suspense></VoteProvider>} />
