@@ -12,6 +12,7 @@ import {
 import { useAuth } from "../../lib/auth";
 import { startPinger } from "../../lib/pinger";
 import api from "../../lib/api";
+import SEO from "../layout/SEO";
 
 // Full nav options with permission mapping
 const NAV_ITEMS = [
@@ -329,8 +330,18 @@ export default function AdminLayout() {
     </nav>
   );
 
+  const activeNavItem = NAV_ITEMS.find(
+    (item) => item.to && (item.to === location.pathname || (item.to !== "/admin" && location.pathname.startsWith(item.to + "/")))
+  );
+  const activeTitle = activeNavItem
+    ? `${activeNavItem.label} | SDPS Admin`
+    : location.pathname === "/admin"
+    ? "Dashboard | SDPS Admin"
+    : "SDPS Admin Control Panel";
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
+      <SEO title={activeTitle} />
       <Toaster position="top-right" richColors closeButton />
       {/* Mobile Top Bar Header */}
       <header className="md:hidden flex items-center justify-between px-4 py-3 bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-40">
