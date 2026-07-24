@@ -294,17 +294,45 @@ export function AdminForgotPassword() {
                 data-testid="forgot-otp"
               />
             </div>
-            <div className="relative group">
-              <Lock className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-orange group-focus-within:scale-110 transition-all duration-200" />
-              <input
-                required
-                type="password"
-                placeholder="New Password"
-                className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-slate-400 focus:border-brand-orange/60 focus:bg-white/[0.05] focus:ring-1 focus:ring-brand-orange outline-none transition-all duration-300 text-sm"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                data-testid="forgot-newpw"
-              />
+            <div className="space-y-2">
+              <div className="relative group">
+                <Lock className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-orange group-focus-within:scale-110 transition-all duration-200" />
+                <input
+                  required
+                  type="password"
+                  placeholder="New Password"
+                  className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-slate-400 focus:border-brand-orange/60 focus:bg-white/[0.05] focus:ring-1 focus:ring-brand-orange outline-none transition-all duration-300 text-sm"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  data-testid="forgot-newpw"
+                />
+              </div>
+              {newPassword ? (
+                <div className="text-[11px] bg-white/[0.04] border border-white/10 p-3 rounded-xl space-y-1 text-left">
+                  <div className="font-semibold text-slate-300 mb-1">Strong Password Policy Checklist:</div>
+                  <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[11px]">
+                    <span className={newPassword.length >= 8 ? "text-emerald-400 font-semibold flex items-center gap-1" : "text-slate-500 flex items-center gap-1"}>
+                      {newPassword.length >= 8 ? "✓" : "○"} 8+ chars
+                    </span>
+                    <span className={/[A-Z]/.test(newPassword) ? "text-emerald-400 font-semibold flex items-center gap-1" : "text-slate-500 flex items-center gap-1"}>
+                      {/[A-Z]/.test(newPassword) ? "✓" : "○"} Uppercase (A-Z)
+                    </span>
+                    <span className={/[a-z]/.test(newPassword) ? "text-emerald-400 font-semibold flex items-center gap-1" : "text-slate-500 flex items-center gap-1"}>
+                      {/[a-z]/.test(newPassword) ? "✓" : "○"} Lowercase (a-z)
+                    </span>
+                    <span className={/[0-9]/.test(newPassword) ? "text-emerald-400 font-semibold flex items-center gap-1" : "text-slate-500 flex items-center gap-1"}>
+                      {/[0-9]/.test(newPassword) ? "✓" : "○"} Number (0-9)
+                    </span>
+                    <span className={/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?/]/.test(newPassword) ? "text-emerald-400 font-semibold col-span-2 flex items-center gap-1" : "text-slate-500 col-span-2 flex items-center gap-1"}>
+                      {/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?/]/.test(newPassword) ? "✓" : "○"} Special Symbol (!@#$%^&*)
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-[11px] text-slate-400 text-center">
+                  Password must contain 8+ chars with uppercase, lowercase, number & symbol.
+                </p>
+              )}
             </div>
             <button
               disabled={loading}

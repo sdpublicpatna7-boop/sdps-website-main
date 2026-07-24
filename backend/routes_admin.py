@@ -33,7 +33,7 @@ from email_service import send_email, send_email_with_attachment, render_templat
 from pdf_service import generate_protected_pdf, wrap_for_pdf
 from image_utils import compress_and_save, save_raw_file, UnsafeUploadError, UPLOAD_ROOT
 from models import (
-    AdminLogin, AdminPasswordReset, AdminPasswordResetConfirm, AdminChangePassword,
+    AdminLogin, AdminPasswordReset, AdminPasswordResetConfirm, AdminChangePassword, _validate_password,
     News, Notice, GalleryImage, VideoItem, CalendarEvent, Holiday,
     CouncilMember, ElectionPoster, CouncilResult, FormQuestion,
     CareerPost, AlumniMeet, AlumniSettings, TCRecord, PopupSettings,
@@ -1154,6 +1154,11 @@ async def create_staff_user(payload: Dict[str, Any] = Body(...), admin: TokenDat
     if not username or not password:
         raise HTTPException(status_code=400, detail="Username/Email and Password are required")
 
+    try:
+        _validate_password(password)
+    except ValueError as val_err:
+        raise HTTPException(status_code=400, detail=str(val_err))
+
     or_conditions = [
         {"username": {"$regex": f"^{re.escape(username)}$", "$options": "i"}},
         {"email": {"$regex": f"^{re.escape(username)}$", "$options": "i"}}
@@ -1190,6 +1195,10 @@ async def update_staff_user(user_id: str, payload: Dict[str, Any] = Body(...), a
     if "password" in update:
         pw = update.pop("password")
         if pw:
+            try:
+                _validate_password(pw)
+            except ValueError as val_err:
+                raise HTTPException(status_code=400, detail=str(val_err))
             update["password_hash"] = hash_password(pw)
     if "username" in update and update["username"]:
         update["username"] = update["username"].strip()

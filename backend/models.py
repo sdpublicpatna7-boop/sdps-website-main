@@ -14,13 +14,17 @@ def new_id() -> str:
 
 
 def _validate_password(v: str) -> str:
-    """Shared password strength rule — applied on every write/reset."""
-    if len(v) < 8:
-        raise ValueError("Password must be at least 8 characters")
+    """Shared strong password policy rule — applied on creation, reset, and change."""
+    if not v or len(v) < 8:
+        raise ValueError("Password must be at least 8 characters long")
     if not any(c.isupper() for c in v):
-        raise ValueError("Password must contain at least one uppercase letter")
+        raise ValueError("Password must contain at least one uppercase letter (A-Z)")
+    if not any(c.islower() for c in v):
+        raise ValueError("Password must contain at least one lowercase letter (a-z)")
     if not any(c.isdigit() for c in v):
-        raise ValueError("Password must contain at least one digit")
+        raise ValueError("Password must contain at least one number (0-9)")
+    if not any(c in "!@#$%^&*()_+-=[]{}|;:,.<>?/" for c in v):
+        raise ValueError("Password must contain at least one special character (!@#$%^&*)")
     return v
 
 

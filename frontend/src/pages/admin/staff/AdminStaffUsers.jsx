@@ -272,6 +272,32 @@ export function AdminStaffUsers() {
                     {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                {form.password ? (
+                  <div className="mt-2 space-y-1 bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-[11px]">
+                    <div className="font-bold text-slate-700 mb-1">Strong Password Policy:</div>
+                    <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+                      <span className={form.password.length >= 8 ? "text-emerald-600 font-bold flex items-center gap-1" : "text-slate-400 flex items-center gap-1"}>
+                        {form.password.length >= 8 ? "✓" : "○"} 8+ characters
+                      </span>
+                      <span className={/[A-Z]/.test(form.password) ? "text-emerald-600 font-bold flex items-center gap-1" : "text-slate-400 flex items-center gap-1"}>
+                        {/[A-Z]/.test(form.password) ? "✓" : "○"} Uppercase (A-Z)
+                      </span>
+                      <span className={/[a-z]/.test(form.password) ? "text-emerald-600 font-bold flex items-center gap-1" : "text-slate-400 flex items-center gap-1"}>
+                        {/[a-z]/.test(form.password) ? "✓" : "○"} Lowercase (a-z)
+                      </span>
+                      <span className={/[0-9]/.test(form.password) ? "text-emerald-600 font-bold flex items-center gap-1" : "text-slate-400 flex items-center gap-1"}>
+                        {/[0-9]/.test(form.password) ? "✓" : "○"} Number (0-9)
+                      </span>
+                      <span className={/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?/]/.test(form.password) ? "text-emerald-600 font-bold col-span-2 flex items-center gap-1" : "text-slate-400 col-span-2 flex items-center gap-1"}>
+                        {/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?/]/.test(form.password) ? "✓" : "○"} Special Symbol (!@#$%^&*)
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Must be 8+ chars with uppercase, lowercase, number & special symbol.
+                  </p>
+                )}
               </div>
               <div>
                 <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">
