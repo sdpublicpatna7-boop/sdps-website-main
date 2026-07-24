@@ -126,14 +126,28 @@ async def get_superadmin(
     return td
 
 
+PERMISSION_ALIASES = {
+    "educators": ["media-tools"],
+    "thumbnail-generator": ["media-tools"],
+    "salary-tools": ["media-tools"],
+    "notice-maker": ["media-tools"],
+    "omr-tools": ["media-tools"],
+    "apaar": ["site-settings"],
+    "link-tools": ["site-settings"],
+}
+
 def require_permission(permission_name: str):
-    """Requires superadmin role, or staff role with the specific permission name."""
+    """Requires superadmin role, or staff role with the specific permission name or parent group."""
     async def dependency(request: Request, token: str = Depends(oauth2_scheme)) -> TokenData:
         td = await get_current_admin(request, token)
         if td.role == "superadmin":
             return td
-        if permission_name in getattr(td, "permissions", []):
+        user_perms = getattr(td, "permissions", [])
+        if permission_name in user_perms:
             return td
+        for parent in PERMISSION_ALIASES.get(permission_name, []):
+            if parent in user_perms:
+                return td
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Access denied: permission '{permission_name}' required"

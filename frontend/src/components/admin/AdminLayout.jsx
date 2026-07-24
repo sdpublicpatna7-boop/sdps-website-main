@@ -55,15 +55,15 @@ const NAV_ITEMS = [
   { to: "/admin/alumni-meets", label: "Alumni Meets", icon: Users, permission: "alumni" },
   { to: "/admin/alumni-members", label: "Members", icon: Award, permission: "alumni" },
   { section: "Media Tools" },
-  { to: "/admin/educators", label: "Educators", icon: Users, permission: "media-tools" },
-  { to: "/admin/thumbnail-generator", label: "Thumbnail Generator", icon: ImageIcon, permission: "media-tools" },
-  { to: "/admin/salary-slip", label: "Salary Slip Generator", icon: FileText, permission: "media-tools" },
-  { to: "/admin/salary-certificate", label: "Salary Certificate", icon: FileText, permission: "media-tools" },
-  { to: "/admin/experience-certificate", label: "Experience Certificate", icon: FileText, permission: "media-tools" },
-  { to: "/admin/notice-maker", label: "Notice Maker", icon: FileText, permission: "media-tools" },
-  { to: "/admin/omr-generator", label: "OMR Generator", icon: FileText, permission: "media-tools" },
-  { to: "/admin/omr-roster", label: "OMR Student Database", icon: Users, permission: "media-tools" },
-  { to: "/admin/omr-checker", label: "OMR Auto-Checker", icon: CheckSquare, permission: "media-tools" },
+  { to: "/admin/educators", label: "Educators", icon: Users, permission: ["educators", "media-tools"] },
+  { to: "/admin/thumbnail-generator", label: "Thumbnail Generator", icon: ImageIcon, permission: ["thumbnail-generator", "media-tools"] },
+  { to: "/admin/salary-slip", label: "Salary Slip Generator", icon: FileText, permission: ["salary-tools", "media-tools"] },
+  { to: "/admin/salary-certificate", label: "Salary Certificate", icon: FileText, permission: ["salary-tools", "media-tools"] },
+  { to: "/admin/experience-certificate", label: "Experience Certificate", icon: FileText, permission: ["salary-tools", "media-tools"] },
+  { to: "/admin/notice-maker", label: "Notice Maker", icon: FileText, permission: ["notice-maker", "media-tools"] },
+  { to: "/admin/omr-generator", label: "OMR Generator", icon: FileText, permission: ["omr-tools", "media-tools"] },
+  { to: "/admin/omr-roster", label: "OMR Student Database", icon: Users, permission: ["omr-tools", "media-tools"] },
+  { to: "/admin/omr-checker", label: "OMR Auto-Checker", icon: CheckSquare, permission: ["omr-tools", "media-tools"] },
   { section: "Other" },
   { to: "/admin/tc-records", label: "TC Records", icon: FileText, permission: "tc-records" },
   { to: "/admin/popup", label: "Welcome Popup", icon: Megaphone, permission: "popup" },
@@ -73,9 +73,9 @@ const NAV_ITEMS = [
   { to: "/admin/birthday-greetings", label: "Birthday Greetings", icon: Cake, permission: "whatsapp" },
   { to: "/admin/message-logs", label: "Email & WhatsApp Logs", icon: ScrollText, permission: "message-logs" },
   { to: "/admin/site-settings", label: "Site Settings", icon: Settings, permission: "site-settings" },
-  { to: "/admin/apaar", label: "APAAR ID Manager", icon: Fingerprint, permission: "site-settings" },
-  { to: "/admin/link-shortener", label: "Link Shortener", icon: LinkIcon, permission: "site-settings" },
-  { to: "/admin/linktree", label: "Linktree Builder", icon: Award, permission: "site-settings" },
+  { to: "/admin/apaar", label: "APAAR ID Manager", icon: Fingerprint, permission: ["apaar", "site-settings"] },
+  { to: "/admin/link-shortener", label: "Link Shortener", icon: LinkIcon, permission: ["link-tools", "site-settings"] },
+  { to: "/admin/linktree", label: "Linktree Builder", icon: Award, permission: ["link-tools", "site-settings"] },
   { to: "/admin/integration-keys", label: "Integration Keys", icon: Settings, role: "superadmin" },
   { section: "Google Review" },
   { to: "/admin/maps-review", label: "Google Review QR", icon: Star, permission: "google-reviews" },
@@ -146,7 +146,10 @@ export default function AdminLayout() {
         const matches = item.to === path || (item.to !== "/admin" && path.startsWith(item.to + "/")) || (item.to !== "/admin" && path === item.to);
         if (!matches) return false;
         if (item.role === "superadmin" && user.role !== "superadmin") return false;
-        if (item.permission && !user.permissions?.includes(item.permission)) return false;
+        if (item.permission) {
+          const perms = Array.isArray(item.permission) ? item.permission : [item.permission];
+          if (!perms.some(p => user.permissions?.includes(p))) return false;
+        }
         return true;
       });
 
@@ -202,7 +205,7 @@ export default function AdminLayout() {
     if (lastAdmissions !== null) {
       const diff = currAdmissions - parseInt(lastAdmissions, 10);
       if (diff > 0) {
-        toast.info(`${diff} new admission ${diff === 1 ? 'application' : 'applications'} received!`, {
+        toast.info(`${diff} new full ${diff === 1 ? 'application' : 'applications'} received!`, {
           action: {
             label: 'View',
             onClick: () => navigate('/admin/admissions')

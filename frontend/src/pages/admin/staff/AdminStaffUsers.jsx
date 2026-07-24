@@ -5,25 +5,45 @@ import { Plus, Trash2, Edit2, X, Save, Loader2, Eye, EyeOff } from "lucide-react
 import { useAdminList } from "@/lib/admin";
 
 const PERMISSION_OPTIONS = [
+  // Content & Media
   { value: "news", label: "News & Bulletins" },
   { value: "notices", label: "Notices & Circulars" },
   { value: "gallery", label: "Media & Video Gallery" },
   { value: "calendar", label: "School Calendar & Holidays" },
   { value: "hostel-gallery", label: "Hostel Gallery" },
   { value: "khelo-patna-gallery", label: "Khelo Patna Gallery" },
+
+  // Student Council & Elections
   { value: "council", label: "Student Council & Elections" },
-  { value: "admissions", label: "Admissions, Enquiries & Forms" },
-  { value: "career", label: "Careers & Job Applications" },
-  { value: "alumni", label: "Alumni Directory & Meets" },
-  { value: "academics", label: "Academics (Homework & Exams)" },
-  { value: "media-tools", label: "Media Tools & Educators" },
-  { value: "tc-records", label: "TC Records" },
+
+  // Admissions & Careers
+  { value: "admissions", label: "Admissions, Enquiries & Form Builder" },
+  { value: "career", label: "Careers & Vacant Posts" },
+  { value: "alumni", label: "Alumni Directory, Meets & Forms" },
+
+  // Academics
+  { value: "academics", label: "Academics (Homework & Exam Papers)" },
+
+  // Individual Media & Generator Tools
+  { value: "educators", label: "Educators Management" },
+  { value: "thumbnail-generator", label: "Thumbnail Generator" },
+  { value: "notice-maker", label: "Notice Maker" },
+  { value: "omr-tools", label: "OMR Generator, Roster & Auto-Checker" },
+  { value: "salary-tools", label: "Salary Slips & Experience Certificates" },
+  { value: "media-tools", label: "All Media Tools (Master Access)" },
+
+  // Operations & Messaging
+  { value: "tc-records", label: "TC (Transfer Certificate) Records" },
   { value: "popup", label: "Welcome Popup Banner" },
-  { value: "contact-messages", label: "Contact Messages" },
-  { value: "whatsapp", label: "WhatsApp Marketing & SMS" },
+  { value: "contact-messages", label: "Contact Messages Log" },
+  { value: "whatsapp", label: "WhatsApp Marketing & Fee Reminders" },
   { value: "message-logs", label: "Email & WhatsApp Delivery Audit Logs" },
+
+  // Settings & Utilities
+  { value: "apaar", label: "APAAR ID Student Manager" },
+  { value: "link-tools", label: "Link Shortener & Linktree Builder" },
   { value: "site-settings", label: "Site & Legal Settings" },
-  { value: "google-reviews", label: "Google Review QR" },
+  { value: "google-reviews", label: "Google Review QR Code" },
 ];
 
 export function AdminStaffUsers() {
