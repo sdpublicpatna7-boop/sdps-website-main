@@ -2053,7 +2053,7 @@ async def clear_apaar_roster(admin: TokenData = Depends(require_permission("site
 @admin_router.post("/omr/upload-roster")
 async def upload_omr_roster(
     file: UploadFile = File(...),
-    admin: TokenData = Depends(require_permission("site-settings"))
+    admin: TokenData = Depends(require_permission("omr-tools"))
 ):
     """Upload Excel/CSV file containing student details for pre-printed OMR sheets."""
     contents = await file.read()
@@ -2135,7 +2135,7 @@ async def get_omr_roster(
     page: int = 1,
     limit: int = 0,
     source: Optional[str] = "all",
-    admin: TokenData = Depends(require_permission("site-settings"))
+    admin: TokenData = Depends(require_permission("omr-tools"))
 ):
     """
     Fetch student roster from OMR roster.
@@ -2383,7 +2383,7 @@ class OmrStudentSchema(BaseModel):
 @admin_router.post("/omr/students")
 async def add_omr_student(
     student: OmrStudentSchema,
-    admin: TokenData = Depends(require_permission("site-settings"))
+    admin: TokenData = Depends(require_permission("omr-tools"))
 ):
     adm = student.admission_no.strip()
     if not adm:
@@ -2411,7 +2411,7 @@ async def add_omr_student(
 async def update_omr_student(
     student_id: str,
     student: OmrStudentSchema,
-    admin: TokenData = Depends(require_permission("site-settings"))
+    admin: TokenData = Depends(require_permission("omr-tools"))
 ):
     adm = student.admission_no.strip()
     if not adm:
@@ -2450,7 +2450,7 @@ async def update_omr_student(
 @admin_router.delete("/omr/students/{student_id}")
 async def delete_omr_student(
     student_id: str,
-    admin: TokenData = Depends(require_permission("site-settings"))
+    admin: TokenData = Depends(require_permission("omr-tools"))
 ):
     from bson import ObjectId
     query = {"$or": [{"admission_no": student_id}, {"id": student_id}]}
@@ -2468,7 +2468,7 @@ async def delete_omr_student(
 
 
 @admin_router.delete("/omr/roster/clear")
-async def clear_omr_roster(admin: TokenData = Depends(require_permission("site-settings"))):
+async def clear_omr_roster(admin: TokenData = Depends(require_permission("omr-tools"))):
     await db.omr_roster.delete_many({})
     return {"status": "success", "message": "OMR student roster cleared."}
 
@@ -2476,7 +2476,7 @@ async def clear_omr_roster(admin: TokenData = Depends(require_permission("site-s
 @admin_router.post("/omr/booklets/save")
 async def save_omr_booklets(
     payload: Dict[str, Any] = Body(...),
-    admin: TokenData = Depends(require_permission("site-settings"))
+    admin: TokenData = Depends(require_permission("omr-tools"))
 ):
     """Save booklet mapping (Booklet Serial No / Barcode <-> Student, Subject & Exam Details) for automated evaluation."""
     booklets = payload.get("booklets", [])
@@ -2526,7 +2526,7 @@ async def list_omr_booklets(
     subject_name: Optional[str] = None,
     class_name: Optional[str] = None,
     search: Optional[str] = None,
-    admin: TokenData = Depends(require_permission("site-settings"))
+    admin: TokenData = Depends(require_permission("omr-tools"))
 ):
     """List or search all stored barcode & booklet assignments."""
     query = {}
@@ -2552,7 +2552,7 @@ async def list_omr_booklets(
 
 
 @admin_router.delete("/omr/booklets/clear")
-async def clear_omr_booklets(admin: TokenData = Depends(require_permission("site-settings"))):
+async def clear_omr_booklets(admin: TokenData = Depends(require_permission("omr-tools"))):
     """Clear all stored OMR barcode booklet mappings from the database."""
     res = await db.omr_booklets.delete_many({})
     return {"status": "success", "message": f"Cleared {res.deleted_count} stored booklet barcode mappings.", "count": res.deleted_count}
@@ -2561,7 +2561,7 @@ async def clear_omr_booklets(admin: TokenData = Depends(require_permission("site
 @admin_router.get("/omr/booklets/next-serial")
 async def get_next_booklet_serial(
     prefix: str = "SDP-",
-    admin: TokenData = Depends(require_permission("site-settings"))
+    admin: TokenData = Depends(require_permission("omr-tools"))
 ):
     """Find highest numeric booklet suffix in database across all records so serial numbers NEVER collide or re-use 1001."""
     clean_prefix = (prefix or "").strip()
@@ -2597,7 +2597,7 @@ async def get_next_booklet_serial(
 @admin_router.get("/omr/booklet/{booklet_no}")
 async def get_omr_booklet(
     booklet_no: str,
-    admin: TokenData = Depends(require_permission("site-settings"))
+    admin: TokenData = Depends(require_permission("omr-tools"))
 ):
     """Lookup student details by booklet number or roll number."""
     record = await db.omr_booklets.find_one({
@@ -2616,7 +2616,7 @@ async def get_omr_booklet(
 @admin_router.post("/omr/evaluations/save")
 async def save_omr_evaluations(
     payload: Dict[str, Any] = Body(...),
-    admin: TokenData = Depends(require_permission("site-settings"))
+    admin: TokenData = Depends(require_permission("omr-tools"))
 ):
     """Save batch or single evaluated OMR results to MongoDB."""
     exam_title = payload.get("exam_title", "General Exam")
@@ -2668,7 +2668,7 @@ async def save_omr_evaluations(
 async def get_omr_evaluations(
     exam_title: Optional[str] = None,
     class_name: Optional[str] = None,
-    admin: TokenData = Depends(require_permission("site-settings"))
+    admin: TokenData = Depends(require_permission("omr-tools"))
 ):
     query = {}
     if exam_title:
@@ -2685,7 +2685,7 @@ async def get_omr_evaluations(
 @admin_router.get("/omr/export-results")
 async def export_omr_results(
     exam_title: Optional[str] = None,
-    admin: TokenData = Depends(require_permission("site-settings"))
+    admin: TokenData = Depends(require_permission("omr-tools"))
 ):
     """Export evaluated results as Excel sheet download."""
     query = {}
@@ -2738,7 +2738,7 @@ pdf_export_lock = asyncio.Lock()
 async def export_omr_pdf(
     background_tasks: BackgroundTasks,
     payload: Dict[str, Any] = Body(...),
-    admin: TokenData = Depends(require_permission("site-settings"))
+    admin: TokenData = Depends(require_permission("omr-tools"))
 ):
     """
     Renders OMR sheets to a high-fidelity vector PDF using headless Playwright Chromium.
