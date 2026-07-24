@@ -293,9 +293,10 @@ export default function AdminLayout() {
     if (item.section) {
       currentSection = item;
     } else {
+      const perms = item.permission ? (Array.isArray(item.permission) ? item.permission : [item.permission]) : null;
       const isAllowed =
         user.role === "superadmin" ||
-        (item.role !== "superadmin" && (!item.permission || user.permissions?.includes(item.permission)));
+        (item.role !== "superadmin" && (!perms || perms.some(p => user.permissions?.includes(p))));
 
       if (isAllowed) {
         if (currentSection) {
