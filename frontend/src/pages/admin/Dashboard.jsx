@@ -21,12 +21,28 @@ const STAT_ITEMS = [
 ];
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState({});
+  const [stats, setStats] = useState(() => {
+    try {
+      const cached = localStorage.getItem("sdps_admin_stats");
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [loading, setLoading] = useState(!stats);
   const { user } = useAuth();
   const [greeting, setGreeting] = useState("Welcome back");
 
   useEffect(() => {
-    api.get("/admin/stats").then(r => setStats(r.data)).catch(() => {});
+    api.get("/admin/stats")
+      .then(r => {
+        setStats(r.data);
+        setLoading(false);
+        try {
+          localStorage.setItem("sdps_admin_stats", JSON.stringify(r.data));
+        } catch {}
+      })
+      .catch(() => setLoading(false));
     
     const hour = new Date().getHours();
     if (hour < 12) setGreeting("Good morning");
@@ -91,8 +107,12 @@ export default function AdminDashboard() {
                   </span>
                 </div>
                 
-                <div className="text-4xl font-headline font-bold text-slate-800 tracking-tight">
-                  {stats[s.key] ?? 0}
+                <div className="text-4xl font-headline font-bold text-slate-800 tracking-tight min-h-[40px] flex items-center">
+                  {loading && (!stats || stats[s.key] === undefined) ? (
+                    <span className="inline-block w-12 h-9 bg-slate-100 animate-pulse rounded-xl"></span>
+                  ) : (
+                    stats[s.key] ?? 0
+                  )}
                 </div>
                 
                 <div className="text-sm font-semibold text-slate-700 mt-1.5">

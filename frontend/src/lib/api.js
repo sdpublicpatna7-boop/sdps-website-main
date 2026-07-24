@@ -520,6 +520,55 @@ async function handleSupabaseRequest(config) {
     }
   }
 
+  // 17. Admin Dashboard Stats
+  else if (cleanPath === "stats" || cleanPath === "admin/stats") {
+    try {
+      const [
+        { count: news },
+        { count: notices },
+        { count: gallery },
+        { count: videos },
+        { count: enquiries },
+        { count: admissions },
+        { count: career_applications },
+        { count: alumni_members },
+        { count: tc_records },
+        { count: payments_paid },
+        { count: contact_messages }
+      ] = await Promise.all([
+        supabase.from("site_news").select("*", { count: "exact", head: true }),
+        supabase.from("site_notices").select("*", { count: "exact", head: true }),
+        supabase.from("site_gallery").select("*", { count: "exact", head: true }),
+        supabase.from("site_videos").select("*", { count: "exact", head: true }),
+        supabase.from("site_admission_enquiries").select("*", { count: "exact", head: true }),
+        supabase.from("site_admissions").select("*", { count: "exact", head: true }),
+        supabase.from("site_career_applications").select("*", { count: "exact", head: true }),
+        supabase.from("site_alumni_members").select("*", { count: "exact", head: true }),
+        supabase.from("site_tc_records").select("*", { count: "exact", head: true }),
+        supabase.from("site_payments").select("*", { count: "exact", head: true }).eq("status", "paid"),
+        supabase.from("site_contact_messages").select("*", { count: "exact", head: true })
+      ]);
+
+      supabaseData = {
+        news: news || 0,
+        notices: notices || 0,
+        gallery: gallery || 0,
+        videos: videos || 0,
+        enquiries: enquiries || 0,
+        admissions: admissions || 0,
+        career_applications: career_applications || 0,
+        alumni_members: alumni_members || 0,
+        tc_records: tc_records || 0,
+        payments_paid: payments_paid || 0,
+        contact_messages: contact_messages || 0
+      };
+      supabaseError = null;
+    } catch (e) {
+      supabaseData = { news: 0, notices: 0, gallery: 0, videos: 0, enquiries: 0, admissions: 0, career_applications: 0, alumni_members: 0, tc_records: 0, payments_paid: 0, contact_messages: 0 };
+      supabaseError = null;
+    }
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
   // SERVERLESS AUTHENTICATION
   // ─────────────────────────────────────────────────────────────────────────

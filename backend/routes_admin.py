@@ -712,18 +712,31 @@ async def import_calendar_excel(
 # ============= DASHBOARD STATS =============
 @admin_router.get("/stats")
 async def admin_stats(admin: TokenData = Depends(get_current_admin)):
+    results = await asyncio.gather(
+        db.news.count_documents({}),
+        db.notices.count_documents({}),
+        db.gallery.count_documents({}),
+        db.videos.count_documents({}),
+        db.admission_enquiries.count_documents({}),
+        db.admissions.count_documents({}),
+        db.career_applications.count_documents({}),
+        db.alumni_members.count_documents({}),
+        db.tc_records.count_documents({}),
+        db.payments.count_documents({"status": "paid"}),
+        db.contact_messages.count_documents({})
+    )
     return {
-        "news": await db.news.count_documents({}),
-        "notices": await db.notices.count_documents({}),
-        "gallery": await db.gallery.count_documents({}),
-        "videos": await db.videos.count_documents({}),
-        "enquiries": await db.admission_enquiries.count_documents({}),
-        "admissions": await db.admissions.count_documents({}),
-        "career_applications": await db.career_applications.count_documents({}),
-        "alumni_members": await db.alumni_members.count_documents({}),
-        "tc_records": await db.tc_records.count_documents({}),
-        "payments_paid": await db.payments.count_documents({"status": "paid"}),
-        "contact_messages": await db.contact_messages.count_documents({}),
+        "news": results[0],
+        "notices": results[1],
+        "gallery": results[2],
+        "videos": results[3],
+        "enquiries": results[4],
+        "admissions": results[5],
+        "career_applications": results[6],
+        "alumni_members": results[7],
+        "tc_records": results[8],
+        "payments_paid": results[9],
+        "contact_messages": results[10],
     }
 
 
