@@ -1128,6 +1128,7 @@ export default function AdminOmrGenerator() {
                       className="w-full px-2 py-1 text-[10.5px] rounded-md border border-emerald-300 font-bold focus:outline-none focus:border-emerald-600 bg-white"
                     >
                       <option value="">-- Select Class --</option>
+                      <option value="ALL">All Classes & Students (Whole Roster)</option>
                       {availableClasses.map((c) => (
                         <option key={c} value={c}>
                           {c}

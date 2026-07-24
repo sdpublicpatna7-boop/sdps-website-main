@@ -2291,36 +2291,34 @@ async def get_omr_roster(
             "available_sections": available_sections
         }
     else:
-        omr_docs = []
-        if class_name and class_name.strip():
-            omr_docs = await db.omr_roster.find(query).to_list(length=5000)
+        omr_docs = await db.omr_roster.find(query).to_list(length=5000)
 
-            if not omr_docs:
-                all_omr = await db.omr_roster.find({}).to_list(length=5000)
-                target_c = (class_name or "").strip().upper()
-                clean_target_c = re.sub(r'^(CLASS|STD|STANDARD)\s*[\-\s]*', '', target_c, flags=re.I).strip()
-                clean_target_c_nodash = re.sub(r'[\-\s]', '', clean_target_c)
-                target_ar = ROMAN_TO_ARABIC.get(clean_target_c_nodash, clean_target_c_nodash)
-                target_rm = ARABIC_TO_ROMAN.get(clean_target_c_nodash, clean_target_c_nodash)
+        if class_name and class_name.strip() and class_name.strip().upper() != "ALL" and not omr_docs:
+            all_omr = await db.omr_roster.find({}).to_list(length=5000)
+            target_c = (class_name or "").strip().upper()
+            clean_target_c = re.sub(r'^(CLASS|STD|STANDARD)\s*[\-\s]*', '', target_c, flags=re.I).strip()
+            clean_target_c_nodash = re.sub(r'[\-\s]', '', clean_target_c)
+            target_ar = ROMAN_TO_ARABIC.get(clean_target_c_nodash, clean_target_c_nodash)
+            target_rm = ARABIC_TO_ROMAN.get(clean_target_c_nodash, clean_target_c_nodash)
 
-                def matches_student(doc):
-                    if not target_c or target_c == "ALL":
-                        return True
-                    s_class = str(doc.get("class_name") or doc.get("class") or doc.get("student_class") or doc.get("standard") or "").strip().upper()
-                    if not s_class:
-                        return True
-                    s_clean = re.sub(r'^(CLASS|STD|STANDARD)\s*[\-\s]*', '', s_class, flags=re.I).strip()
-                    s_clean_nodash = re.sub(r'[\-\s]', '', s_clean)
-                    s_ar = ROMAN_TO_ARABIC.get(s_clean_nodash, s_clean_nodash)
-                    s_rm = ARABIC_TO_ROMAN.get(s_clean_nodash, s_clean_nodash)
+            def matches_student(doc):
+                if not target_c or target_c == "ALL":
+                    return True
+                s_class = str(doc.get("class_name") or doc.get("class") or doc.get("student_class") or doc.get("standard") or "").strip().upper()
+                if not s_class:
+                    return True
+                s_clean = re.sub(r'^(CLASS|STD|STANDARD)\s*[\-\s]*', '', s_class, flags=re.I).strip()
+                s_clean_nodash = re.sub(r'[\-\s]', '', s_clean)
+                s_ar = ROMAN_TO_ARABIC.get(s_clean_nodash, s_clean_nodash)
+                s_rm = ARABIC_TO_ROMAN.get(s_clean_nodash, s_clean_nodash)
 
-                    return (clean_target_c_nodash in (s_clean_nodash, s_ar, s_rm) or
-                            target_ar in (s_clean_nodash, s_ar, s_rm) or
-                            target_rm in (s_clean_nodash, s_ar, s_rm) or
-                            target_c in s_class or s_class in target_c)
+                return (clean_target_c_nodash in (s_clean_nodash, s_ar, s_rm) or
+                        target_ar in (s_clean_nodash, s_ar, s_rm) or
+                        target_rm in (s_clean_nodash, s_ar, s_rm) or
+                        target_c in s_class or s_class in target_c)
 
-                for d in all_omr:
-                    if matches_student(d): omr_docs.append(d)
+            for d in all_omr:
+                if matches_student(d): omr_docs.append(d)
 
         seen_adm = set()
         unified_students = []
