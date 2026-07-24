@@ -29,18 +29,26 @@ export function AdminStaffUsers() {
   const { items, loading, reload } = useAdminList("/admin/staff-users");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ name: "", email: "", password: "", role: "staff", permissions: [] });
+  const [form, setForm] = useState({ name: "", username: "", email: "", phone: "", password: "", role: "staff", permissions: [] });
   const [saving, setSaving] = useState(false);
   const [showPw, setShowPw] = useState(false);
 
   const startCreate = () => {
     setEditing(null);
-    setForm({ name: "", email: "", password: "", role: "staff", permissions: [] });
+    setForm({ name: "", username: "", email: "", phone: "", password: "", role: "staff", permissions: [] });
     setOpen(true);
   };
   const startEdit = (u) => {
     setEditing(u);
-    setForm({ name: u.name, email: u.email, password: "", role: u.role, permissions: u.permissions || [] });
+    setForm({
+      name: u.name || "",
+      username: u.username || u.email || "",
+      email: u.email || "",
+      phone: u.phone || "",
+      password: "",
+      role: u.role || "staff",
+      permissions: u.permissions || []
+    });
     setOpen(true);
   };
 
@@ -121,7 +129,9 @@ export function AdminStaffUsers() {
             <thead className="bg-slate-50 text-xs uppercase tracking-wider text-brand-ink/60">
               <tr>
                 <th className="px-5 py-3 text-left">Name</th>
+                <th className="px-5 py-3 text-left">Username</th>
                 <th className="px-5 py-3 text-left">Email</th>
+                <th className="px-5 py-3 text-left">Phone</th>
                 <th className="px-5 py-3 text-left">Role</th>
                 <th className="px-5 py-3 text-left">Created</th>
                 <th className="px-5 py-3 w-24"></th>
@@ -131,7 +141,9 @@ export function AdminStaffUsers() {
               {items.filter(u => u.email !== "admin@sdpublic.org").map((u) => (
                 <tr key={u.id} className="border-t border-slate-100 hover:bg-slate-50/50">
                   <td className="px-5 py-3 font-semibold">{u.name}</td>
-                  <td className="px-5 py-3 text-brand-ink/70">{u.email}</td>
+                  <td className="px-5 py-3 font-mono text-xs text-brand-blue font-bold">{u.username || u.email || "—"}</td>
+                  <td className="px-5 py-3 text-brand-ink/70">{u.email || "—"}</td>
+                  <td className="px-5 py-3 text-brand-ink/70 font-mono text-xs">{u.phone || "—"}</td>
                   <td className="px-5 py-3">
                     <div className="flex flex-col gap-1">
                       <span
@@ -174,10 +186,10 @@ export function AdminStaffUsers() {
 
       {open && (
         <div
-          className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 overflow-y-auto"
           onClick={(e) => e.target === e.currentTarget && setOpen(false)}
         >
-          <form onSubmit={submit} className="bg-white rounded-2xl max-w-lg w-full shadow-2xl">
+          <form onSubmit={submit} className="bg-white rounded-2xl max-w-lg w-full shadow-2xl my-8">
             <div className="flex items-center justify-between p-5 border-b">
               <h2 className="font-headline text-lg font-semibold">
                 {editing ? "Edit User" : "Add Staff User"}
@@ -186,26 +198,53 @@ export function AdminStaffUsers() {
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="p-5 space-y-4">
+            <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
               <div>
                 <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">
                   Full Name *
                 </label>
                 <input
                   required
+                  placeholder="e.g. Chanda Kumari"
                   className="w-full px-3 py-2 border rounded-lg"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                 />
               </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">
+                    Username *
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    placeholder="e.g. chanda_staff"
+                    className="w-full px-3 py-2 border rounded-lg font-mono text-xs"
+                    value={form.username}
+                    onChange={(e) => setForm({ ...form, username: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">
+                    Phone Number
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 9876543210"
+                    className="w-full px-3 py-2 border rounded-lg font-mono text-xs"
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  />
+                </div>
+              </div>
               <div>
                 <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">
-                  Email or Username *
+                  Email Address
                 </label>
                 <input
-                  required
-                  type="text"
-                  placeholder="e.g. staff_user or staff@sdpublic.org"
+                  type="email"
+                  placeholder="e.g. chanda@sdpublic.org"
                   className="w-full px-3 py-2 border rounded-lg"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -219,6 +258,7 @@ export function AdminStaffUsers() {
                   <input
                     type={showPw ? "text" : "password"}
                     required={!editing}
+                    placeholder="Enter login password"
                     className="w-full px-3 py-2 border rounded-lg pr-10"
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}

@@ -71,6 +71,7 @@ async def seed_defaults():
     if not existing:
         await db.admin_users.insert_one({
             "id": new_id(),
+            "username": "admin",
             "email": seed_email,
             "name": "SDPS Admin",
             "password_hash": hash_password(seed_password),
@@ -78,10 +79,11 @@ async def seed_defaults():
         })
         logger.info(f"[SEED] Admin user created: {seed_email}")
     else:
-        # Always sync seed password and role
+        # Always sync seed password, role, and default username
         await db.admin_users.update_one(
             {"email": seed_email},
             {"$set": {
+                "username": "admin",
                 "password_hash": hash_password(seed_password),
                 "role": "superadmin"
             }}
@@ -96,6 +98,7 @@ async def seed_defaults():
     if not existing_staff:
         await db.admin_users.insert_one({
             "id": new_id(),
+            "username": "staff",
             "email": staff_email,
             "name": "SDPS Staff",
             "password_hash": hash_password(staff_password),
@@ -103,10 +106,11 @@ async def seed_defaults():
         })
         logger.info(f"[SEED] Staff user created: {staff_email}")
     else:
-        # Always sync staff seed password and role
+        # Always sync staff seed password, role, and default username
         await db.admin_users.update_one(
             {"email": staff_email},
             {"$set": {
+                "username": "staff",
                 "password_hash": hash_password(staff_password),
                 "role": "staff"
             }}

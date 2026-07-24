@@ -69,26 +69,42 @@ def _sanitize_update(payload: Dict[str, Any], model_cls) -> Dict[str, Any]:
 @admin_router.post("/login")
 @limiter.limit("10/minute")
 async def admin_login(request: Request, response: Response, payload: AdminLogin):
-    user = await db.admin_users.find_one({"email": payload.email}, {"_id": 0})
+    identifier = (payload.email or "").strip()
+    if not identifier:
+        raise HTTPException(status_code=400, detail="Username, Email, or Phone required")
+
+    user = await db.admin_users.find_one({
+        "$or": [
+            {"email": identifier},
+            {"username": identifier},
+            {"phone": identifier},
+            {"email": {"$regex": f"^{re.escape(identifier)}$", "$options": "i"}},
+            {"username": {"$regex": f"^{re.escape(identifier)}$", "$options": "i"}},
+            {"phone": {"$regex": f"^{re.escape(identifier)}$", "$options": "i"}}
+        ]
+    }, {"_id": 0})
+
     if not user or not verify_password(payload.password, user.get("password_hash", "")):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     if not user.get("is_active", True):
         raise HTTPException(status_code=403, detail="Account is disabled. Contact the administrator.")
     token = create_access_token({
         "sub": user["id"],
-        "email": user["email"],
+        "email": user.get("email", ""),
+        "username": user.get("username", ""),
+        "phone": user.get("phone", ""),
         "role": user.get("role", "superadmin"),
         "permissions": user.get("permissions", [])
     })
-    # Set the token as an HttpOnly cookie (primary). Also returned in the body
-    # as a fallback for non-browser / cross-origin clients.
     set_auth_cookie(response, token, ADMIN_COOKIE_NAME, JWT_EXPIRY_HOURS)
     return {
         "access_token": token,
         "token_type": "bearer",
         "user": {
             "id": user["id"],
-            "email": user["email"],
+            "email": user.get("email", ""),
+            "username": user.get("username", ""),
+            "phone": user.get("phone", ""),
             "name": user.get("name", "Admin"),
             "role": user.get("role", "superadmin"),
             "permissions": user.get("permissions", [])
@@ -105,51 +121,128 @@ async def admin_logout(response: Response):
 @admin_router.post("/forgot-password")
 @limiter.limit("5/minute")
 async def admin_forgot_password(request: Request, payload: AdminPasswordReset):
-    user = await db.admin_users.find_one({"email": payload.email}, {"_id": 0})
-    if not user:
-        # Do not reveal existence; return generic message
+    identifier = (payload.email or "").strip()
+    if not identifier:
         return {"status": "ok", "message": "If account exists, OTP has been sent."}
+
+    user = await db.admin_users.find_one({
+        "$or": [
+            {"email": identifier},
+            {"username": identifier},
+            {"phone": identifier},
+            {"email": {"$regex": f"^{re.escape(identifier)}$", "$options": "i"}},
+            {"username": {"$regex": f"^{re.escape(identifier)}$", "$options": "i"}},
+            {"phone": {"$regex": f"^{re.escape(identifier)}$", "$options": "i"}}
+        ]
+    }, {"_id": 0})
+
+    if not user:
+        return {"status": "ok", "message": "If account exists, OTP has been sent."}
+
     code = generate_otp()
     expires = (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
+    user_email = user.get("email", "")
+    user_phone = user.get("phone", "")
+
     await db.password_resets.update_one(
-        {"email": payload.email},
-        {"$set": {"email": payload.email, "code": code, "expires_at": expires}},
+        {"user_id": user["id"]},
+        {"$set": {
+            "user_id": user["id"],
+            "identifier": identifier,
+            "email": user_email,
+            "phone": user_phone,
+            "code": code,
+            "expires_at": expires,
+            "attempts": 0
+        }},
         upsert=True
     )
-    body = render_template(
-        title="Admin Password Reset Code",
-        body_html=f"""
-        <p>Use the code below to reset your admin password. The code expires in 15 minutes.</p>
-        <h2 style="letter-spacing:8px;color:#0E3B91;background:#f1f5f9;padding:12px;text-align:center;border-radius:8px;">{code}</h2>
-        <p>If you did not request this, please ignore.</p>
-        """
-    )
-    res = await send_email(payload.email, "SDPS Admin - Password Reset Code", body)
-    return {"status": "ok", "message": "If account exists, OTP has been sent.", "email_status": res}
+
+    email_res = None
+    wa_res = None
+
+    if user_email and "@" in user_email:
+        body = render_template(
+            title="Admin Password Reset Code",
+            body_html=f"""
+            <p>Hello {user.get('name', 'Admin')},</p>
+            <p>Use the code below to reset your SDPS Admin password. The code expires in 15 minutes.</p>
+            <h2 style="letter-spacing:8px;color:#0E3B91;background:#f1f5f9;padding:12px;text-align:center;border-radius:8px;">{code}</h2>
+            <p>If you did not request this, please ignore.</p>
+            """
+        )
+        email_res = await send_email(user_email, "SDPS Admin - Password Reset Code", body)
+
+    if user_phone:
+        try:
+            from whatsapp_service import send_whatsapp_text
+            wa_text = f"Your S.D. Public School Admin Password Reset OTP is: {code}. Valid for 15 minutes."
+            wa_res = await send_whatsapp_text(user_phone, wa_text, subject="Admin Password Reset OTP")
+        except Exception:
+            pass
+
+    return {"status": "ok", "message": "If account exists, OTP has been sent.", "email_status": email_res, "whatsapp_status": wa_res}
 
 
 @admin_router.post("/reset-password")
 async def admin_reset_password(payload: AdminPasswordResetConfirm):
-    rec = await db.password_resets.find_one({"email": payload.email}, {"_id": 0})
+    identifier = (payload.email or "").strip()
+    if not identifier:
+        raise HTTPException(status_code=400, detail="Invalid request")
+
+    rec = await db.password_resets.find_one({
+        "$or": [
+            {"identifier": identifier},
+            {"email": identifier},
+            {"phone": identifier},
+            {"user_id": identifier},
+            {"email": {"$regex": f"^{re.escape(identifier)}$", "$options": "i"}},
+            {"identifier": {"$regex": f"^{re.escape(identifier)}$", "$options": "i"}}
+        ]
+    })
+
     if not rec:
-        raise HTTPException(status_code=400, detail="Invalid OTP")
-    # Cap brute-force: max 5 attempts per OTP issuance
+        user = await db.admin_users.find_one({
+            "$or": [
+                {"email": identifier},
+                {"username": identifier},
+                {"phone": identifier},
+                {"email": {"$regex": f"^{re.escape(identifier)}$", "$options": "i"}},
+                {"username": {"$regex": f"^{re.escape(identifier)}$", "$options": "i"}}
+            ]
+        })
+        if user:
+            rec = await db.password_resets.find_one({"user_id": user["id"]})
+
+    if not rec:
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP")
+
     if rec.get("attempts", 0) >= 5:
-        await db.password_resets.delete_one({"email": payload.email})
+        await db.password_resets.delete_one({"_id": rec.get("_id")})
         raise HTTPException(status_code=429, detail="Too many attempts. Request a new OTP.")
-    if rec.get("code") != payload.code:
+
+    if rec.get("code") != payload.code.strip():
         await db.password_resets.update_one(
-            {"email": payload.email}, {"$inc": {"attempts": 1}}
+            {"_id": rec.get("_id")}, {"$inc": {"attempts": 1}}
         )
-        raise HTTPException(status_code=400, detail="Invalid OTP")
+        raise HTTPException(status_code=400, detail="Invalid OTP code")
+
     expires = rec.get("expires_at")
     if expires and datetime.fromisoformat(expires) < datetime.now(timezone.utc):
-        await db.password_resets.delete_one({"email": payload.email})
-        raise HTTPException(status_code=400, detail="OTP expired")
+        await db.password_resets.delete_one({"_id": rec.get("_id")})
+        raise HTTPException(status_code=400, detail="OTP expired. Request a new one.")
+
+    target_user_id = rec.get("user_id")
+    target_email = rec.get("email")
     new_hash = hash_password(payload.new_password)
-    await db.admin_users.update_one({"email": payload.email}, {"$set": {"password_hash": new_hash}})
-    await db.password_resets.delete_one({"email": payload.email})
-    return {"status": "ok"}
+
+    if target_user_id:
+        await db.admin_users.update_one({"id": target_user_id}, {"$set": {"password_hash": new_hash}})
+    elif target_email:
+        await db.admin_users.update_one({"email": target_email}, {"$set": {"password_hash": new_hash}})
+
+    await db.password_resets.delete_one({"_id": rec.get("_id")})
+    return {"status": "ok", "message": "Password reset successfully."}
 
 
 @admin_router.post("/change-password")
@@ -1052,18 +1145,38 @@ async def list_staff_users(admin: TokenData = Depends(get_superadmin)):
 
 @admin_router.post("/staff-users")
 async def create_staff_user(payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(get_superadmin)):
-    if not payload.get("email") or not payload.get("password"):
-        raise HTTPException(status_code=400, detail="email and password required")
-    existing = await db.admin_users.find_one({"email": payload["email"]})
+    username = (payload.get("username") or payload.get("email") or "").strip()
+    email = (payload.get("email") or "").strip()
+    phone = (payload.get("phone") or "").strip()
+    password = payload.get("password")
+    name = (payload.get("name") or "Staff Member").strip()
+
+    if not username or not password:
+        raise HTTPException(status_code=400, detail="Username/Email and Password are required")
+
+    or_conditions = [
+        {"username": {"$regex": f"^{re.escape(username)}$", "$options": "i"}},
+        {"email": {"$regex": f"^{re.escape(username)}$", "$options": "i"}}
+    ]
+    if email:
+        or_conditions.append({"email": {"$regex": f"^{re.escape(email)}$", "$options": "i"}})
+        or_conditions.append({"username": {"$regex": f"^{re.escape(email)}$", "$options": "i"}})
+    if phone:
+        or_conditions.append({"phone": phone})
+
+    existing = await db.admin_users.find_one({"$or": or_conditions})
     if existing:
-        raise HTTPException(status_code=400, detail="User with this email already exists")
+        raise HTTPException(status_code=400, detail="User with this Username, Email, or Phone already exists")
+
     user = {
         "id": new_id(),
-        "email": payload["email"],
-        "name": payload.get("name", "Staff Member"),
+        "name": name,
+        "username": username,
+        "email": email,
+        "phone": phone,
         "role": payload.get("role", "staff"),
         "permissions": payload.get("permissions", []),
-        "password_hash": hash_password(payload["password"]),
+        "password_hash": hash_password(password),
         "created_at": now_iso(),
     }
     await db.admin_users.insert_one(user.copy())
@@ -1075,7 +1188,16 @@ async def create_staff_user(payload: Dict[str, Any] = Body(...), admin: TokenDat
 async def update_staff_user(user_id: str, payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(get_superadmin)):
     update = {k: v for k, v in payload.items() if k not in ("id", "_id", "password_hash")}
     if "password" in update:
-        update["password_hash"] = hash_password(update.pop("password"))
+        pw = update.pop("password")
+        if pw:
+            update["password_hash"] = hash_password(pw)
+    if "username" in update and update["username"]:
+        update["username"] = update["username"].strip()
+    if "email" in update:
+        update["email"] = (update["email"] or "").strip()
+    if "phone" in update:
+        update["phone"] = (update["phone"] or "").strip()
+
     await db.admin_users.update_one({"id": user_id}, {"$set": update})
     user = await db.admin_users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
     return user
