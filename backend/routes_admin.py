@@ -365,7 +365,7 @@ _register_crud("/testimonials", "testimonials", Testimonial, "created_at", -1, p
 
 # ============= GENERATED THUMBNAILS =============
 @admin_router.post("/generated-thumbnails")
-async def create_generated_thumbnail(payload: GeneratedThumbnail, admin: TokenData = Depends(get_current_admin)):
+async def create_generated_thumbnail(payload: GeneratedThumbnail, admin: TokenData = Depends(require_permission("media-tools"))):
     doc = payload.model_dump()
     user = await db.admin_users.find_one({"id": admin.sub})
     doc["created_by"] = user.get("name") if (user and user.get("name")) else admin.email
@@ -375,13 +375,13 @@ async def create_generated_thumbnail(payload: GeneratedThumbnail, admin: TokenDa
 
 
 @admin_router.get("/generated-thumbnails")
-async def list_generated_thumbnails(admin: TokenData = Depends(get_current_admin)):
+async def list_generated_thumbnails(admin: TokenData = Depends(require_permission("media-tools"))):
     items = await db.generated_thumbnails.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return items
 
 
 @admin_router.delete("/generated-thumbnails/{item_id}")
-async def delete_generated_thumbnail(item_id: str, admin: TokenData = Depends(get_current_admin)):
+async def delete_generated_thumbnail(item_id: str, admin: TokenData = Depends(require_permission("media-tools"))):
     res = await db.generated_thumbnails.delete_one({"id": item_id})
     return {"deleted": res.deleted_count}
 
@@ -2944,7 +2944,7 @@ async def get_message_logs(
     search: Optional[str] = "",
     page: int = 1,
     limit: int = 30,
-    user: TokenData = Depends(get_current_admin)
+    user: TokenData = Depends(require_permission("message-logs"))
 ):
     """Fetch paginated email & WhatsApp message logs with search and filters."""
     query = {}
@@ -3005,7 +3005,7 @@ async def get_message_logs(
 @admin_router.get("/message-logs/{log_id}")
 async def get_message_log_detail(
     log_id: str,
-    user: TokenData = Depends(get_current_admin)
+    user: TokenData = Depends(require_permission("message-logs"))
 ):
     """Fetch full detail for a specific email/WhatsApp message log item."""
     log_item = await db.message_logs.find_one({"id": log_id}, {"_id": 0})
@@ -3017,7 +3017,7 @@ async def get_message_log_detail(
 @admin_router.post("/message-logs/{log_id}/resend")
 async def resend_message_from_log(
     log_id: str,
-    user: TokenData = Depends(get_current_admin)
+    user: TokenData = Depends(require_permission("message-logs"))
 ):
     """Re-send an email or WhatsApp message from a log entry."""
     log_item = await db.message_logs.find_one({"id": log_id}, {"_id": 0})
