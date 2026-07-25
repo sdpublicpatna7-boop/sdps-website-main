@@ -145,6 +145,7 @@ function App() {
               <Route path="/s/:code" element={<Suspense fallback={<div>Loading...</div>}><ShortLinkRedirect /></Suspense>} />
               <Route path="/links" element={<Suspense fallback={<div>Loading...</div>}><LinksPage /></Suspense>} />
               <Route path="/notice-preview/:id" element={<Suspense fallback={<div>Loading...</div>}><NoticePreview /></Suspense>} />
+              <Route path="/review" element={<MapsReview />} />
               <Route path="/apaar" element={<Suspense fallback={<AdminLoading />}><ApaarForm /></Suspense>} />
 
               {/* Public */}
@@ -176,9 +177,9 @@ function App() {
                 <Route path="/terms" element={<TermsPrivacy />} />
                 <Route path="/privacy" element={<TermsPrivacy />} />
                 <Route path="/khelo-patna" element={<KheloPatna />} />
-                <Route path="/review" element={<MapsReview />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
+
 
               {/* Admin auth (no layout) */}
               <Route path="/admin/login" element={<Suspense fallback={<AdminLoading />}><AdminLogin /></Suspense>} />

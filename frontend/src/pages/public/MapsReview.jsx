@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Star, Copy, Check, ExternalLink, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { Star, Copy, Check, ExternalLink, Loader2, Sparkles } from "lucide-react";
+import { toast, Toaster } from "sonner";
 import api from "@/lib/api";
 
 export function MapsReview() {
@@ -28,7 +28,6 @@ export function MapsReview() {
     } catch (err) {
       console.error(err);
       toast.error("Error generating review text. Using basic template.");
-      // Simple fallback in client if API fails
       const clientFallbacks = {
         5: "Outstanding school with a great learning atmosphere and supportive teachers. Highly recommend S.D. Public School!",
         4: "Very good school with dedicated teachers. The academic guidelines are excellent.",
@@ -49,34 +48,47 @@ export function MapsReview() {
     setCopied(true);
     toast.success("Review copied to clipboard!");
 
-    // Wait a brief moment then redirect to Google Maps
     setTimeout(() => {
       window.open(googleMapsUrl, "_blank", "noopener,noreferrer");
     }, 1000);
   };
 
   return (
-    <div className="relative min-h-[80vh] flex items-center justify-center py-12 px-4 overflow-hidden bg-slate-50">
-      {/* Decorative floating blur circles */}
-      <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-blue-400/10 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-orange-400/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "2s" }} />
+    <div className="relative min-h-screen flex items-center justify-center py-10 px-4 overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-brand-blue-dark text-slate-800">
+      <Toaster position="top-right" />
 
-      <div className="relative w-full max-w-md bg-white/70 backdrop-blur-md border border-white/80 rounded-2xl shadow-xl p-6 md:p-8 text-center">
-        <div className="flex justify-center mb-4">
-          <div className="p-3 bg-brand-orange/10 rounded-full text-brand-orange">
-            <Star className="w-8 h-8 fill-current" />
+      {/* Decorative background glow circles */}
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-blue/20 rounded-full blur-3xl animate-pulse pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-brand-orange/20 rounded-full blur-3xl animate-pulse pointer-events-none" style={{ animationDelay: "2s" }} />
+
+      <div className="relative w-full max-w-md bg-white/95 backdrop-blur-xl border border-white/40 rounded-3xl shadow-2xl p-6 md:p-8 text-center my-auto">
+        {/* School Branding Header */}
+        <div className="flex flex-col items-center justify-center mb-6 border-b border-slate-100 pb-5">
+          <img 
+            src="/assets/img/logo.png" 
+            alt="S.D. Public School" 
+            className="w-16 h-16 object-contain mb-3 drop-shadow-md"
+            onError={(e) => { e.target.style.display = "none"; }}
+          />
+          <h2 className="font-headline font-bold text-lg text-slate-900 tracking-tight">S.D. PUBLIC SCHOOL</h2>
+          <span className="text-[11px] font-bold text-brand-orange uppercase tracking-widest mt-0.5">Patna • Review Hub</span>
+        </div>
+
+        <div className="flex justify-center mb-3">
+          <div className="p-3 bg-amber-50 rounded-2xl text-amber-500 shadow-inner">
+            <Star className="w-7 h-7 fill-current" />
           </div>
         </div>
 
-        <h1 className="text-2xl font-bold text-slate-800 tracking-tight mb-2">
-          SDPS Patna Review Hub
+        <h1 className="text-xl font-headline font-bold text-slate-800 tracking-tight mb-2">
+          Share Your Experience
         </h1>
-        <p className="text-sm text-slate-500 mb-8 max-w-xs mx-auto">
-          Your feedback keeps us going! Share your experience on Google Maps by choosing a rating below.
+        <p className="text-xs text-slate-500 mb-6 max-w-xs mx-auto leading-relaxed">
+          Your feedback helps us continuously improve! Choose a rating below to generate a quick Google Maps review.
         </p>
 
         {/* Star Selection Container */}
-        <div className="flex items-center justify-center gap-2.5 mb-8">
+        <div className="flex items-center justify-center gap-2 mb-6 bg-slate-50/80 p-3 rounded-2xl border border-slate-100">
           {[1, 2, 3, 4, 5].map((star) => (
             <button
               key={star}
@@ -88,9 +100,9 @@ export function MapsReview() {
               title={`${star} Star${star > 1 ? "s" : ""}`}
             >
               <Star
-                className={`w-10 h-10 transition-colors duration-200 ${
+                className={`w-9 h-9 transition-colors duration-200 ${
                   star <= (hoverRating || rating)
-                    ? "fill-amber-400 text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.3)]"
+                    ? "fill-amber-400 text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.4)]"
                     : "text-slate-300"
                 }`}
               />
@@ -102,19 +114,19 @@ export function MapsReview() {
         {loading && (
           <div className="flex flex-col items-center justify-center py-8 text-slate-500">
             <Loader2 className="w-8 h-8 animate-spin text-brand-orange mb-2" />
-            <p className="text-xs font-semibold">Generating unique review...</p>
+            <p className="text-xs font-semibold">Generating customized review...</p>
           </div>
         )}
 
         {/* Review Box & CTA */}
         {reviewText && !loading && (
-          <div className="space-y-5 animate-in fade-in slide-in-from-bottom-3 duration-300">
+          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-3 duration-300">
             <div className="text-left">
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1.5 ml-1">
-                Generated Draft (You can edit this)
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5 ml-1">
+                Generated Review (Editable)
               </label>
               <textarea
-                className="w-full min-h-[100px] p-3 text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-orange/20 focus:border-brand-orange resize-y"
+                className="w-full min-h-[100px] p-3.5 text-xs sm:text-sm text-slate-800 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange leading-relaxed"
                 value={reviewText}
                 onChange={(e) => setReviewText(e.target.value)}
                 placeholder="Write your review here..."
@@ -124,10 +136,10 @@ export function MapsReview() {
             <button
               type="button"
               onClick={handleCopyAndRedirect}
-              className={`w-full py-3 px-4 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 shadow-lg transition-all duration-200 ${
+              className={`w-full py-3.5 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg transition-all duration-200 ${
                 copied
                   ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20"
-                  : "bg-brand-orange hover:bg-brand-orange-hover text-white shadow-brand-orange/20 hover:shadow-brand-orange/30 hover:-translate-y-0.5"
+                  : "bg-gradient-to-r from-brand-orange to-amber-500 hover:from-amber-600 hover:to-brand-orange text-white shadow-brand-orange/20 hover:shadow-brand-orange/30 hover:-translate-y-0.5"
               }`}
             >
               {copied ? (
@@ -136,7 +148,7 @@ export function MapsReview() {
                 </>
               ) : (
                 <>
-                  <Copy className="w-4 h-4" /> Copy Review & Go to Google Maps
+                  <Copy className="w-4 h-4" /> Copy Review & Open Google Maps
                   <ExternalLink className="w-3.5 h-3.5" />
                 </>
               )}
@@ -144,10 +156,10 @@ export function MapsReview() {
 
             <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-left">
               <p className="text-[11px] leading-relaxed text-slate-500">
-                <span className="font-semibold text-slate-600 block mb-0.5">How it works:</span>
-                1. Click the button above to copy the generated review.<br />
-                2. S.D. Public School review page will open in a new tab.<br />
-                3. Paste (Ctrl+V or long-press) in the review text box and submit!
+                <span className="font-bold text-slate-700 block mb-0.5">Quick Steps:</span>
+                1. Click the button above to copy text.<br />
+                2. Google Maps review box will open automatically.<br />
+                3. Paste (Ctrl+V) and click post!
               </p>
             </div>
           </div>
@@ -158,3 +170,4 @@ export function MapsReview() {
 }
 
 export default MapsReview;
+
