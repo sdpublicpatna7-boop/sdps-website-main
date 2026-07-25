@@ -4,129 +4,161 @@ import SEO from "./SEO";
 const ROUTE_META_MAP = {
   // Public Pages
   "/": {
-    title: "S.D. Public School, Patna | Empowering Generations Since 1994",
-    desc: "S.D. Public School (Suryamuni Devi Public School), Patna — Top CBSE affiliated school empowering students with modern education, sports, and values since 1994."
+    title: "Best CBSE School in Patna | S.D. Public School (SDPS Patna)",
+    desc: "S.D. Public School (Suryamuni Devi Public School), Patna — Ranked among the best CBSE schools in Patna, Bihar. Modern smart classes, sports facilities, experienced faculty & values since 1994.",
+    keywords: "best school in patna, best cbse school in patna, top school in patna, cbse school in patna, schools in patna, sd public school patna, suryamuni devi public school, top 10 schools in patna"
   },
   "/about": {
-    title: "About Us & School History | S.D. Public School, Patna",
-    desc: "Learn about S.D. Public School Patna, our founder's vision, leadership, awards, legacy, and educational ethos."
+    title: "About Us & School History | Best CBSE School in Patna — SDPS",
+    desc: "Learn about S.D. Public School Patna, our founder's vision, leadership, awards, 30+ year legacy, and academic ethos in Patna, Bihar.",
+    keywords: "sd public school patna history, best cbse school in patna legacy, suryamuni devi public school about"
   },
   "/academics": {
-    title: "Academic Excellence & Curriculum | S.D. Public School, Patna",
-    desc: "Explore CBSE curriculum, smart classrooms, science labs, library, computer labs, and holistic education standards at SDPS Patna."
+    title: "Academic Excellence & CBSE Curriculum | S.D. Public School, Patna",
+    desc: "Explore CBSE curriculum, smart classrooms, science labs, computer labs, and holistic education standards at S.D. Public School Patna.",
+    keywords: "cbse curriculum patna, best academic school in patna, smart classes school patna"
   },
   "/house-system": {
     title: "House System & Co-Curricular Activities | S.D. Public School, Patna",
-    desc: "Discover house competitions, student leadership, sports, arts, and extracurricular programs at S.D. Public School Patna."
+    desc: "Discover house competitions, student leadership, sports, arts, and extracurricular programs at S.D. Public School Patna.",
+    keywords: "sports school in patna, co-curricular activities patna schools"
   },
   "/hostel": {
-    title: "Boarding & Hostel Facilities | S.D. Public School, Patna",
-    desc: "Secure, comfortable, and nurturing boarding house and hostel accommodation facilities for boys and girls at SDPS Patna."
+    title: "Best Boarding & Hostel School in Patna | S.D. Public School",
+    desc: "Secure, comfortable, and nurturing boarding house and hostel accommodation facilities for boys and girls at S.D. Public School Patna.",
+    keywords: "best hostel school in patna, boarding school in patna, school with hostel in patna"
   },
   "/demystified": {
     title: "SDPS Demystified | S.D. Public School, Patna",
-    desc: "Comprehensive insights into school methodology, student discipline, values, and campus life at SDPS Patna."
+    desc: "Comprehensive insights into school methodology, student discipline, values, and campus life at SDPS Patna.",
+    keywords: "sdps demystified, sd public school patna values"
   },
   "/administration-message": {
     title: "Administration Messages | S.D. Public School, Patna",
-    desc: "Read messages from the Principal, Chairman, Director, and Management Board of S.D. Public School Patna."
+    desc: "Read messages from the Principal, Chairman, Director, and Management Board of S.D. Public School Patna.",
+    keywords: "sd public school principal message, sdps patna management"
   },
   "/preschool": {
-    title: "Junior Wing & Pre-School | S.D. Public School, Patna",
-    desc: "Nurturing early childhood education, playgroup, nursery, LKG, and UKG at S.D. Public School Junior Wing."
+    title: "Top Pre-School & Play School in Patna | S.D. Public School Junior Wing",
+    desc: "Nurturing early childhood education, playgroup, nursery, LKG, and UKG at S.D. Public School Junior Wing, Patna.",
+    keywords: "top preschool in patna, best play school in patna, nursery admission patna"
   },
   "/gallery": {
     title: "Photo Gallery & Events | S.D. Public School, Patna",
-    desc: "Browse event photos, annual functions, sports days, cultural meets, and campus highlights at SDPS Patna."
+    desc: "Browse event photos, annual functions, sports days, cultural meets, and campus highlights at SDPS Patna.",
+    keywords: "sd public school photos, sdps patna campus gallery"
   },
   "/videos": {
     title: "Video Gallery | S.D. Public School, Patna",
-    desc: "Watch video highlights, event recordings, campus tours, and student performances at S.D. Public School Patna."
+    desc: "Watch video highlights, event recordings, campus tours, and student performances at S.D. Public School Patna.",
+    keywords: "sdps patna videos, sd public school event videos"
   },
   "/news": {
     title: "Latest News & Updates | S.D. Public School, Patna",
-    desc: "Stay updated with recent news, press releases, achievements, and notices from S.D. Public School Patna."
+    desc: "Stay updated with recent news, press releases, achievements, and notices from S.D. Public School Patna.",
+    keywords: "sd public school news, sdps patna achievements"
   },
   "/notices": {
     title: "Official Notices & Circulars | S.D. Public School, Patna",
-    desc: "Important school circulars, exam notifications, fee guidelines, and official announcements for parents and students."
+    desc: "Important school circulars, exam notifications, fee guidelines, and official announcements for parents and students.",
+    keywords: "sdps patna notices, sd public school circulars"
   },
   "/calendar": {
     title: "Academic Calendar & Events | S.D. Public School, Patna",
-    desc: "View official school calendar, holidays schedule, exam dates, and upcoming events at SDPS Patna."
+    desc: "View official school calendar, holidays schedule, exam dates, and upcoming events at SDPS Patna.",
+    keywords: "sdps academic calendar, school holidays patna"
   },
   "/student-council": {
     title: "Student Council & House Captains | S.D. Public School, Patna",
-    desc: "Meet the elected Student Council members, Head Boy, Head Girl, Sports Captains, and House Prefects at SDPS Patna."
+    desc: "Meet the elected Student Council members, Head Boy, Head Girl, Sports Captains, and House Prefects at SDPS Patna.",
+    keywords: "sdps student council, house captains sd public school"
   },
   "/admissions": {
-    title: "Admissions 2026-27 | S.D. Public School, Patna",
-    desc: "Admissions open for Academic Session 2026-27 at S.D. Public School Patna. Apply online or download prospectus."
+    title: "Admissions Open 2026-27 | Best CBSE School in Patna | SDPS",
+    desc: "Admissions open for Academic Session 2026-27 at S.D. Public School Patna. Apply online for Nursery to Class XII or download prospectus.",
+    keywords: "admission in cbse school patna, school admission in patna 2026-27, best school in patna admission"
   },
   "/admission-enquiry": {
     title: "Admission Enquiry Form | S.D. Public School, Patna",
-    desc: "Submit an online admission enquiry for S.D. Public School Patna. Get instant details regarding seats, fees, and syllabus."
+    desc: "Submit an online admission enquiry for S.D. Public School Patna. Get instant details regarding seats, fees, and syllabus.",
+    keywords: "admission enquiry patna school, sdps admission enquiry"
   },
   "/admission-form": {
     title: "Online Admission Application Form | S.D. Public School, Patna",
-    desc: "Complete online application form for new student admission at S.D. Public School Patna."
+    desc: "Complete online application form for new student admission at S.D. Public School Patna.",
+    keywords: "online school admission form patna, sdps application form"
   },
   "/admission-eligibility": {
-    title: "Admission Eligibility & Criteria | S.D. Public School, Patna",
-    desc: "Check age criteria, document requirements, and admission eligibility rules for Nursery to Class XII at SDPS Patna."
+    title: "Admission Eligibility & Age Criteria | S.D. Public School, Patna",
+    desc: "Check age criteria, document requirements, and admission eligibility rules for Nursery to Class XII at SDPS Patna.",
+    keywords: "cbse admission age limit patna, school age criteria patna"
   },
   "/fee-structure": {
-    title: "Fee Structure & Payment Policy | S.D. Public School, Patna",
-    desc: "Transparent tuition fee structure, admission fees, hostel charges, and payment guidelines at S.D. Public School Patna."
+    title: "Fee Structure 2026-27 | CBSE School in Patna | S.D. Public School",
+    desc: "Transparent tuition fee structure, admission fees, hostel charges, and payment guidelines at S.D. Public School Patna.",
+    keywords: "cbse school fee structure patna, sd public school fees"
   },
   "/careers": {
-    title: "Careers & Teacher Vacancies | S.D. Public School, Patna",
-    desc: "Join our teaching & administrative team at SDPS Patna. View job openings and submit teacher application online."
+    title: "Teacher Vacancies & Careers | S.D. Public School, Patna",
+    desc: "Join our teaching & administrative team at SDPS Patna. View job openings and submit teacher application online.",
+    keywords: "teacher jobs in patna, school recruitment patna, teaching vacancy in cbse school patna"
   },
   "/alumni": {
     title: "Alumni Association & Network | S.D. Public School, Patna",
-    desc: "Connect with SDPS alumni across the globe, register in alumni directory, and view upcoming alumni meets."
+    desc: "Connect with SDPS alumni across the globe, register in alumni directory, and view upcoming alumni meets.",
+    keywords: "sdps alumni, sd public school alumni association"
   },
   "/tc-download": {
     title: "Transfer Certificate (TC) Verification | S.D. Public School, Patna",
-    desc: "Verify and download student Transfer Certificates (TC) issued by S.D. Public School Patna."
+    desc: "Verify and download student Transfer Certificates (TC) issued by S.D. Public School Patna.",
+    keywords: "sdps tc download, transfer certificate sd public school"
   },
   "/fee-payment": {
     title: "Online Fee Payment Portal | S.D. Public School, Patna",
-    desc: "Pay school tuition fees securely online using Razorpay payment gateway for S.D. Public School Patna."
+    desc: "Pay school tuition fees securely online using Razorpay payment gateway for S.D. Public School Patna.",
+    keywords: "pay school fees online patna, sdps fee payment portal"
   },
   "/contact": {
-    title: "Contact Us & Location Map | S.D. Public School, Patna",
-    desc: "Get in touch with S.D. Public School Patna. Find phone numbers, email addresses, office hours, and Google Maps directions."
+    title: "Contact Us & Location Map | Best School in Patna — SDPS",
+    desc: "Get in touch with S.D. Public School Patna. Find phone numbers, email addresses, office hours, and Google Maps directions.",
+    keywords: "sd public school patna contact number, sdps patna location map, schools in patna contact"
   },
   "/terms": {
     title: "Terms of Service & Privacy Policy | S.D. Public School, Patna",
-    desc: "Official terms of use, privacy policy, refund policy, and website guidelines for S.D. Public School Patna."
+    desc: "Official terms of use, privacy policy, refund policy, and website guidelines for S.D. Public School Patna.",
+    keywords: "sdps terms, sd public school privacy policy"
   },
   "/privacy": {
     title: "Privacy Policy | S.D. Public School, Patna",
-    desc: "Privacy policy regarding data collection, student safety, and web security at S.D. Public School Patna."
+    desc: "Privacy policy regarding data collection, student safety, and web security at S.D. Public School Patna.",
+    keywords: "sdps privacy policy"
   },
   "/khelo-patna": {
-    title: "Khelo Patna Sports Fest | S.D. Public School, Patna",
-    desc: "Inter-school sports tournament, matches, scores, galleries, and highlights of Khelo Patna organized by SDPS."
+    title: "Khelo Patna Inter-School Sports Fest | S.D. Public School, Patna",
+    desc: "Inter-school sports tournament, matches, scores, galleries, and highlights of Khelo Patna organized by SDPS.",
+    keywords: "khelo patna sports, inter school tournament patna"
   },
   "/review": {
     title: "Google Maps Reviews & Feedback | S.D. Public School, Patna",
-    desc: "Leave a review or feedback for Junior and Senior Wings of S.D. Public School Patna on Google Maps."
+    desc: "Leave a review or feedback for Junior and Senior Wings of S.D. Public School Patna on Google Maps.",
+    keywords: "sd public school google reviews, sdps patna feedback"
   },
   "/apaar": {
-    title: "APAAR ID Registration Form | S.D. Public School, Patna",
-    desc: "Automated Permanent Academic Account Registry (APAAR) student registration portal for SDPS Patna."
+    title: "APAAR ID Registration Portal | S.D. Public School, Patna",
+    desc: "Automated Permanent Academic Account Registry (APAAR) student registration portal for SDPS Patna.",
+    keywords: "apaar id registration patna, student apaar form sdps"
   },
   "/links": {
     title: "Official Links & Linktree | S.D. Public School, Patna",
-    desc: "Direct access to admission form, prospectus, website, contact, and social media channels of SDPS Patna."
+    desc: "Direct access to admission form, prospectus, website, contact, and social media channels of SDPS Patna.",
+    keywords: "sdps links, sd public school linktree"
   },
   "/elections": {
     title: "Student Council Elections Portal | S.D. Public School, Patna",
-    desc: "Secure digital voting and elections portal for Student Council elections at S.D. Public School Patna."
+    desc: "Secure digital voting and elections portal for Student Council elections at S.D. Public School Patna.",
+    keywords: "sdps elections portal"
   },
+
 
   // Admin Pages
   "/admin": { title: "Dashboard | SDPS Admin" },
@@ -196,12 +228,10 @@ export default function RouteSEOManager() {
     if (path.startsWith("/admin")) {
       meta = { title: "Admin Portal | SDPS Admin" };
     } else {
-      meta = {
-        title: "S.D. Public School, Patna | Empowering Generations Since 1994",
-        desc: "S.D. Public School (Suryamuni Devi Public School), Patna, Bihar — Empowering Generations Since 1994. Admissions open for 2026-27."
-      };
     }
   }
 
-  return <SEO title={meta.title} description={meta.desc} />;
+  return <SEO title={meta.title} description={meta.desc} keywords={meta.keywords} ogUrl={`https://sdpublic.org${path === "/" ? "" : path}`} />;
 }
+
+
