@@ -125,30 +125,13 @@ const DEFAULT_FEE_ROWS = [
 
 export default function FeeStructure() {
   const [settings, setSettings] = useState(() => getCached("sdps_site_settings"));
-  const [feeRows, setFeeRows] = useState(() => getCached("sdps_fee_rows", []));
-  const [hostelRows, setHostelRows] = useState(() => getCached("sdps_hostel_rows", []));
   const [loading, setLoading] = useState(!settings);
-  const [activeTab, setActiveTab] = useState("table");
 
   useEffect(() => {
-    Promise.all([
-      api.get("/site-settings").then((r) => {
-        setSettings(r.data);
-        setCache("sdps_site_settings", r.data);
-      }).catch(() => {}),
-      api.get("/fee-structure-rows").then((r) => {
-        if (Array.isArray(r.data) && r.data.length > 0) {
-          setFeeRows(r.data);
-          setCache("sdps_fee_rows", r.data);
-        }
-      }).catch(() => {}),
-      api.get("/hostel-fee-rows").then((r) => {
-        if (Array.isArray(r.data) && r.data.length > 0) {
-          setHostelRows(r.data);
-          setCache("sdps_hostel_rows", r.data);
-        }
-      }).catch(() => {})
-    ]).finally(() => {
+    api.get("/site-settings").then((r) => {
+      setSettings(r.data);
+      setCache("sdps_site_settings", r.data);
+    }).catch(() => {}).finally(() => {
       setLoading(false);
     });
   }, []);
@@ -157,8 +140,6 @@ export default function FeeStructure() {
   const prospectusUrl = settings?.prospectus_pdf_url || "";
   const currentYear = new Date().getFullYear();
   const nextYearShort = (currentYear + 1).toString().slice(2);
-
-  const displayFeeRows = feeRows.length > 0 ? feeRows : DEFAULT_FEE_ROWS;
 
   return (
     <>
@@ -170,130 +151,30 @@ export default function FeeStructure() {
           </div>
           <h1 className="legacy-title brand-gradient-text">Fee Structure</h1>
           <p className="mt-4 text-brand-ink/70 max-w-xl mx-auto text-sm sm:text-base leading-relaxed">
-            S.D. Public School provides accessible quality education. Review our detailed day-scholar & hostel fee schedule below.
+            S.D. Public School provides accessible quality education. Download or view our official fee schedule below.
           </p>
-
-          {/* Tab Switcher */}
-          <div className="mt-8 inline-flex items-center bg-white/90 backdrop-blur-md p-1.5 rounded-2xl border border-black/10 shadow-sm gap-1">
-            <button
-              onClick={() => setActiveTab("table")}
-              className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition ${
-                activeTab === "table"
-                  ? "bg-slate-900 text-white shadow-sm"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-              }`}
-            >
-              <Table className="w-4 h-4" /> Interactive Fee Table
-            </button>
-            <button
-              onClick={() => setActiveTab("document")}
-              className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition ${
-                activeTab === "document"
-                  ? "bg-slate-900 text-white shadow-sm"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-              }`}
-            >
-              <FileText className="w-4 h-4 text-brand-gold" /> Official Document PDF
-            </button>
-          </div>
         </div>
       </section>
 
       <div className="max-w-5xl mx-auto px-6 py-10 space-y-10">
 
-        {/* TAB 1: INTERACTIVE FEE TABLE */}
-        {activeTab === "table" && (
-          <div className="space-y-8 animate-fadeIn">
-            {/* Day Scholar Table */}
-            <div>
-              <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-                <div>
-                  <div className="overline">Academic Session {currentYear}-{nextYearShort}</div>
-                  <h2 className="font-headline font-bold text-xl sm:text-2xl text-slate-800 tracking-tight">Day Scholar Fee Schedule</h2>
-                </div>
-                {feeUrl && (
-                  <button
-                    onClick={() => setActiveTab("document")}
-                    className="text-xs font-bold text-brand-blue hover:underline flex items-center gap-1 bg-brand-blue/5 px-3 py-1.5 rounded-lg"
-                  >
-                    <FileText className="w-3.5 h-3.5" /> View Signed PDF Copy →
-                  </button>
-                )}
-              </div>
-
-              <div className="overflow-x-auto rounded-2xl shadow-sm border border-slate-200 bg-white">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-900 text-white text-xs uppercase tracking-wider font-semibold">
-                      <th className="px-5 py-4">Class Level</th>
-                      <th className="px-5 py-4">Admission Fee</th>
-                      <th className="px-5 py-4">Monthly Tuition Fee</th>
-                      <th className="px-5 py-4">Annual Charges</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-sm">
-                    {displayFeeRows.map((row, i) => (
-                      <tr key={row.id || i} className={i % 2 === 0 ? "bg-white" : "bg-slate-50/50"}>
-                        <td className="px-5 py-4 font-bold text-brand-blue">{row.class_name || row.class}</td>
-                        <td className="px-5 py-4 text-slate-700 font-medium">{row.admission_fee || row.one_time || "Contact Office"}</td>
-                        <td className="px-5 py-4 text-slate-900 font-semibold">{row.tuition_fee || row.monthly || "Contact Office"}</td>
-                        <td className="px-5 py-4 text-slate-600">{row.annual_fee || row.annual || "Contact Office"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Hostel Fee Table (if available) */}
-            {hostelRows.length > 0 && (
-              <div className="pt-4">
-                <div className="overline mb-1">Boarding & Lodging</div>
-                <h2 className="font-headline font-bold text-xl text-slate-800 mb-4">Hostel Fee Structure</h2>
-                <div className="overflow-x-auto rounded-2xl shadow-sm border border-slate-200 bg-white">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-amber-600 text-white text-xs uppercase tracking-wider font-semibold">
-                        <th className="px-5 py-3.5">Category / Class</th>
-                        <th className="px-5 py-3.5">Monthly Boarding Fee</th>
-                        <th className="px-5 py-3.5">Annual Amenities</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 text-sm">
-                      {hostelRows.map((row, i) => (
-                        <tr key={row.id || i} className={i % 2 === 0 ? "bg-white" : "bg-amber-50/30"}>
-                          <td className="px-5 py-3.5 font-bold text-slate-800">{row.category || row.class_name}</td>
-                          <td className="px-5 py-3.5 font-semibold text-amber-700">{row.monthly_fee || row.monthly}</td>
-                          <td className="px-5 py-3.5 text-slate-600">{row.annual_fee || row.annual}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
+        {/* OFFICIAL DOCUMENT PDF EMBED */}
+        <div className="space-y-6">
+          <div>
+            <div className="overline mb-1">Day Scholar Fee Structure</div>
+            <h2 className="section-title mb-4">Fee Structure {currentYear}-{nextYearShort}</h2>
+            <PdfEmbed url={feeUrl} title={`SDPS Fee Structure ${currentYear}-${nextYearShort}`} height="750px" isLoading={loading} />
           </div>
-        )}
 
-        {/* TAB 2: OFFICIAL DOCUMENT PDF EMBED */}
-        {activeTab === "document" && (
-          <div className="space-y-6 animate-fadeIn">
-            <div>
-              <div className="overline mb-1">Official Circular & Prospectus</div>
-              <h2 className="section-title mb-4">Fee Structure Document ({currentYear}-{nextYearShort})</h2>
-              <PdfEmbed url={feeUrl} title={`SDPS Fee Structure ${currentYear}-${nextYearShort}`} height="750px" isLoading={loading} />
+          {/* Prospectus document embed */}
+          {prospectusUrl && (
+            <div className="pt-6">
+              <div className="overline mb-1">School Information Booklet</div>
+              <h2 className="section-title mb-4">Official School Prospectus</h2>
+              <PdfEmbed url={prospectusUrl} title="S.D. Public School Prospectus" height="750px" isLoading={loading} />
             </div>
-
-            {/* Prospectus document embed */}
-            {prospectusUrl && (
-              <div className="pt-6">
-                <div className="overline mb-1">School Information Booklet</div>
-                <h2 className="section-title mb-4">Official School Prospectus</h2>
-                <PdfEmbed url={prospectusUrl} title="S.D. Public School Prospectus" height="750px" isLoading={loading} />
-              </div>
-            )}
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Help & Contact Banner */}
         <div className="bg-gradient-to-r from-brand-paper via-white to-brand-paper rounded-3xl border border-black/5 p-6 md:p-8 flex flex-col sm:flex-row items-center gap-6 shadow-sm">
@@ -326,4 +207,5 @@ export default function FeeStructure() {
     </>
   );
 }
+
 
