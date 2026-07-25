@@ -10,7 +10,8 @@ export function MapsReview() {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const googleMapsUrl = "https://share.google/lYeOGvQ12ODgOCwFH";
+  const googleMapsUrl = "https://g.page/r/CSsuvLEE-jFyEBE/review";
+
 
   const handleRatingSelect = async (selectedRating) => {
     setRating(selectedRating);
