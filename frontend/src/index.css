@@ -87,6 +87,9 @@ code {
     background-clip: text;
     -webkit-text-fill-color: transparent;
     color: transparent;
+    display: inline-block;
+    padding-bottom: 0.15em;
+    margin-bottom: -0.15em;
 }
 
 .gold-gradient-text {
@@ -94,7 +97,11 @@ code {
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
+    display: inline-block;
+    padding-bottom: 0.15em;
+    margin-bottom: -0.15em;
 }
+
 
 .btn-primary {
     @apply bg-brand-blue text-white rounded-full px-6 py-3 font-headline font-medium tracking-wide shadow-sm transition-all hover:bg-brand-blue-light active:scale-95;
@@ -118,8 +125,9 @@ code {
 }
 
 .legacy-title {
-    @apply font-legacy text-4xl sm:text-5xl lg:text-6xl leading-tight;
+    @apply font-legacy text-4xl sm:text-5xl lg:text-6xl leading-normal pb-1;
 }
+
 
 .overline {
     @apply uppercase tracking-[0.22em] text-xs font-bold text-brand-orange font-headline;
