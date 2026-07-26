@@ -1,49 +1,38 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Video, VideoOff, Mic, MicOff, PhoneOff, PhoneCall, Bot, Send, Sparkles, MessageSquare, ExternalLink } from "lucide-react";
+import { Mic, MicOff, PhoneOff, PhoneCall, Send, Sparkles, MessageSquare, ExternalLink } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import api from "../../lib/api";
 
 export default function PublicVideoCall() {
   const [searchParams] = useSearchParams();
-  const roomId = searchParams.get("room") || "SDPS-LIVE-ROOM";
+  const roomId = searchParams.get("room") || "SDPS-VOICE-ROOM";
 
   const [callActive, setCallActive] = useState(false);
-  const [callMode, setCallMode] = useState("voip"); // "voip" (Voice Call over IP - default) | "video"
   const [micEnabled, setMicEnabled] = useState(true);
-  const [cameraEnabled, setCameraEnabled] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [messages, setMessages] = useState([]);
   const [inputQuery, setInputQuery] = useState("");
   const [agentThinking, setAgentThinking] = useState(false);
 
-  const localVideoRef = useRef(null);
   const mediaStreamRef = useRef(null);
   const recognitionRef = useRef(null);
 
-  const startLocalMedia = async (mode = callMode) => {
+  const startVoiceMedia = async () => {
     try {
-      const needVideo = mode === "video";
-      const stream = await navigator.mediaDevices.getUserMedia({ video: needVideo, audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
       mediaStreamRef.current = stream;
-      setCameraEnabled(needVideo);
-      if (needVideo && localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
-      }
     } catch (err) {
-      console.warn("Camera/Mic access restricted:", err);
-      toast.error("Microphone permission required for Voice over IP call.");
+      console.warn("Microphone access restricted:", err);
+      toast.error("Microphone permission required for Voice Call over IP.");
     }
   };
 
-  const stopLocalMedia = () => {
+  const stopVoiceMedia = () => {
     if (mediaStreamRef.current) {
       mediaStreamRef.current.getTracks().forEach((t) => t.stop());
       mediaStreamRef.current = null;
-    }
-    if (localVideoRef.current) {
-      localVideoRef.current.srcObject = null;
     }
   };
 
@@ -62,10 +51,9 @@ export default function PublicVideoCall() {
     window.speechSynthesis.speak(utterance);
   };
 
-  const handleStartCall = async (modeToStart = "voip") => {
-    setCallMode(modeToStart);
+  const handleStartCall = async () => {
     setCallActive(true);
-    await startLocalMedia(modeToStart);
+    await startVoiceMedia();
 
     const welcomeMsg = {
       sender: "agent",
@@ -75,26 +63,26 @@ export default function PublicVideoCall() {
     };
     setMessages([welcomeMsg]);
     speakText(welcomeMsg.text);
-    toast.success(modeToStart === "voip" ? "Connected via Voice Call over IP (VoIP)!" : "Connected via HD Video Call!");
+    toast.success("Connected to SDPS Voice Call over IP (VoIP)!");
   };
 
   // Auto-connect voice call on mount
   useEffect(() => {
-    handleStartCall("voip");
+    handleStartCall();
     return () => {
-      stopLocalMedia();
+      stopVoiceMedia();
       if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     };
   }, []);
 
   const handleEndCall = () => {
-    stopLocalMedia();
+    stopVoiceMedia();
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
     }
     setCallActive(false);
     setIsSpeaking(false);
-    toast.info("Support Call ended.");
+    toast.info("Voice Support Call ended.");
   };
 
   const handleSendQuery = async (queryText) => {
@@ -131,7 +119,7 @@ export default function PublicVideoCall() {
       speakText(reply);
     } catch (err) {
       console.error(err);
-      toast.error("Error connecting to AI support agent.");
+      toast.error("Error connecting to Voice AI support agent.");
     } finally {
       setAgentThinking(false);
     }
@@ -157,7 +145,7 @@ export default function PublicVideoCall() {
 
     recognition.onstart = () => {
       setIsListening(true);
-      toast.info("Listening... Speak your support question to Sal AI.");
+      toast.info("Listening... Speak your support query to Sal AI.");
     };
 
     recognition.onresult = (event) => {
@@ -178,7 +166,7 @@ export default function PublicVideoCall() {
       <Toaster position="top-right" />
       
       <div className="w-full max-w-5xl bg-white/95 backdrop-blur-xl border border-white/40 rounded-3xl shadow-2xl overflow-hidden my-auto flex flex-col md:flex-row h-[720px]">
-        {/* Left Voice / Video Call Screen */}
+        {/* Left Voice Call Visualizer Screen */}
         <div className="flex-1 bg-slate-950 p-6 flex flex-col justify-between relative text-white">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-slate-800 pb-4 z-10">
@@ -191,11 +179,11 @@ export default function PublicVideoCall() {
             </div>
             {callActive ? (
               <span className="inline-flex items-center gap-1.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full text-[11px] font-bold">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" /> {callMode === "voip" ? "VoIP Voice Live" : "HD Video Live"}
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" /> Voice Call over IP Live
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 px-3 py-1 rounded-full text-[11px] font-bold">
-                Disconnected
+                Call Ended
               </span>
             )}
           </div>
@@ -204,67 +192,55 @@ export default function PublicVideoCall() {
           <div className="flex-1 flex items-center justify-center relative my-4">
             {callActive ? (
               <div className="w-full h-full rounded-2xl bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 flex flex-col items-center justify-center relative overflow-hidden p-6 text-center">
-                {/* Audio Wave Visualizer */}
-                <div className={`relative w-28 h-28 rounded-full bg-gradient-to-tr from-brand-blue to-brand-orange p-1 shadow-2xl transition-transform ${isSpeaking ? "scale-110" : ""}`}>
+                {/* Audio Pulse Visualizer */}
+                <div className={`relative w-32 h-32 rounded-full bg-gradient-to-tr from-brand-blue to-brand-orange p-1 shadow-2xl transition-transform ${isSpeaking ? "scale-110" : ""}`}>
                   <img src="/sal-dp.png" alt="Sal AI Agent" className="w-full h-full object-cover object-top rounded-full bg-slate-900" />
                   {isSpeaking && (
-                    <span className="absolute -inset-2 rounded-full border-2 border-brand-orange animate-ping opacity-75" />
+                    <span className="absolute -inset-3 rounded-full border-2 border-brand-orange animate-ping opacity-75" />
                   )}
                 </div>
 
-                <h4 className="mt-4 font-headline font-bold text-white text-lg">Sal AI Support Agent</h4>
-                <p className="text-xs text-brand-orange font-semibold">VideoSDK Voice over IP (VoIP) Specialist</p>
+                <h4 className="mt-5 font-headline font-bold text-white text-xl">Sal AI Support Agent</h4>
+                <p className="text-xs text-brand-orange font-semibold mt-1">SDPS Voice over IP (VoIP) Specialist</p>
 
                 {/* Quick Voice Prompt Chips */}
                 <div className="mt-6 flex flex-wrap items-center justify-center gap-2 max-w-md">
                   <button
                     onClick={() => handleSendQuery("Generate fee payment link")}
-                    className="bg-brand-blue/20 hover:bg-brand-blue/40 border border-brand-blue/40 text-brand-blue-light text-[11px] font-bold px-3 py-1.5 rounded-full transition inline-flex items-center gap-1"
+                    className="bg-brand-blue/20 hover:bg-brand-blue/40 border border-brand-blue/40 text-brand-blue-light text-[11px] font-bold px-3.5 py-2 rounded-full transition inline-flex items-center gap-1.5"
                   >
-                    <Sparkles className="w-3 h-3" /> 💳 Pay Fees Online
+                    <Sparkles className="w-3.5 h-3.5 text-brand-orange" /> 💳 Pay Fees Online
                   </button>
                   <button
                     onClick={() => handleSendQuery("How to take admission for session 2026-27?")}
-                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-bold px-3 py-1.5 rounded-full transition"
+                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-bold px-3.5 py-2 rounded-full transition"
                   >
                     📝 Admission Enquiry
                   </button>
                   <button
                     onClick={() => handleSendQuery("What are the school timings?")}
-                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-bold px-3 py-1.5 rounded-full transition"
+                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-bold px-3.5 py-2 rounded-full transition"
                   >
                     ⏰ School Timings
                   </button>
                 </div>
-
-                {/* Local User Camera PIP */}
-                {cameraEnabled && (
-                  <div className="absolute bottom-3 right-3 w-28 aspect-video rounded-xl overflow-hidden border border-white/20 shadow-xl bg-black">
-                    <video ref={localVideoRef} autoPlay muted playsInline className="w-full h-full object-cover transform -scale-x-100" />
-                  </div>
-                )}
               </div>
             ) : (
               <div className="text-center space-y-4">
                 <div className="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-2xl flex items-center justify-center mx-auto border border-emerald-500/30">
                   <PhoneCall className="w-8 h-8 animate-pulse" />
                 </div>
-                <h3 className="font-headline font-bold text-lg text-slate-200">Start SDPS Voice AI Support Call</h3>
-                <div className="flex flex-wrap items-center justify-center gap-3">
-                  <button onClick={() => handleStartCall("voip")} className="bg-emerald-600 hover:bg-emerald-700 font-bold text-xs px-5 py-3 rounded-xl text-white shadow-lg inline-flex items-center gap-2">
-                    <PhoneCall className="w-4 h-4" /> Connect Voice Call over IP (VoIP)
-                  </button>
-                  <button onClick={() => handleStartCall("video")} className="bg-slate-800 hover:bg-slate-700 font-bold text-xs px-4 py-3 rounded-xl text-slate-300 shadow-md inline-flex items-center gap-2 border border-slate-700">
-                    <Video className="w-4 h-4 text-brand-orange" /> Switch to HD Video Call
-                  </button>
-                </div>
+                <h3 className="font-headline font-bold text-lg text-slate-200">SDPS Voice Call over IP</h3>
+                <button onClick={handleStartCall} className="bg-emerald-600 hover:bg-emerald-700 font-bold text-xs px-6 py-3.5 rounded-xl text-white shadow-lg inline-flex items-center gap-2">
+                  <PhoneCall className="w-4 h-4" /> Start Voice Support Call
+                </button>
               </div>
             )}
           </div>
 
           {/* Call Controls Toolbar */}
           {callActive && (
-            <div className="flex items-center justify-center gap-3 bg-slate-900 p-3 rounded-2xl border border-slate-800">
+            <div className="flex items-center justify-center gap-4 bg-slate-900 p-3 rounded-2xl border border-slate-800">
               <button
                 onClick={() => setMicEnabled(!micEnabled)}
                 title={micEnabled ? "Mute Microphone" : "Unmute Microphone"}
@@ -275,27 +251,14 @@ export default function PublicVideoCall() {
 
               <button
                 onClick={toggleListening}
-                title="Voice Input Microphone"
-                className={`px-4 py-3 rounded-xl font-bold text-xs flex items-center gap-2 transition ${isListening ? "bg-red-600 animate-pulse text-white" : "bg-brand-blue text-white"}`}
+                title="Voice Microphone Input"
+                className={`px-5 py-3 rounded-xl font-bold text-xs flex items-center gap-2 transition ${isListening ? "bg-red-600 animate-pulse text-white" : "bg-brand-blue hover:bg-brand-blue-light text-white"}`}
               >
                 <Mic className="w-4 h-4" /> {isListening ? "Listening..." : "Speak to Sal AI"}
               </button>
 
-              <button
-                onClick={() => {
-                  const nextState = !cameraEnabled;
-                  setCameraEnabled(nextState);
-                  if (nextState) startLocalMedia("video");
-                  else startLocalMedia("voip");
-                }}
-                title={cameraEnabled ? "Turn Off Camera" : "Turn On Camera"}
-                className={`p-3 rounded-xl transition ${cameraEnabled ? "bg-slate-800 text-white" : "bg-slate-800 text-slate-400"}`}
-              >
-                {cameraEnabled ? <Video className="w-4 h-4 text-emerald-400" /> : <VideoOff className="w-4 h-4" />}
-              </button>
-
-              <button onClick={handleEndCall} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-md">
-                <PhoneOff className="w-4 h-4" /> Leave Call
+              <button onClick={handleEndCall} className="bg-red-600 hover:bg-red-700 text-white px-5 py-3 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-md">
+                <PhoneOff className="w-4 h-4" /> End Call
               </button>
             </div>
           )}
@@ -367,3 +330,4 @@ export default function PublicVideoCall() {
     </div>
   );
 }
+

@@ -296,14 +296,14 @@ export default function AdminVideoSupport() {
         <div className="absolute top-0 right-0 w-96 h-96 bg-brand-orange/10 rounded-full blur-3xl pointer-events-none" />
         
         <div className="space-y-2 relative z-10">
-          <div className="inline-flex items-center gap-2 bg-brand-orange/20 text-brand-orange px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border border-brand-orange/30">
-            <Sparkles className="w-3.5 h-3.5" /> WebRTC & Video SDK Customer Support
+          <div className="inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-400 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border border-emerald-500/30">
+            <Sparkles className="w-3.5 h-3.5" /> WebRTC Voice over IP (VoIP) AI Agent
           </div>
           <h1 className="font-headline font-bold text-2xl md:text-3xl text-white tracking-tight">
-            Video SDK Customer Support Agent
+            Voice AI Customer Support Agent
           </h1>
           <p className="text-slate-300 text-xs sm:text-sm max-w-2xl leading-relaxed">
-            Real-time interactive AI video support specialist, live WebRTC video room generator, and customer consultation kiosk for S.D. Public School Patna.
+            Real-time interactive Voice over IP (VoIP) AI specialist, voice call room generator, and instant payment link provider for S.D. Public School Patna.
           </p>
         </div>
 
@@ -312,21 +312,21 @@ export default function AdminVideoSupport() {
             onClick={() => setActiveTab("agent")}
             className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition ${
               activeTab === "agent"
-                ? "bg-brand-orange text-white shadow-md"
+                ? "bg-emerald-600 text-white shadow-md"
                 : "bg-white/10 text-slate-300 hover:bg-white/20"
             }`}
           >
-            <Bot className="w-4 h-4" /> Live AI Video Agent
+            <Bot className="w-4 h-4" /> Live AI Voice Agent
           </button>
           <button
             onClick={() => setActiveTab("rooms")}
             className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition ${
               activeTab === "rooms"
-                ? "bg-brand-orange text-white shadow-md"
+                ? "bg-emerald-600 text-white shadow-md"
                 : "bg-white/10 text-slate-300 hover:bg-white/20"
             }`}
           >
-            <Video className="w-4 h-4" /> Support Call Rooms ({rooms.filter((r) => r.status === "active").length})
+            <PhoneCall className="w-4 h-4" /> Voice Support Rooms ({rooms.filter((r) => r.status === "active").length})
           </button>
           <button
             onClick={() => setActiveTab("settings")}
@@ -335,9 +335,10 @@ export default function AdminVideoSupport() {
                 ? "bg-white text-slate-900 shadow-md"
                 : "bg-white/10 text-slate-300 hover:bg-white/20"
             }`}
-            title="Video SDK Settings"
+            title="Voice SDK Settings"
           >
             <Settings className="w-4 h-4" />
+
           </button>
         </div>
       </div>

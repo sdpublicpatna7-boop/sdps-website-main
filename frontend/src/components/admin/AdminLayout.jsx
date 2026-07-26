@@ -64,7 +64,7 @@ const NAV_ITEMS = [
   { to: "/admin/omr-generator", label: "OMR Generator", icon: FileText, permission: ["omr-tools", "media-tools"] },
   { to: "/admin/omr-roster", label: "OMR Student Database", icon: Users, permission: ["omr-tools", "media-tools"] },
   { to: "/admin/omr-checker", label: "OMR Auto-Checker", icon: CheckSquare, permission: ["omr-tools", "media-tools"] },
-  { to: "/admin/video-support", label: "Video SDK Support Agent", icon: Video, permission: ["site-settings", "admissions", "media-tools"] },
+  { to: "/admin/video-support", label: "Voice AI Support Agent", icon: PhoneCall, permission: ["site-settings", "admissions", "media-tools"] },
   { section: "Other" },
   { to: "/admin/tc-records", label: "TC Records", icon: FileText, permission: "tc-records" },
   { to: "/admin/popup", label: "Welcome Popup", icon: Megaphone, permission: "popup" },
