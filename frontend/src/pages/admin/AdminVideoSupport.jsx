@@ -128,13 +128,15 @@ export default function AdminVideoSupport() {
 
     const welcomeMsg = {
       sender: "agent",
-      text: config.welcome_speech,
+      text: config.welcome_speech || "Hey, I am Sal, SDPS AI agent. How can I help you today?",
+      action: { type: "navigate", url: "/fee-payment", label: "💳 Direct Fee Payment Portal" },
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     };
     setMessages([welcomeMsg]);
-    speakText(config.welcome_speech);
+    speakText(welcomeMsg.text);
     toast.success(modeToStart === "voip" ? "Voice Call over IP (VoIP) Connected!" : "HD Video Support Call Connected!");
   };
+
 
 
   // End Video Call Session

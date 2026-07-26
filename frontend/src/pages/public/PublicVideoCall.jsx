@@ -67,7 +67,8 @@ export default function PublicVideoCall() {
 
     const welcomeMsg = {
       sender: "agent",
-      text: `Welcome to S.D. Public School Live Support! (Room ID: ${roomId}). I am Sal, your AI support specialist. How can I help you today?`,
+      text: "Hey, I am Sal, SDPS AI agent. How can I help you today?",
+      action: { type: "navigate", url: "/fee-payment", label: "💳 Direct Fee Payment Portal" },
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     };
     setMessages([welcomeMsg]);
@@ -100,8 +101,13 @@ export default function PublicVideoCall() {
     setAgentThinking(true);
 
     try {
-      const res = await api.post("/admin/video-support/agent/chat", { prompt: textToSend });
-      const reply = res.data?.reply || "I am available to assist you with any SDPS admissions or school inquiries.";
+      let res;
+      try {
+        res = await api.post("/public/video-support/agent/chat", { prompt: textToSend });
+      } catch (e) {
+        res = await api.post("/admin/video-support/agent/chat", { prompt: textToSend });
+      }
+      const reply = res.data?.reply || "Hey, I am Sal, SDPS AI agent. How can I help you today?";
       
       const agentMsg = {
         sender: "agent",
@@ -119,6 +125,7 @@ export default function PublicVideoCall() {
       setAgentThinking(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-brand-blue-dark text-slate-800 p-4 flex items-center justify-center relative overflow-hidden">

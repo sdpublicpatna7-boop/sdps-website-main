@@ -3164,34 +3164,35 @@ async def video_support_agent_chat(
     prompt = (payload.get("prompt") or payload.get("message") or "").strip().lower()
     if not prompt:
         return {
-            "reply": "Hello! I am Sal, your SDPS AI Video Support Specialist. How can I assist you with admissions, fees, or school information today?",
+            "reply": "Hey, I am Sal, SDPS AI agent. How can I help you today?",
             "action": None
         }
 
     # Knowledge base rules for SDPS Patna AI Video Agent
-    if any(k in prompt for k in ["fee", "charge", "cost", "price", "tuition", "payment"]):
-        reply = "S.D. Public School offers transparent and affordable fee structures. Day scholar monthly tuition ranges from ₹1,200 for Nursery to ₹2,600 for Class XII. You can pay online via our portal at /fee-payment or view the detailed circular at /fee-structure."
-        action = {"type": "navigate", "url": "/fee-structure", "label": "Open Fee Structure"}
-    elif any(k in prompt for k in ["apply", "admission", "form", "register", "join", "eligibility"]):
+    if any(k in prompt for k in ["fee", "pay", "payment", "charge", "cost", "price", "tuition", "dues", "installments", "online fee"]):
+        reply = "Hey! S.D. Public School provides an online fee payment portal. Day scholar monthly tuition ranges from ₹1,200 for Nursery to ₹2,600 for Class XII. You can pay your fees directly online at /fee-payment or view the complete fee structure circular at /fee-structure."
+        action = {"type": "navigate", "url": "/fee-payment", "label": "💳 Direct Fee Payment Portal"}
+    elif any(k in prompt for k in ["apply", "admission", "form", "register", "join", "eligibility", "seat", "vacancy"]):
         reply = "Admissions for session 2026-27 are open from Nursery to Class XII! You can fill out the online application form directly at /admission-form or check class-wise age criteria at /admission-eligibility."
-        action = {"type": "navigate", "url": "/admission-form", "label": "Open Admission Form"}
-    elif any(k in prompt for k in ["timing", "hour", "time", "schedule", "open", "close"]):
+        action = {"type": "navigate", "url": "/admission-form", "label": "📝 Online Admission Form"}
+    elif any(k in prompt for k in ["timing", "hour", "time", "schedule", "open", "close", "holiday"]):
         reply = "School operational timings: Pre-School (Nursery to KG-II) runs 08:30 AM to 12:30 PM. Classes I to XII run 07:30 AM to 01:30 PM (Summer) and 08:00 AM to 02:00 PM (Winter). Administrative desk is open Monday to Saturday, 08:00 AM to 03:00 PM."
-        action = None
+        action = {"type": "navigate", "url": "/calendar", "label": "📅 Academic Calendar"}
     elif any(k in prompt for k in ["hostel", "boarding", "lodging", "stay"]):
         reply = "SDPS provides safe and modern residential hostel facilities for outstation students with 24/7 CCTV surveillance, nutritious meals, structured evening study hours, and sports amenities. Learn more at /hostel."
-        action = {"type": "navigate", "url": "/hostel", "label": "View Hostel Page"}
+        action = {"type": "navigate", "url": "/hostel", "label": "🏫 View Hostel Facilities"}
     elif any(k in prompt for k in ["contact", "phone", "call", "email", "address", "location"]):
         reply = "You can contact our admissions desk directly at +91 99551 90262 or email helpdesk@sdpublic.org. S.D. Public School is located at Maurya Colony, Near R.O.B., Patna, Bihar."
-        action = {"type": "navigate", "url": "/contact", "label": "View Contact Page"}
+        action = {"type": "navigate", "url": "/contact", "label": "📞 Contact Us Page"}
     else:
-        reply = f"Thank you for asking about '{prompt}'. S.D. Public School Patna is committed to academic excellence and holistic development. Would you like me to guide you through admissions, fee payment, or campus facilities?"
-        action = None
+        reply = f"Hey! I am Sal, SDPS AI agent. Regarding '{prompt}', S.D. Public School Patna is committed to academic excellence. Would you like me to generate a fee payment link, assist with admissions, or provide school timings?"
+        action = {"type": "navigate", "url": "/fee-payment", "label": "💳 Direct Fee Payment Portal"}
 
     return {
         "reply": reply,
         "action": action,
         "timestamp": now_iso()
     }
+
 
 

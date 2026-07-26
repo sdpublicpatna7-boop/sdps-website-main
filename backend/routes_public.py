@@ -1548,4 +1548,63 @@ async def submit_apaar_form(payload: ApaarSubmission = Body(...)):
     return {"status": "success", "message": "APAAR registration details submitted successfully."}
 
 
+# ---- Public Video SDK Support Agent Endpoints ----
+@public_router.get("/video-support/config")
+async def get_public_video_support_config():
+    """Returns AI support agent config for public visitor calls."""
+    doc = await db.video_support_config.find_one({"id": "video-support-config"}, {"_id": 0})
+    if not doc:
+        doc = {
+            "agent_name": "Sal AI",
+            "agent_title": "SDPS Live Support Specialist",
+            "welcome_speech": "Hey, I am Sal, SDPS AI agent. How can I help you today?",
+            "auto_agent_enabled": True,
+            "voice_pitch": 1.0,
+            "voice_rate": 1.0,
+            "voice_lang": "en-IN"
+        }
+    return doc
+
+
+@public_router.post("/video-support/agent/chat")
+async def public_video_support_agent_chat(payload: Dict[str, Any] = Body(...)):
+    """
+    Public AI Customer Support Agent query responder for parents and visitors.
+    Helps parents answer admission, fee, timings, hostel queries and generates direct fee payment links.
+    """
+    prompt = (payload.get("prompt") or payload.get("message") or "").strip().lower()
+    if not prompt:
+        return {
+            "reply": "Hey, I am Sal, SDPS AI agent. How can I help you today?",
+            "action": None
+        }
+
+    # Fee payment & Fee structure queries
+    if any(k in prompt for k in ["fee", "pay", "payment", "charge", "cost", "price", "tuition", "dues", "installments", "online fee"]):
+        reply = "Hey! S.D. Public School provides an online fee payment portal. Day scholar monthly tuition ranges from ₹1,200 for Nursery to ₹2,600 for Class XII. You can pay your fees directly online at /fee-payment or view the complete fee structure circular at /fee-structure."
+        action = {"type": "navigate", "url": "/fee-payment", "label": "💳 Direct Fee Payment Portal"}
+    elif any(k in prompt for k in ["apply", "admission", "form", "register", "join", "eligibility", "seat", "vacancy"]):
+        reply = "Admissions for session 2026-27 are currently open from Nursery to Class XII! You can fill out the online admission enquiry form at /admission-form or view age eligibility criteria at /admission-eligibility."
+        action = {"type": "navigate", "url": "/admission-form", "label": "📝 Online Admission Form"}
+    elif any(k in prompt for k in ["timing", "hour", "time", "schedule", "open", "close", "holiday"]):
+        reply = "School operational timings: Pre-School (Nursery to KG-II) runs 08:30 AM to 12:30 PM. Classes I to XII run 07:30 AM to 01:30 PM (Summer) and 08:00 AM to 02:00 PM (Winter). Helpdesk is open Monday to Saturday, 08:00 AM to 03:00 PM."
+        action = {"type": "navigate", "url": "/calendar", "label": "📅 Academic Calendar"}
+    elif any(k in prompt for k in ["hostel", "boarding", "lodging", "stay", "mess"]):
+        reply = "SDPS provides safe and modern residential hostel facilities with 24/7 CCTV surveillance, nutritious meals, structured evening study hours, and sports amenities. Learn more at /hostel."
+        action = {"type": "navigate", "url": "/hostel", "label": "🏫 View Hostel Facilities"}
+    elif any(k in prompt for k in ["contact", "phone", "call", "email", "address", "location", "map", "where"]):
+        reply = "You can contact our admissions desk at +91 99551 90262 or email helpdesk@sdpublic.org. S.D. Public School is located at Maurya Colony, Near R.O.B., Patna, Bihar."
+        action = {"type": "navigate", "url": "/contact", "label": "📞 Contact Us Page"}
+    else:
+        reply = f"Hey! I am Sal, SDPS AI agent. Regarding '{prompt}', S.D. Public School Patna is committed to academic excellence. Would you like me to generate a fee payment link, assist with admissions, or provide school timings?"
+        action = {"type": "navigate", "url": "/fee-payment", "label": "💳 Direct Fee Payment Portal"}
+
+    return {
+        "reply": reply,
+        "action": action,
+        "timestamp": now_iso()
+    }
+
+
+
 
