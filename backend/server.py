@@ -264,31 +264,34 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         
         if is_frameable:
             response.headers["Content-Security-Policy"] = (
-                "default-src 'self'; "
+                "default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; "
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https: blob:; "
+                "style-src 'self' 'unsafe-inline' https:; "
                 "img-src 'self' data: https: blob:; "
                 "media-src 'self' blob: https:; "
-                "style-src 'self' 'unsafe-inline'; "
+                "connect-src 'self' https: wss: ws: blob:; "
                 "frame-ancestors 'self' https://sdpublic.org https://www.sdpublic.org http://localhost:3000 http://localhost:5173; "
                 "object-src 'none'"
             )
             if "X-Frame-Options" in response.headers:
                 del response.headers["X-Frame-Options"]
         else:
-            response.headers["X-Frame-Options"] = "DENY"
+            response.headers["X-Frame-Options"] = "SAMEORIGIN"
             response.headers["Content-Security-Policy"] = (
-                "default-src 'self'; "
-                "script-src 'self' https://checkout.razorpay.com; "
-                "frame-src 'self' https://checkout.razorpay.com https://drive.google.com; "
+                "default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; "
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https: blob: https://checkout.razorpay.com; "
+                "frame-src 'self' https: https://checkout.razorpay.com https://drive.google.com https://www.youtube.com; "
                 "img-src 'self' data: https: blob:; "
-                "media-src 'self' blob: https:; "
-                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-                "font-src 'self' https://fonts.gstatic.com; "
+                "media-src 'self' blob: https: data:; "
+                "style-src 'self' 'unsafe-inline' https: https://fonts.googleapis.com; "
+                "font-src 'self' data: https: https://fonts.gstatic.com; "
+                "connect-src 'self' https: wss: ws: blob:; "
                 "object-src 'none'; base-uri 'self'; form-action 'self'"
             )
             
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(self), camera=(self)"
         return response
 
 

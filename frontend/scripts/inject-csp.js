@@ -17,19 +17,17 @@ const fs = require("fs");
 const path = require("path");
 
 const CSP = [
-  "default-src 'self'",
-  "script-src 'self' https://checkout.razorpay.com",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src 'self' https://fonts.gstatic.com data:",
+  "default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https: blob: https://checkout.razorpay.com",
+  "style-src 'self' 'unsafe-inline' https: https://fonts.googleapis.com",
+  "font-src 'self' https: data: https://fonts.gstatic.com",
   "img-src 'self' data: https: blob:",
-  "media-src 'self' blob: https:",
-  "frame-src 'self' https://api.sdpublic.org https://checkout.razorpay.com https://drive.google.com https://www.youtube.com https://www.youtube-nocookie.com",
-  // 'self' + https: keeps cross-origin API (REACT_APP_BACKEND_URL) working over HTTPS.
-  "connect-src 'self' https:",
+  "media-src 'self' blob: https: data:",
+  "frame-src 'self' https: https://api.sdpublic.org https://checkout.razorpay.com https://drive.google.com https://www.youtube.com https://www.youtube-nocookie.com",
+  "connect-src 'self' https: wss: ws: blob:",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
-  "frame-ancestors 'none'",
 ].join("; ");
 
 const indexPath = path.resolve(__dirname, "..", "build", "index.html");
