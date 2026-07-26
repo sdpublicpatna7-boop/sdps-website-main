@@ -743,6 +743,25 @@ class VideoSupportRoom(BaseDoc):
     room_id: str
     client_name: str = "Parent / Visitor"
     client_phone: Optional[str] = ""
+    purpose: str = "Admission Enquiry"
+    status: str = "active"  # "active" | "ended"
+    created_at: str = Field(default_factory=now_iso)
+
+
+class CampusTourFacility(BaseDoc):
+    id: str = Field(default_factory=new_id)
+    title: str
+    category: str  # "classrooms" | "labs" | "library" | "sports" | "hostel" | "campus"
+    description: str
+    panorama_url: str
+    video_url: Optional[str] = ""
+    audio_narrative: Optional[str] = ""
+    hotspots: List[Dict[str, Any]] = Field(default_factory=list)
+    equipment_list: List[str] = Field(default_factory=list)
+    order: int = 0
+    is_active: bool = True
+    created_at: str = Field(default_factory=now_iso)
+
     client_email: Optional[str] = ""
     purpose: str = "General Enquiry"
     status: str = "active"  # "active" | "waiting" | "completed" | "ended"

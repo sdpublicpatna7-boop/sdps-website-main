@@ -39,6 +39,7 @@ const TermsPrivacy = lazy(() => import("@/pages/public/TermsPrivacy"));
 const KheloPatna = lazy(() => import("@/pages/public/KheloPatna"));
 const MapsReview = lazy(() => import("@/pages/public/MapsReview"));
 const ApaarForm = lazy(() => import("@/pages/public/ApaarForm"));
+const CampusTour = lazy(() => import("@/pages/public/CampusTour"));
 
 
 const AdminLayout = lazy(() => import("@/components/admin/AdminLayout"));
@@ -182,8 +183,10 @@ function App() {
                 <Route path="/terms" element={<TermsPrivacy />} />
                 <Route path="/privacy" element={<TermsPrivacy />} />
                 <Route path="/khelo-patna" element={<KheloPatna />} />
+                <Route path="/campus-tour" element={<CampusTour />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
+
 
 
               {/* Admin auth (no layout) */}

@@ -29,6 +29,7 @@ const NAV = [
   {
     label: "Campus Life",
     children: [
+      { label: "360° Virtual Campus Tour", to: "/campus-tour" },
       { label: "House System", to: "/house-system" },
       { label: "Hostel", to: "/hostel" },
       { label: "Student Council", to: "/student-council" },

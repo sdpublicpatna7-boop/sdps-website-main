@@ -22,7 +22,7 @@ from models import (
     ContactMessage, now_iso, new_id,
     EligibilityRow, FeeStructureRow, HostelFeeRow, HostelGalleryItem,
     AdministrationMember, LegalPage, ShortLinkClick, LinktreeSettings, LinktreeLink, LinktreeClick,
-    ApaarRosterStudent, ApaarSubmission
+    ApaarRosterStudent, ApaarSubmission, CampusTourFacility
 )
 from email_service import send_email, render_template
 from sms_service import send_sms
@@ -1604,6 +1604,118 @@ async def public_video_support_agent_chat(payload: Dict[str, Any] = Body(...)):
         "action": action,
         "timestamp": now_iso()
     }
+
+
+# ---- Interactive 360° Campus Tour Endpoints ----
+@public_router.get("/campus-tour/facilities")
+async def get_campus_tour_facilities():
+    """Returns 360° campus facilities with hotspots, equipment specs, and audio guide narratives."""
+    facilities = await db.campus_tour_facilities.find({"is_active": True}, {"_id": 0}).sort("order", 1).to_list(100)
+    
+    if not facilities:
+        # Pre-populate default world-class campus tour facilities for SDPS Patna
+        facilities = [
+            {
+                "id": "tour-smart-class",
+                "title": "Smart Digital Classroom",
+                "category": "classrooms",
+                "description": "Ergonomically designed, air-conditioned smart classroom equipped with 75-inch 4K Interactive Flat Panels (IFP), digital learning software, and high-speed Wi-Fi.",
+                "panorama_url": "https://sdpublic.org/assets/img/world_class.jpg",
+                "video_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+                "audio_narrative": "Welcome to the SDPS Smart Digital Classroom. Every classroom features 4K interactive displays, dual-view whiteboards, and comfortable ergonomic seating.",
+                "hotspots": [
+                    {"id": "h1", "title": "75\" 4K Interactive Display", "x": 48, "y": 38, "detail": "Touch-enabled smart panel preloaded with CBSE animated 3D modules and live digital annotation software."},
+                    {"id": "h2", "title": "Ergonomic Modular Benches", "x": 30, "y": 68, "detail": "Postural-support furniture designed for student comfort during long learning sessions."},
+                    {"id": "h3", "title": "Acoustic Insulation & CCTV", "x": 75, "y": 25, "detail": "24/7 security surveillance and sound-softened acoustics for distraction-free learning."}
+                ],
+                "equipment_list": ["75\" 4K Touch IFP Display", "CBSE 3D Animated Curriculum", "Ergonomic Seating", "High-Speed Wi-Fi 6", "24/7 HD CCTV Camera"],
+                "order": 1,
+                "is_active": True
+            },
+            {
+                "id": "tour-physics-lab",
+                "title": "Composite Science & Physics Lab",
+                "category": "labs",
+                "description": "Modern science laboratory equipped with optical benches, spectrometers, laser experiment kits, and electrical circuit boards for Class IX-XII CBSE practicals.",
+                "panorama_url": "https://sdpublic.org/assets/img/learning_beyond.png",
+                "video_url": "",
+                "audio_narrative": "Here is our State-of-the-Art Science Laboratory. Students conduct hands-on experiments in physics, chemistry, and biology with lab safety gear.",
+                "hotspots": [
+                    {"id": "h4", "title": "Optical Bench & Laser Setup", "x": 42, "y": 55, "detail": "Precision optical ray tracks for Snell's law and focal length experiments."},
+                    {"id": "h5", "title": "Digital Oscilloscope & Meters", "x": 62, "y": 45, "detail": "High-accuracy digital meters for advanced electrical experiments."}
+                ],
+                "equipment_list": ["Laser Optical Benches", "Digital Multimeters", "Chemical Fume Hood", "Monocular Compound Microscopes", "Safety Eyewash Stations"],
+                "order": 2,
+                "is_active": True
+            },
+            {
+                "id": "tour-computer-lab",
+                "title": "High-Tech Computer & AI Lab",
+                "category": "labs",
+                "description": "State-of-the-art computer laboratory featuring 50+ Intel Core i7 workstations, optical fiber internet, Python/Scratch coding suites, and robotics kits.",
+                "panorama_url": "https://sdpublic.org/assets/img/demystified.jpg",
+                "video_url": "",
+                "audio_narrative": "Welcome to the Computer & AI Innovation Lab. Students learn Python programming, web development, and robotics under expert guidance.",
+                "hotspots": [
+                    {"id": "h6", "title": "Intel i7 Workstations", "x": 50, "y": 50, "detail": "High-performance PCs equipped with Python, Scratch, Web Development IDEs, and Graphic Design tools."},
+                    {"id": "h7", "title": "Gigabit Fiber Backbone", "x": 80, "y": 30, "detail": "Dedicated high-speed enterprise internet connection with firewall security filters."}
+                ],
+                "equipment_list": ["50+ Intel Core i7 PCs", "1 Gbps Optical Fiber Net", "Robotics & Arduino Kits", "Python & Coding IDEs", "UPS Power Backup"],
+                "order": 3,
+                "is_active": True
+            },
+            {
+                "id": "tour-digital-library",
+                "title": "Central Digital Library & Reading Lounge",
+                "category": "library",
+                "description": "Richly stocked library containing 10,000+ academic books, NCERT reference guides, competitive examination journals (JEE/NEET/NTSE), and digital e-readers.",
+                "panorama_url": "https://sdpublic.org/assets/img/about_new.jpg",
+                "video_url": "",
+                "audio_narrative": "Explore the SDPS Central Library. Over 10,000 reference volumes, magazines, and quiet reading pods support deep academic research.",
+                "hotspots": [
+                    {"id": "h8", "title": "JEE/NEET Reference Wing", "x": 35, "y": 45, "detail": "Dedicated shelf for competitive prep books, Olympiad guides, and previous years solved papers."},
+                    {"id": "h9", "title": "E-Reader Kiosk", "x": 70, "y": 50, "detail": "Digital tablets with access to national digital libraries and e-journals."}
+                ],
+                "equipment_list": ["10,000+ Books & Journals", "JEE/NEET Prep Section", "Quiet Study Pods", "E-Reader Tablets", "Daily English/Hindi Dailies"],
+                "order": 4,
+                "is_active": True
+            },
+            {
+                "id": "tour-sports-ground",
+                "title": "Sports Complex & Playgrounds (Khelo Patna)",
+                "category": "sports",
+                "description": "Spacious multi-sport grounds featuring synthetic badminton courts, cricket nets, football pitch, basketball court, and indoor table tennis hall.",
+                "panorama_url": "https://sdpublic.org/assets/img/banner.jpg",
+                "video_url": "",
+                "audio_narrative": "Welcome to our Sports Arena. SDPS places strong emphasis on physical fitness, sportsmanship, and inter-school championship training.",
+                "hotspots": [
+                    {"id": "h10", "title": "Cricket Practice Nets", "x": 25, "y": 60, "detail": "Turf practice pitch with bowling machines for student cricket coaching."},
+                    {"id": "h11", "title": "Synthetic Badminton Court", "x": 65, "y": 55, "detail": "All-weather indoor court built to BWF international standards."}
+                ],
+                "equipment_list": ["Turf Cricket Nets", "Football Ground", "BWF Badminton Court", "Table Tennis Tables", "Physical Fitness Trainers"],
+                "order": 5,
+                "is_active": True
+            },
+            {
+                "id": "tour-hostel-lounge",
+                "title": "Residential Boarding & Hostel Complex",
+                "category": "hostel",
+                "description": "Safe and hygienic residential hostel for boys and girls with 24/7 warden supervision, air-cooled rooms, nutritious dining hall, and evening study hours.",
+                "panorama_url": "https://sdpublic.org/assets/img/feature.jpg",
+                "video_url": "",
+                "audio_narrative": "Discover SDPS Residential Hostel. A home away from home offering structured daily study hours, balanced meals, and 24/7 security.",
+                "hotspots": [
+                    {"id": "h12", "title": "Air-Cooled Dormitories", "x": 40, "y": 48, "detail": "Spacious study desks, personal wardrobes, and comfortable bedding for boarders."},
+                    {"id": "h13", "title": "Hygienic Dining Hall", "x": 70, "y": 60, "detail": "Four nutritious meals served daily under strict hygiene and dietary quality control."}
+                ],
+                "equipment_list": ["24/7 Resident Wardens", "Structured Evening Study", "Nutritious 4-Meal Dining", "Doctor-on-Call Service", "24/7 CCTV & Security"],
+                "order": 6,
+                "is_active": True
+            }
+        ]
+
+    return {"facilities": facilities}
+
 
 
 
