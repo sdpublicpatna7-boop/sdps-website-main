@@ -3,7 +3,7 @@ import os
 import html
 import logging
 import httpx
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 
 import io
