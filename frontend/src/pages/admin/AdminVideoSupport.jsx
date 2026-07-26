@@ -805,9 +805,73 @@ export default function AdminVideoSupport() {
               <textarea
                 value={config.welcome_speech}
                 onChange={(e) => setConfig({ ...config, welcome_speech: e.target.value })}
-                rows={3}
+                rows={2}
                 className="w-full p-3 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
               />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1">Agent System Prompt (Core Instructions)</label>
+              <textarea
+                value={config.system_prompt || "You are Sal, the official AI Customer Support Specialist for S.D. Public School Patna."}
+                onChange={(e) => setConfig({ ...config, system_prompt: e.target.value })}
+                rows={3}
+                className="w-full p-3 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 font-mono text-xs"
+              />
+            </div>
+
+            {/* VideoSDK Pipeline Plugins */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-slate-100">
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">STT Plugin (Speech-to-Text)</label>
+                <select
+                  value={config.stt_plugin || "webspeech"}
+                  onChange={(e) => setConfig({ ...config, stt_plugin: e.target.value })}
+                  className="w-full p-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl"
+                >
+                  <option value="webspeech">WebSpeech (Native Browser)</option>
+                  <option value="deepgram">Deepgram Nova-2</option>
+                  <option value="whisper">OpenAI Whisper</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">LLM Engine (Intelligence)</label>
+                <select
+                  value={config.llm_engine || "sdps-knowledge"}
+                  onChange={(e) => setConfig({ ...config, llm_engine: e.target.value })}
+                  className="w-full p-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl"
+                >
+                  <option value="sdps-knowledge">SDPS Knowledge Base (Default)</option>
+                  <option value="gpt-4o">OpenAI GPT-4o Realtime</option>
+                  <option value="gemini-pro">Google Gemini 1.5 Pro</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">TTS Plugin (Voice Synthesizer)</label>
+                <select
+                  value={config.tts_plugin || "websynthesizer"}
+                  onChange={(e) => setConfig({ ...config, tts_plugin: e.target.value })}
+                  className="w-full p-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl"
+                >
+                  <option value="websynthesizer">WebSynthesizer (Web Speech API)</option>
+                  <option value="elevenlabs">ElevenLabs Multilingual</option>
+                  <option value="cambai">Camb AI Voice</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Registered Function Tools */}
+            <div className="pt-2 border-t border-slate-100">
+              <label className="text-xs font-bold text-slate-700 block mb-1.5">Registered Agent Function Tools</label>
+              <div className="flex flex-wrap gap-2 text-xs">
+                {["fetch_fee_structure", "open_admission_form", "get_school_timings", "transfer_to_human_agent"].map((toolName) => (
+                  <span key={toolName} className="inline-flex items-center gap-1.5 bg-brand-blue/10 text-brand-blue font-mono font-bold px-3 py-1 rounded-lg border border-brand-blue/20">
+                    <Sparkles className="w-3 h-3 text-brand-orange" /> {toolName}()
+                  </span>
+                ))}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -837,6 +901,7 @@ export default function AdminVideoSupport() {
                 />
               </div>
             </div>
+
 
             <div className="pt-4 border-t border-slate-100 flex justify-end">
               <button

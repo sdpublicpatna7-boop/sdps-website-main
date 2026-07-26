@@ -717,11 +717,17 @@ class VideoSupportConfig(BaseDoc):
     agent_title: str = "SDPS Live Video Support Specialist"
     avatar_style: str = "robot"  # "robot" | "avatar_female" | "avatar_male"
     welcome_speech: str = "Welcome to S.D. Public School Live Video Support! I am Sal, your AI support specialist. How can I assist you today?"
+    system_prompt: str = "You are Sal, the official AI Customer Support Specialist for S.D. Public School Patna. Respond helpfully, politely, and accurately about admissions, fees, timings, hostel, and school guidelines."
+    stt_plugin: str = "webspeech"  # "webspeech" | "deepgram" | "whisper"
+    llm_engine: str = "sdps-knowledge"  # "sdps-knowledge" | "gpt-4o" | "gemini-pro"
+    tts_plugin: str = "websynthesizer"  # "websynthesizer" | "elevenlabs" | "cambai"
+    function_tools: List[str] = Field(default_factory=lambda: ["fetch_fee_structure", "open_admission_form", "get_school_timings", "transfer_to_human_agent"])
     auto_agent_enabled: bool = True
     voice_pitch: float = 1.0
     voice_rate: float = 1.0
     voice_lang: str = "en-IN"
     created_at: str = Field(default_factory=now_iso)
+
 
 
 class VideoSupportRoom(BaseDoc):
