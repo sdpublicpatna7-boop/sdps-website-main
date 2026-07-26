@@ -118,6 +118,9 @@ const AdminOmrGenerator = lazy(() => import("@/pages/admin/special/AdminOmrGener
 const AdminOmrRoster = lazy(() => import("@/pages/admin/special/AdminOmrRoster"));
 const AdminOmrChecker = lazy(() => import("@/pages/admin/special/AdminOmrChecker"));
 const AdminMessageLogs = lazy(() => import("@/pages/admin/special/AdminMessageLogs"));
+const AdminVideoSupport = lazy(() => import("@/pages/admin/AdminVideoSupport"));
+const PublicVideoCall = lazy(() => import("@/pages/public/PublicVideoCall"));
+
 
 function AdminLoading() {
   return (
@@ -146,7 +149,9 @@ function App() {
               <Route path="/links" element={<Suspense fallback={<div>Loading...</div>}><LinksPage /></Suspense>} />
               <Route path="/notice-preview/:id" element={<Suspense fallback={<div>Loading...</div>}><NoticePreview /></Suspense>} />
               <Route path="/review" element={<MapsReview />} />
+              <Route path="/video-call" element={<Suspense fallback={<div>Loading Call...</div>}><PublicVideoCall /></Suspense>} />
               <Route path="/apaar" element={<Suspense fallback={<AdminLoading />}><ApaarForm /></Suspense>} />
+
 
               {/* Public */}
               <Route element={<PublicLayout />}>

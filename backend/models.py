@@ -706,3 +706,33 @@ class ApaarSubmission(BaseDoc):
     father_aadhaar_photo: Optional[str] = ""
     mother_aadhaar_photo: Optional[str] = ""
     created_at: str = Field(default_factory=now_iso)
+
+
+# ---- Video SDK Customer Support Agent ----
+class VideoSupportConfig(BaseDoc):
+    id: str = "video-support-config"
+    videosdk_api_key: str = ""
+    videosdk_secret: str = ""
+    agent_name: str = "Sal AI"
+    agent_title: str = "SDPS Live Video Support Specialist"
+    avatar_style: str = "robot"  # "robot" | "avatar_female" | "avatar_male"
+    welcome_speech: str = "Welcome to S.D. Public School Live Video Support! I am Sal, your AI support specialist. How can I assist you today?"
+    auto_agent_enabled: bool = True
+    voice_pitch: float = 1.0
+    voice_rate: float = 1.0
+    voice_lang: str = "en-IN"
+    created_at: str = Field(default_factory=now_iso)
+
+
+class VideoSupportRoom(BaseDoc):
+    id: str = Field(default_factory=new_id)
+    room_id: str
+    client_name: str = "Parent / Visitor"
+    client_phone: Optional[str] = ""
+    client_email: Optional[str] = ""
+    purpose: str = "General Enquiry"
+    status: str = "active"  # "active" | "waiting" | "completed" | "ended"
+    agent_assigned: str = "Sal AI"
+    created_at: str = Field(default_factory=now_iso)
+    ended_at: Optional[str] = None
+

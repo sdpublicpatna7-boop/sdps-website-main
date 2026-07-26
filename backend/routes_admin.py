@@ -3072,3 +3072,126 @@ async def clear_message_logs(
         "message": f"Cleared {result.deleted_count} message logs."
     }
 
+
+# ============= VIDEO SDK CUSTOMER SUPPORT AGENT =============
+@admin_router.get("/video-support/config")
+async def get_video_support_config(admin: TokenData = Depends(require_permission(["site-settings", "admissions", "media-tools"]))):
+    doc = await db.video_support_config.find_one({"id": "video-support-config"}, {"_id": 0})
+    if not doc:
+        from models import VideoSupportConfig
+        doc = VideoSupportConfig().model_dump()
+        await db.video_support_config.insert_one(doc.copy())
+    return doc
+
+
+@admin_router.put("/video-support/config")
+async def update_video_support_config(
+    payload: Dict[str, Any] = Body(...),
+    admin: TokenData = Depends(require_permission("site-settings"))
+):
+    from models import VideoSupportConfig
+    update = _sanitize_update(payload, VideoSupportConfig)
+    update["id"] = "video-support-config"
+    await db.video_support_config.update_one({"id": "video-support-config"}, {"$set": update}, upsert=True)
+    return await db.video_support_config.find_one({"id": "video-support-config"}, {"_id": 0})
+
+
+@admin_router.get("/video-support/rooms")
+async def list_video_support_rooms(admin: TokenData = Depends(require_permission(["site-settings", "admissions", "media-tools"]))):
+    rooms = await db.video_support_rooms.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return rooms
+
+
+@admin_router.post("/video-support/rooms")
+async def create_video_support_room(
+    payload: Dict[str, Any] = Body(...),
+    admin: TokenData = Depends(require_permission(["site-settings", "admissions", "media-tools"]))
+):
+    from models import VideoSupportRoom, new_id, now_iso
+    import random
+    
+    room_code = f"sdps-call-{random.randint(100000, 999999)}"
+    client_name = payload.get("client_name", "Parent / Visitor")
+    client_phone = payload.get("client_phone", "")
+    purpose = payload.get("purpose", "General Support Enquiry")
+
+    room = VideoSupportRoom(
+        room_id=room_code,
+        client_name=client_name,
+        client_phone=client_phone,
+        client_email=payload.get("client_email", ""),
+        purpose=purpose,
+        status="active"
+    ).model_dump()
+
+    await db.video_support_rooms.insert_one(room.copy())
+    return room
+
+
+@admin_router.post("/video-support/rooms/{room_id}/end")
+async def end_video_support_room(
+    room_id: str,
+    admin: TokenData = Depends(require_permission(["site-settings", "admissions", "media-tools"]))
+):
+    from models import now_iso
+    await db.video_support_rooms.update_one(
+        {"room_id": room_id},
+        {"$set": {"status": "completed", "ended_at": now_iso()}}
+    )
+    return {"success": True, "message": f"Room {room_id} closed."}
+
+
+@admin_router.delete("/video-support/rooms/{room_id}")
+async def delete_video_support_room(
+    room_id: str,
+    admin: TokenData = Depends(require_permission(["site-settings", "admissions", "media-tools"]))
+):
+    res = await db.video_support_rooms.delete_one({"room_id": room_id})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Room not found")
+    return {"success": True, "message": "Room deleted."}
+
+
+@admin_router.post("/video-support/agent/chat")
+async def video_support_agent_chat(
+    payload: Dict[str, Any] = Body(...),
+    admin: TokenData = Depends(require_permission(["site-settings", "admissions", "media-tools"]))
+):
+    """
+    AI Customer Support Agent query responder for real-time video sessions.
+    Provides intelligent answers regarding SDPS Patna admissions, fees, timings, contact, hostel, and rules.
+    """
+    prompt = (payload.get("prompt") or payload.get("message") or "").strip().lower()
+    if not prompt:
+        return {
+            "reply": "Hello! I am Sal, your SDPS AI Video Support Specialist. How can I assist you with admissions, fees, or school information today?",
+            "action": None
+        }
+
+    # Knowledge base rules for SDPS Patna AI Video Agent
+    if any(k in prompt for k in ["fee", "charge", "cost", "price", "tuition", "payment"]):
+        reply = "S.D. Public School offers transparent and affordable fee structures. Day scholar monthly tuition ranges from ₹1,200 for Nursery to ₹2,600 for Class XII. You can pay online via our portal at /fee-payment or view the detailed circular at /fee-structure."
+        action = {"type": "navigate", "url": "/fee-structure", "label": "Open Fee Structure"}
+    elif any(k in prompt for k in ["apply", "admission", "form", "register", "join", "eligibility"]):
+        reply = "Admissions for session 2026-27 are open from Nursery to Class XII! You can fill out the online application form directly at /admission-form or check class-wise age criteria at /admission-eligibility."
+        action = {"type": "navigate", "url": "/admission-form", "label": "Open Admission Form"}
+    elif any(k in prompt for k in ["timing", "hour", "time", "schedule", "open", "close"]):
+        reply = "School operational timings: Pre-School (Nursery to KG-II) runs 08:30 AM to 12:30 PM. Classes I to XII run 07:30 AM to 01:30 PM (Summer) and 08:00 AM to 02:00 PM (Winter). Administrative desk is open Monday to Saturday, 08:00 AM to 03:00 PM."
+        action = None
+    elif any(k in prompt for k in ["hostel", "boarding", "lodging", "stay"]):
+        reply = "SDPS provides safe and modern residential hostel facilities for outstation students with 24/7 CCTV surveillance, nutritious meals, structured evening study hours, and sports amenities. Learn more at /hostel."
+        action = {"type": "navigate", "url": "/hostel", "label": "View Hostel Page"}
+    elif any(k in prompt for k in ["contact", "phone", "call", "email", "address", "location"]):
+        reply = "You can contact our admissions desk directly at +91 99551 90262 or email helpdesk@sdpublic.org. S.D. Public School is located at Maurya Colony, Near R.O.B., Patna, Bihar."
+        action = {"type": "navigate", "url": "/contact", "label": "View Contact Page"}
+    else:
+        reply = f"Thank you for asking about '{prompt}'. S.D. Public School Patna is committed to academic excellence and holistic development. Would you like me to guide you through admissions, fee payment, or campus facilities?"
+        action = None
+
+    return {
+        "reply": reply,
+        "action": action,
+        "timestamp": now_iso()
+    }
+
+
