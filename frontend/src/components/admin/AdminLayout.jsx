@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { NavLink, Outlet, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { toast, Toaster } from "sonner";
 
@@ -544,7 +544,16 @@ export default function AdminLayout() {
             </div>
           </div>
         )}
-        <Outlet context={{ settings }} />
+        <Suspense fallback={
+          <div className="flex items-center justify-center min-h-[50vh] w-full">
+            <div className="flex flex-col items-center gap-3">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-orange"></div>
+              <span className="text-xs text-slate-500 font-semibold">Loading Module...</span>
+            </div>
+          </div>
+        }>
+          <Outlet context={{ settings }} />
+        </Suspense>
       </main>
     </div>
   );
