@@ -7,6 +7,13 @@ import { VoteProvider } from "@/context/VoteContext";
 
 import PublicLayout from "@/components/layout/PublicLayout";
 import RouteSEOManager from "@/components/layout/RouteSEOManager";
+import ErrorBoundary from "@/components/layout/ErrorBoundary";
+
+import AdminLayout from "@/components/admin/AdminLayout";
+import { AdminLogin, AdminForgotPassword } from "@/pages/admin/AuthPages";
+import AdminDashboard from "@/pages/admin/Dashboard";
+import CampusTour from "@/pages/public/CampusTour";
+
 
 // Lazy-loaded Public Pages
 const Home = lazy(() => import("@/pages/public/Home"));
@@ -39,13 +46,9 @@ const TermsPrivacy = lazy(() => import("@/pages/public/TermsPrivacy"));
 const KheloPatna = lazy(() => import("@/pages/public/KheloPatna"));
 const MapsReview = lazy(() => import("@/pages/public/MapsReview"));
 const ApaarForm = lazy(() => import("@/pages/public/ApaarForm"));
-const CampusTour = lazy(() => import("@/pages/public/CampusTour"));
 
 
-const AdminLayout = lazy(() => import("@/components/admin/AdminLayout"));
-const AdminLogin = lazy(() => import("@/pages/admin/AuthPages").then(module => ({ default: module.AdminLogin })));
-const AdminForgotPassword = lazy(() => import("@/pages/admin/AuthPages").then(module => ({ default: module.AdminForgotPassword })));
-const AdminDashboard = lazy(() => import("@/pages/admin/Dashboard"));
+
 
 // Lazy-loaded Elections Pages
 const ElectionAuth = lazy(() => import("@/pages/elections/AuthPage"));
@@ -137,119 +140,121 @@ function App() {
       <HelmetProvider>
         <AuthProvider>
           <BrowserRouter>
-            <RouteSEOManager />
-            <Routes>
-              {/* Kiosk Elections Portal (no header/footer layout) */}
-              <Route path="/elections" element={<VoteProvider><Suspense fallback={<div>Loading...</div>}><ElectionAuth /></Suspense></VoteProvider>} />
-              <Route path="/elections/confirm" element={<VoteProvider><Suspense fallback={<div>Loading...</div>}><ElectionConfirm /></Suspense></VoteProvider>} />
-              <Route path="/elections/vote" element={<VoteProvider><Suspense fallback={<div>Loading...</div>}><ElectionVote /></Suspense></VoteProvider>} />
-              <Route path="/elections/thank-you" element={<VoteProvider><Suspense fallback={<div>Loading...</div>}><ElectionThankYou /></Suspense></VoteProvider>} />
-              <Route path="/elections/results" element={<Suspense fallback={<div>Loading...</div>}><ElectionPublicResults /></Suspense>} />
-              <Route path="/elections/board" element={<Suspense fallback={<div>Loading...</div>}><ElectionBoard /></Suspense>} />
-              <Route path="/s/:code" element={<Suspense fallback={<div>Loading...</div>}><ShortLinkRedirect /></Suspense>} />
-              <Route path="/links" element={<Suspense fallback={<div>Loading...</div>}><LinksPage /></Suspense>} />
-              <Route path="/notice-preview/:id" element={<Suspense fallback={<div>Loading...</div>}><NoticePreview /></Suspense>} />
-              <Route path="/review" element={<MapsReview />} />
-              <Route path="/video-call" element={<Suspense fallback={<div>Loading Call...</div>}><PublicVideoCall /></Suspense>} />
-              <Route path="/apaar" element={<Suspense fallback={<AdminLoading />}><ApaarForm /></Suspense>} />
+            <ErrorBoundary>
+              <RouteSEOManager />
+              <Routes>
+                {/* Kiosk Elections Portal (no header/footer layout) */}
+                <Route path="/elections" element={<VoteProvider><Suspense fallback={<div>Loading...</div>}><ElectionAuth /></Suspense></VoteProvider>} />
+                <Route path="/elections/confirm" element={<VoteProvider><Suspense fallback={<div>Loading...</div>}><ElectionConfirm /></Suspense></VoteProvider>} />
+                <Route path="/elections/vote" element={<VoteProvider><Suspense fallback={<div>Loading...</div>}><ElectionVote /></Suspense></VoteProvider>} />
+                <Route path="/elections/thank-you" element={<VoteProvider><Suspense fallback={<div>Loading...</div>}><ElectionThankYou /></Suspense></VoteProvider>} />
+                <Route path="/elections/results" element={<Suspense fallback={<div>Loading...</div>}><ElectionPublicResults /></Suspense>} />
+                <Route path="/elections/board" element={<Suspense fallback={<div>Loading...</div>}><ElectionBoard /></Suspense>} />
+                <Route path="/s/:code" element={<Suspense fallback={<div>Loading...</div>}><ShortLinkRedirect /></Suspense>} />
+                <Route path="/links" element={<Suspense fallback={<div>Loading...</div>}><LinksPage /></Suspense>} />
+                <Route path="/notice-preview/:id" element={<Suspense fallback={<div>Loading...</div>}><NoticePreview /></Suspense>} />
+                <Route path="/review" element={<MapsReview />} />
+                <Route path="/video-call" element={<Suspense fallback={<div>Loading Call...</div>}><PublicVideoCall /></Suspense>} />
+                <Route path="/apaar" element={<Suspense fallback={<AdminLoading />}><ApaarForm /></Suspense>} />
 
 
-              {/* Public */}
-              <Route element={<PublicLayout />}>
-                <Route path="/" element={<Home />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/academics" element={<Academics />} />
-                <Route path="/house-system" element={<HouseSystem />} />
-                <Route path="/hostel" element={<Hostel />} />
-                <Route path="/demystified" element={<Demystified />} />
-                <Route path="/administration-message" element={<AdministrationMessage />} />
-                <Route path="/preschool" element={<PreSchool />} />
-                <Route path="/gallery" element={<Gallery />} />
-                <Route path="/videos" element={<Videos />} />
-                <Route path="/news" element={<NewsList />} />
-                <Route path="/notices" element={<NoticesList />} />
-                <Route path="/calendar" element={<CalendarPage />} />
-                <Route path="/student-council" element={<StudentCouncil />} />
-                <Route path="/admissions" element={<AdmissionsLanding />} />
-                <Route path="/admission-enquiry" element={<AdmissionEnquiry />} />
-                <Route path="/admission-form" element={<AdmissionForm />} />
-                <Route path="/admission-eligibility" element={<AdmissionsEligibility />} />
-                <Route path="/fee-structure" element={<FeeStructure />} />
-                <Route path="/careers" element={<Career />} />
-                <Route path="/alumni" element={<Alumni />} />
-                <Route path="/tc-download" element={<TCDownload />} />
-                <Route path="/fee-payment" element={<FeePayment />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/terms" element={<TermsPrivacy />} />
-                <Route path="/privacy" element={<TermsPrivacy />} />
-                <Route path="/khelo-patna" element={<KheloPatna />} />
-                <Route path="/campus-tour" element={<CampusTour />} />
-                <Route path="*" element={<NotFound />} />
-              </Route>
+                {/* Public */}
+                <Route element={<PublicLayout />}>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/academics" element={<Academics />} />
+                  <Route path="/house-system" element={<HouseSystem />} />
+                  <Route path="/hostel" element={<Hostel />} />
+                  <Route path="/demystified" element={<Demystified />} />
+                  <Route path="/administration-message" element={<AdministrationMessage />} />
+                  <Route path="/preschool" element={<PreSchool />} />
+                  <Route path="/gallery" element={<Gallery />} />
+                  <Route path="/videos" element={<Videos />} />
+                  <Route path="/news" element={<NewsList />} />
+                  <Route path="/notices" element={<NoticesList />} />
+                  <Route path="/calendar" element={<CalendarPage />} />
+                  <Route path="/student-council" element={<StudentCouncil />} />
+                  <Route path="/admissions" element={<AdmissionsLanding />} />
+                  <Route path="/admission-enquiry" element={<AdmissionEnquiry />} />
+                  <Route path="/admission-form" element={<AdmissionForm />} />
+                  <Route path="/admission-eligibility" element={<AdmissionsEligibility />} />
+                  <Route path="/fee-structure" element={<FeeStructure />} />
+                  <Route path="/careers" element={<Career />} />
+                  <Route path="/alumni" element={<Alumni />} />
+                  <Route path="/tc-download" element={<TCDownload />} />
+                  <Route path="/fee-payment" element={<FeePayment />} />
+                  <Route path="/contact" element={<Contact />} />
+                  <Route path="/terms" element={<TermsPrivacy />} />
+                  <Route path="/privacy" element={<TermsPrivacy />} />
+                  <Route path="/khelo-patna" element={<KheloPatna />} />
+                  <Route path="/campus-tour" element={<CampusTour />} />
+                  <Route path="*" element={<NotFound />} />
+                </Route>
 
 
 
-              {/* Admin auth (no layout) */}
-              <Route path="/admin/login" element={<Suspense fallback={<AdminLoading />}><AdminLogin /></Suspense>} />
-              <Route path="/admin/forgot-password" element={<Suspense fallback={<AdminLoading />}><AdminForgotPassword /></Suspense>} />
+                {/* Admin auth (no layout) */}
+                <Route path="/admin/login" element={<Suspense fallback={<AdminLoading />}><AdminLogin /></Suspense>} />
+                <Route path="/admin/forgot-password" element={<Suspense fallback={<AdminLoading />}><AdminForgotPassword /></Suspense>} />
 
-              {/* Admin (protected) */}
-              <Route path="/admin" element={<Suspense fallback={<AdminLoading />}><AdminLayout /></Suspense>}>
-                <Route index element={<AdminDashboard />} />
-                <Route path="link-shortener" element={<Suspense fallback={<AdminLoading />}><AdminShortener /></Suspense>} />
-                <Route path="linktree" element={<Suspense fallback={<AdminLoading />}><AdminLinktree /></Suspense>} />
-                <Route path="elections" element={<Suspense fallback={<AdminLoading />}><AdminElections /></Suspense>} />
-                <Route path="elections/results" element={<Suspense fallback={<AdminLoading />}><AdminElectionsResults /></Suspense>} />
-                <Route path="elections/scheduler" element={<Suspense fallback={<AdminLoading />}><AdminElectionsScheduler /></Suspense>} />
-                <Route path="news" element={<AdminNews />} />
-                <Route path="notices" element={<AdminNotices />} />
-                <Route path="gallery" element={<AdminGallery />} />
-                <Route path="videos" element={<AdminVideos />} />
-                <Route path="calendar" element={<AdminCalendar />} />
-                <Route path="holidays" element={<AdminHolidays />} />
-                <Route path="council-members" element={<AdminCouncilMembers />} />
-                <Route path="election-posters" element={<AdminElectionPosters />} />
-                <Route path="council-results" element={<AdminCouncilResults />} />
-                <Route path="admission-enquiries" element={<AdminEnquiries />} />
-                <Route path="enquiry-questions" element={<AdminEnquiryQuestions />} />
-                <Route path="admission-fields" element={<AdminAdmissionFields />} />
-                <Route path="admissions" element={<AdminApplications />} />
-                <Route path="eligibility-rows" element={<AdminEligibilityRows />} />
-                <Route path="hostel-gallery" element={<AdminHostelGallery />} />
-                <Route path="administration-members" element={<AdminAdministrationMembers />} />
-                <Route path="testimonials" element={<AdminTestimonials />} />
-                <Route path="career-posts" element={<AdminCareerPosts />} />
-                <Route path="career-questions" element={<AdminCareerQuestions />} />
-                <Route path="career-applications" element={<AdminCareerApps />} />
-                <Route path="alumni-settings" element={<AdminAlumniSettings />} />
-                <Route path="alumni-questions" element={<AdminAlumniQuestions />} />
-                <Route path="alumni-meets" element={<AdminAlumniMeets />} />
-                <Route path="alumni-members" element={<AdminAlumniMembers />} />
-                <Route path="tc-records" element={<AdminTC />} />
-                <Route path="popup" element={<AdminPopup />} />
-                <Route path="contact-messages" element={<AdminContactMessages />} />
-                <Route path="whatsapp-marketing" element={<WhatsAppMarketing />} />
-                <Route path="fee-reminders" element={<FeeReminders />} />
-                <Route path="birthday-greetings" element={<BirthdayGreetings />} />
-                <Route path="message-logs" element={<Suspense fallback={<AdminLoading />}><AdminMessageLogs /></Suspense>} />
-                <Route path="educators" element={<AdminEducators />} />
-                <Route path="thumbnail-generator" element={<AdminThumbnailGenerator />} />
-                <Route path="salary-slip" element={<AdminSalarySlip />} />
-                <Route path="salary-certificate" element={<AdminSalaryCertificate />} />
-                <Route path="experience-certificate" element={<AdminExperienceCertificate />} />
-                <Route path="notice-maker" element={<AdminNoticeMaker />} />
-                <Route path="omr-generator" element={<Suspense fallback={<AdminLoading />}><AdminOmrGenerator /></Suspense>} />
-                <Route path="omr-roster" element={<Suspense fallback={<AdminLoading />}><AdminOmrRoster /></Suspense>} />
-                <Route path="omr-checker" element={<Suspense fallback={<AdminLoading />}><AdminOmrChecker /></Suspense>} />
-                <Route path="apaar" element={<Suspense fallback={<AdminLoading />}><AdminApaarManager /></Suspense>} />
-                <Route path="site-settings" element={<AdminSiteSettings />} />
-                <Route path="integration-keys" element={<AdminIntegrationKeys />} />
-                <Route path="khelo-patna-gallery" element={<AdminKheloPatna />} />
-                <Route path="holiday-homework" element={<AdminHolidayHomework />} />
-                <Route path="staff-users" element={<AdminStaffUsers />} />
-                <Route path="maps-review" element={<AdminMapsReview />} />
-              </Route>
-            </Routes>
+                {/* Admin (protected) */}
+                <Route path="/admin" element={<Suspense fallback={<AdminLoading />}><AdminLayout /></Suspense>}>
+                  <Route index element={<AdminDashboard />} />
+                  <Route path="link-shortener" element={<Suspense fallback={<AdminLoading />}><AdminShortener /></Suspense>} />
+                  <Route path="linktree" element={<Suspense fallback={<AdminLoading />}><AdminLinktree /></Suspense>} />
+                  <Route path="elections" element={<Suspense fallback={<AdminLoading />}><AdminElections /></Suspense>} />
+                  <Route path="elections/results" element={<Suspense fallback={<AdminLoading />}><AdminElectionsResults /></Suspense>} />
+                  <Route path="elections/scheduler" element={<Suspense fallback={<AdminLoading />}><AdminElectionsScheduler /></Suspense>} />
+                  <Route path="news" element={<AdminNews />} />
+                  <Route path="notices" element={<AdminNotices />} />
+                  <Route path="gallery" element={<AdminGallery />} />
+                  <Route path="videos" element={<AdminVideos />} />
+                  <Route path="calendar" element={<AdminCalendar />} />
+                  <Route path="holidays" element={<AdminHolidays />} />
+                  <Route path="council-members" element={<AdminCouncilMembers />} />
+                  <Route path="election-posters" element={<AdminElectionPosters />} />
+                  <Route path="council-results" element={<AdminCouncilResults />} />
+                  <Route path="admission-enquiries" element={<AdminEnquiries />} />
+                  <Route path="enquiry-questions" element={<AdminEnquiryQuestions />} />
+                  <Route path="admission-fields" element={<AdminAdmissionFields />} />
+                  <Route path="admissions" element={<AdminApplications />} />
+                  <Route path="eligibility-rows" element={<AdminEligibilityRows />} />
+                  <Route path="hostel-gallery" element={<AdminHostelGallery />} />
+                  <Route path="administration-members" element={<AdminAdministrationMembers />} />
+                  <Route path="testimonials" element={<AdminTestimonials />} />
+                  <Route path="career-posts" element={<AdminCareerPosts />} />
+                  <Route path="career-questions" element={<AdminCareerQuestions />} />
+                  <Route path="career-applications" element={<AdminCareerApps />} />
+                  <Route path="alumni-settings" element={<AdminAlumniSettings />} />
+                  <Route path="alumni-questions" element={<AdminAlumniQuestions />} />
+                  <Route path="alumni-meets" element={<AdminAlumniMeets />} />
+                  <Route path="alumni-members" element={<AdminAlumniMembers />} />
+                  <Route path="tc-records" element={<AdminTC />} />
+                  <Route path="popup" element={<AdminPopup />} />
+                  <Route path="contact-messages" element={<AdminContactMessages />} />
+                  <Route path="whatsapp-marketing" element={<WhatsAppMarketing />} />
+                  <Route path="fee-reminders" element={<FeeReminders />} />
+                  <Route path="birthday-greetings" element={<BirthdayGreetings />} />
+                  <Route path="message-logs" element={<Suspense fallback={<AdminLoading />}><AdminMessageLogs /></Suspense>} />
+                  <Route path="educators" element={<AdminEducators />} />
+                  <Route path="thumbnail-generator" element={<AdminThumbnailGenerator />} />
+                  <Route path="salary-slip" element={<AdminSalarySlip />} />
+                  <Route path="salary-certificate" element={<AdminSalaryCertificate />} />
+                  <Route path="experience-certificate" element={<AdminExperienceCertificate />} />
+                  <Route path="notice-maker" element={<AdminNoticeMaker />} />
+                  <Route path="omr-generator" element={<Suspense fallback={<AdminLoading />}><AdminOmrGenerator /></Suspense>} />
+                  <Route path="omr-roster" element={<Suspense fallback={<AdminLoading />}><AdminOmrRoster /></Suspense>} />
+                  <Route path="omr-checker" element={<Suspense fallback={<AdminLoading />}><AdminOmrChecker /></Suspense>} />
+                  <Route path="apaar" element={<Suspense fallback={<AdminLoading />}><AdminApaarManager /></Suspense>} />
+                  <Route path="site-settings" element={<AdminSiteSettings />} />
+                  <Route path="integration-keys" element={<AdminIntegrationKeys />} />
+                  <Route path="khelo-patna-gallery" element={<AdminKheloPatna />} />
+                  <Route path="holiday-homework" element={<AdminHolidayHomework />} />
+                  <Route path="staff-users" element={<AdminStaffUsers />} />
+                  <Route path="maps-review" element={<AdminMapsReview />} />
+                </Route>
+              </Routes>
+            </ErrorBoundary>
           </BrowserRouter>
         </AuthProvider>
       </HelmetProvider>
