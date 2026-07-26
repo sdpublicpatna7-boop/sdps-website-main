@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { toast, Toaster } from "sonner";
+
 import {
   LayoutDashboard, Newspaper, Bell, Image as ImageIcon, Video,
   Calendar, PartyPopper, Crown, Vote, Trophy, Users, Briefcase,
@@ -282,8 +283,20 @@ export default function AdminLayout() {
     startPinger();
   }, []);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  if (!user) return null;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-orange"></div>
+          <span className="text-xs text-slate-400 font-semibold">Loading SDPS Admin Panel...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/admin/login" replace />;
+  }
 
   // Filter NAV items based on permissions.
   // We only show a section header if there's at least one visible item under it.
