@@ -722,11 +722,19 @@ class VideoSupportConfig(BaseDoc):
     llm_engine: str = "sdps-knowledge"  # "sdps-knowledge" | "gpt-4o" | "gemini-pro"
     tts_plugin: str = "websynthesizer"  # "websynthesizer" | "elevenlabs" | "cambai"
     function_tools: List[str] = Field(default_factory=lambda: ["fetch_fee_structure", "open_admission_form", "get_school_timings", "transfer_to_human_agent"])
+    # Indian SIP Telephony Integration (+91)
+    sip_provider: str = "exotel"  # "exotel" | "twilio" | "airtel_iq" | "ttbs"
+    sip_phone_number: str = "+919955190262"
+    sip_domain_uri: str = "sip.sdpublic.org"
+    sip_auth_user: str = ""
+    sip_auth_pass: str = ""
+    inbound_sip_enabled: bool = True
     auto_agent_enabled: bool = True
     voice_pitch: float = 1.0
     voice_rate: float = 1.0
     voice_lang: str = "en-IN"
     created_at: str = Field(default_factory=now_iso)
+
 
 
 

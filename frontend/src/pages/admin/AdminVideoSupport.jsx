@@ -876,6 +876,57 @@ export default function AdminVideoSupport() {
               </div>
             </div>
 
+            {/* Indian SIP Telephony Configuration (+91) */}
+            <div className="pt-4 border-t border-slate-100 space-y-4">
+              <div>
+                <h4 className="font-headline font-bold text-sm text-slate-800 flex items-center gap-2">
+                  <PhoneCall className="w-4 h-4 text-emerald-600" /> Indian SIP Phone Telephony Integration (+91)
+                </h4>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Connect Sal AI to Indian phone numbers (+91 99551 90262) via DoT/TRAI licensed SIP providers (Exotel, Airtel IQ, TTBS, Twilio India).
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">SIP Trunk Provider</label>
+                  <select
+                    value={config.sip_provider || "exotel"}
+                    onChange={(e) => setConfig({ ...config, sip_provider: e.target.value })}
+                    className="w-full p-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl"
+                  >
+                    <option value="exotel">Exotel India (Recommended)</option>
+                    <option value="airtel_iq">Airtel IQ SIP Trunk</option>
+                    <option value="ttbs">Tata Tele Business (TTBS)</option>
+                    <option value="twilio">Twilio India Elastic SIP</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Indian Phone Number (+91)</label>
+                  <input
+                    type="text"
+                    value={config.sip_phone_number || "+919955190262"}
+                    onChange={(e) => setConfig({ ...config, sip_phone_number: e.target.value })}
+                    placeholder="+91 9955190262"
+                    className="w-full p-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">SIP Domain / URI</label>
+                  <input
+                    type="text"
+                    value={config.sip_domain_uri || "sip.sdpublic.org"}
+                    onChange={(e) => setConfig({ ...config, sip_domain_uri: e.target.value })}
+                    placeholder="sip.sdpublic.org"
+                    className="w-full p-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                  />
+                </div>
+              </div>
+            </div>
+
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-bold text-slate-700 block mb-1">Voice Speed Rate ({config.voice_rate}x)</label>
