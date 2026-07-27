@@ -46,7 +46,13 @@ export function AdminKheloPatna() {
     }
     setSavingLogo(true);
     try {
-      await api.put("/site-settings", { khelo_patna_logo_url: logoUrl });
+      const res = await api.put("/site-settings", { khelo_patna_logo_url: logoUrl });
+      try {
+        localStorage.removeItem("sdps_site_settings");
+        if (res.data?.khelo_patna_logo_url) {
+          setLogoUrl(res.data.khelo_patna_logo_url);
+        }
+      } catch (e) {}
       toast.success("Khelo Patna logo updated successfully!");
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Failed to save logo");

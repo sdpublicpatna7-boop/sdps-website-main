@@ -7,12 +7,29 @@ const BACKEND = process.env.REACT_APP_BACKEND_URL || "";
 function fullUrl(u) { return u?.startsWith("http") ? u : `${BACKEND}${u}`; }
 
 export default function KheloPatna() {
-  const { settings } = useOutletContext() || {};
-  const heroImgRaw = settings?.khelo_patna_hero_image_url || "/khelo-patna-hero.jpg";
+  const { settings: outletSettings } = useOutletContext() || {};
+  const [siteSettings, setSiteSettings] = useState(outletSettings);
+
+  useEffect(() => {
+    api.get("/site-settings")
+      .then((r) => {
+        if (r.data) {
+          setSiteSettings(r.data);
+          try {
+            localStorage.setItem("sdps_site_settings", JSON.stringify(r.data));
+          } catch (e) {}
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const activeSettings = siteSettings || outletSettings;
+
+  const heroImgRaw = activeSettings?.khelo_patna_hero_image_url || "/khelo-patna-hero.jpg";
   const { style: heroImgStyle, cleanUrl: cleanHeroImg } = parseImageTransform(heroImgRaw);
   const heroImgUrl = cleanHeroImg.startsWith("http") || (cleanHeroImg.startsWith("/") && !cleanHeroImg.startsWith("/static")) ? cleanHeroImg : `${BACKEND}${cleanHeroImg}`;
 
-  const logoImgRaw = settings?.khelo_patna_logo_url || "/khelo-patna-logo.png";
+  const logoImgRaw = activeSettings?.khelo_patna_logo_url || "/khelo-patna-logo.png";
   const logoImgUrl = fullUrl(logoImgRaw);
 
   const features = [
