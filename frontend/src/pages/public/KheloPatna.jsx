@@ -6,6 +6,91 @@ import { Trophy, Shield, Lightbulb, Dumbbell, Zap, Target, Activity, Users, User
 const BACKEND = process.env.REACT_APP_BACKEND_URL || "";
 function fullUrl(u) { return u?.startsWith("http") ? u : `${BACKEND}${u}`; }
 
+// Dedicated Custom SVG Icons for Sports
+function FootballIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <circle cx="12" cy="12" r="10" />
+      <polygon points="12 7 15 9.5 14 13 10 13 9 9.5 12 7" fill="currentColor" fillOpacity="0.2" />
+      <line x1="12" y1="7" x2="12" y2="2" />
+      <line x1="15" y1="9.5" x2="19.5" y2="8" />
+      <line x1="14" y1="13" x2="17" y2="17.5" />
+      <line x1="10" y1="13" x2="7" y2="17.5" />
+      <line x1="9" y1="9.5" x2="4.5" y2="8" />
+    </svg>
+  );
+}
+
+function CricketIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M4 20l10-10" strokeWidth="2.5" />
+      <path d="M12 8l4-4 2 2-4 4-2-2z" fill="currentColor" fillOpacity="0.2" />
+      <line x1="16" y1="4" x2="20" y2="8" />
+      <circle cx="7" cy="7" r="2.5" fill="currentColor" fillOpacity="0.3" />
+      <line x1="17" y1="14" x2="17" y2="21" />
+      <line x1="19" y1="14" x2="19" y2="21" />
+      <line x1="21" y1="14" x2="21" y2="21" />
+      <line x1="16" y1="14" x2="22" y2="14" />
+    </svg>
+  );
+}
+
+function AthleticsIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <circle cx="15" cy="4" r="2" fill="currentColor" fillOpacity="0.3" />
+      <path d="M11 11l4-3 3 2" />
+      <path d="M8 8l4 3-2 5" />
+      <path d="M10 16l-3 4" />
+      <path d="M10 16l4 1 3 4" />
+      <line x1="3" y1="7" x2="7" y2="7" strokeDasharray="1 2" />
+      <line x1="2" y1="12" x2="6" y2="12" strokeDasharray="1 2" />
+    </svg>
+  );
+}
+
+function BasketballIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <circle cx="12" cy="12" r="10" />
+      <line x1="2" y1="12" x2="22" y2="12" />
+      <line x1="12" y1="2" x2="12" y2="22" />
+      <path d="M4.93 4.93a10 10 0 0 1 14.14 0" />
+      <path d="M4.93 19.07a10 10 0 0 0 14.14 0" />
+    </svg>
+  );
+}
+
+function BadmintonIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <ellipse cx="15" cy="9" rx="5" ry="6" transform="rotate(-30 15 9)" fill="currentColor" fillOpacity="0.1" />
+      <line x1="11" y1="13.5" x2="4" y2="21" strokeWidth="2.5" />
+      <path d="M13.5 6.5l3.5 3.5" opacity="0.6" />
+      <path d="M15 4.5l3 3" opacity="0.6" />
+      <circle cx="7" cy="5" r="1.5" fill="currentColor" />
+      <path d="M6 7l-2.5-3m3.5 4.5l0-4m2.5 3.5l2-3" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+function KabaddiIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <circle cx="6" cy="6" r="2" fill="currentColor" fillOpacity="0.3" />
+      <path d="M4 12l2-4 4 1 4-2" />
+      <path d="M6 12l-2 5" />
+      <path d="M6 12l3 4 3-1" />
+      <circle cx="18" cy="7" r="2" fill="currentColor" fillOpacity="0.3" />
+      <path d="M15 13l3-4 3 2" />
+      <path d="M18 13l-2 5" />
+      <path d="M18 13l2 5" />
+      <line x1="10" y1="9" x2="15" y2="11" strokeDasharray="2 2" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
 export default function KheloPatna() {
   const { settings: outletSettings } = useOutletContext() || {};
   const [siteSettings, setSiteSettings] = useState(outletSettings);
@@ -175,12 +260,12 @@ export default function KheloPatna() {
           <h2 className="section-title text-center mb-8">Available Sports</h2>
           <div className="flex flex-wrap justify-center gap-4">
             {[
-              { sport: "Football", icon: Dumbbell, color: "text-brand-blue bg-blue-50" },
-              { sport: "Cricket", icon: Target, color: "text-brand-orange bg-orange-50" },
-              { sport: "Athletics", icon: Zap, color: "text-amber-500 bg-amber-50" },
-              { sport: "Basketball", icon: Activity, color: "text-red-500 bg-red-50" },
-              { sport: "Badminton", icon: Trophy, color: "text-purple-500 bg-purple-50" },
-              { sport: "Kabaddi", icon: Users, color: "text-emerald-500 bg-emerald-50" },
+              { sport: "Football", icon: FootballIcon, color: "text-brand-blue bg-blue-50" },
+              { sport: "Cricket", icon: CricketIcon, color: "text-brand-orange bg-orange-50" },
+              { sport: "Athletics", icon: AthleticsIcon, color: "text-amber-500 bg-amber-50" },
+              { sport: "Basketball", icon: BasketballIcon, color: "text-red-500 bg-red-50" },
+              { sport: "Badminton", icon: BadmintonIcon, color: "text-purple-500 bg-purple-50" },
+              { sport: "Kabaddi", icon: KabaddiIcon, color: "text-emerald-500 bg-emerald-50" },
             ].map((s, i) => (
               <div key={i} className="bg-gradient-to-br from-brand-blue/5 to-brand-orange/5 border border-brand-blue/10 rounded-2xl px-6 py-5 text-center hover:shadow-md hover:-translate-y-1 transition-all flex flex-col items-center justify-center min-w-[120px]">
                 <div className={`w-12 h-12 rounded-2xl ${s.color} flex items-center justify-center mb-3`}>
