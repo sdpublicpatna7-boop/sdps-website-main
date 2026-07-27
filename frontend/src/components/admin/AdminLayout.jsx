@@ -8,88 +8,160 @@ import {
   GraduationCap, Award, FileText, CreditCard, Settings, LogOut,
   MessageSquare, Megaphone, ScrollText, FilePlus, Home, Hotel,
   BookOpen, Shield, EyeOff, ClipboardList, BookMarked, UserCog,
-  Menu, X, Star, Cake, Link2 as LinkIcon, Fingerprint, Lock, CheckSquare, PhoneCall
+  Menu, X, Star, Cake, Link2 as LinkIcon, Fingerprint, Lock, CheckSquare, PhoneCall,
+  ChevronDown, ChevronRight
 } from "lucide-react";
 import { useAuth } from "../../lib/auth";
 import { startPinger } from "../../lib/pinger";
 import api from "../../lib/api";
 import SEO from "../layout/SEO";
 
-// Full nav options with permission mapping
-const NAV_ITEMS = [
-  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { section: "Content" },
-  { to: "/admin/news", label: "News", icon: Newspaper, permission: "news" },
-  { to: "/admin/notices", label: "Notices", icon: Bell, permission: "notices" },
-  { to: "/admin/gallery", label: "Gallery", icon: ImageIcon, permission: "gallery" },
-  { to: "/admin/videos", label: "Videos", icon: Video, permission: "gallery" },
-  { to: "/admin/calendar", label: "Calendar", icon: Calendar, permission: "calendar" },
-  { to: "/admin/holidays", label: "Holidays", icon: PartyPopper, permission: "calendar" },
-  { section: "School Pages" },
-  { to: "/admin/administration-members", label: "Administration Messages", icon: Users, permission: "site-settings" },
-  { to: "/admin/testimonials", label: "Testimonials", icon: MessageSquare, permission: "site-settings" },
-  { to: "/admin/hostel-gallery", label: "Hostel Gallery", icon: Hotel, permission: "hostel-gallery" },
-  { to: "/admin/khelo-patna-gallery", label: "Khelo Patna Gallery", icon: Trophy, permission: "khelo-patna-gallery" },
-  { section: "Elections" },
-  { to: "/admin/elections", label: "Control Panel", icon: Vote, permission: "council", end: true },
-  { to: "/admin/elections/results", label: "Live Results Tally", icon: Trophy, permission: "council" },
-  { to: "/admin/elections/scheduler", label: "Publish Scheduler", icon: Calendar, permission: "council" },
-  { section: "Student Council" },
-  { to: "/admin/council-members", label: "Members & Captains", icon: Crown, permission: "council" },
-  { to: "/admin/election-posters", label: "Election Posters", icon: Vote, permission: "council" },
-  { to: "/admin/council-results", label: "Election Results Archive", icon: Trophy, permission: "council" },
-  { section: "Admissions" },
-  { to: "/admin/admission-enquiries", label: "Enquiries", icon: MessageSquare, permission: "admissions" },
-  { to: "/admin/enquiry-questions", label: "Enquiry Questions", icon: FilePlus, permission: "admissions" },
-  { to: "/admin/admission-fields", label: "Admission Form Builder", icon: FileText, permission: "admissions" },
-  { to: "/admin/admissions", label: "Full Applications", icon: GraduationCap, permission: "admissions" },
-  { to: "/admin/eligibility-rows", label: "Eligibility Criteria", icon: BookOpen, permission: "site-settings" },
-  { section: "Academics" },
-  { to: "/admin/holiday-homework", label: "Holiday Homework", icon: ClipboardList, permission: "academics" },
-  { section: "Career" },
-  { to: "/admin/career-posts", label: "Vacant Posts", icon: Briefcase, permission: "career" },
-  { to: "/admin/career-questions", label: "Application Questions", icon: FilePlus, permission: "career" },
-  { to: "/admin/career-applications", label: "Applications", icon: ScrollText, permission: "career" },
-  { section: "Alumni" },
-  { to: "/admin/alumni-settings", label: "Alumni Settings (Hide/Show)", icon: EyeOff, permission: "alumni" },
-  { to: "/admin/alumni-questions", label: "Alumni Form Questions", icon: FilePlus, permission: "alumni" },
-  { to: "/admin/alumni-meets", label: "Alumni Meets", icon: Users, permission: "alumni" },
-  { to: "/admin/alumni-members", label: "Members", icon: Award, permission: "alumni" },
-  { section: "Media Tools" },
-  { to: "/admin/educators", label: "Educators", icon: Users, permission: ["educators", "media-tools"] },
-  { to: "/admin/thumbnail-generator", label: "Thumbnail Generator", icon: ImageIcon, permission: ["thumbnail-generator", "media-tools"] },
-  { to: "/admin/salary-slip", label: "Salary Slip Generator", icon: FileText, permission: ["salary-tools", "media-tools"] },
-  { to: "/admin/salary-certificate", label: "Salary Certificate", icon: FileText, permission: ["salary-tools", "media-tools"] },
-  { to: "/admin/experience-certificate", label: "Experience Certificate", icon: FileText, permission: ["salary-tools", "media-tools"] },
-  { to: "/admin/notice-maker", label: "Notice Maker", icon: FileText, permission: ["notice-maker", "media-tools"] },
-  { to: "/admin/omr-generator", label: "OMR Generator", icon: FileText, permission: ["omr-tools", "media-tools"] },
-  { to: "/admin/omr-roster", label: "OMR Student Database", icon: Users, permission: ["omr-tools", "media-tools"] },
-  { to: "/admin/omr-checker", label: "OMR Auto-Checker", icon: CheckSquare, permission: ["omr-tools", "media-tools"] },
-  { to: "/admin/video-support", label: "Voice AI Support Agent", icon: PhoneCall, permission: ["site-settings", "admissions", "media-tools"] },
-  { section: "Other" },
-  { to: "/admin/tc-records", label: "TC Records", icon: FileText, permission: "tc-records" },
-  { to: "/admin/popup", label: "Welcome Popup", icon: Megaphone, permission: "popup" },
-  { to: "/admin/contact-messages", label: "Contact Messages", icon: MessageSquare, permission: "contact-messages" },
-  { to: "/admin/whatsapp-marketing", label: "WhatsApp Marketing", icon: Megaphone, permission: "whatsapp" },
-  { to: "/admin/fee-reminders", label: "Fee Reminders", icon: CreditCard, permission: "whatsapp" },
-  { to: "/admin/birthday-greetings", label: "Birthday Greetings", icon: Cake, permission: "whatsapp" },
-  { to: "/admin/message-logs", label: "Email & WhatsApp Logs", icon: ScrollText, permission: "message-logs" },
-  { to: "/admin/site-settings", label: "Site Settings", icon: Settings, permission: "site-settings" },
-  { to: "/admin/apaar", label: "APAAR ID Manager", icon: Fingerprint, permission: ["apaar", "site-settings"] },
-  { to: "/admin/link-shortener", label: "Link Shortener", icon: LinkIcon, permission: ["link-tools", "site-settings"] },
-  { to: "/admin/linktree", label: "Linktree Builder", icon: Award, permission: ["link-tools", "site-settings"] },
-  { to: "/admin/integration-keys", label: "Integration Keys", icon: Settings, role: "superadmin" },
-  { section: "Google Review" },
-  { to: "/admin/maps-review", label: "Google Review QR", icon: Star, permission: "google-reviews" },
-  { section: "User Management" },
-  { to: "/admin/staff-users", label: "Staff & Admin Users", icon: UserCog, role: "superadmin" },
+// Structured Nav Categories with Subcategories
+const NAV_CATEGORIES = [
+  {
+    type: "single",
+    to: "/admin",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    end: true,
+  },
+  {
+    id: "content",
+    label: "Content & Media",
+    icon: Newspaper,
+    items: [
+      { to: "/admin/news", label: "News", icon: Newspaper, permission: "news" },
+      { to: "/admin/notices", label: "Notices", icon: Bell, permission: "notices" },
+      { to: "/admin/gallery", label: "Gallery", icon: ImageIcon, permission: "gallery" },
+      { to: "/admin/videos", label: "Videos", icon: Video, permission: "gallery" },
+      { to: "/admin/calendar", label: "Calendar", icon: Calendar, permission: "calendar" },
+      { to: "/admin/holidays", label: "Holidays", icon: PartyPopper, permission: "calendar" },
+    ]
+  },
+  {
+    id: "school",
+    label: "School & Pages",
+    icon: Home,
+    items: [
+      { to: "/admin/administration-members", label: "Administration Messages", icon: Users, permission: "site-settings" },
+      { to: "/admin/testimonials", label: "Testimonials", icon: MessageSquare, permission: "site-settings" },
+      { to: "/admin/hostel-gallery", label: "Hostel Gallery", icon: Hotel, permission: "hostel-gallery" },
+      { to: "/admin/khelo-patna-gallery", label: "Khelo Patna Gallery", icon: Trophy, permission: "khelo-patna-gallery" },
+    ]
+  },
+  {
+    id: "elections_council",
+    label: "Elections & Council",
+    icon: Vote,
+    items: [
+      { to: "/admin/elections", label: "Elections Control Panel", icon: Vote, permission: "council", end: true },
+      { to: "/admin/elections/results", label: "Live Results Tally", icon: Trophy, permission: "council" },
+      { to: "/admin/elections/scheduler", label: "Publish Scheduler", icon: Calendar, permission: "council" },
+      { to: "/admin/council-members", label: "Members & Captains", icon: Crown, permission: "council" },
+      { to: "/admin/election-posters", label: "Election Posters", icon: Vote, permission: "council" },
+      { to: "/admin/council-results", label: "Results Archive", icon: Trophy, permission: "council" },
+    ]
+  },
+  {
+    id: "admissions_academics",
+    label: "Admissions & Academics",
+    icon: GraduationCap,
+    items: [
+      { to: "/admin/admission-enquiries", label: "Enquiries", icon: MessageSquare, permission: "admissions" },
+      { to: "/admin/enquiry-questions", label: "Enquiry Questions", icon: FilePlus, permission: "admissions" },
+      { to: "/admin/admission-fields", label: "Admission Form Builder", icon: FileText, permission: "admissions" },
+      { to: "/admin/admissions", label: "Full Applications", icon: GraduationCap, permission: "admissions" },
+      { to: "/admin/eligibility-rows", label: "Eligibility Criteria", icon: BookOpen, permission: "site-settings" },
+      { to: "/admin/holiday-homework", label: "Holiday Homework", icon: ClipboardList, permission: "academics" },
+    ]
+  },
+  {
+    id: "marketing_logs",
+    label: "Marketing & Messaging",
+    icon: Megaphone,
+    items: [
+      { to: "/admin/whatsapp-marketing", label: "WhatsApp Marketing", icon: Megaphone, permission: "whatsapp" },
+      { to: "/admin/fee-reminders", label: "Fee Reminders", icon: CreditCard, permission: "whatsapp" },
+      { to: "/admin/birthday-greetings", label: "Birthday Greetings", icon: Cake, permission: "whatsapp" },
+      { to: "/admin/message-logs", label: "Email & WhatsApp Logs", icon: ScrollText, permission: "message-logs" },
+      { to: "/admin/contact-messages", label: "Contact Messages", icon: MessageSquare, permission: "contact-messages" },
+      { to: "/admin/popup", label: "Welcome Popup", icon: Megaphone, permission: "popup" },
+    ]
+  },
+  {
+    id: "career_alumni",
+    label: "Career & Alumni",
+    icon: Briefcase,
+    items: [
+      { to: "/admin/career-posts", label: "Vacant Posts", icon: Briefcase, permission: "career" },
+      { to: "/admin/career-questions", label: "Career Application Questions", icon: FilePlus, permission: "career" },
+      { to: "/admin/career-applications", label: "Career Applications", icon: ScrollText, permission: "career" },
+      { to: "/admin/alumni-settings", label: "Alumni Settings", icon: EyeOff, permission: "alumni" },
+      { to: "/admin/alumni-questions", label: "Alumni Form Questions", icon: FilePlus, permission: "alumni" },
+      { to: "/admin/alumni-meets", label: "Alumni Meets", icon: Users, permission: "alumni" },
+      { to: "/admin/alumni-members", label: "Alumni Members", icon: Award, permission: "alumni" },
+    ]
+  },
+  {
+    id: "tools_generators",
+    label: "Tools & Generators",
+    icon: Shield,
+    items: [
+      { to: "/admin/video-support", label: "Voice AI Support Agent", icon: PhoneCall, permission: ["site-settings", "admissions", "media-tools"] },
+      { to: "/admin/thumbnail-generator", label: "Thumbnail Generator", icon: ImageIcon, permission: ["thumbnail-generator", "media-tools"] },
+      { to: "/admin/notice-maker", label: "Notice Maker", icon: FileText, permission: ["notice-maker", "media-tools"] },
+      { to: "/admin/salary-slip", label: "Salary Slip Generator", icon: FileText, permission: ["salary-tools", "media-tools"] },
+      { to: "/admin/salary-certificate", label: "Salary Certificate", icon: FileText, permission: ["salary-tools", "media-tools"] },
+      { to: "/admin/experience-certificate", label: "Experience Certificate", icon: FileText, permission: ["salary-tools", "media-tools"] },
+      { to: "/admin/omr-generator", label: "OMR Generator", icon: FileText, permission: ["omr-tools", "media-tools"] },
+      { to: "/admin/omr-roster", label: "OMR Student Database", icon: Users, permission: ["omr-tools", "media-tools"] },
+      { to: "/admin/omr-checker", label: "OMR Auto-Checker", icon: CheckSquare, permission: ["omr-tools", "media-tools"] },
+      { to: "/admin/educators", label: "Educators Manager", icon: Users, permission: ["educators", "media-tools"] },
+    ]
+  },
+  {
+    id: "settings_admin",
+    label: "Settings & System",
+    icon: Settings,
+    items: [
+      { to: "/admin/site-settings", label: "Site Settings", icon: Settings, permission: "site-settings" },
+      { to: "/admin/tc-records", label: "TC Records", icon: FileText, permission: "tc-records" },
+      { to: "/admin/apaar", label: "APAAR ID Manager", icon: Fingerprint, permission: ["apaar", "site-settings"] },
+      { to: "/admin/link-shortener", label: "Link Shortener", icon: LinkIcon, permission: ["link-tools", "site-settings"] },
+      { to: "/admin/linktree", label: "Linktree Builder", icon: Award, permission: ["link-tools", "site-settings"] },
+      { to: "/admin/maps-review", label: "Google Review QR", icon: Star, permission: "google-reviews" },
+      { to: "/admin/staff-users", label: "Staff & Admin Users", icon: UserCog, role: "superadmin" },
+      { to: "/admin/integration-keys", label: "Integration Keys", icon: Settings, role: "superadmin" },
+    ]
+  }
 ];
+
+const ALL_NAV_ITEMS = NAV_CATEGORIES.flatMap(cat => cat.type === "single" ? [cat] : cat.items);
 
 export default function AdminLayout() {
   const { user, loading, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [openCategories, setOpenCategories] = useState({});
+
+  useEffect(() => {
+    NAV_CATEGORIES.forEach((cat) => {
+      if (
+        cat.items?.some(
+          (item) =>
+            item.to === location.pathname ||
+            (item.to !== "/admin" && location.pathname.startsWith(item.to + "/"))
+        )
+      ) {
+        setOpenCategories((prev) => ({ ...prev, [cat.id]: true }));
+      }
+    });
+  }, [location.pathname]);
+
+  const toggleCategory = (catId) => {
+    setOpenCategories((prev) => ({ ...prev, [catId]: !prev[catId] }));
+  };
   const [settings, setSettings] = useState(() => {
     try {
       const cached = localStorage.getItem("sdps_site_settings");
@@ -143,7 +215,7 @@ export default function AdminLayout() {
       const path = location.pathname;
       if (path === "/admin") return;
 
-      const isAllowed = user.role === "superadmin" || NAV_ITEMS.some(item => {
+      const isAllowed = user.role === "superadmin" || ALL_NAV_ITEMS.some(item => {
         if (!item.to) return false;
         const matches = item.to === path || (item.to !== "/admin" && path.startsWith(item.to + "/")) || (item.to !== "/admin" && path === item.to);
         if (!matches) return false;
@@ -298,58 +370,121 @@ export default function AdminLayout() {
     return <Navigate to="/admin/login" replace />;
   }
 
-  // Filter NAV items based on permissions.
-  // We only show a section header if there's at least one visible item under it.
-  const filteredNav = [];
-  let currentSection = null;
+  // Filter categories and sub-items based on permissions
+  const checkItemAllowed = (item) => {
+    if (user.role === "superadmin") return true;
+    if (item.role === "superadmin" && user.role !== "superadmin") return false;
+    if (!item.permission) return true;
+    const perms = Array.isArray(item.permission) ? item.permission : [item.permission];
+    return perms.some((p) => user.permissions?.includes(p));
+  };
 
-  for (const item of NAV_ITEMS) {
-    if (item.section) {
-      currentSection = item;
-    } else {
-      const perms = item.permission ? (Array.isArray(item.permission) ? item.permission : [item.permission]) : null;
-      const isAllowed =
-        user.role === "superadmin" ||
-        (item.role !== "superadmin" && (!perms || perms.some(p => user.permissions?.includes(p))));
-
-      if (isAllowed) {
-        if (currentSection) {
-          filteredNav.push(currentSection);
-          currentSection = null;
-        }
-        filteredNav.push(item);
-      }
+  const filteredCategories = NAV_CATEGORIES.map((cat) => {
+    if (cat.type === "single") {
+      return checkItemAllowed(cat) ? cat : null;
     }
-  }
-
-  const NAV = filteredNav;
+    const allowedItems = cat.items.filter(checkItemAllowed);
+    if (allowedItems.length === 0) return null;
+    return { ...cat, items: allowedItems };
+  }).filter(Boolean);
 
   const renderNavLinks = (onItemClick) => (
-    <nav className="py-4 text-sm space-y-1">
-      {NAV.map((item, i) => item.section ? (
-        <div key={i} className="px-6 pt-5 pb-1.5 text-[9px] uppercase tracking-[0.25em] text-slate-500 font-extrabold">{item.section}</div>
-      ) : (
-        <NavLink
-          key={item.to}
-          to={item.to}
-          end={item.end}
-          onClick={onItemClick}
-          className={({ isActive }) => `flex items-center gap-3 mx-3 px-4 py-2.5 rounded-xl transition-all duration-200 group border ${
-            isActive 
-              ? "admin-link-active bg-gradient-to-r from-brand-orange/20 to-brand-gold/5 text-brand-orange-light font-medium border-brand-orange/25 shadow-[0_0_12px_rgba(248,125,14,0.1)]" 
-              : "text-slate-400 hover:text-slate-100 hover:bg-white/[0.03] border-transparent"
-          }`}
-          data-testid={`admin-nav-${item.label.toLowerCase().replace(/\s/g, "-")}`}
-        >
-          <item.icon className="w-4 h-4 shrink-0 transition-transform duration-200 group-hover:scale-110" />
-          <span className="text-[13px]">{item.label}</span>
-        </NavLink>
-      ))}
+    <nav className="py-3 px-3 text-sm space-y-1">
+      {filteredCategories.map((cat) => {
+        if (cat.type === "single") {
+          return (
+            <NavLink
+              key={cat.to}
+              to={cat.to}
+              end={cat.end}
+              onClick={onItemClick}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all duration-200 group border ${
+                  isActive
+                    ? "admin-link-active bg-gradient-to-r from-brand-orange/20 to-brand-gold/5 text-brand-orange-light font-semibold border-brand-orange/25 shadow-[0_0_12px_rgba(248,125,14,0.1)]"
+                    : "text-slate-300 hover:text-white hover:bg-white/[0.04] border-transparent"
+                }`
+              }
+              data-testid={`admin-nav-${cat.label.toLowerCase().replace(/\s/g, "-")}`}
+            >
+              <cat.icon className="w-4 h-4 shrink-0 transition-transform duration-200 group-hover:scale-110" />
+              <span className="text-[13.5px] font-medium">{cat.label}</span>
+            </NavLink>
+          );
+        }
+
+        const isOpen = !!openCategories[cat.id];
+        const hasActiveChild = cat.items.some(
+          (item) =>
+            item.to === location.pathname ||
+            (item.to !== "/admin" && location.pathname.startsWith(item.to + "/"))
+        );
+
+        return (
+          <div key={cat.id} className="space-y-1">
+            <button
+              type="button"
+              onClick={() => toggleCategory(cat.id)}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-left transition-all duration-200 border ${
+                hasActiveChild
+                  ? "bg-white/[0.06] text-brand-orange-light font-semibold border-brand-orange/20"
+                  : "text-slate-300 hover:text-white hover:bg-white/[0.04] border-transparent"
+              }`}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <cat.icon
+                  className={`w-4 h-4 shrink-0 transition-colors ${
+                    hasActiveChild ? "text-brand-orange" : "text-slate-400"
+                  }`}
+                />
+                <span className="text-[13px] font-medium truncate">{cat.label}</span>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-white/10 text-slate-400">
+                  {cat.items.length}
+                </span>
+                {isOpen ? (
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                ) : (
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                )}
+              </div>
+            </button>
+
+            {isOpen && (
+              <div className="ml-4 pl-3.5 border-l border-white/10 space-y-1 pt-1 pb-1.5">
+                {cat.items.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.end}
+                    onClick={onItemClick}
+                    className={({ isActive }) =>
+                      `flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all duration-150 group border ${
+                        isActive
+                          ? "bg-brand-orange/20 text-brand-orange-light font-semibold border-brand-orange/30 shadow-sm"
+                          : "text-slate-400 hover:text-slate-100 hover:bg-white/[0.03] border-transparent"
+                      }`
+                    }
+                    data-testid={`admin-nav-${item.label.toLowerCase().replace(/\s/g, "-")}`}
+                  >
+                    <item.icon className="w-3.5 h-3.5 shrink-0 transition-transform duration-200 group-hover:scale-110 opacity-70" />
+                    <span className="truncate">{item.label}</span>
+                  </NavLink>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </nav>
   );
 
-  const activeNavItem = NAV_ITEMS.find(
-    (item) => item.to && (item.to === location.pathname || (item.to !== "/admin" && location.pathname.startsWith(item.to + "/")))
+  const activeNavItem = ALL_NAV_ITEMS.find(
+    (item) =>
+      item.to &&
+      (item.to === location.pathname ||
+        (item.to !== "/admin" && location.pathname.startsWith(item.to + "/")))
   );
   const activeTitle = activeNavItem
     ? `${activeNavItem.label} | SDPS Admin`
