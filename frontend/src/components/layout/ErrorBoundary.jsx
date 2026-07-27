@@ -33,7 +33,10 @@ export default class ErrorBoundary extends React.Component {
   }
 
   handleReload = () => {
-    sessionStorage.removeItem("sdps_chunk_reload");
+    try {
+      sessionStorage.clear();
+      localStorage.removeItem("sdps_site_settings");
+    } catch (e) {}
     window.location.reload();
   };
 
