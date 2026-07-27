@@ -25,6 +25,7 @@ from slowapi import Limiter
 
 from auth import get_superadmin, TokenData
 from models import now_iso
+from message_logger import log_message
 
 logger = logging.getLogger("sdps.whatsapp")
 
@@ -346,8 +347,27 @@ async def wa_send_test(
     if media:
         payload.update(media)
     try:
-        return await _wa_post("/send-text", json=payload)
+        res = await _wa_post("/send-text", json=payload)
+        await log_message(
+            channel="whatsapp",
+            recipient=phone,
+            subject="Transactional Test Message",
+            message_content=message,
+            status="sent" if res.get("success", True) else "failed",
+            provider="baileys",
+            error_details="" if res.get("success", True) else str(res)
+        )
+        return res
     except Exception as e:
+        await log_message(
+            channel="whatsapp",
+            recipient=phone,
+            subject="Transactional Test Message",
+            message_content=message,
+            status="failed",
+            provider="baileys",
+            error_details=str(e)
+        )
         raise HTTPException(status_code=502, detail=str(e))
 
 
@@ -411,8 +431,36 @@ async def wa_send_bulk(
 
     try:
         result = await _wa_post("/send-bulk", json=payload)
+        status_str = "sent" if result.get("success", True) else "failed"
+        for c in contacts:
+            try:
+                await log_message(
+                    channel="whatsapp",
+                    recipient=c["phone"],
+                    recipient_name=c.get("name", ""),
+                    subject="Bulk Marketing Campaign",
+                    message_content=c.get("message") or message,
+                    status=status_str,
+                    provider="baileys"
+                )
+            except Exception:
+                pass
         return {**result, "contacts_count": len(contacts)}
     except Exception as e:
+        for c in contacts:
+            try:
+                await log_message(
+                    channel="whatsapp",
+                    recipient=c["phone"],
+                    recipient_name=c.get("name", ""),
+                    subject="Bulk Marketing Campaign",
+                    message_content=c.get("message") or message,
+                    status="failed",
+                    provider="baileys",
+                    error_details=str(e)
+                )
+            except Exception:
+                pass
         raise HTTPException(status_code=502, detail=str(e))
 
 
@@ -463,8 +511,38 @@ async def wa_fee_reminder(
     payload = {"contacts": contacts, "message": "", "delayMs": WA_BULK_DELAY_MS}
     try:
         result = await _wa_post("/send-bulk", json=payload)
+        status_str = "sent" if result.get("success", True) else "failed"
+        for r in recipients:
+            try:
+                await log_message(
+                    channel="whatsapp",
+                    recipient=r["phone"],
+                    recipient_name=r.get("name", ""),
+                    subject=f"Fee Reminder Notice - {month}",
+                    message_content=r["message"],
+                    status=status_str,
+                    provider="baileys",
+                    metadata={"balance": r.get("balance", 0.0), "month": month}
+                )
+            except Exception:
+                pass
         return {"recipients": len(recipients), "skipped": skipped, "sample": sample, **result}
     except Exception as e:
+        for r in recipients:
+            try:
+                await log_message(
+                    channel="whatsapp",
+                    recipient=r["phone"],
+                    recipient_name=r.get("name", ""),
+                    subject=f"Fee Reminder Notice - {month}",
+                    message_content=r["message"],
+                    status="failed",
+                    provider="baileys",
+                    error_details=str(e),
+                    metadata={"balance": r.get("balance", 0.0), "month": month}
+                )
+            except Exception:
+                pass
         raise HTTPException(status_code=502, detail=str(e))
 
 
@@ -845,6 +923,21 @@ async def wa_birthday_campaign_send(
 
     try:
         result = await _wa_post("/send-bulk", json=payload)
+        status_str = "sent" if result.get("success", True) else "failed"
+        for c in contacts:
+            try:
+                await log_message(
+                    channel="whatsapp",
+                    recipient=c["phone"],
+                    recipient_name=c.get("name", ""),
+                    subject="Birthday Greetings Wish 🎂",
+                    message_content=c["message"],
+                    status=status_str,
+                    provider="baileys",
+                    metadata={"has_greeting_card": True}
+                )
+            except Exception:
+                pass
         return {
             "recipients_count": len(recipients),
             "skipped_count": skipped,
@@ -852,6 +945,20 @@ async def wa_birthday_campaign_send(
             **result
         }
     except Exception as e:
+        for c in contacts:
+            try:
+                await log_message(
+                    channel="whatsapp",
+                    recipient=c["phone"],
+                    recipient_name=c.get("name", ""),
+                    subject="Birthday Greetings Wish 🎂",
+                    message_content=c["message"],
+                    status="failed",
+                    provider="baileys",
+                    error_details=str(e)
+                )
+            except Exception:
+                pass
         raise HTTPException(status_code=502, detail=str(e))
 
 
@@ -1142,12 +1249,41 @@ async def wa_birthday_campaign_send_saved(
 
     try:
         result = await _wa_post("/send-bulk", json=payload)
+        status_str = "sent" if result.get("success", True) else "failed"
+        for c in contacts:
+            try:
+                await log_message(
+                    channel="whatsapp",
+                    recipient=c["phone"],
+                    recipient_name=c.get("name", ""),
+                    subject="Birthday Greetings Wish 🎂",
+                    message_content=c["message"],
+                    status=status_str,
+                    provider="baileys",
+                    metadata={"has_greeting_card": True}
+                )
+            except Exception:
+                pass
         return {
             "recipients_count": len(recipients),
             "sample": [{"name": r["name"], "phone": r["phone"]} for r in recipients[:10]],
             **result
         }
     except Exception as e:
+        for c in contacts:
+            try:
+                await log_message(
+                    channel="whatsapp",
+                    recipient=c["phone"],
+                    recipient_name=c.get("name", ""),
+                    subject="Birthday Greetings Wish 🎂",
+                    message_content=c["message"],
+                    status="failed",
+                    provider="baileys",
+                    error_details=str(e)
+                )
+            except Exception:
+                pass
         raise HTTPException(status_code=502, detail=str(e))
 
 
@@ -1364,10 +1500,54 @@ async def run_daily_birthday_campaign_loop():
                                 )
                             if r.status_code < 300:
                                 logger.info(f"[Birthday Scheduler] Campaign started successfully: {r.text}")
+                                for c in contacts:
+                                    try:
+                                        await log_message(
+                                            channel="whatsapp",
+                                            recipient=c["phone"],
+                                            recipient_name=c.get("name", ""),
+                                            subject="Daily Automated Birthday Wish 🎂",
+                                            message_content=c["message"],
+                                            status="sent",
+                                            provider="baileys",
+                                            metadata={"automated": True, "date": today_str}
+                                        )
+                                    except Exception:
+                                        pass
                             else:
                                 logger.warning(f"[Birthday Scheduler] Node service returned {r.status_code}: {r.text}")
+                                for c in contacts:
+                                    try:
+                                        await log_message(
+                                            channel="whatsapp",
+                                            recipient=c["phone"],
+                                            recipient_name=c.get("name", ""),
+                                            subject="Daily Automated Birthday Wish 🎂",
+                                            message_content=c["message"],
+                                            status="failed",
+                                            provider="baileys",
+                                            error_details=f"Node service returned {r.status_code}: {r.text[:200]}",
+                                            metadata={"automated": True, "date": today_str}
+                                        )
+                                    except Exception:
+                                        pass
                         except Exception as e:
                             logger.error(f"[Birthday Scheduler] Error sending campaign: {e}")
+                            for c in contacts:
+                                try:
+                                    await log_message(
+                                        channel="whatsapp",
+                                        recipient=c["phone"],
+                                        recipient_name=c.get("name", ""),
+                                        subject="Daily Automated Birthday Wish 🎂",
+                                        message_content=c["message"],
+                                        status="failed",
+                                        provider="baileys",
+                                        error_details=str(e),
+                                        metadata={"automated": True, "date": today_str}
+                                    )
+                                except Exception:
+                                    pass
                     else:
                         logger.info("[Birthday Scheduler] No matching birthdays today")
                         
