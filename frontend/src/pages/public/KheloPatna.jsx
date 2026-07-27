@@ -63,9 +63,12 @@ export default function KheloPatna() {
               <div className="h-20 w-20 rounded-full bg-slate-100 animate-pulse border border-slate-200" />
             )}
             <div className="text-4xl font-black text-brand-ink/20">×</div>
-            <div className="h-20 w-20 rounded-full ring-4 ring-amber-400 bg-brand-ink overflow-hidden flex items-center justify-center">
-              <img src={logoImgUrl} alt="Khelo Patna" className="w-full h-full object-cover" onError={(e) => { e.target.src = "/khelo-patna-logo.png"; }} />
-            </div>
+            <img
+              src={logoImgUrl}
+              alt="Khelo Patna"
+              className="h-20 w-20 rounded-full ring-4 ring-amber-400 object-contain bg-white p-1 shadow-md"
+              onError={(e) => { e.target.src = "/khelo-patna-logo.png"; }}
+            />
           </div>
           <div className="inline-flex items-center gap-2 bg-brand-orange/10 text-brand-orange text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full mb-4">
             Official Partnership
