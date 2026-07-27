@@ -12,6 +12,9 @@ export default function KheloPatna() {
   const { style: heroImgStyle, cleanUrl: cleanHeroImg } = parseImageTransform(heroImgRaw);
   const heroImgUrl = cleanHeroImg.startsWith("http") || (cleanHeroImg.startsWith("/") && !cleanHeroImg.startsWith("/static")) ? cleanHeroImg : `${BACKEND}${cleanHeroImg}`;
 
+  const logoImgRaw = settings?.khelo_patna_logo_url || "/khelo-patna-logo.png";
+  const logoImgUrl = fullUrl(logoImgRaw);
+
   const features = [
     { icon: Dumbbell, color: "text-brand-blue bg-blue-50", title: "Elite Turf Facility", desc: "Premium quality artificial turf suitable for football, cricket, and multi-sports activities." },
     { icon: Activity, color: "text-emerald-500 bg-emerald-50", title: "All-Weather Play", desc: "Play in any weather condition — rain or sunshine — on our all-weather sports surface." },
@@ -44,7 +47,7 @@ export default function KheloPatna() {
             )}
             <div className="text-4xl font-black text-brand-ink/20">×</div>
             <div className="h-20 w-20 rounded-full ring-4 ring-amber-400 bg-brand-ink overflow-hidden flex items-center justify-center">
-              <img src="/khelo-patna-logo.png" alt="Khelo Patna" className="w-full h-full object-cover" />
+              <img src={logoImgUrl} alt="Khelo Patna" className="w-full h-full object-cover" onError={(e) => { e.target.src = "/khelo-patna-logo.png"; }} />
             </div>
           </div>
           <div className="inline-flex items-center gap-2 bg-brand-orange/10 text-brand-orange text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full mb-4">

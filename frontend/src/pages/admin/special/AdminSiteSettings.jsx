@@ -205,6 +205,22 @@ export function AdminSiteSettings() {
             />
           </div>
 
+          {/* Khelo Patna Logo */}
+          <div>
+            <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">
+              Khelo Patna Partnership Logo
+            </label>
+            <p className="text-xs text-brand-ink/40 mb-2">
+              The official logo shown on the SDPS × Khelo Patna sports page.
+            </p>
+            <ImageOrUrlField
+              value={data.khelo_patna_logo_url || ""}
+              onChange={(v) => setData({ ...data, khelo_patna_logo_url: v })}
+              subDir="misc"
+              aspect="khelo_patna_logo"
+            />
+          </div>
+
           {/* School Logo */}
           <div>
             <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">
