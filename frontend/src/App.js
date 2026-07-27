@@ -13,6 +13,7 @@ import AdminLayout from "@/components/admin/AdminLayout";
 import { AdminLogin, AdminForgotPassword } from "@/pages/admin/AuthPages";
 import AdminDashboard from "@/pages/admin/Dashboard";
 import CampusTour from "@/pages/public/CampusTour";
+import KheloPatna from "@/pages/public/KheloPatna";
 
 
 // Lazy-loaded Public Pages
@@ -43,7 +44,6 @@ const TCDownload = lazy(() => import("@/pages/public/TCDownload"));
 const FeePayment = lazy(() => import("@/pages/public/FeePayment"));
 const Contact = lazy(() => import("@/pages/public/Contact"));
 const TermsPrivacy = lazy(() => import("@/pages/public/TermsPrivacy"));
-const KheloPatna = lazy(() => import("@/pages/public/KheloPatna"));
 const MapsReview = lazy(() => import("@/pages/public/MapsReview"));
 const ApaarForm = lazy(() => import("@/pages/public/ApaarForm"));
 
