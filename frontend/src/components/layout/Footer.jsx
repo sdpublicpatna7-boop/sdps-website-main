@@ -61,7 +61,6 @@ export default function Footer({ settings }) {
           <h4 className="text-sm uppercase tracking-[0.2em] text-brand-orange-light mb-4 font-headline">Quick Links</h4>
           <ul className="space-y-2 text-sm">
             <li><Link to="/about" className="opacity-80 hover:opacity-100 hover:text-brand-orange-light">About</Link></li>
-            <li><Link to="/campus-tour" className="opacity-80 hover:opacity-100 hover:text-brand-orange-light">360° Campus Tour</Link></li>
             <li><Link to="/academics" className="opacity-80 hover:opacity-100 hover:text-brand-orange-light">Academics</Link></li>
             <li><Link to="/admissions" className="opacity-80 hover:opacity-100 hover:text-brand-orange-light">Admissions</Link></li>
             <li><Link to="/gallery" className="opacity-80 hover:opacity-100 hover:text-brand-orange-light">Gallery</Link></li>
