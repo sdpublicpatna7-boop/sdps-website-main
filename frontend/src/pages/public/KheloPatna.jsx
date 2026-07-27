@@ -56,19 +56,25 @@ export default function KheloPatna() {
         <div className="relative max-w-6xl mx-auto px-6 text-center">
           {/* Dual logos */}
           <div className="flex items-center justify-center gap-6 mb-8">
-            {activeSettings?.logo_url ? (
-              <img src={fullUrl(activeSettings.logo_url)} alt="SDPS"
-                className="h-20 w-20 rounded-full ring-4 ring-brand-gold object-contain bg-white p-1" />
-            ) : (
-              <div className="h-20 w-20 rounded-full bg-slate-100 animate-pulse border border-slate-200" />
-            )}
+            <Link to="/" title="S.D. Public School Home" className="block group">
+              <img
+                src={activeSettings?.logo_url ? fullUrl(activeSettings.logo_url) : "https://sdpublic.org/assets/img/logo.png"}
+                alt="SDPS Logo"
+                className="h-20 w-20 rounded-full ring-4 ring-brand-gold object-contain bg-white p-1 shadow-md group-hover:scale-105 transition-transform"
+                onError={(e) => { e.target.src = "https://sdpublic.org/assets/img/logo.png"; }}
+              />
+            </Link>
+
             <div className="text-4xl font-black text-brand-ink/20">×</div>
-            <img
-              src={logoImgUrl}
-              alt="Khelo Patna"
-              className="h-20 w-20 rounded-full ring-4 ring-amber-400 object-contain bg-white p-1 shadow-md"
-              onError={(e) => { e.target.src = "/khelo-patna-logo.png"; }}
-            />
+
+            <div className="block group">
+              <img
+                src={logoImgUrl}
+                alt="Khelo Patna Logo"
+                className="h-20 w-20 rounded-full ring-4 ring-amber-400 object-contain bg-white p-1 shadow-md group-hover:scale-105 transition-transform"
+                onError={(e) => { e.target.src = "/khelo-patna-logo.png"; }}
+              />
+            </div>
           </div>
           <div className="inline-flex items-center gap-2 bg-brand-orange/10 text-brand-orange text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full mb-4">
             Official Partnership
