@@ -56,8 +56,8 @@ export default function KheloPatna() {
         <div className="relative max-w-6xl mx-auto px-6 text-center">
           {/* Dual logos */}
           <div className="flex items-center justify-center gap-6 mb-8">
-            {settings?.logo_url ? (
-              <img src={fullUrl(settings.logo_url)} alt="SDPS"
+            {activeSettings?.logo_url ? (
+              <img src={fullUrl(activeSettings.logo_url)} alt="SDPS"
                 className="h-20 w-20 rounded-full ring-4 ring-brand-gold object-contain bg-white p-1" />
             ) : (
               <div className="h-20 w-20 rounded-full bg-slate-100 animate-pulse border border-slate-200" />
