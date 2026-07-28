@@ -18,12 +18,23 @@ import {
   StopCircle, 
   Layers, 
   Settings,
-  Bell
+  Bell,
+  Lock,
+  User,
+  LogOut,
+  ShieldCheck
 } from "lucide-react";
 import api from "../../lib/api";
+import { useAuth } from "../../lib/auth";
 import SEO from "../../components/layout/SEO";
 
 export default function AdminAudioBroadcast() {
+  const { user, login, logout, loading: authLoading } = useAuth();
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPass, setLoginPass] = useState("");
+  const [authError, setAuthError] = useState(null);
+  const [authSubmitting, setAuthSubmitting] = useState(false);
+
   const [deviceIp, setDeviceIp] = useState("192.168.29.71");
   const [deviceStatus, setDeviceStatus] = useState({ online: false, checking: true, error: null });
   const [activeTab, setActiveTab] = useState("broadcast");
@@ -135,6 +146,17 @@ export default function AdminAudioBroadcast() {
     });
   };
 
+  const handleLoginSubmit = (e) => {
+    e.preventDefault();
+    setAuthError(null);
+    setAuthSubmitting(true);
+    login(loginEmail, loginPass)
+      .catch(err => {
+        setAuthError(err.response?.data?.detail || "Invalid credentials. Please enter your SDPS admin username & password.");
+      })
+      .finally(() => setAuthSubmitting(false));
+  };
+
   const SCHEDULE_OPTIONS = [
     { id: "0", label: "Summer Schedule" },
     { id: "1", label: "Winter Schedule" },
@@ -148,6 +170,101 @@ export default function AdminAudioBroadcast() {
     { id: "9", label: "Schedule OFF" },
   ];
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6 text-white font-headline">
+        <div className="flex items-center gap-3">
+          <RefreshCw className="w-6 h-6 animate-spin text-brand-gold" />
+          <span>Authenticating SDPS Audio Hub...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <>
+        <SEO title="Authentication Required | SDPS Smart Audio Hub" />
+        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-brand-navy to-slate-900 flex items-center justify-center p-6 text-slate-900 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-brand-gold/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-brand-blue/10 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="w-full max-w-md bg-white/95 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20 relative z-10 space-y-6">
+            <div className="text-center space-y-2">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-navy to-brand-blue flex items-center justify-center mx-auto shadow-lg shadow-brand-navy/20">
+                <Radio className="w-8 h-8 text-brand-gold animate-pulse" />
+              </div>
+              <div className="overline text-brand-orange text-xs font-bold">S.D. PUBLIC SCHOOL</div>
+              <h1 className="font-headline text-2xl font-black text-slate-900 tracking-tight">
+                Audio & Bell Command Hub
+              </h1>
+              <p className="text-xs text-slate-500 max-w-xs mx-auto">
+                Sign in with your SDPS Admin credentials to manage school speakers & bell schedules.
+              </p>
+            </div>
+
+            {authError && (
+              <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-2">
+                <XCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                {authError}
+              </div>
+            )}
+
+            <form onSubmit={handleLoginSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-slate-400" /> Admin Username or Email
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={loginEmail}
+                  onChange={e => setLoginEmail(e.target.value)}
+                  placeholder="admin@sdpublic.org"
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 font-semibold px-4 py-3 rounded-xl focus:outline-none focus:border-brand-navy text-sm"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-slate-400" /> Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={loginPass}
+                  onChange={e => setLoginPass(e.target.value)}
+                  placeholder="••••••••••••"
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 font-semibold px-4 py-3 rounded-xl focus:outline-none focus:border-brand-navy text-sm"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={authSubmitting}
+                className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-brand-navy to-brand-blue text-white font-headline font-bold text-sm shadow-lg shadow-brand-navy/20 hover:brightness-110 transition-all flex items-center justify-center gap-2 mt-2"
+              >
+                {authSubmitting ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" /> Verifying Credentials...
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="w-4 h-4 text-brand-gold" /> Unlock Audio Command Hub
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="pt-4 border-t border-slate-100 text-center">
+              <span className="text-[11px] text-slate-400 font-mono">Audislave Hitech Target: 192.168.29.71</span>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <SEO title="Smart Audio & Bell Command Hub | SDPS Admin" />
@@ -158,8 +275,17 @@ export default function AdminAudioBroadcast() {
           <div className="absolute top-0 right-0 w-96 h-96 bg-brand-gold/10 rounded-full blur-3xl pointer-events-none" />
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur text-brand-gold text-xs font-bold uppercase tracking-wider mb-3">
-                <Radio className="w-4 h-4 animate-pulse text-amber-400" /> Audislave Hitech Smart Command
+              <div className="flex items-center gap-3 mb-3">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur text-brand-gold text-xs font-bold uppercase tracking-wider">
+                  <Radio className="w-4 h-4 animate-pulse text-amber-400" /> Audislave Hitech Smart Command
+                </div>
+                <button
+                  onClick={logout}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 hover:bg-rose-500/20 text-slate-300 hover:text-white text-xs font-bold transition-all border border-white/10"
+                  title="Sign Out"
+                >
+                  <LogOut className="w-3.5 h-3.5" /> Sign Out ({user?.name || user?.email || "Admin"})
+                </button>
               </div>
               <h1 className="font-headline text-3xl md:text-4xl font-black tracking-tight text-white">
                 Audio & Bell Control Hub
