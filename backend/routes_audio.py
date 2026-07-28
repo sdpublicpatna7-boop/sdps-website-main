@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import requests
 
-from auth import get_current_admin_user
+from auth import get_current_admin
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +86,7 @@ def send_device_post(ip: str, endpoint: str, data: dict):
 
 
 @audio_router.get("/status")
-def get_audio_status(ip: str = Query(DEFAULT_AUDIO_IP), current_admin=Depends(get_current_admin_user)):
+def get_audio_status(ip: str = Query(DEFAULT_AUDIO_IP), current_admin=Depends(get_current_admin)):
     """Ping Audio Controller device to verify hardware connectivity."""
     url = f"http://{ip.strip()}/"
     try:
@@ -110,7 +110,7 @@ def get_audio_status(ip: str = Query(DEFAULT_AUDIO_IP), current_admin=Depends(ge
 
 
 @audio_router.post("/broadcast")
-def trigger_broadcast(payload: BroadcastPayload, current_admin=Depends(get_current_admin_user)):
+def trigger_broadcast(payload: BroadcastPayload, current_admin=Depends(get_current_admin)):
     """Send broadcast command (Connect / Cancel / Listen / Local Speaker) to Audislave hardware."""
     device_ip = payload.ip or DEFAULT_AUDIO_IP
     form_data = {
@@ -130,7 +130,7 @@ def trigger_broadcast(payload: BroadcastPayload, current_admin=Depends(get_curre
 
 
 @audio_router.post("/schedule/set")
-def set_current_schedule(payload: ScheduleSetPayload, current_admin=Depends(get_current_admin_user)):
+def set_current_schedule(payload: ScheduleSetPayload, current_admin=Depends(get_current_admin)):
     """Switch active bell schedule profile (Summer, Winter, Exam, Test, Off)."""
     device_ip = payload.ip or DEFAULT_AUDIO_IP
     form_data = {"sSchId": payload.sSchId}
@@ -143,7 +143,7 @@ def set_current_schedule(payload: ScheduleSetPayload, current_admin=Depends(get_
 
 
 @audio_router.post("/schedule/modify")
-def modify_schedule_entry(payload: ScheduleModifyPayload, current_admin=Depends(get_current_admin_user)):
+def modify_schedule_entry(payload: ScheduleModifyPayload, current_admin=Depends(get_current_admin)):
     """Modify a specific bell schedule entry on the hardware controller."""
     device_ip = payload.ip or DEFAULT_AUDIO_IP
     form_data = {
@@ -169,7 +169,7 @@ def modify_schedule_entry(payload: ScheduleModifyPayload, current_admin=Depends(
 
 
 @audio_router.post("/rtc")
-def update_realtime_clock(payload: RtcPayload, current_admin=Depends(get_current_admin_user)):
+def update_realtime_clock(payload: RtcPayload, current_admin=Depends(get_current_admin)):
     """Sync Real-Time Clock on Audislave hardware."""
     device_ip = payload.ip or DEFAULT_AUDIO_IP
     form_data = {
@@ -190,7 +190,7 @@ def update_realtime_clock(payload: RtcPayload, current_admin=Depends(get_current
 
 
 @audio_router.post("/group/save")
-def save_broadcast_group(payload: GroupPayload, current_admin=Depends(get_current_admin_user)):
+def save_broadcast_group(payload: GroupPayload, current_admin=Depends(get_current_admin)):
     """Save a room group range on the hardware controller."""
     device_ip = payload.ip or DEFAULT_AUDIO_IP
     form_data = {
