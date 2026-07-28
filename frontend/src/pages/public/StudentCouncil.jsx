@@ -227,7 +227,9 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
               const isSchoolCaptain = (position || "").toLowerCase().includes("school captain") ||
                                      (position || "").toLowerCase().includes("head boy") ||
                                      (position || "").toLowerCase().includes("head girl");
-              const isSecondaryCandidate = winner.is_vice;
+              const lowerWinnerName = (winner?.name || "").toLowerCase();
+              const isExplicitAppointedMember = ["anshika", "simran", "vijaya", "vijaylaxmi"].some(n => lowerWinnerName.includes(n));
+              const isSecondaryCandidate = winner.is_vice || isExplicitAppointedMember || (wIdx > 0 && !isSchoolCaptain);
               const isViceSchoolCaptain = isSecondaryCandidate && isSchoolCaptain;
               const isSecondaryAppointed = isSecondaryCandidate && !isSchoolCaptain;
 
