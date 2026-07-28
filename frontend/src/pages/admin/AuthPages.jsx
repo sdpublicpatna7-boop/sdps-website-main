@@ -155,15 +155,11 @@ export function AdminLogin() {
       <Toaster position="top-right" />
       <LoginWrapper>
         <div className="text-center mb-8">
-          {logoUrl ? (
-            <img
-              src={logoUrl}
-              alt="SDPS"
-              className="w-16 h-16 mx-auto rounded-full ring-4 ring-brand-gold/20 shadow-[0_0_20px_rgba(199,161,91,0.3)] mb-4 animate-float object-contain"
-            />
-          ) : (
-            <div className="w-16 h-16 mx-auto rounded-full bg-slate-800/80 animate-pulse border border-slate-700 ring-4 ring-brand-gold/20 mb-4" />
-          )}
+          <img
+            src="/logo-real-animated.gif"
+            alt="S.D. Public School Patna"
+            className="w-20 h-20 mx-auto mb-3 object-contain drop-shadow-[0_0_15px_rgba(248,125,14,0.3)]"
+          />
           <h1 className="font-headline font-bold text-3xl tracking-tight text-white">SDPS Admin</h1>
           <p className="text-xs uppercase tracking-widest text-brand-gold font-semibold mt-1">Control Panel Login</p>
         </div>
@@ -256,8 +252,15 @@ export function AdminForgotPassword() {
     <>
       <Toaster position="top-right" />
       <LoginWrapper>
-        <h1 className="font-headline font-bold text-3xl text-center text-white mb-2 tracking-tight">Reset Password</h1>
-        <p className="text-xs text-slate-400 text-center mb-8 uppercase tracking-widest">Admin Account Recovery</p>
+        <div className="text-center mb-6">
+          <img
+            src="/logo-real-animated.gif"
+            alt="S.D. Public School Patna"
+            className="w-16 h-16 mx-auto mb-2 object-contain drop-shadow-[0_0_15px_rgba(248,125,14,0.3)]"
+          />
+          <h1 className="font-headline font-bold text-3xl text-center text-white tracking-tight">Reset Password</h1>
+          <p className="text-xs text-slate-400 text-center uppercase tracking-widest mt-1">Admin Account Recovery</p>
+        </div>
         {step === 1 ? (
           <form onSubmit={sendOtp} className="space-y-5">
             <div className="relative group">

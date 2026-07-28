@@ -107,7 +107,6 @@ const NAV_CATEGORIES = [
     label: "Tools & Generators",
     icon: Shield,
     items: [
-      { to: "/admin/audio-broadcast", label: "Smart Audio & Bell Hub", icon: Radio, permission: ["site-settings", "media-tools"] },
       { to: "/admin/video-support", label: "Voice AI Support Agent", icon: PhoneCall, permission: ["site-settings", "admissions", "media-tools"] },
       { to: "/admin/thumbnail-generator", label: "Thumbnail Generator", icon: ImageIcon, permission: ["thumbnail-generator", "media-tools"] },
       { to: "/admin/notice-maker", label: "Notice Maker", icon: FileText, permission: ["notice-maker", "media-tools"] },
