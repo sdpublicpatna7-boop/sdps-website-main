@@ -52,6 +52,42 @@ export default function AdminAudioBroadcast() {
   // Schedule State
   const [currentSchId, setCurrentSchId] = useState("0"); // 0=Summer, 1=Winter, etc.
   const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [scheduleEntries, setScheduleEntries] = useState([
+    { id: "1", name: "Assembly Bell", hour: "07", min: "50", track: "1", roomB: "1", roomE: "200", days: { Mon: true, Tue: true, Wed: true, Thu: true, Fri: true, Sat: true, Sun: false } },
+    { id: "2", name: "Period 1 Bell", hour: "08", min: "00", track: "2", roomB: "1", roomE: "200", days: { Mon: true, Tue: true, Wed: true, Thu: true, Fri: true, Sat: true, Sun: false } },
+    { id: "3", name: "Period 2 Bell", hour: "08", min: "45", track: "2", roomB: "1", roomE: "200", days: { Mon: true, Tue: true, Wed: true, Thu: true, Fri: true, Sat: true, Sun: false } },
+    { id: "4", name: "Period 3 Bell", hour: "09", min: "30", track: "2", roomB: "1", roomE: "200", days: { Mon: true, Tue: true, Wed: true, Thu: true, Fri: true, Sat: true, Sun: false } },
+    { id: "5", name: "Period 4 Bell", hour: "10", min: "15", track: "2", roomB: "1", roomE: "200", days: { Mon: true, Tue: true, Wed: true, Thu: true, Fri: true, Sat: true, Sun: false } },
+    { id: "6", name: "Recess / Lunch Chime", hour: "11", min: "00", track: "3", roomB: "1", roomE: "200", days: { Mon: true, Tue: true, Wed: true, Thu: true, Fri: true, Sat: true, Sun: false } },
+    { id: "7", name: "Period 5 Bell", hour: "11", min: "30", track: "2", roomB: "1", roomE: "200", days: { Mon: true, Tue: true, Wed: true, Thu: true, Fri: true, Sat: true, Sun: false } },
+    { id: "8", name: "Period 6 Bell", hour: "12", min: "15", track: "2", roomB: "1", roomE: "200", days: { Mon: true, Tue: true, Wed: true, Thu: true, Fri: true, Sat: true, Sun: false } },
+    { id: "9", name: "Period 7 Bell", hour: "13", min: "00", track: "2", roomB: "1", roomE: "200", days: { Mon: true, Tue: true, Wed: true, Thu: true, Fri: true, Sat: true, Sun: false } },
+    { id: "10", name: "Period 8 Bell", hour: "13", min: "45", track: "2", roomB: "1", roomE: "200", days: { Mon: true, Tue: true, Wed: true, Thu: true, Fri: true, Sat: true, Sun: false } },
+    { id: "11", name: "School Dispersal", hour: "14", min: "30", track: "4", roomB: "1", roomE: "200", days: { Mon: true, Tue: true, Wed: true, Thu: true, Fri: true, Sat: true, Sun: false } },
+  ]);
+
+  const handleSaveBellTiming = (entry) => {
+    setScheduleLoading(true);
+    setLastActionMsg(null);
+    api.post("/admin/audio/schedule/modify", {
+      ip: deviceIp,
+      sId: entry.id,
+      sSchId: currentSchId,
+      iH: entry.hour,
+      iMi: entry.min,
+      iFile: entry.track,
+      sRoomB: entry.roomB,
+      sRoomE: entry.roomE,
+      days: entry.days
+    })
+    .then(() => {
+      setLastActionMsg({ type: "success", text: `Bell Timing '${entry.name}' (${entry.hour}:${entry.min}) saved to Hardware!` });
+    })
+    .catch(err => {
+      setLastActionMsg({ type: "error", text: `Failed to save bell timing: ${err.response?.data?.detail || err.message}` });
+    })
+    .finally(() => setScheduleLoading(false));
+  };
 
   // Clock State
   const [clockLoading, setClockLoading] = useState(false);
@@ -664,6 +700,133 @@ export default function AdminAudioBroadcast() {
                   {s.label}
                 </button>
               ))}
+            </div>
+
+            {/* Bell Schedule Timings Table Editor */}
+            <div className="pt-6 border-t border-slate-200 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-headline text-base font-bold text-slate-800 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-brand-navy" /> Bell Schedule Timings & Sound Tracks
+                  </h3>
+                  <p className="text-xs text-slate-500">Edit automated period bell times, audio tracks, and active days for the current profile.</p>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider border-b border-slate-200">
+                    <tr>
+                      <th className="p-3">Period / Event</th>
+                      <th className="p-3">Time (24h)</th>
+                      <th className="p-3">Audio Track</th>
+                      <th className="p-3">Target Rooms</th>
+                      <th className="p-3">Days Active</th>
+                      <th className="p-3 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 font-medium text-slate-800">
+                    {scheduleEntries.map((entry) => (
+                      <tr key={entry.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="p-3 font-bold text-slate-900">{entry.name}</td>
+                        <td className="p-3">
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              min="0" max="23"
+                              value={entry.hour}
+                              onChange={e => {
+                                const val = String(e.target.value).padStart(2, "0");
+                                setScheduleEntries(prev => prev.map(item => item.id === entry.id ? { ...item, hour: val } : item));
+                              }}
+                              className="w-12 p-1.5 border rounded-lg bg-white font-mono text-center font-bold"
+                            />
+                            <span>:</span>
+                            <input
+                              type="number"
+                              min="0" max="59"
+                              value={entry.min}
+                              onChange={e => {
+                                const val = String(e.target.value).padStart(2, "0");
+                                setScheduleEntries(prev => prev.map(item => item.id === entry.id ? { ...item, min: val } : item));
+                              }}
+                              className="w-12 p-1.5 border rounded-lg bg-white font-mono text-center font-bold"
+                            />
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <select
+                            value={entry.track}
+                            onChange={e => {
+                              const val = e.target.value;
+                              setScheduleEntries(prev => prev.map(item => item.id === entry.id ? { ...item, track: val } : item));
+                            }}
+                            className="p-1.5 border rounded-lg bg-white font-semibold"
+                          >
+                            <option value="1">Track 01 (Assembly)</option>
+                            <option value="2">Track 02 (Period Bell)</option>
+                            <option value="3">Track 03 (Recess Bell)</option>
+                            <option value="4">Track 04 (Dismissal)</option>
+                            <option value="5">Track 05 (Warning)</option>
+                          </select>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex items-center gap-1 font-mono">
+                            <input
+                              type="text"
+                              value={entry.roomB}
+                              onChange={e => {
+                                const val = e.target.value;
+                                setScheduleEntries(prev => prev.map(item => item.id === entry.id ? { ...item, roomB: val } : item));
+                              }}
+                              className="w-10 p-1 border rounded bg-white text-center"
+                            />
+                            <span>-</span>
+                            <input
+                              type="text"
+                              value={entry.roomE}
+                              onChange={e => {
+                                const val = e.target.value;
+                                setScheduleEntries(prev => prev.map(item => item.id === entry.id ? { ...item, roomE: val } : item));
+                              }}
+                              className="w-12 p-1 border rounded bg-white text-center"
+                            />
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex items-center gap-1">
+                            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => (
+                              <button
+                                key={day}
+                                onClick={() => {
+                                  setScheduleEntries(prev => prev.map(item => item.id === entry.id ? {
+                                    ...item,
+                                    days: { ...item.days, [day]: !item.days[day] }
+                                  } : item));
+                                }}
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                  entry.days[day] ? "bg-brand-navy text-white" : "bg-slate-200 text-slate-400"
+                                }`}
+                              >
+                                {day}
+                              </button>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="p-3 text-right">
+                          <button
+                            onClick={() => handleSaveBellTiming(entry)}
+                            disabled={scheduleLoading}
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition-colors shadow-sm"
+                          >
+                            Save Bell
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
