@@ -155,9 +155,10 @@ async def get_audio_status(
     user_to_use = username or DEFAULT_HARDWARE_USER
     pass_to_use = password or DEFAULT_HARDWARE_PASS
     
-    # Try specified IP/port first, then fallback to :8080 if standard port fails
+    # Try specified IP/port first, then fallback to :5060 and :8080 if standard port fails
     ips_to_try = [target_ip]
     if ":" not in target_ip and not target_ip.startswith("http"):
+        ips_to_try.append(f"{target_ip}:5060")
         ips_to_try.append(f"{target_ip}:8080")
 
     last_error = None
