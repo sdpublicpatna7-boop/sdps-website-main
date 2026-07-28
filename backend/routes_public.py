@@ -123,6 +123,12 @@ async def list_holidays():
 async def list_council_profiles(year: Optional[str] = None):
     q = {"year": year} if year else {}
     items = await db.council_members.find(q, {"_id": 0}).sort("order", 1).to_list(200)
+    for item in items:
+        pos = item.get("position", "")
+        pos_lower = pos.lower()
+        if "vice" in pos_lower and not ("school captain" in pos_lower or "head boy" in pos_lower or "head girl" in pos_lower):
+            item["position"] = pos.replace("Vice ", "").replace("vice ", "").strip()
+            item["is_captain"] = True
     return items
 
 

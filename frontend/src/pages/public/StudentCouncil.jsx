@@ -456,8 +456,25 @@ export default function StudentCouncil() {
   const [totalVoted, setTotalVoted] = useState(0);
   const [prefects, setPrefects] = useState([]);
 
+  const cleanProfilePosition = (p) => {
+    if (!p) return p;
+    let pos = p.position || "";
+    const lowerPos = pos.toLowerCase();
+    const isSchoolCaptain = lowerPos.includes("school captain") || lowerPos.includes("head boy") || lowerPos.includes("head girl");
+    
+    if (!isSchoolCaptain && lowerPos.includes("vice")) {
+      pos = pos.replace(/^Vice\s+/i, "").replace(/Vice\s+/i, "").trim();
+      return {
+        ...p,
+        position: pos,
+        is_captain: true
+      };
+    }
+    return p;
+  };
+
   useEffect(() => {
-    api.get("/council/profiles").then(r => setProfiles(r.data || [])).catch(() => {});
+    api.get("/council/profiles").then(r => setProfiles((r.data || []).map(cleanProfilePosition))).catch(() => {});
     api.get("/council/posters").then(r => setPosters(r.data || [])).catch(() => {});
     api.get("/council/results").then(r => setResults(r.data || [])).catch(() => {});
 
@@ -726,7 +743,8 @@ export default function StudentCouncil() {
                     return group.viceKeywords.some(kw => pos === kw);
                   });
 
-                  const renderProfileCard = (p) => {
+                  const renderProfileCard = (rawP) => {
+                    const p = cleanProfilePosition(rawP);
                     const isVice = (p.position || "").toLowerCase().includes("vice");
                     const isAppointed = p.role_type === "Appointed by School Management" || p.role_type === "Appointed by Admin";
                     const isDiscipline = (p.position || "").toLowerCase().includes("discipline");
