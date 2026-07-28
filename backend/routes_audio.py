@@ -145,6 +145,12 @@ try {
 New-NetFirewallRule -DisplayName "SDPS Cloudflared Out" -Direction Outbound -Program $CF -Action Allow | Out-Null
 New-NetFirewallRule -DisplayName "SDPS Cloudflared In" -Direction Inbound -Program $CF -Action Allow | Out-Null
 
+# Stop old background instances
+Get-Process cloudflared -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+Get-WmiObject Win32_Process | Where-Object { $_.CommandLine -like "*tunnel-bridge*" } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+Remove-Item "$D\\bridge.log" -Force -ErrorAction SilentlyContinue
+Remove-Item "$D\\tunnel.log" -Force -ErrorAction SilentlyContinue
+
 $lines = @(
 '$D = "C:\\sdps"',
 '$CF = "$D\\cloudflared.exe"',
