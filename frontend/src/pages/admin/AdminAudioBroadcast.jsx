@@ -35,7 +35,8 @@ export default function AdminAudioBroadcast() {
   const [authError, setAuthError] = useState(null);
   const [authSubmitting, setAuthSubmitting] = useState(false);
 
-  const [deviceIp, setDeviceIp] = useState("192.168.29.71");
+  const DEVICE_IP = "192.168.29.71";
+  const [deviceIp] = useState(DEVICE_IP);
   const [deviceStatus, setDeviceStatus] = useState({ online: false, checking: true, error: null });
   const [activeTab, setActiveTab] = useState("broadcast");
 
@@ -54,62 +55,77 @@ export default function AdminAudioBroadcast() {
   // Clock State
   const [clockLoading, setClockLoading] = useState(false);
 
-  // Ping Device Status & Fetch Custom SDPS DDNS IP
-  const pingDevice = (ipToPing = deviceIp) => {
-    setDeviceStatus(prev => ({ ...prev, checking: true, error: null }));
-    api.get(`/admin/audio/status?ip=${encodeURIComponent(ipToPing)}`)
-      .then(res => {
-        setDeviceStatus({
-          online: res.data?.online || false,
-          checking: false,
-          error: res.data?.error || null
-        });
-        if (res.data?.ip && res.data.ip !== deviceIp) {
-          setDeviceIp(res.data.ip);
-        }
+  // ─── Direct Browser → Device helpers ───
+  const deviceUrl = (path) => `http://${DEVICE_IP}${path}`;
+
+  /**
+   * Send a POST directly from the browser to the hardware device.
+   * Uses no-cors because the site is HTTPS and the device is HTTP.
+   * We can't read the response body, but the command IS sent & executed.
+   */
+  const directDevicePost = async (path, formFields = {}) => {
+    const body = new URLSearchParams(formFields).toString();
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6000);
+    try {
+      await fetch(deviceUrl(path), {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body,
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      return { ok: true };
+    } catch (err) {
+      clearTimeout(timeout);
+      throw err;
+    }
+  };
+
+  // Ping device directly from browser (same LAN check)
+  const pingDevice = () => {
+    setDeviceStatus({ online: false, checking: true, error: null });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+    fetch(deviceUrl("/"), { mode: "no-cors", signal: controller.signal })
+      .then(() => {
+        clearTimeout(timeout);
+        setDeviceStatus({ online: true, checking: false, error: null });
       })
-      .catch(err => {
+      .catch((err) => {
+        clearTimeout(timeout);
         setDeviceStatus({
           online: false,
           checking: false,
-          error: err.response?.data?.detail || err.message
+          error: err.name === "AbortError"
+            ? "Device unreachable — make sure you are on school Wi-Fi"
+            : "Not on school network or device is powered off",
         });
       });
   };
 
   useEffect(() => {
     if (!user) return;
-    // Auto-sync DDNS if opening from school network, then fetch saved DDNS IP
-    api.get("/admin/audio/ddns/sync").catch(() => {});
-    api.get("/admin/audio/ddns/get")
-      .then(r => {
-        if (r.data?.ip) {
-          setDeviceIp(r.data.ip);
-          pingDevice(r.data.ip);
-        } else {
-          pingDevice(deviceIp);
-        }
-      })
-      .catch(() => pingDevice(deviceIp));
+    pingDevice();
   }, [user]);
 
   // Handle Broadcast Actions (connect, cancel, listen, localspk)
   const handleBroadcastAction = (action) => {
     setBroadcastLoading(true);
     setLastActionMsg(null);
-    api.post("/admin/audio/broadcast", {
-      ip: deviceIp,
+    directDevicePost("/BcastDo", {
       sSource: source,
-      sFilename: fileNumber,
-      sDest: destSelect,
+      sFilename: fileNumber || "1",
+      sDest: destSelect || "1-200",
       sRooms: roomsInput,
-      sAct: action
+      sAct: action,
     })
-      .then(res => {
-        setLastActionMsg({ type: "success", text: `Command '${action.toUpperCase()}' sent successfully to ${roomsInput}!` });
+      .then(() => {
+        setLastActionMsg({ type: "success", text: `Command '${action.toUpperCase()}' sent successfully to Room ${roomsInput}!` });
       })
-      .catch(err => {
-        setLastActionMsg({ type: "error", text: err.response?.data?.detail || "Failed to connect to Audislave device." });
+      .catch(() => {
+        setLastActionMsg({ type: "error", text: "Failed — make sure you are connected to school Wi-Fi." });
       })
       .finally(() => setBroadcastLoading(false));
   };
@@ -117,13 +133,13 @@ export default function AdminAudioBroadcast() {
   // Switch Active Bell Schedule Profile
   const handleSetSchedule = (schId) => {
     setScheduleLoading(true);
-    api.post("/admin/audio/schedule/set", { ip: deviceIp, sSchId: schId })
+    directDevicePost("/SchCurrMod", { sSchId: schId })
       .then(() => {
         setCurrentSchId(schId);
         setLastActionMsg({ type: "success", text: "Bell schedule profile updated successfully!" });
       })
-      .catch(err => {
-        setLastActionMsg({ type: "error", text: err.response?.data?.detail || "Failed to update bell schedule." });
+      .catch(() => {
+        setLastActionMsg({ type: "error", text: "Failed — make sure you are on school Wi-Fi." });
       })
       .finally(() => setScheduleLoading(false));
   };
@@ -132,8 +148,7 @@ export default function AdminAudioBroadcast() {
   const handleSyncClock = () => {
     setClockLoading(true);
     const now = new Date();
-    const payload = {
-      ip: deviceIp,
+    directDevicePost("/RtcMod", {
       iH: String(now.getHours()),
       iMi: String(now.getMinutes()),
       iD: String(now.getDate()),
@@ -141,15 +156,13 @@ export default function AdminAudioBroadcast() {
       iY: String(now.getFullYear()).slice(-2),
       chSignTz: "+",
       iHTz: "05",
-      iMiTz: "30"
-    };
-
-    api.post("/admin/audio/rtc", payload)
+      iMiTz: "30",
+    })
       .then(() => {
         setLastActionMsg({ type: "success", text: "Audislave system clock synced with computer time!" });
       })
-      .catch(err => {
-        setLastActionMsg({ type: "error", text: err.response?.data?.detail || "Failed to sync system clock." });
+      .catch(() => {
+        setLastActionMsg({ type: "error", text: "Failed — make sure you are on school Wi-Fi." });
       })
       .finally(() => setClockLoading(false));
   };
@@ -336,21 +349,18 @@ export default function AdminAudioBroadcast() {
               </p>
             </div>
 
-            {/* Hardware Status Pill */}
+            {/* Hardware Status Pill — Direct LAN Connection */}
             <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4 min-w-[260px] space-y-2 shadow-inner">
-              <div className="text-[10px] uppercase font-bold tracking-widest text-slate-300">Audio Controller IP</div>
+              <div className="text-[10px] uppercase font-bold tracking-widest text-slate-300">Audio Controller (LAN Direct)</div>
               <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={deviceIp}
-                  onChange={e => setDeviceIp(e.target.value)}
-                  className="bg-black/30 text-white font-mono text-sm px-3 py-1.5 rounded-lg border border-white/20 focus:outline-none focus:border-brand-gold w-36"
-                />
+                <span className="bg-black/30 text-white font-mono text-sm px-3 py-1.5 rounded-lg border border-white/20 select-all">
+                  {DEVICE_IP}
+                </span>
                 <button
-                  onClick={() => pingDevice(deviceIp)}
+                  onClick={() => pingDevice()}
                   disabled={deviceStatus.checking}
                   className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors"
-                  title="Ping Connection"
+                  title="Ping Device on School LAN"
                 >
                   <RefreshCw className={`w-4 h-4 ${deviceStatus.checking ? "animate-spin" : ""}`} />
                 </button>
@@ -359,15 +369,15 @@ export default function AdminAudioBroadcast() {
               <div className="flex items-center gap-2 pt-1 border-t border-white/10">
                 {deviceStatus.checking ? (
                   <span className="text-xs text-amber-300 flex items-center gap-1.5">
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Checking connection...
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Checking LAN connection…
                   </span>
                 ) : deviceStatus.online ? (
                   <span className="text-xs text-emerald-400 font-extrabold flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 fill-emerald-400/20" /> Device Online (Connected)
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 fill-emerald-400/20" /> Device Online — LAN Connected ✓
                   </span>
                 ) : (
-                  <span className="text-xs text-rose-400 font-extrabold flex items-center gap-1.5" title={deviceStatus.error || "Device connection timed out"}>
-                    <XCircle className="w-4 h-4 text-rose-400 shrink-0" /> Device Offline / Check Jio Port Rule
+                  <span className="text-xs text-rose-400 font-extrabold flex items-center gap-1.5" title={deviceStatus.error || "Device unreachable"}>
+                    <XCircle className="w-4 h-4 text-rose-400 shrink-0" /> Connect to School Wi-Fi to use
                   </span>
                 )}
               </div>
