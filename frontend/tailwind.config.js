@@ -44,6 +44,8 @@ module.exports = {
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         brand: {
+          navy: "#0A0F24",
+          "navy-dark": "#060A19",
           blue: "#0E3B91",
           "blue-dark": "#082052",
           "blue-light": "#1e4cb8",

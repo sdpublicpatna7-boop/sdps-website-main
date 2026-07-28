@@ -297,7 +297,7 @@ export default function AdminAudioBroadcast() {
 
       <div className="p-6 max-w-7xl mx-auto space-y-6">
         {/* Top Header Card */}
-        <div className="bg-gradient-to-r from-brand-navy via-brand-blue to-slate-900 rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
+        <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 rounded-3xl p-6 md:p-8 text-white shadow-2xl relative overflow-hidden border border-slate-800/80">
           <div className="absolute top-0 right-0 w-96 h-96 bg-brand-gold/10 rounded-full blur-3xl pointer-events-none" />
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
