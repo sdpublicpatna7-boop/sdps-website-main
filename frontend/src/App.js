@@ -158,17 +158,18 @@ function App() {
                 <Route path="/video-call" element={<Suspense fallback={<div>Loading Call...</div>}><PublicVideoCall /></Suspense>} />
                 <Route path="/broadcasting" element={<Suspense fallback={<AdminLoading />}><AdminAudioBroadcast /></Suspense>} />
                 <Route path="/apaar" element={<Suspense fallback={<AdminLoading />}><ApaarForm /></Suspense>} />
-
+                {typeof window !== "undefined" && (
+                  window.location.hostname.startsWith("broadcasting.") ||
+                  window.location.hostname.startsWith("boardcasting.") ||
+                  window.location.hostname.startsWith("broadcast.") ||
+                  window.location.hostname.startsWith("audio.")
+                ) && (
+                  <Route path="/" element={<Suspense fallback={<AdminLoading />}><AdminAudioBroadcast /></Suspense>} />
+                )}
 
                 {/* Public */}
                 <Route element={<PublicLayout />}>
-                  <Route path="/" element={
-                    typeof window !== "undefined" && window.location.hostname.startsWith("broadcasting.") ? (
-                      <Suspense fallback={<AdminLoading />}><AdminAudioBroadcast /></Suspense>
-                    ) : (
-                      <Home />
-                    )
-                  } />
+                  <Route path="/" element={<Home />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/academics" element={<Academics />} />
                   <Route path="/house-system" element={<HouseSystem />} />
