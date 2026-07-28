@@ -115,6 +115,17 @@ async def get_current_admin(
     return TokenData(sub=sub, email=email, role=role, permissions=permissions)
 
 
+async def get_current_admin_optional(
+    request: Request,
+    token: str = Depends(oauth2_scheme),
+) -> Optional[TokenData]:
+    """Optional admin auth check (returns None instead of throwing 401)."""
+    try:
+        return await get_current_admin(request, token)
+    except Exception:
+        return None
+
+
 async def get_superadmin(
     request: Request,
     token: str = Depends(oauth2_scheme),

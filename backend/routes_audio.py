@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import requests
 
-from auth import get_current_admin
+from auth import get_current_admin, get_current_admin_optional
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +121,7 @@ async def get_ddns_ip(current_admin=Depends(get_current_admin)):
 
 
 @audio_router.get("/status")
-async def get_audio_status(ip: Optional[str] = Query(None), current_admin=Depends(get_current_admin)):
+async def get_audio_status(ip: Optional[str] = Query(None), current_admin=Depends(get_current_admin_optional)):
     """Ping Audio Controller device to verify hardware connectivity."""
     from server import db
     if not ip or ip == "192.168.29.71":
