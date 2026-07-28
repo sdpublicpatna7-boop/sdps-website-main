@@ -366,8 +366,8 @@ export default function AdminAudioBroadcast() {
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 fill-emerald-400/20" /> Device Online (Connected)
                   </span>
                 ) : (
-                  <span className="text-xs text-rose-400 font-extrabold flex items-center gap-1.5">
-                    <XCircle className="w-4 h-4 text-rose-400" /> Unreachable on LAN
+                  <span className="text-xs text-rose-400 font-extrabold flex items-center gap-1.5" title={deviceStatus.error || "Device connection timed out"}>
+                    <XCircle className="w-4 h-4 text-rose-400 shrink-0" /> Device Offline / Check Jio Port Rule
                   </span>
                 )}
               </div>
