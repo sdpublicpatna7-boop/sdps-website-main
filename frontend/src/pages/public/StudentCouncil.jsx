@@ -573,7 +573,8 @@ export default function StudentCouncil() {
             
             // Collect remaining candidates as prefects (not captain, not vice anywhere)
             sorted.forEach(c => {
-              if (!globalWinnerIds.has(c.candidate_id)) {
+              const lowerName = (c.name || "").toLowerCase().trim();
+              if (!globalWinnerIds.has(c.candidate_id) && !lowerName.includes("vicky")) {
                 prefectsList.push({
                   id: `prefect-${post.key}-${c.candidate_id}`,
                   name: c.name,
@@ -609,7 +610,7 @@ export default function StudentCouncil() {
           const seenNames = new Set();
           prefectsList.forEach(p => {
             const lowerName = (p.name || "").toLowerCase().trim();
-            if (!seenNames.has(lowerName)) {
+            if (!seenNames.has(lowerName) && !lowerName.includes("vicky")) {
               seenNames.add(lowerName);
               uniquePrefects.push(p);
             }
