@@ -224,8 +224,11 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
             {winners.map((winner, wIdx) => {
               const winnerPhoto = winner?.photo ? (winner.photo.startsWith("data:") || winner.photo.startsWith("http") ? winner.photo : fullUrl(winner.photo)) : null;
               const winnerPct = totalVotes > 0 ? Math.round((winner.votes / totalVotes) * 100) : 0;
-              const isWinnerVice = winner.is_vice;
-              const isWinnerAppointed = isAppointed || isWinnerVice;
+              const isSchoolCaptain = (position || "").toLowerCase().includes("school captain") ||
+                                     (position || "").toLowerCase().includes("head boy") ||
+                                     (position || "").toLowerCase().includes("head girl");
+              const isWinnerVice = winner.is_vice && isSchoolCaptain;
+              const isWinnerAppointed = isAppointed || winner.is_vice;
 
               return (
                 <div key={winner.candidate_id || wIdx} className={`flex items-center gap-6 ${wIdx > 0 ? "pt-6" : ""}`}>
@@ -241,11 +244,11 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
                       <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${
                         isWinnerVice
                           ? "from-purple-400 to-purple-600"
-                          : isAppointed
+                          : isWinnerAppointed
                             ? "from-blue-400 to-blue-600"
                             : "from-[#F4D571] to-[#B9892B]"
                       } flex items-center justify-center shadow-lg border-2 border-white`}>
-                        {isWinnerVice ? <Award className="w-5 h-5 text-white" /> : isAppointed ? <Star className="w-5 h-5 text-white fill-white" /> : <Crown className="w-5 h-5 text-white" />}
+                        {isWinnerVice ? <Award className="w-5 h-5 text-white" /> : isWinnerAppointed ? <Star className="w-5 h-5 text-white fill-white" /> : <Crown className="w-5 h-5 text-white" />}
                       </div>
                     </div>
 
@@ -253,7 +256,7 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
                     <div className={`w-24 h-24 rounded-2xl ring-[3px] ${
                       isWinnerVice
                         ? "ring-purple-400/50"
-                        : isAppointed
+                        : isWinnerAppointed
                           ? "ring-blue-400/50"
                           : "ring-amber-400/50"
                     } overflow-hidden bg-gradient-to-br from-amber-50 to-amber-100 shadow-lg animate-pulse-ring`}>
@@ -278,7 +281,7 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
                             Appointed Vice
                           </span>
                         </>
-                      ) : isAppointed ? (
+                      ) : isWinnerAppointed ? (
                         <>
                           <Star className="w-4 h-4 text-blue-500 fill-blue-500" />
                           <span className="text-[10px] tracking-[0.3em] uppercase font-extrabold text-blue-600">
@@ -306,7 +309,7 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
                       <div className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border shadow-sm ${
                         isWinnerVice
                           ? "bg-purple-50 border-purple-200/60 text-purple-700 font-extrabold text-sm"
-                          : isAppointed
+                          : isWinnerAppointed
                             ? "bg-blue-50 border-blue-200/60 text-blue-700 font-extrabold text-sm"
                             : "bg-gradient-to-r from-emerald-50 to-emerald-100/80 border border-emerald-200/60 text-emerald-700 text-sm font-extrabold"
                       }`}>
@@ -315,10 +318,10 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
                             <Award className="w-3.5 h-3.5 text-purple-500" />
                             Vice Captain
                           </>
-                        ) : isAppointed ? (
+                        ) : isWinnerAppointed ? (
                           <>
                             <Star className="w-3.5 h-3.5 fill-blue-500 text-blue-500" />
-                            Appointed Winner
+                            {position}
                           </>
                         ) : (
                           <>
