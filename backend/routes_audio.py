@@ -123,7 +123,11 @@ async def sync_ddns_ip(request: Request, current_admin=Depends(get_current_admin
     if forwarded:
         client_ip = forwarded.split(",")[0].strip()
     else:
-        client_ip = request.client.host if request.client else "49.47.128.46"
+        client_ip = request.client.host if request.client else DEFAULT_AUDIO_IP
+
+    # If incoming client is IPv6 (contains colons), fallback to Jio Public IPv4 for hardware port forwarding
+    if ":" in client_ip:
+        client_ip = DEFAULT_AUDIO_IP
         
     await db.site_settings.update_one(
         {},
