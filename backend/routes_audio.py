@@ -7,6 +7,7 @@ import os
 import logging
 import urllib.parse
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import requests
@@ -122,6 +123,173 @@ async def get_tunnel_status(current_admin=Depends(get_current_admin_optional)):
         "hostname": settings.get("tunnel_hostname") if settings else None,
         "updated_at": settings.get("tunnel_updated_at") if settings else None,
     }
+
+
+WIN_SETUP_SCRIPT = """# SDPS Audio Tunnel Bridge - Windows Setup
+$ErrorActionPreference = "Stop"
+$D = "C:\\sdps"
+New-Item -ItemType Directory -Path $D -Force | Out-Null
+$CF = "$D\\cloudflared.exe"
+
+if (-not (Test-Path $CF)) {
+    Write-Host "[~] Downloading cloudflared..." -ForegroundColor Yellow
+    Invoke-WebRequest -Uri "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe" -OutFile $CF
+    Write-Host "[+] Downloaded cloudflared.exe" -ForegroundColor Green
+}
+
+try {
+    Remove-NetFirewallRule -DisplayName "SDPS Cloudflared Out" -ErrorAction SilentlyContinue
+    Remove-NetFirewallRule -DisplayName "SDPS Cloudflared In" -ErrorAction SilentlyContinue
+} catch {}
+
+New-NetFirewallRule -DisplayName "SDPS Cloudflared Out" -Direction Outbound -Program $CF -Action Allow | Out-Null
+New-NetFirewallRule -DisplayName "SDPS Cloudflared In" -Direction Inbound -Program $CF -Action Allow | Out-Null
+
+$lines = @(
+'$D = "C:\\sdps"',
+'$CF = "$D\\cloudflared.exe"',
+'$LOG = "$D\\tunnel.log"',
+'$BLOG = "$D\\bridge.log"',
+'$IP = "192.168.29.71"',
+'$URL = "https://sdps-website-main.onrender.com/api/admin/audio/tunnel/register"',
+'$KEY = "sdps-tunnel-2026"',
+'$HN = $env:COMPUTERNAME',
+'',
+'while ($true) {',
+'    if (Test-Path $LOG) { Remove-Item $LOG -Force }',
+'    $p = Start-Process -FilePath $CF -ArgumentList "tunnel","--url","http://${IP}" -PassThru -NoNewWindow -RedirectStandardError $LOG',
+'    ',
+'    $u = $null',
+'    for ($i = 0; $i -lt 30; $i++) {',
+'        Start-Sleep -Seconds 1',
+'        if (Test-Path $LOG) {',
+'            $c = Get-Content $LOG -Raw -ErrorAction SilentlyContinue',
+'            if ($c -match "(https://[a-z0-9-]+\\.trycloudflare\\.com)") {',
+'                $u = $Matches[1]',
+'                break',
+'            }',
+'        }',
+'    }',
+'',
+'    if ($u) {',
+'        $body = @{ tunnel_url = $u; api_key = $KEY; hostname = $HN } | ConvertTo-Json',
+'        try {',
+'            Invoke-RestMethod -Uri $URL -Method Post -Body $body -ContentType "application/json" -TimeoutSec 15 | Out-Null',
+'            Add-Content $BLOG "[$(Get-Date -Format ''HH:mm:ss'')] Registered: $u"',
+'        } catch {',
+'            Add-Content $BLOG "[$(Get-Date -Format ''HH:mm:ss'')] Failed to register"',
+'        }',
+'',
+'        while (-not $p.HasExited) {',
+'            Start-Sleep -Seconds 300',
+'            if (-not $p.HasExited) {',
+'                try { Invoke-RestMethod -Uri $URL -Method Post -Body $body -ContentType "application/json" -TimeoutSec 15 | Out-Null } catch {}',
+'            }',
+'        }',
+'    } else {',
+'        if (-not $p.HasExited) { $p | Stop-Process -Force -ErrorAction SilentlyContinue }',
+'    }',
+'',
+'    Add-Content $BLOG "[$(Get-Date -Format ''HH:mm:ss'')] Restarting..."',
+'    Start-Sleep -Seconds 10',
+'}',
+'@'
+)
+
+Set-Content -Path "$D\\tunnel-bridge.ps1" -Value ($lines -join "`r`n") -Encoding UTF8
+Write-Host "[+] Created tunnel script" -ForegroundColor Green
+
+$TN = "SDPS Audio Tunnel"
+try { Unregister-ScheduledTask -TaskName $TN -Confirm:$false -ErrorAction SilentlyContinue } catch {}
+
+$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-WindowStyle Hidden -ExecutionPolicy Bypass -File `"C:\\sdps\\tunnel-bridge.ps1`""
+$trigger = New-ScheduledTaskTrigger -AtLogon
+$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -RestartCount 9999 -RestartInterval (New-TimeSpan -Minutes 1)
+
+Register-ScheduledTask -TaskName $TN -Action $action -Trigger $trigger -Settings $settings -RunLevel Highest | Out-Null
+
+Start-ScheduledTask -TaskName $TN
+Write-Host "SETUP COMPLETE! SDPS Audio Tunnel is running." -ForegroundColor Green
+"""
+
+MAC_SETUP_SCRIPT = """#!/bin/bash
+SDPS_DIR="/usr/local/sdps"
+mkdir -p "$SDPS_DIR"
+ARCH=$(uname -m)
+if [ "$ARCH" = "arm64" ]; then URL="https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-darwin-arm64.tgz"; else URL="https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-darwin-amd64.tgz"; fi
+curl -sL "$URL" -o /tmp/cf.tgz && tar -xzf /tmp/cf.tgz -C "$SDPS_DIR" && chmod +x "$SDPS_DIR/cloudflared" && rm -f /tmp/cf.tgz
+
+cat << "EOF" > "$SDPS_DIR/tunnel-bridge.sh"
+#!/bin/bash
+SDPS_DIR="/usr/local/sdps"
+CF="$SDPS_DIR/cloudflared"
+LOG="$SDPS_DIR/tunnel.log"
+BLOG="$SDPS_DIR/bridge.log"
+IP="192.168.29.71"
+URL="https://sdps-website-main.onrender.com/api/admin/audio/tunnel/register"
+KEY="sdps-tunnel-2026"
+HN=$(hostname -s)
+
+while true; do
+    > "$LOG"
+    "$CF" tunnel --url "http://${IP}" 2>"$LOG" &
+    PID=$!
+    
+    TUNNEL_URL=""
+    for i in $(seq 1 30); do
+        sleep 1
+        if [ -f "$LOG" ]; then
+            TUNNEL_URL=$(grep -oE "https://[a-z0-9-]+\\.trycloudflare\\.com" "$LOG" | head -1)
+            if [ -n "$TUNNEL_URL" ]; then break; fi
+        fi
+    done
+
+    if [ -n "$TUNNEL_URL" ]; then
+        curl -s -X POST "$URL" -H "Content-Type: application/json" -d "{\\"tunnel_url\\":\\"$TUNNEL_URL\\",\\"api_key\\":\\"$KEY\\",\\"hostname\\":\\"$HN\\"}" >/dev/null
+        echo "[$(date "+%H:%M:%S")] Registered: $TUNNEL_URL" >> "$BLOG"
+        while kill -0 "$PID" 2>/dev/null; do
+            sleep 300
+            kill -0 "$PID" 2>/dev/null && curl -s -X POST "$URL" -H "Content-Type: application/json" -d "{\\"tunnel_url\\":\\"$TUNNEL_URL\\",\\"api_key\\":\\"$KEY\\",\\"hostname\\":\\"$HN\\"}" >/dev/null
+        done
+    else
+        kill "$PID" 2>/dev/null
+    fi
+    sleep 10
+done
+EOF
+
+chmod +x "$SDPS_DIR/tunnel-bridge.sh"
+
+cat << "EOF" > /Library/LaunchDaemons/com.sdps.audio-tunnel.plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key><string>com.sdps.audio-tunnel</string>
+    <key>ProgramArguments</key><array><string>/bin/bash</string><string>/usr/local/sdps/tunnel-bridge.sh</string></array>
+    <key>RunAtLoad</key><true/><key>KeepAlive</key><true/>
+</dict>
+</plist>
+EOF
+
+chmod 644 /Library/LaunchDaemons/com.sdps.audio-tunnel.plist
+launchctl unload /Library/LaunchDaemons/com.sdps.audio-tunnel.plist 2>/dev/null || true
+launchctl load /Library/LaunchDaemons/com.sdps.audio-tunnel.plist
+echo "SETUP COMPLETE! SDPS Audio Tunnel service installed."
+"""
+
+
+@audio_router.get("/setup-win.ps1", response_class=PlainTextResponse)
+def get_win_setup_script():
+    """Serves the Windows PowerShell setup script directly."""
+    return WIN_SETUP_SCRIPT
+
+
+@audio_router.get("/setup-mac.sh", response_class=PlainTextResponse)
+def get_mac_setup_script():
+    """Serves the macOS bash setup script directly."""
+    return MAC_SETUP_SCRIPT
+
 
 
 def _get_tunnel_url():
