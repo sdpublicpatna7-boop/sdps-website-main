@@ -314,8 +314,9 @@ app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
     allow_origins=_cors_origins,
-    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type"],
+    allow_origin_regex=r"https://.*\.sdpublic\.org",
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(public_router)
