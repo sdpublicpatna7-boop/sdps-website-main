@@ -6,7 +6,7 @@ Communicates directly with the IP Audio Hardware Controller (Default IP: 192.168
 import os
 import logging
 import urllib.parse
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import requests
