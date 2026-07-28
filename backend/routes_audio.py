@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 
 audio_router = APIRouter(prefix="/api/admin/audio", tags=["Admin Audio Controller"])
 
-DEFAULT_AUDIO_IP = os.getenv("AUDIO_CONTROLLER_IP", "2405:201:a411:8000:ed0d:96b:683d:86cd")
+DEFAULT_AUDIO_IP = os.getenv("AUDIO_CONTROLLER_IP", "192.168.29.71")
+CLOUDFLARE_TUNNEL_URL = os.getenv("CLOUDFLARE_TUNNEL_URL", "")  # e.g. https://sdps-audio.cfargotunnel.com
 DEFAULT_HARDWARE_USER = os.getenv("HARDWARE_USER", "user1")
 DEFAULT_HARDWARE_PASS = os.getenv("HARDWARE_PASS", "user123@")
 
@@ -79,6 +80,11 @@ class HardwareLoginPayload(BaseModel):
 
 
 def format_device_url(ip_str: str, endpoint: str = "") -> str:
+    """Build device URL. Prefers Cloudflare tunnel if configured (bypasses Jio CGNAT)."""
+    # Always use Cloudflare tunnel when available (works from anywhere)
+    if CLOUDFLARE_TUNNEL_URL:
+        return f"{CLOUDFLARE_TUNNEL_URL.rstrip('/')}{endpoint}"
+
     ip_str = ip_str.strip()
     if ip_str.startswith("http://") or ip_str.startswith("https://"):
         return f"{ip_str.rstrip('/')}{endpoint}"
@@ -161,7 +167,11 @@ async def get_audio_status(
 ):
     """Ping Audio Controller device to verify hardware connectivity."""
     from server import db
-    if not ip or ip == "192.168.29.71":
+
+    # If Cloudflare tunnel is configured, always use it
+    if CLOUDFLARE_TUNNEL_URL:
+        target_ip = CLOUDFLARE_TUNNEL_URL
+    elif not ip or ip == "192.168.29.71":
         settings = await db.site_settings.find_one({}, {"_id": 0, "audio_device_ip": 1})
         target_ip = settings.get("audio_device_ip") if (settings and settings.get("audio_device_ip")) else DEFAULT_AUDIO_IP
     else:
@@ -172,7 +182,7 @@ async def get_audio_status(
     
     # Try specified IP/port first, then fallback to :5060 and :8080 if standard port fails
     ips_to_try = [target_ip]
-    if ":" not in target_ip and not target_ip.startswith("http"):
+    if not CLOUDFLARE_TUNNEL_URL and ":" not in target_ip and not target_ip.startswith("http"):
         ips_to_try.append(f"{target_ip}:5060")
         ips_to_try.append(f"{target_ip}:8080")
 
