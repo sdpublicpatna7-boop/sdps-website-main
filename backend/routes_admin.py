@@ -815,7 +815,7 @@ async def admin_stats(admin: TokenData = Depends(get_current_admin)):
         db.career_applications.count_documents({}),
         db.alumni_members.count_documents({}),
         db.tc_records.count_documents({}),
-        db.payments.count_documents({"status": "paid"}),
+        db.apaar_submissions.count_documents({}),
         db.contact_messages.count_documents({})
     )
     return {
@@ -828,7 +828,7 @@ async def admin_stats(admin: TokenData = Depends(get_current_admin)):
         "career_applications": results[6],
         "alumni_members": results[7],
         "tc_records": results[8],
-        "payments_paid": results[9],
+        "apaar_submissions": results[9],
         "contact_messages": results[10],
     }
 

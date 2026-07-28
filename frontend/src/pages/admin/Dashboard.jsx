@@ -1,23 +1,24 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import api from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import {
   Newspaper, Bell, Image as ImageIcon, Video, MessageSquare,
-  GraduationCap, Briefcase, Users, FileText, CreditCard,
+  GraduationCap, Briefcase, Users, FileText, Fingerprint,
   Sparkles, Settings, Database
 } from "lucide-react";
 
 const STAT_ITEMS = [
-  { key: "news", label: "News Updates", icon: Newspaper, color: "from-blue-500 to-indigo-600", desc: "School newsfeed articles", badge: "Press", badgeColor: "bg-blue-50/80 text-blue-600 border border-blue-100" },
-  { key: "notices", label: "Notices", icon: Bell, color: "from-amber-500 to-orange-600", desc: "Active bulletin board alerts", badge: "Important", badgeColor: "bg-amber-50/80 text-amber-600 border border-amber-100" },
-  { key: "gallery", label: "Gallery Images", icon: ImageIcon, color: "from-pink-500 to-rose-600", desc: "Media asset album files", badge: "Photos", badgeColor: "bg-pink-50/80 text-pink-600 border border-pink-100" },
-  { key: "videos", label: "Videos", icon: Video, color: "from-rose-500 to-red-600", desc: "Featured YouTube streams", badge: "Video", badgeColor: "bg-red-50/80 text-red-600 border border-red-100" },
-  { key: "enquiries", label: "Enquiries", icon: MessageSquare, color: "from-emerald-500 to-teal-600", desc: "Admission enquiry leads", badge: "CRM", badgeColor: "bg-emerald-50/80 text-emerald-600 border border-emerald-100" },
-  { key: "admissions", label: "Applications", icon: GraduationCap, color: "from-violet-500 to-purple-600", desc: "Form registrations", badge: "Admissions", badgeColor: "bg-violet-50/80 text-violet-600 border border-violet-100" },
-  { key: "career_applications", label: "Career Apps", icon: Briefcase, color: "from-cyan-500 to-blue-600", desc: "Job applicant submissions", badge: "Hiring", badgeColor: "bg-cyan-50/80 text-cyan-600 border border-cyan-100" },
-  { key: "alumni_members", label: "Alumni Members", icon: Users, color: "from-orange-500 to-amber-600", desc: "Graduates directories", badge: "Alumni", badgeColor: "bg-orange-50/80 text-orange-600 border border-orange-100" },
-  { key: "tc_records", label: "TC Records", icon: FileText, color: "from-teal-500 to-emerald-600", desc: "Transfer certificates", badge: "Records", badgeColor: "bg-teal-50/80 text-teal-600 border border-teal-100" },
-  { key: "payments_paid", label: "Successful Payments", icon: CreditCard, color: "from-green-500 to-emerald-600", desc: "Razorpay transactions", badge: "Finance", badgeColor: "bg-green-50/80 text-green-600 border border-green-100" },
+  { key: "news", label: "News Updates", icon: Newspaper, color: "from-blue-500 to-indigo-600", desc: "School newsfeed articles", badge: "Press", badgeColor: "bg-blue-50/80 text-blue-600 border border-blue-100", link: "/admin/news" },
+  { key: "notices", label: "Notices", icon: Bell, color: "from-amber-500 to-orange-600", desc: "Active bulletin board alerts", badge: "Important", badgeColor: "bg-amber-50/80 text-amber-600 border border-amber-100", link: "/admin/notices" },
+  { key: "gallery", label: "Gallery Images", icon: ImageIcon, color: "from-pink-500 to-rose-600", desc: "Media asset album files", badge: "Photos", badgeColor: "bg-pink-50/80 text-pink-600 border border-pink-100", link: "/admin/gallery" },
+  { key: "videos", label: "Videos", icon: Video, color: "from-rose-500 to-red-600", desc: "Featured YouTube streams", badge: "Video", badgeColor: "bg-red-50/80 text-red-600 border border-red-100", link: "/admin/videos" },
+  { key: "enquiries", label: "Enquiries", icon: MessageSquare, color: "from-emerald-500 to-teal-600", desc: "Admission enquiry leads", badge: "CRM", badgeColor: "bg-emerald-50/80 text-emerald-600 border border-emerald-100", link: "/admin/admission-enquiries" },
+  { key: "admissions", label: "Applications", icon: GraduationCap, color: "from-violet-500 to-purple-600", desc: "Form registrations", badge: "Admissions", badgeColor: "bg-violet-50/80 text-violet-600 border border-violet-100", link: "/admin/admissions" },
+  { key: "career_applications", label: "Career Apps", icon: Briefcase, color: "from-cyan-500 to-blue-600", desc: "Job applicant submissions", badge: "Hiring", badgeColor: "bg-cyan-50/80 text-cyan-600 border border-cyan-100", link: "/admin/career-applications" },
+  { key: "alumni_members", label: "Alumni Members", icon: Users, color: "from-orange-500 to-amber-600", desc: "Graduates directories", badge: "Alumni", badgeColor: "bg-orange-50/80 text-orange-600 border border-orange-100", link: "/admin/alumni-members" },
+  { key: "tc_records", label: "TC Records", icon: FileText, color: "from-teal-500 to-emerald-600", desc: "Transfer certificates", badge: "Records", badgeColor: "bg-teal-50/80 text-teal-600 border border-teal-100", link: "/admin/tc-records" },
+  { key: "apaar_submissions", label: "APAAR Submissions", icon: Fingerprint, color: "from-blue-600 to-cyan-600", desc: "APAAR ID Registry consents", badge: "Govt ID", badgeColor: "bg-blue-50/80 text-blue-600 border border-blue-100", link: "/admin/apaar" },
 ];
 
 export default function AdminDashboard() {
@@ -88,43 +89,60 @@ export default function AdminDashboard() {
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5">
-          {STAT_ITEMS.map((s) => (
-            <div 
-              key={s.key} 
-              className="bg-white rounded-3xl p-5 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.015)] hover:shadow-[0_12px_40px_rgba(14,59,145,0.05)] hover:-translate-y-1 hover:border-slate-200 transition-all duration-300 group relative overflow-hidden flex flex-col justify-between" 
-              data-testid={`stat-${s.key}`}
-            >
-              {/* Card accent bg blur glow */}
-              <div className={`absolute -right-6 -bottom-6 w-16 h-16 bg-gradient-to-br ${s.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300 rounded-full blur-xl`}></div>
-              
-              <div>
-                <div className="flex items-center justify-between gap-2 mb-4">
-                  <div className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${s.color} text-white flex items-center justify-center shadow-lg shadow-indigo-500/5 group-hover:scale-110 group-hover:rotate-2 transition-transform duration-300`}>
-                    <s.icon className="w-5 h-5" />
+          {STAT_ITEMS.map((s) => {
+            const cardContent = (
+              <>
+                {/* Card accent bg blur glow */}
+                <div className={`absolute -right-6 -bottom-6 w-16 h-16 bg-gradient-to-br ${s.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300 rounded-full blur-xl`}></div>
+                
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-4">
+                    <div className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${s.color} text-white flex items-center justify-center shadow-lg shadow-indigo-500/5 group-hover:scale-110 group-hover:rotate-2 transition-transform duration-300`}>
+                      <s.icon className="w-5 h-5" />
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${s.badgeColor}`}>
+                      {s.badge}
+                    </span>
                   </div>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${s.badgeColor}`}>
-                    {s.badge}
-                  </span>
+                  
+                  <div className="text-4xl font-headline font-bold text-slate-800 tracking-tight min-h-[40px] flex items-center">
+                    {loading && (!stats || stats[s.key] === undefined) ? (
+                      <span className="inline-block w-12 h-9 bg-slate-100 animate-pulse rounded-xl"></span>
+                    ) : (
+                      stats[s.key] ?? 0
+                    )}
+                  </div>
+                  
+                  <div className="text-sm font-semibold text-slate-700 mt-1.5">
+                    {s.label}
+                  </div>
                 </div>
-                
-                <div className="text-4xl font-headline font-bold text-slate-800 tracking-tight min-h-[40px] flex items-center">
-                  {loading && (!stats || stats[s.key] === undefined) ? (
-                    <span className="inline-block w-12 h-9 bg-slate-100 animate-pulse rounded-xl"></span>
-                  ) : (
-                    stats[s.key] ?? 0
-                  )}
-                </div>
-                
-                <div className="text-sm font-semibold text-slate-700 mt-1.5">
-                  {s.label}
-                </div>
-              </div>
 
-              <div className="text-[11px] text-slate-400 mt-3 border-t border-slate-50 pt-2.5 truncate">
-                {s.desc}
+                <div className="text-[11px] text-slate-400 mt-3 border-t border-slate-50 pt-2.5 truncate">
+                  {s.desc}
+                </div>
+              </>
+            );
+
+            return s.link ? (
+              <Link 
+                key={s.key} 
+                to={s.link}
+                className="bg-white rounded-3xl p-5 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.015)] hover:shadow-[0_12px_40px_rgba(14,59,145,0.05)] hover:-translate-y-1 hover:border-slate-200 transition-all duration-300 group relative overflow-hidden flex flex-col justify-between cursor-pointer"
+                data-testid={`stat-${s.key}`}
+              >
+                {cardContent}
+              </Link>
+            ) : (
+              <div 
+                key={s.key} 
+                className="bg-white rounded-3xl p-5 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.015)] hover:shadow-[0_12px_40px_rgba(14,59,145,0.05)] hover:-translate-y-1 hover:border-slate-200 transition-all duration-300 group relative overflow-hidden flex flex-col justify-between"
+                data-testid={`stat-${s.key}`}
+              >
+                {cardContent}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
