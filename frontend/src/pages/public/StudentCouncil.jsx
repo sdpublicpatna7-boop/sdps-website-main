@@ -491,7 +491,6 @@ export default function StudentCouncil() {
         setElectionStatus("countdown");
         setRemaining(d.remaining_seconds);
         setPublishAt(d.publish_at);
-        setTab("profiles"); // Keep profiles default if countdown is active
       } else if (d.status === "live") {
         setElectionStatus("live");
         setTab("results"); // Switch directly to results tab since results are published!
@@ -880,7 +879,43 @@ export default function StudentCouncil() {
         {/* ── RESULTS TAB (the premium $1000 design) ── */}
         {tab === "results" && (
           <div>
-            {results.length === 0 ? (
+            {electionStatus === "loading" ? (
+              <div className="bg-white/80 backdrop-blur rounded-3xl border border-black/5 p-16 text-center shadow-sm">
+                <Clock className="w-12 h-12 text-brand-gold mx-auto mb-4 animate-spin" />
+                <h3 className="font-headline text-lg font-bold text-slate-700 mb-1">Checking Declaration Status</h3>
+                <p className="text-xs text-slate-400">Loading live polling data and declaration schedule...</p>
+              </div>
+            ) : electionStatus === "countdown" ? (
+              <div className="bg-white/90 backdrop-blur-xl rounded-3xl border border-brand-gold/40 p-8 md:p-12 text-center shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-80 h-80 bg-brand-gold/10 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-60 h-60 bg-brand-blue/10 rounded-full blur-3xl pointer-events-none" />
+
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#F4D571] to-[#B9892B] flex items-center justify-center mx-auto mb-5 shadow-lg shadow-brand-gold/25 animate-bounce">
+                  <Trophy className="w-8 h-8 text-white" />
+                </div>
+
+                <div className="overline mb-2 text-brand-orange">SDPS Student Council Elections 2026-27</div>
+                <h2 className="font-headline text-3xl md:text-4xl font-black text-brand-ink mb-3 tracking-tight">
+                  Official Results Declaration
+                </h2>
+                <p className="text-sm text-slate-600 mb-8 max-w-md mx-auto">
+                  The polling data is officially locked and undergoing final validation. Live election results will be declared in:
+                </p>
+
+                <div className="grid grid-cols-4 gap-3 max-w-md mx-auto mb-8">
+                  <CountdownCard value={Math.floor(remaining / 86400)} label="Days" />
+                  <CountdownCard value={Math.floor((remaining % 86400) / 3600)} label="Hours" />
+                  <CountdownCard value={Math.floor((remaining % 3600) / 60)} label="Mins" />
+                  <CountdownCard value={remaining % 60} label="Secs" />
+                </div>
+
+                {publishAt && (
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-600">
+                    <Clock className="w-4 h-4 text-brand-orange" /> Scheduled Declaration: {new Date(publishAt).toLocaleString()}
+                  </div>
+                )}
+              </div>
+            ) : results.length === 0 ? (
               <div className="bg-white/80 backdrop-blur rounded-3xl border border-black/5 p-16 text-center">
                 <Trophy className="w-16 h-16 text-slate-200 mx-auto mb-4" />
                 <h3 className="font-headline text-xl font-bold text-slate-400 mb-2">Results Not Published Yet</h3>
