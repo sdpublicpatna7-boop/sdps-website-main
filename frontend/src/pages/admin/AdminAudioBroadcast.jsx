@@ -36,6 +36,8 @@ export default function AdminAudioBroadcast() {
   const [authSubmitting, setAuthSubmitting] = useState(false);
 
   const [deviceIp] = useState("192.168.29.71");
+  const [activeTunnelUrl, setActiveTunnelUrl] = useState(null);
+  const [tunnelHostname, setTunnelHostname] = useState(null);
   const [deviceStatus, setDeviceStatus] = useState({ online: false, checking: true, error: null });
   const [activeTab, setActiveTab] = useState("broadcast");
 
@@ -54,11 +56,26 @@ export default function AdminAudioBroadcast() {
   // Clock State
   const [clockLoading, setClockLoading] = useState(false);
 
-  // Ping Device Status via Cloud Backend (routes through Cloudflare Tunnel)
+  // Fetch registered tunnel URL & status
   const pingDevice = () => {
     setDeviceStatus(prev => ({ ...prev, checking: true, error: null }));
+
+    // First fetch registered tunnel details
+    api.get("/admin/audio/tunnel/status")
+      .then(res => {
+        if (res.data?.active_url) {
+          setActiveTunnelUrl(res.data.active_url);
+          setTunnelHostname(res.data.hostname);
+        }
+      })
+      .catch(() => {});
+
+    // Then ping status
     api.get(`/admin/audio/status?ip=${encodeURIComponent(deviceIp)}`)
       .then(res => {
+        if (res.data?.ip && res.data.ip.startsWith("http")) {
+          setActiveTunnelUrl(res.data.ip);
+        }
         setDeviceStatus({
           online: res.data?.online || false,
           checking: false,
@@ -321,16 +338,19 @@ export default function AdminAudioBroadcast() {
             </div>
 
             {/* Hardware Status Pill — Cloudflare Tunnel */}
-            <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4 min-w-[260px] space-y-2 shadow-inner">
-              <div className="text-[10px] uppercase font-bold tracking-widest text-slate-300">Audio Controller (Tunnel)</div>
+            <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4 min-w-[280px] space-y-2 shadow-inner">
+              <div className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-slate-300">
+                <span>Audio Controller (Tunnel)</span>
+                {tunnelHostname && <span className="text-emerald-300 font-mono text-[9px]">[{tunnelHostname}]</span>}
+              </div>
               <div className="flex items-center gap-2">
-                <span className="bg-black/30 text-white font-mono text-sm px-3 py-1.5 rounded-lg border border-white/20 select-all">
-                  {deviceIp}
+                <span className="bg-black/40 text-emerald-300 font-mono text-xs px-3 py-1.5 rounded-lg border border-white/20 select-all truncate max-w-[210px]" title={activeTunnelUrl || "Waiting for tunnel connection..."}>
+                  {activeTunnelUrl ? activeTunnelUrl.replace(/^https?:\/\//, "") : "Connecting to Tunnel..."}
                 </span>
                 <button
                   onClick={() => pingDevice()}
                   disabled={deviceStatus.checking}
-                  className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors"
+                  className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors shrink-0"
                   title="Ping via Cloudflare Tunnel"
                 >
                   <RefreshCw className={`w-4 h-4 ${deviceStatus.checking ? "animate-spin" : ""}`} />
