@@ -7,7 +7,8 @@ from dotenv import load_dotenv
 load_dotenv(".env")
 
 # Configurations
-MONGO_URL = "mongodb+srv://SDPS:qf3gtUobJ2kaZERZ@sdps-election-server.trpp58b.mongodb.net/?appName=SDPS-Election-Server"
+import os
+MONGO_URL = os.getenv("MONGO_URL", "")
 DB_NAME = "school_election"
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
