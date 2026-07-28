@@ -78,8 +78,19 @@ class HardwareLoginPayload(BaseModel):
     sPass: str = DEFAULT_HARDWARE_PASS
 
 
+def format_device_url(ip_str: str, endpoint: str = "") -> str:
+    ip_str = ip_str.strip()
+    if ip_str.startswith("http://") or ip_str.startswith("https://"):
+        return f"{ip_str.rstrip('/')}{endpoint}"
+    
+    # Check if IPv6 address (contains multiple colons) and not already wrapped in brackets
+    if ":" in ip_str and not ip_str.startswith("[") and ip_str.count(":") > 1:
+        return f"http://[{ip_str}]{endpoint}"
+    return f"http://{ip_str}{endpoint}"
+
+
 def send_device_post(ip: str, endpoint: str, data: dict, username: Optional[str] = None, password: Optional[str] = None):
-    url = f"http://{ip.strip()}{endpoint}"
+    url = format_device_url(ip, endpoint)
     user_to_use = username or DEFAULT_HARDWARE_USER
     pass_to_use = password or DEFAULT_HARDWARE_PASS
 
@@ -163,7 +174,7 @@ async def get_audio_status(
 
     last_error = None
     for attempt_ip in ips_to_try:
-        url = f"http://{attempt_ip}/" if not attempt_ip.startswith("http") else attempt_ip
+        url = format_device_url(attempt_ip, "/")
         kwargs = {"timeout": 3.0, "auth": (user_to_use, pass_to_use)}
         try:
             res = requests.get(url, **kwargs)
