@@ -32,7 +32,7 @@ $CF_EXE = "$SDPS_DIR\cloudflared.exe"
 $LOG_FILE = "$SDPS_DIR\tunnel.log"
 $BRIDGE_LOG = "$SDPS_DIR\bridge.log"
 $DEVICE_IP = "192.168.29.71"
-$BACKEND_URL = "https://sdps-website-main.onrender.com/api/admin/audio/tunnel/register"
+$BACKEND_URL = "https://api.sdpublic.org/api/admin/audio/tunnel/register"
 $API_KEY = "sdps-tunnel-2026"
 $HOSTNAME = $env:COMPUTERNAME
 

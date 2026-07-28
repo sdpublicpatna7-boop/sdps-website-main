@@ -151,7 +151,7 @@ $lines = @(
 '$LOG = "$D\\tunnel.log"',
 '$BLOG = "$D\\bridge.log"',
 '$IP = "192.168.29.71"',
-'$URL = "https://sdps-website-main.onrender.com/api/admin/audio/tunnel/register"',
+'$URL = "https://api.sdpublic.org/api/admin/audio/tunnel/register"',
 '$KEY = "sdps-tunnel-2026"',
 '$HN = $env:COMPUTERNAME',
 '',
@@ -226,7 +226,7 @@ CF="$SDPS_DIR/cloudflared"
 LOG="$SDPS_DIR/tunnel.log"
 BLOG="$SDPS_DIR/bridge.log"
 IP="192.168.29.71"
-URL="https://sdps-website-main.onrender.com/api/admin/audio/tunnel/register"
+URL="https://api.sdpublic.org/api/admin/audio/tunnel/register"
 KEY="sdps-tunnel-2026"
 HN=$(hostname -s)
 
