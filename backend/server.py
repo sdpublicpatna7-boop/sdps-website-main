@@ -321,6 +321,8 @@ app.include_router(qp_router)
 app.include_router(wa_router)
 from routes_elections import elections_router
 app.include_router(elections_router)
+from routes_audio import audio_router
+app.include_router(audio_router)
 
 # Wire up rate limiters (slowapi requires app.state.limiter)
 from slowapi import _rate_limit_exceeded_handler

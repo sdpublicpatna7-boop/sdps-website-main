@@ -65,6 +65,7 @@ const AdminShortener = lazy(() => import("@/pages/admin/AdminShortener"));
 const LinksPage = lazy(() => import("@/pages/public/LinksPage"));
 const AdminLinktree = lazy(() => import("@/pages/admin/AdminLinktree"));
 const NoticePreview = lazy(() => import("@/pages/public/NoticePreview"));
+const AdminAudioBroadcast = lazy(() => import("@/pages/admin/AdminAudioBroadcast"));
 
 
 
@@ -246,6 +247,7 @@ function App() {
                   <Route path="omr-roster" element={<Suspense fallback={<AdminLoading />}><AdminOmrRoster /></Suspense>} />
                   <Route path="omr-checker" element={<Suspense fallback={<AdminLoading />}><AdminOmrChecker /></Suspense>} />
                   <Route path="apaar" element={<Suspense fallback={<AdminLoading />}><AdminApaarManager /></Suspense>} />
+                  <Route path="audio-broadcast" element={<Suspense fallback={<AdminLoading />}><AdminAudioBroadcast /></Suspense>} />
                   <Route path="site-settings" element={<AdminSiteSettings />} />
                   <Route path="integration-keys" element={<AdminIntegrationKeys />} />
                   <Route path="khelo-patna-gallery" element={<AdminKheloPatna />} />
