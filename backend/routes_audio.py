@@ -127,6 +127,8 @@ async def get_tunnel_status(current_admin=Depends(get_current_admin_optional)):
 
 WIN_SETUP_SCRIPT = """# SDPS Audio Tunnel Bridge - Windows Setup
 $ErrorActionPreference = "Stop"
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
 $D = "C:\\sdps"
 New-Item -ItemType Directory -Path $D -Force | Out-Null
 $CF = "$D\\cloudflared.exe"
@@ -152,6 +154,7 @@ Remove-Item "$D\\bridge.log" -Force -ErrorAction SilentlyContinue
 Remove-Item "$D\\tunnel.log" -Force -ErrorAction SilentlyContinue
 
 $script = @'
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $D = "C:\sdps"
 $CF = "$D\cloudflared.exe"
 $LOG = "$D\tunnel.log"
@@ -164,8 +167,7 @@ while ($true) {
     if (Test-Path $LOG) { Remove-Item $LOG -Force -ErrorAction SilentlyContinue }
     Add-Content $BLOG "[$(Get-Date -Format 'HH:mm:ss')] Starting Cloudflare tunnel..."
     
-    $cmd = "`"$CF`" tunnel --url http://192.168.29.71 > `"$LOG`" 2>&1"
-    $p = Start-Process -FilePath "cmd.exe" -ArgumentList "/c $cmd" -PassThru -WindowStyle Hidden
+    $p = Start-Process -FilePath $CF -ArgumentList "tunnel","--url","http://192.168.29.71","--logfile",$LOG -PassThru -NoNewWindow
 
     $tunnelUrl = $null
     for ($i = 0; $i -lt 25; $i++) {
@@ -415,13 +417,10 @@ async def get_audio_status(
 
     # If Cloudflare tunnel is configured (env var or auto-registered), always use it
     tunnel = await _get_tunnel_url_async()
-    if tunnel:
+    if tunnel and tunnel.startswith("http"):
         target_ip = tunnel
-    elif not ip or ip == "192.168.29.71":
-        settings = await db.site_settings.find_one({}, {"_id": 0, "audio_device_ip": 1})
-        target_ip = settings.get("audio_device_ip") if (settings and settings.get("audio_device_ip")) else DEFAULT_AUDIO_IP
     else:
-        target_ip = ip.strip()
+        target_ip = "192.168.29.71"
 
     user_to_use = username or DEFAULT_HARDWARE_USER
     pass_to_use = password or DEFAULT_HARDWARE_PASS
