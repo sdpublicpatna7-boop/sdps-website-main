@@ -18,6 +18,8 @@ logger = logging.getLogger(__name__)
 audio_router = APIRouter(prefix="/api/admin/audio", tags=["Admin Audio Controller"])
 
 DEFAULT_AUDIO_IP = os.getenv("AUDIO_CONTROLLER_IP", "49.47.128.46")
+DEFAULT_HARDWARE_USER = os.getenv("HARDWARE_USER", "user1")
+DEFAULT_HARDWARE_PASS = os.getenv("HARDWARE_PASS", "user123@")
 
 
 class DeviceConfig(BaseModel):
@@ -67,21 +69,31 @@ class RtcPayload(BaseModel):
     iY: str
     chSignTz: str = "+"
     iHTz: str = "05"
+    iMiTz: str = "30"
+
+
 class HardwareLoginPayload(BaseModel):
     ip: Optional[str] = DEFAULT_AUDIO_IP
-    sUser: str = "admin"
-    sPass: str = ""
+    sUser: str = DEFAULT_HARDWARE_USER
+    sPass: str = DEFAULT_HARDWARE_PASS
 
 
 def send_device_post(ip: str, endpoint: str, data: dict, username: Optional[str] = None, password: Optional[str] = None):
     url = f"http://{ip.strip()}{endpoint}"
+    user_to_use = username or DEFAULT_HARDWARE_USER
+    pass_to_use = password or DEFAULT_HARDWARE_PASS
+
+    if "sUser" not in data:
+        data["sUser"] = user_to_use
+    if "sPass" not in data:
+        data["sPass"] = pass_to_use
+
     kwargs = {
         "data": data,
         "headers": {"Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"},
+        "auth": (user_to_use, pass_to_use),
         "timeout": 5.0
     }
-    if username or password:
-        kwargs["auth"] = (username or "admin", password or "")
     try:
         response = requests.post(url, **kwargs)
         return response.text
@@ -140,10 +152,10 @@ async def get_audio_status(
     else:
         target_ip = ip.strip()
 
+    user_to_use = username or DEFAULT_HARDWARE_USER
+    pass_to_use = password or DEFAULT_HARDWARE_PASS
     url = f"http://{target_ip}/"
-    kwargs = {"timeout": 3.0}
-    if username or password:
-        kwargs["auth"] = (username or "admin", password or "")
+    kwargs = {"timeout": 3.0, "auth": (user_to_use, pass_to_use)}
 
     try:
         res = requests.get(url, **kwargs)
