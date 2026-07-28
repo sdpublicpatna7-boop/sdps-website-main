@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 audio_router = APIRouter(prefix="/api/admin/audio", tags=["Admin Audio Controller"])
 
-DEFAULT_AUDIO_IP = os.getenv("AUDIO_CONTROLLER_IP", "192.168.29.71")
+DEFAULT_AUDIO_IP = os.getenv("AUDIO_CONTROLLER_IP", "49.47.128.46")
 
 
 class DeviceConfig(BaseModel):
