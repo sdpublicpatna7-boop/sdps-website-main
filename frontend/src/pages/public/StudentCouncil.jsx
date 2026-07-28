@@ -259,7 +259,7 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
                         : isWinnerAppointed
                           ? "ring-blue-400/50"
                           : "ring-amber-400/50"
-                    } overflow-hidden bg-gradient-to-br from-amber-50 to-amber-100 shadow-lg animate-pulse-ring`}>
+                    } overflow-hidden bg-slate-50/80 shadow-lg animate-pulse-ring`}>
                       {winnerPhoto ? (() => {
                         const { style, cleanUrl } = parseCandidateTransform(winnerPhoto);
                         return <img src={cleanUrl} alt={winner.name} style={style} className="w-full h-full object-cover" />;
@@ -779,14 +779,14 @@ export default function StudentCouncil() {
                           </div>
                         )}
 
-                        <div className={`w-24 h-24 rounded-full mx-auto overflow-hidden p-1 ${
+                        <div className={`w-24 h-24 rounded-full mx-auto overflow-hidden p-0.5 bg-slate-50/80 border-2 ${
                           p.is_captain
-                            ? "bg-gradient-to-br from-brand-gold to-amber-600"
+                            ? "border-brand-gold shadow-md"
                             : isVice
-                              ? "bg-gradient-to-br from-slate-300 to-slate-500"
+                              ? "border-slate-300 shadow-sm"
                               : isDiscipline
-                                ? "bg-gradient-to-br from-blue-400 to-blue-600"
-                                : "bg-gradient-to-br from-brand-blue to-brand-orange"
+                                ? "border-blue-400 shadow-sm"
+                                : "border-brand-blue/40 shadow-sm"
                         }`}>
                           {p.photo_url ? (() => {
                             const { style, cleanUrl } = parseCandidateTransform(fullUrl(p.photo_url));
