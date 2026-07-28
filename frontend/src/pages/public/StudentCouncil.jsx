@@ -508,6 +508,11 @@ export default function StudentCouncil() {
             
             // Find Vice Captain winner(s) (candidates flagged in vice_candidate_ids under this post)
             const viceWinners = sorted.filter(c => viceCandidateIds.includes(c.candidate_id));
+            const isSchoolCaptainPost = (post.key || "").toLowerCase() === "school_captain" || 
+                                       (post.key || "").toLowerCase() === "school captain" ||
+                                       (post.title || "").toLowerCase().includes("school captain") ||
+                                       (post.title || "").toLowerCase().includes("head boy") ||
+                                       (post.title || "").toLowerCase().includes("head girl");
             
             // Compile the list of spotlight winners
             const postWinners = [];
@@ -518,7 +523,7 @@ export default function StudentCouncil() {
             viceWinners.forEach(vw => {
               postWinners.push({
                 ...vw,
-                is_vice: true
+                is_vice: isSchoolCaptainPost
               });
             });
             
@@ -558,15 +563,19 @@ export default function StudentCouncil() {
             
             // Add Vice winners to dynamic profiles
             viceWinners.forEach((winner, wIdx) => {
+              const positionTitle = isSchoolCaptainPost 
+                ? (post.title.toLowerCase().startsWith("vice") ? post.title : "Vice " + post.title) 
+                : post.title;
+
               dynamicProfiles.push({
                 id: `election-${post.key}-vice-${winner.candidate_id || wIdx}`,
                 name: winner.name,
-                position: "Vice " + post.title,
+                position: positionTitle,
                 photo_url: winner.photo,
                 year: "2026-27",
                 role_type: "Appointed by School Management",
-                is_captain: false,
-                is_vice: true,
+                is_captain: !isSchoolCaptainPost,
+                is_vice: isSchoolCaptainPost,
                 order: (post.order || 0) + 0.5
               });
             });
@@ -692,20 +701,20 @@ export default function StudentCouncil() {
                   {
                     key: "sports_skipper",
                     title: "Sports Skipper",
-                    captainKeywords: ["sports skipper"],
-                    viceKeywords: ["vice sports skipper"],
+                    captainKeywords: ["sports skipper", "vice sports skipper"],
+                    viceKeywords: [],
                   },
                   {
                     key: "cultural_head",
                     title: "Cultural Head",
-                    captainKeywords: ["cultural head"],
-                    viceKeywords: ["vice cultural head"],
+                    captainKeywords: ["cultural head", "vice cultural head"],
+                    viceKeywords: [],
                   },
                   {
                     key: "discipline_head",
                     title: "Discipline Head",
-                    captainKeywords: ["discipline head"],
-                    viceKeywords: ["vice discipline head"],
+                    captainKeywords: ["discipline head", "vice discipline head"],
+                    viceKeywords: [],
                   }
                 ].map(group => {
                   const groupCaptains = profiles.filter(p => {
