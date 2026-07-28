@@ -292,18 +292,29 @@ def get_mac_setup_script():
 
 
 
-def _get_tunnel_url():
-    """Get the best available tunnel URL: in-memory → env var → None."""
+async def _get_tunnel_url_async():
+    """Get active tunnel URL: in-memory -> MongoDB -> env var -> None."""
+    global _active_tunnel_url
     if _active_tunnel_url:
         return _active_tunnel_url
+    
+    try:
+        from server import db
+        settings = await db.site_settings.find_one({}, {"_id": 0, "cloudflare_tunnel_url": 1})
+        if settings and settings.get("cloudflare_tunnel_url"):
+            _active_tunnel_url = settings.get("cloudflare_tunnel_url")
+            return _active_tunnel_url
+    except Exception:
+        pass
+
     if CLOUDFLARE_TUNNEL_URL:
         return CLOUDFLARE_TUNNEL_URL
     return None
 
 
-def format_device_url(ip_str: str, endpoint: str = "") -> str:
+def format_device_url(ip_str: str, endpoint: str = "", tunnel_url: Optional[str] = None) -> str:
     """Build device URL. Prefers Cloudflare tunnel if configured (bypasses Jio CGNAT)."""
-    tunnel = _get_tunnel_url()
+    tunnel = tunnel_url or _active_tunnel_url or CLOUDFLARE_TUNNEL_URL
     if tunnel:
         return f"{tunnel.rstrip('/')}{endpoint}"
 
@@ -317,8 +328,9 @@ def format_device_url(ip_str: str, endpoint: str = "") -> str:
     return f"http://{ip_str}{endpoint}"
 
 
-def send_device_post(ip: str, endpoint: str, data: dict, username: Optional[str] = None, password: Optional[str] = None):
-    url = format_device_url(ip, endpoint)
+async def send_device_post_async(ip: str, endpoint: str, data: dict, username: Optional[str] = None, password: Optional[str] = None):
+    tunnel = await _get_tunnel_url_async()
+    url = format_device_url(ip, endpoint, tunnel_url=tunnel)
     user_to_use = username or DEFAULT_HARDWARE_USER
     pass_to_use = password or DEFAULT_HARDWARE_PASS
 
@@ -338,7 +350,8 @@ def send_device_post(ip: str, endpoint: str, data: dict, username: Optional[str]
         return response.text
     except requests.exceptions.RequestException as e:
         logger.error(f"Error connecting to Audio Controller device at {url}: {e}")
-        raise HTTPException(status_code=504, detail=f"Audio Controller device at {ip} is unreachable: {str(e)}")
+        raise HTTPException(status_code=504, detail=f"Audio Controller device at {url} is unreachable: {str(e)}")
+
 
 
 from datetime import datetime, timezone
@@ -391,7 +404,7 @@ async def get_audio_status(
     from server import db
 
     # If Cloudflare tunnel is configured (env var or auto-registered), always use it
-    tunnel = _get_tunnel_url()
+    tunnel = await _get_tunnel_url_async()
     if tunnel:
         target_ip = tunnel
     elif not ip or ip == "192.168.29.71":
@@ -411,8 +424,8 @@ async def get_audio_status(
 
     last_error = None
     for attempt_ip in ips_to_try:
-        url = format_device_url(attempt_ip, "/")
-        kwargs = {"timeout": 3.0, "auth": (user_to_use, pass_to_use)}
+        url = format_device_url(attempt_ip, "/", tunnel_url=tunnel)
+        kwargs = {"timeout": 4.0, "auth": (user_to_use, pass_to_use)}
         try:
             res = requests.get(url, **kwargs)
             online = res.status_code in (200, 401, 403)
@@ -438,7 +451,7 @@ async def get_audio_status(
 
 
 @audio_router.post("/hardware-login")
-def login_to_hardware(payload: HardwareLoginPayload, current_admin=Depends(get_current_admin)):
+async def login_to_hardware(payload: HardwareLoginPayload, current_admin=Depends(get_current_admin)):
     """Authenticate with hardware /Login endpoint."""
     device_ip = payload.ip or DEFAULT_AUDIO_IP
     form_data = {
@@ -447,7 +460,7 @@ def login_to_hardware(payload: HardwareLoginPayload, current_admin=Depends(get_c
         "username": payload.sUser,
         "password": payload.sPass,
     }
-    raw_res = send_device_post(device_ip, "/Login", form_data, username=payload.sUser, password=payload.sPass)
+    raw_res = await send_device_post_async(device_ip, "/Login", form_data, username=payload.sUser, password=payload.sPass)
     return {
         "success": True,
         "raw_response": raw_res
@@ -455,7 +468,7 @@ def login_to_hardware(payload: HardwareLoginPayload, current_admin=Depends(get_c
 
 
 @audio_router.post("/broadcast")
-def trigger_broadcast(payload: BroadcastPayload, current_admin=Depends(get_current_admin)):
+async def trigger_broadcast(payload: BroadcastPayload, current_admin=Depends(get_current_admin)):
     """Send broadcast command (Connect / Cancel / Listen / Local Speaker) to Audislave hardware."""
     device_ip = payload.ip or DEFAULT_AUDIO_IP
     form_data = {
@@ -465,7 +478,7 @@ def trigger_broadcast(payload: BroadcastPayload, current_admin=Depends(get_curre
         "sRooms": payload.sRooms,
         "sAct": payload.sAct
     }
-    raw_res = send_device_post(device_ip, "/BcastDo", form_data)
+    raw_res = await send_device_post_async(device_ip, "/BcastDo", form_data)
     return {
         "success": True,
         "action": payload.sAct,
@@ -475,11 +488,11 @@ def trigger_broadcast(payload: BroadcastPayload, current_admin=Depends(get_curre
 
 
 @audio_router.post("/schedule/set")
-def set_current_schedule(payload: ScheduleSetPayload, current_admin=Depends(get_current_admin)):
+async def set_current_schedule(payload: ScheduleSetPayload, current_admin=Depends(get_current_admin)):
     """Switch active bell schedule profile (Summer, Winter, Exam, Test, Off)."""
     device_ip = payload.ip or DEFAULT_AUDIO_IP
     form_data = {"sSchId": payload.sSchId}
-    raw_res = send_device_post(device_ip, "/SchCurrMod", form_data)
+    raw_res = await send_device_post_async(device_ip, "/SchCurrMod", form_data)
     return {
         "success": True,
         "schedule_id": payload.sSchId,
@@ -488,7 +501,7 @@ def set_current_schedule(payload: ScheduleSetPayload, current_admin=Depends(get_
 
 
 @audio_router.post("/schedule/modify")
-def modify_schedule_entry(payload: ScheduleModifyPayload, current_admin=Depends(get_current_admin)):
+async def modify_schedule_entry(payload: ScheduleModifyPayload, current_admin=Depends(get_current_admin)):
     """Modify a specific bell schedule entry on the hardware controller."""
     device_ip = payload.ip or DEFAULT_AUDIO_IP
     form_data = {
@@ -505,7 +518,7 @@ def modify_schedule_entry(payload: ScheduleModifyPayload, current_admin=Depends(
             if active:
                 form_data[f"s{day}"] = "on"
 
-    raw_res = send_device_post(device_ip, "/SchListMod", form_data)
+    raw_res = await send_device_post_async(device_ip, "/SchListMod", form_data)
     return {
         "success": True,
         "schedule_entry": payload.sId,
@@ -514,7 +527,7 @@ def modify_schedule_entry(payload: ScheduleModifyPayload, current_admin=Depends(
 
 
 @audio_router.post("/rtc")
-def update_realtime_clock(payload: RtcPayload, current_admin=Depends(get_current_admin)):
+async def update_realtime_clock(payload: RtcPayload, current_admin=Depends(get_current_admin)):
     """Sync Real-Time Clock on Audislave hardware."""
     device_ip = payload.ip or DEFAULT_AUDIO_IP
     form_data = {
@@ -527,7 +540,7 @@ def update_realtime_clock(payload: RtcPayload, current_admin=Depends(get_current
         "iHTz": payload.iHTz,
         "iMiTz": payload.iMiTz,
     }
-    raw_res = send_device_post(device_ip, "/RtcMod", form_data)
+    raw_res = await send_device_post_async(device_ip, "/RtcMod", form_data)
     return {
         "success": True,
         "raw_response": raw_res
@@ -535,7 +548,7 @@ def update_realtime_clock(payload: RtcPayload, current_admin=Depends(get_current
 
 
 @audio_router.post("/group/save")
-def save_broadcast_group(payload: GroupPayload, current_admin=Depends(get_current_admin)):
+async def save_broadcast_group(payload: GroupPayload, current_admin=Depends(get_current_admin)):
     """Save a room group range on the hardware controller."""
     device_ip = payload.ip or DEFAULT_AUDIO_IP
     form_data = {
@@ -544,7 +557,12 @@ def save_broadcast_group(payload: GroupPayload, current_admin=Depends(get_curren
         "sStartRoom": payload.sStartRoom,
         "sEndRoom": payload.sEndRoom
     }
-    raw_res = send_device_post(device_ip, "/BcastGrpsDo", form_data)
+    raw_res = await send_device_post_async(device_ip, "/BcastGrpsDo", form_data)
+    return {
+        "success": True,
+        "group_name": payload.sGrpName,
+        "raw_response": raw_res
+    }
     return {
         "success": True,
         "group_name": payload.sGrpName,
