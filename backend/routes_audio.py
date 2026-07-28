@@ -79,11 +79,65 @@ class HardwareLoginPayload(BaseModel):
     sPass: str = DEFAULT_HARDWARE_PASS
 
 
+# ─── Dynamic Tunnel URL (auto-reported by school PCs) ───
+_active_tunnel_url = None
+TUNNEL_API_KEY = os.getenv("TUNNEL_API_KEY", "sdps-tunnel-2026")
+
+
+class TunnelRegisterPayload(BaseModel):
+    tunnel_url: str
+    api_key: str
+    hostname: Optional[str] = None
+
+
+@audio_router.post("/tunnel/register")
+async def register_tunnel(payload: TunnelRegisterPayload):
+    """Called by school PC script to register its Cloudflare tunnel URL."""
+    global _active_tunnel_url
+    if payload.api_key != TUNNEL_API_KEY:
+        raise HTTPException(status_code=403, detail="Invalid tunnel API key")
+
+    _active_tunnel_url = payload.tunnel_url.rstrip("/")
+    from server import db
+    await db.site_settings.update_one(
+        {},
+        {"$set": {
+            "cloudflare_tunnel_url": _active_tunnel_url,
+            "tunnel_hostname": payload.hostname or "unknown",
+            "tunnel_updated_at": datetime.now(timezone.utc).isoformat()
+        }},
+        upsert=True
+    )
+    logger.info(f"Tunnel registered: {_active_tunnel_url} from {payload.hostname}")
+    return {"success": True, "tunnel_url": _active_tunnel_url}
+
+
+@audio_router.get("/tunnel/status")
+async def get_tunnel_status(current_admin=Depends(get_current_admin_optional)):
+    """Check current active tunnel URL."""
+    from server import db
+    settings = await db.site_settings.find_one({}, {"_id": 0, "cloudflare_tunnel_url": 1, "tunnel_hostname": 1, "tunnel_updated_at": 1})
+    return {
+        "active_url": _active_tunnel_url or (settings.get("cloudflare_tunnel_url") if settings else None),
+        "hostname": settings.get("tunnel_hostname") if settings else None,
+        "updated_at": settings.get("tunnel_updated_at") if settings else None,
+    }
+
+
+def _get_tunnel_url():
+    """Get the best available tunnel URL: in-memory → env var → None."""
+    if _active_tunnel_url:
+        return _active_tunnel_url
+    if CLOUDFLARE_TUNNEL_URL:
+        return CLOUDFLARE_TUNNEL_URL
+    return None
+
+
 def format_device_url(ip_str: str, endpoint: str = "") -> str:
     """Build device URL. Prefers Cloudflare tunnel if configured (bypasses Jio CGNAT)."""
-    # Always use Cloudflare tunnel when available (works from anywhere)
-    if CLOUDFLARE_TUNNEL_URL:
-        return f"{CLOUDFLARE_TUNNEL_URL.rstrip('/')}{endpoint}"
+    tunnel = _get_tunnel_url()
+    if tunnel:
+        return f"{tunnel.rstrip('/')}{endpoint}"
 
     ip_str = ip_str.strip()
     if ip_str.startswith("http://") or ip_str.startswith("https://"):
@@ -168,9 +222,10 @@ async def get_audio_status(
     """Ping Audio Controller device to verify hardware connectivity."""
     from server import db
 
-    # If Cloudflare tunnel is configured, always use it
-    if CLOUDFLARE_TUNNEL_URL:
-        target_ip = CLOUDFLARE_TUNNEL_URL
+    # If Cloudflare tunnel is configured (env var or auto-registered), always use it
+    tunnel = _get_tunnel_url()
+    if tunnel:
+        target_ip = tunnel
     elif not ip or ip == "192.168.29.71":
         settings = await db.site_settings.find_one({}, {"_id": 0, "audio_device_ip": 1})
         target_ip = settings.get("audio_device_ip") if (settings and settings.get("audio_device_ip")) else DEFAULT_AUDIO_IP
@@ -182,7 +237,7 @@ async def get_audio_status(
     
     # Try specified IP/port first, then fallback to :5060 and :8080 if standard port fails
     ips_to_try = [target_ip]
-    if not CLOUDFLARE_TUNNEL_URL and ":" not in target_ip and not target_ip.startswith("http"):
+    if not tunnel and ":" not in target_ip and not target_ip.startswith("http"):
         ips_to_try.append(f"{target_ip}:5060")
         ips_to_try.append(f"{target_ip}:8080")
 
