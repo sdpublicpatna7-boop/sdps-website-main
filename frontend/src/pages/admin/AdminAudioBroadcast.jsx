@@ -261,6 +261,36 @@ export default function AdminAudioBroadcast() {
     );
   }
 
+  const hasAudioPermission = 
+    user && (
+      user.role === "superadmin" ||
+      user.permissions?.includes("audio-broadcast") ||
+      user.permissions?.includes("media-tools") ||
+      user.permissions?.includes("site-settings")
+    );
+
+  if (user && !hasAudioPermission) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6 text-white font-headline">
+        <div className="bg-slate-800 border border-slate-700 rounded-3xl p-8 max-w-md w-full text-center space-y-4 shadow-2xl">
+          <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto">
+            <Lock className="w-8 h-8" />
+          </div>
+          <h2 className="text-xl font-bold text-white">Access Restricted</h2>
+          <p className="text-xs text-slate-400 leading-relaxed">
+            Your account ({user.name || user.username || user.email}) does not have permission to access SDPS AudioHive. Please contact a Superadmin to grant the <code className="text-brand-gold bg-black/40 px-1.5 py-0.5 rounded font-mono">audio-broadcast</code> module permission.
+          </p>
+          <button
+            onClick={logout}
+            className="w-full py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs transition-colors flex items-center justify-center gap-2 mt-2"
+          >
+            <LogOut className="w-4 h-4" /> Sign Out
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <SEO title="Smart Audio & Bell Command Hub | SDPS Admin" />

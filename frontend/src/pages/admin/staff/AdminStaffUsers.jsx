@@ -33,6 +33,7 @@ const PERMISSION_OPTIONS = [
   { value: "media-tools", label: "All Media Tools (Master Access)" },
 
   // Operations & Messaging
+  { value: "audio-broadcast", label: "SDPS AudioHive (Smart Audio & Bell System)" },
   { value: "tc-records", label: "TC (Transfer Certificate) Records" },
   { value: "popup", label: "Welcome Popup Banner" },
   { value: "contact-messages", label: "Contact Messages Log" },
@@ -98,6 +99,18 @@ export function AdminStaffUsers() {
     reload();
   };
 
+  const toggleUserStatus = async (u) => {
+    if (u.role === "superadmin") return;
+    const newStatus = !(u.is_active !== false);
+    try {
+      await api.put(`/admin/staff-users/${u.id}`, { is_active: newStatus });
+      toast.success(`${u.name} is now ${newStatus ? "Active" : "Inactive"}`);
+      reload();
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Failed to update status");
+    }
+  };
+
   const ROLE_COLORS = {
     superadmin: "bg-red-100 text-red-700",
     staff: "bg-emerald-100 text-emerald-700",
@@ -154,6 +167,7 @@ export function AdminStaffUsers() {
                 <th className="px-5 py-3 text-left">Email</th>
                 <th className="px-5 py-3 text-left">Phone</th>
                 <th className="px-5 py-3 text-left">Role</th>
+                <th className="px-5 py-3 text-left">Status</th>
                 <th className="px-5 py-3 text-left">Created</th>
                 <th className="px-5 py-3 w-24"></th>
               </tr>
@@ -180,6 +194,26 @@ export function AdminStaffUsers() {
                         </span>
                       )}
                     </div>
+                  </td>
+                  <td className="px-5 py-3">
+                    {u.role === "superadmin" ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" /> Active
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => toggleUserStatus(u)}
+                        className={`px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 border shadow-sm ${
+                          u.is_active !== false
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                            : "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
+                        }`}
+                        title={u.is_active !== false ? "Click to set Inactive" : "Click to set Active"}
+                      >
+                        <span className={`w-2 h-2 rounded-full ${u.is_active !== false ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`} />
+                        {u.is_active !== false ? "Active" : "Inactive"}
+                      </button>
+                    )}
                   </td>
                   <td className="px-5 py-3 text-brand-ink/50 text-xs">
                     {u.created_at ? u.created_at.split("T")[0] : "—"}
