@@ -54,7 +54,7 @@ export default function AdminAudioBroadcast() {
   // Clock State
   const [clockLoading, setClockLoading] = useState(false);
 
-  // Ping Audislave Device Status
+  // Ping Device Status & Fetch Custom SDPS DDNS IP
   const pingDevice = (ipToPing = deviceIp) => {
     setDeviceStatus(prev => ({ ...prev, checking: true, error: null }));
     api.get(`/admin/audio/status?ip=${encodeURIComponent(ipToPing)}`)
@@ -64,6 +64,9 @@ export default function AdminAudioBroadcast() {
           checking: false,
           error: res.data?.error || null
         });
+        if (res.data?.ip && res.data.ip !== deviceIp) {
+          setDeviceIp(res.data.ip);
+        }
       })
       .catch(err => {
         setDeviceStatus({
@@ -75,8 +78,20 @@ export default function AdminAudioBroadcast() {
   };
 
   useEffect(() => {
-    pingDevice(deviceIp);
-  }, []);
+    if (!user) return;
+    // Auto-sync DDNS if opening from school network, then fetch saved DDNS IP
+    api.get("/admin/audio/ddns/sync").catch(() => {});
+    api.get("/admin/audio/ddns/get")
+      .then(r => {
+        if (r.data?.ip) {
+          setDeviceIp(r.data.ip);
+          pingDevice(r.data.ip);
+        } else {
+          pingDevice(deviceIp);
+        }
+      })
+      .catch(() => pingDevice(deviceIp));
+  }, [user]);
 
   // Handle Broadcast Actions (connect, cancel, listen, localspk)
   const handleBroadcastAction = (action) => {

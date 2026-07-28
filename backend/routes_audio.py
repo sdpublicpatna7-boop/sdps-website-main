@@ -85,17 +85,59 @@ def send_device_post(ip: str, endpoint: str, data: dict):
         raise HTTPException(status_code=504, detail=f"Audio Controller device at {ip} is unreachable: {str(e)}")
 
 
+from datetime import datetime, timezone
+
+@audio_router.get("/ddns/sync")
+async def sync_ddns_ip(request: Request, current_admin=Depends(get_current_admin)):
+    """Auto-detect incoming Jio public IP and save it to MongoDB as current hardware IP."""
+    from server import db
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        client_ip = forwarded.split(",")[0].strip()
+    else:
+        client_ip = request.client.host if request.client else "49.47.128.46"
+        
+    await db.site_settings.update_one(
+        {},
+        {"$set": {"audio_device_ip": client_ip, "audio_ip_updated_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True
+    )
+    return {
+        "success": True,
+        "ip": client_ip,
+        "message": "SDPS DDNS auto-synced latest Jio public IP"
+    }
+
+
+@audio_router.get("/ddns/get")
+async def get_ddns_ip(current_admin=Depends(get_current_admin)):
+    """Retrieve saved DDNS IP from MongoDB."""
+    from server import db
+    settings = await db.site_settings.find_one({}, {"_id": 0, "audio_device_ip": 1})
+    saved_ip = settings.get("audio_device_ip") if settings else None
+    return {
+        "ip": saved_ip or DEFAULT_AUDIO_IP
+    }
+
+
 @audio_router.get("/status")
-def get_audio_status(ip: str = Query(DEFAULT_AUDIO_IP), current_admin=Depends(get_current_admin)):
+async def get_audio_status(ip: Optional[str] = Query(None), current_admin=Depends(get_current_admin)):
     """Ping Audio Controller device to verify hardware connectivity."""
-    url = f"http://{ip.strip()}/"
+    from server import db
+    if not ip or ip == "192.168.29.71":
+        settings = await db.site_settings.find_one({}, {"_id": 0, "audio_device_ip": 1})
+        target_ip = settings.get("audio_device_ip") if (settings and settings.get("audio_device_ip")) else DEFAULT_AUDIO_IP
+    else:
+        target_ip = ip.strip()
+
+    url = f"http://{target_ip}/"
     try:
         res = requests.get(url, timeout=3.0)
         online = res.status_code == 200
         return {
             "success": True,
             "online": online,
-            "ip": ip,
+            "ip": target_ip,
             "device": "SDPS Audio Controller",
             "statusCode": res.status_code
         }
@@ -103,7 +145,7 @@ def get_audio_status(ip: str = Query(DEFAULT_AUDIO_IP), current_admin=Depends(ge
         return {
             "success": False,
             "online": False,
-            "ip": ip,
+            "ip": target_ip,
             "device": "SDPS Audio Controller",
             "error": str(e)
         }
