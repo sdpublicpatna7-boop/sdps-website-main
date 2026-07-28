@@ -1,6 +1,6 @@
 """
 SDPS Smart Audio & Bell Command Hub - Backend Controller & Proxy
-Communicates directly with the Audislave Hitech IP Audio Hardware Controller (Default IP: 192.168.29.71)
+Communicates directly with the IP Audio Hardware Controller (Default IP: 192.168.29.71)
 """
 
 import os
@@ -17,15 +17,15 @@ logger = logging.getLogger(__name__)
 
 audio_router = APIRouter(prefix="/api/admin/audio", tags=["Admin Audio Controller"])
 
-DEFAULT_AUDISLAVE_IP = os.getenv("AUDISLAVE_IP", "192.168.29.71")
+DEFAULT_AUDIO_IP = os.getenv("AUDIO_CONTROLLER_IP", "192.168.29.71")
 
 
 class DeviceConfig(BaseModel):
-    ip: str = DEFAULT_AUDISLAVE_IP
+    ip: str = DEFAULT_AUDIO_IP
 
 
 class BroadcastPayload(BaseModel):
-    ip: Optional[str] = DEFAULT_AUDISLAVE_IP
+    ip: Optional[str] = DEFAULT_AUDIO_IP
     sSource: str = "sMic"  # sMic, sFile, sAux
     sFilename: Optional[str] = "1"
     sDest: Optional[str] = "1-200"
@@ -34,12 +34,12 @@ class BroadcastPayload(BaseModel):
 
 
 class ScheduleSetPayload(BaseModel):
-    ip: Optional[str] = DEFAULT_AUDISLAVE_IP
+    ip: Optional[str] = DEFAULT_AUDIO_IP
     sSchId: str  # 0..9 (Summer, Winter, Test, Exam, etc.)
 
 
 class ScheduleModifyPayload(BaseModel):
-    ip: Optional[str] = DEFAULT_AUDISLAVE_IP
+    ip: Optional[str] = DEFAULT_AUDIO_IP
     sId: str
     sSchId: str
     iH: str
@@ -51,7 +51,7 @@ class ScheduleModifyPayload(BaseModel):
 
 
 class GroupPayload(BaseModel):
-    ip: Optional[str] = DEFAULT_AUDISLAVE_IP
+    ip: Optional[str] = DEFAULT_AUDIO_IP
     sIndex: int
     sGrpName: str
     sStartRoom: str
@@ -59,7 +59,7 @@ class GroupPayload(BaseModel):
 
 
 class RtcPayload(BaseModel):
-    ip: Optional[str] = DEFAULT_AUDISLAVE_IP
+    ip: Optional[str] = DEFAULT_AUDIO_IP
     iH: str
     iMi: str
     iD: str
@@ -81,13 +81,13 @@ def send_device_post(ip: str, endpoint: str, data: dict):
         )
         return response.text
     except requests.exceptions.RequestException as e:
-        logger.error(f"Error connecting to Audislave device at {url}: {e}")
-        raise HTTPException(status_code=504, detail=f"Audislave device at {ip} is unreachable: {str(e)}")
+        logger.error(f"Error connecting to Audio Controller device at {url}: {e}")
+        raise HTTPException(status_code=504, detail=f"Audio Controller device at {ip} is unreachable: {str(e)}")
 
 
 @audio_router.get("/status")
-def get_audio_status(ip: str = Query(DEFAULT_AUDISLAVE_IP), current_admin=Depends(get_current_admin_user)):
-    """Ping Audislave device to verify hardware connectivity."""
+def get_audio_status(ip: str = Query(DEFAULT_AUDIO_IP), current_admin=Depends(get_current_admin_user)):
+    """Ping Audio Controller device to verify hardware connectivity."""
     url = f"http://{ip.strip()}/"
     try:
         res = requests.get(url, timeout=3.0)
@@ -96,7 +96,7 @@ def get_audio_status(ip: str = Query(DEFAULT_AUDISLAVE_IP), current_admin=Depend
             "success": True,
             "online": online,
             "ip": ip,
-            "device": "Audislave Hitech IP Audio Controller",
+            "device": "SDPS Audio Controller",
             "statusCode": res.status_code
         }
     except Exception as e:
@@ -104,7 +104,7 @@ def get_audio_status(ip: str = Query(DEFAULT_AUDISLAVE_IP), current_admin=Depend
             "success": False,
             "online": False,
             "ip": ip,
-            "device": "Audislave Hitech IP Audio Controller",
+            "device": "SDPS Audio Controller",
             "error": str(e)
         }
 
@@ -112,7 +112,7 @@ def get_audio_status(ip: str = Query(DEFAULT_AUDISLAVE_IP), current_admin=Depend
 @audio_router.post("/broadcast")
 def trigger_broadcast(payload: BroadcastPayload, current_admin=Depends(get_current_admin_user)):
     """Send broadcast command (Connect / Cancel / Listen / Local Speaker) to Audislave hardware."""
-    device_ip = payload.ip or DEFAULT_AUDISLAVE_IP
+    device_ip = payload.ip or DEFAULT_AUDIO_IP
     form_data = {
         "sSource": payload.sSource,
         "sFilename": payload.sFilename or "1",
@@ -132,7 +132,7 @@ def trigger_broadcast(payload: BroadcastPayload, current_admin=Depends(get_curre
 @audio_router.post("/schedule/set")
 def set_current_schedule(payload: ScheduleSetPayload, current_admin=Depends(get_current_admin_user)):
     """Switch active bell schedule profile (Summer, Winter, Exam, Test, Off)."""
-    device_ip = payload.ip or DEFAULT_AUDISLAVE_IP
+    device_ip = payload.ip or DEFAULT_AUDIO_IP
     form_data = {"sSchId": payload.sSchId}
     raw_res = send_device_post(device_ip, "/SchCurrMod", form_data)
     return {
@@ -145,7 +145,7 @@ def set_current_schedule(payload: ScheduleSetPayload, current_admin=Depends(get_
 @audio_router.post("/schedule/modify")
 def modify_schedule_entry(payload: ScheduleModifyPayload, current_admin=Depends(get_current_admin_user)):
     """Modify a specific bell schedule entry on the hardware controller."""
-    device_ip = payload.ip or DEFAULT_AUDISLAVE_IP
+    device_ip = payload.ip or DEFAULT_AUDIO_IP
     form_data = {
         "sId": payload.sId,
         "sSchId": payload.sSchId,
@@ -171,7 +171,7 @@ def modify_schedule_entry(payload: ScheduleModifyPayload, current_admin=Depends(
 @audio_router.post("/rtc")
 def update_realtime_clock(payload: RtcPayload, current_admin=Depends(get_current_admin_user)):
     """Sync Real-Time Clock on Audislave hardware."""
-    device_ip = payload.ip or DEFAULT_AUDISLAVE_IP
+    device_ip = payload.ip or DEFAULT_AUDIO_IP
     form_data = {
         "iH": payload.iH,
         "iMi": payload.iMi,
@@ -192,7 +192,7 @@ def update_realtime_clock(payload: RtcPayload, current_admin=Depends(get_current
 @audio_router.post("/group/save")
 def save_broadcast_group(payload: GroupPayload, current_admin=Depends(get_current_admin_user)):
     """Save a room group range on the hardware controller."""
-    device_ip = payload.ip or DEFAULT_AUDISLAVE_IP
+    device_ip = payload.ip or DEFAULT_AUDIO_IP
     form_data = {
         "sIndex": str(payload.sIndex),
         "sGrpName": payload.sGrpName,

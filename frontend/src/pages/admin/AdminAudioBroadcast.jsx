@@ -192,7 +192,7 @@ export default function AdminAudioBroadcast() {
           <div className="w-full max-w-md bg-white/95 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20 relative z-10 space-y-6">
             <div className="text-center space-y-2">
               <div className="w-20 h-20 rounded-2xl bg-white p-2 flex items-center justify-center mx-auto shadow-lg border border-slate-100/80 mb-2">
-                <img src="/logo192.png" alt="S.D. Public School Logo" className="w-full h-full object-contain" />
+                <img src="/logo-original.png" alt="S.D. Public School Main Crest Logo" className="w-full h-full object-contain" />
               </div>
               <div className="overline text-brand-orange text-xs font-bold tracking-widest">S.D. PUBLIC SCHOOL</div>
               <h1 className="font-headline text-3xl font-black text-slate-900 tracking-tight">
@@ -323,7 +323,7 @@ export default function AdminAudioBroadcast() {
 
             {/* Hardware Status Pill */}
             <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4 min-w-[260px] space-y-2 shadow-inner">
-              <div className="text-[10px] uppercase font-bold tracking-widest text-slate-300">Audislave Device IP</div>
+              <div className="text-[10px] uppercase font-bold tracking-widest text-slate-300">Audio Controller IP</div>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
@@ -656,7 +656,7 @@ export default function AdminAudioBroadcast() {
         {activeTab === "clock" && (
           <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm max-w-xl space-y-6">
             <h2 className="font-headline text-lg font-bold text-slate-800 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-brand-navy" /> Audislave Real-Time Clock Sync
+              <Clock className="w-5 h-5 text-brand-navy" /> Hardware Real-Time Clock Sync
             </h2>
             <p className="text-xs text-slate-500">Ensure period bells ring accurately by syncing hardware time with your local PC.</p>
 
@@ -675,7 +675,7 @@ export default function AdminAudioBroadcast() {
                 className="w-full py-3.5 px-6 rounded-xl bg-brand-navy hover:bg-brand-blue text-white font-headline font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2"
               >
                 <RefreshCw className={`w-4 h-4 ${clockLoading ? "animate-spin" : ""}`} />
-                Sync Audislave Clock Now
+                Sync Hardware Clock Now
               </button>
             </div>
           </div>
