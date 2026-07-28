@@ -33,7 +33,7 @@ $LOG_FILE = "$SDPS_DIR\tunnel.log"
 $BRIDGE_LOG = "$SDPS_DIR\bridge.log"
 $DEVICE_IP = "192.168.29.71"
 $BACKEND_URL = "https://api.sdpublic.org/api/admin/audio/tunnel/register"
-$API_KEY = "sdps-tunnel-2026"
+$API_KEY = if ($env:TUNNEL_API_KEY) { $env:TUNNEL_API_KEY } else { "sdps-tunnel-key" }
 $HOSTNAME = $env:COMPUTERNAME
 
 while ($true) {
