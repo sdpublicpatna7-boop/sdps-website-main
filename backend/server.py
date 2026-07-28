@@ -254,6 +254,8 @@ app = FastAPI(title="S.D. Public School API", lifespan=lifespan)
 # ── Security headers ─────────────────────────────────────────────────────────
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
+        if request.method == "OPTIONS":
+            return await call_next(request)
         response = await call_next(request)
         
         is_frameable = (
@@ -295,9 +297,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 
-app.add_middleware(SecurityHeadersMiddleware)
-
-
 # ── CORS ─────────────────────────────────────────────────────────────────────
 _cors_origins_raw = os.environ.get("CORS_ORIGINS", "")
 if not _cors_origins_raw:
@@ -310,6 +309,7 @@ for sub in ["https://boardcasting.sdpublic.org", "https://broadcasting.sdpublic.
     if sub not in _cors_origins:
         _cors_origins.append(sub)
 
+# Add CORSMiddleware LAST so it wraps SecurityHeadersMiddleware (executes FIRST)
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
@@ -318,6 +318,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(SecurityHeadersMiddleware)
+
+
+@app.options("/{full_path:path}")
+async def global_options_handler(full_path: str, request: Request):
+    origin = request.headers.get("origin", "")
+    response = Response(status_code=200)
+    if origin and ("sdpublic.org" in origin or origin in _cors_origins or origin.startswith("http://localhost")):
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = request.headers.get("access-control-request-headers", "*")
+        response.headers["Access-Control-Max-Age"] = "600"
+    return response
 
 app.include_router(public_router)
 app.include_router(admin_router)
