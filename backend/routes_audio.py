@@ -70,15 +70,17 @@ class RtcPayload(BaseModel):
     iMiTz: str = "30"
 
 
-def send_device_post(ip: str, endpoint: str, data: dict):
+def send_device_post(ip: str, endpoint: str, data: dict, username: Optional[str] = None, password: Optional[str] = None):
     url = f"http://{ip.strip()}{endpoint}"
+    kwargs = {
+        "data": data,
+        "headers": {"Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"},
+        "timeout": 5.0
+    }
+    if username or password:
+        kwargs["auth"] = (username or "admin", password or "")
     try:
-        response = requests.post(
-            url,
-            data=data,
-            headers={"Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"},
-            timeout=5.0
-        )
+        response = requests.post(url, **kwargs)
         return response.text
     except requests.exceptions.RequestException as e:
         logger.error(f"Error connecting to Audio Controller device at {url}: {e}")
@@ -121,7 +123,12 @@ async def get_ddns_ip(current_admin=Depends(get_current_admin)):
 
 
 @audio_router.get("/status")
-async def get_audio_status(ip: Optional[str] = Query(None), current_admin=Depends(get_current_admin_optional)):
+async def get_audio_status(
+    ip: Optional[str] = Query(None),
+    username: Optional[str] = Query(None),
+    password: Optional[str] = Query(None),
+    current_admin=Depends(get_current_admin_optional)
+):
     """Ping Audio Controller device to verify hardware connectivity."""
     from server import db
     if not ip or ip == "192.168.29.71":
@@ -131,12 +138,18 @@ async def get_audio_status(ip: Optional[str] = Query(None), current_admin=Depend
         target_ip = ip.strip()
 
     url = f"http://{target_ip}/"
+    kwargs = {"timeout": 3.0}
+    if username or password:
+        kwargs["auth"] = (username or "admin", password or "")
+
     try:
-        res = requests.get(url, timeout=3.0)
-        online = res.status_code == 200
+        res = requests.get(url, **kwargs)
+        online = res.status_code in (200, 401, 403)
+        requires_auth = res.status_code in (401, 403)
         return {
             "success": True,
             "online": online,
+            "requires_auth": requires_auth,
             "ip": target_ip,
             "device": "SDPS Audio Controller",
             "statusCode": res.status_code
