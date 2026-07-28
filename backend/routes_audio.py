@@ -154,7 +154,6 @@ Remove-Item "$D\\tunnel.log" -Force -ErrorAction SilentlyContinue
 $lines = @(
 '$D = "C:\\sdps"',
 '$CF = "$D\\cloudflared.exe"',
-'$LOG = "$D\\tunnel.log"',
 '$BLOG = "$D\\bridge.log"',
 '$IP = "192.168.29.71"',
 '$URL = "https://api.sdpublic.org/api/admin/audio/tunnel/register"',
@@ -162,42 +161,23 @@ $lines = @(
 '$HN = $env:COMPUTERNAME',
 '',
 'while ($true) {',
-'    if (Test-Path $LOG) { Remove-Item $LOG -Force }',
-'    $p = Start-Process -FilePath $CF -ArgumentList "tunnel","--url","http://${IP}" -PassThru -NoNewWindow -RedirectStandardError $LOG',
-'    ',
-'    $u = $null',
-'    for ($i = 0; $i -lt 30; $i++) {',
-'        Start-Sleep -Seconds 1',
-'        if (Test-Path $LOG) {',
-'            $c = Get-Content $LOG -Raw -ErrorAction SilentlyContinue',
-'            if ($c -match "(https://[a-z0-9-]+\\.trycloudflare\\.com)") {',
-'                $u = $Matches[1]',
-'                break',
+'    Add-Content $BLOG "[$(Get-Date -Format ''HH:mm:ss'')] Starting Cloudflare tunnel..."',
+'    & "$CF" tunnel --url "http://${IP}" 2>&1 | ForEach-Object {',
+'        $line = $_.ToString()',
+'        if ($line -match "(https://[a-z0-9-]+\\.trycloudflare\\.com)") {',
+'            $tunnelUrl = $Matches[1]',
+'            Add-Content $BLOG "[$(Get-Date -Format ''HH:mm:ss'')] Live Tunnel URL: $tunnelUrl"',
+'            $body = @{ tunnel_url = $tunnelUrl; api_key = $KEY; hostname = $HN } | ConvertTo-Json',
+'            try {',
+'                Invoke-RestMethod -Uri $URL -Method Post -Body $body -ContentType "application/json" -TimeoutSec 10 | Out-Null',
+'                Add-Content $BLOG "[$(Get-Date -Format ''HH:mm:ss'')] Registered $tunnelUrl with api.sdpublic.org"',
+'            } catch {',
+'                Add-Content $BLOG "[$(Get-Date -Format ''HH:mm:ss'')] Registration error: $_"',
 '            }',
 '        }',
 '    }',
-'',
-'    if ($u) {',
-'        $body = @{ tunnel_url = $u; api_key = $KEY; hostname = $HN } | ConvertTo-Json',
-'        try {',
-'            Invoke-RestMethod -Uri $URL -Method Post -Body $body -ContentType "application/json" -TimeoutSec 15 | Out-Null',
-'            Add-Content $BLOG "[$(Get-Date -Format ''HH:mm:ss'')] Registered: $u"',
-'        } catch {',
-'            Add-Content $BLOG "[$(Get-Date -Format ''HH:mm:ss'')] Failed to register"',
-'        }',
-'',
-'        while (-not $p.HasExited) {',
-'            Start-Sleep -Seconds 300',
-'            if (-not $p.HasExited) {',
-'                try { Invoke-RestMethod -Uri $URL -Method Post -Body $body -ContentType "application/json" -TimeoutSec 15 | Out-Null } catch {}',
-'            }',
-'        }',
-'    } else {',
-'        if (-not $p.HasExited) { $p | Stop-Process -Force -ErrorAction SilentlyContinue }',
-'    }',
-'',
-'    Add-Content $BLOG "[$(Get-Date -Format ''HH:mm:ss'')] Restarting..."',
-'    Start-Sleep -Seconds 10',
+'    Add-Content $BLOG "[$(Get-Date -Format ''HH:mm:ss'')] Tunnel exited. Restarting in 5s..."',
+'    Start-Sleep -Seconds 5',
 '}',
 '@'
 )
@@ -214,8 +194,11 @@ $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoi
 
 Register-ScheduledTask -TaskName $TN -Action $action -Trigger $trigger -Settings $settings -RunLevel Highest | Out-Null
 
-Start-ScheduledTask -TaskName $TN
-Write-Host "SETUP COMPLETE! SDPS Audio Tunnel is running." -ForegroundColor Green
+# Launch in background via Start-Process
+Start-Process -FilePath "powershell.exe" -ArgumentList "-WindowStyle Hidden -ExecutionPolicy Bypass -File `"C:\\sdps\\tunnel-bridge.ps1`"" -NoNewWindow
+Start-ScheduledTask -TaskName $TN -ErrorAction SilentlyContinue
+
+Write-Host "SETUP COMPLETE! SDPS Audio Tunnel is running and registered." -ForegroundColor Green
 """
 
 MAC_SETUP_SCRIPT = """#!/bin/bash
