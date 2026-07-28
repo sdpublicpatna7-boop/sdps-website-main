@@ -67,7 +67,10 @@ class RtcPayload(BaseModel):
     iY: str
     chSignTz: str = "+"
     iHTz: str = "05"
-    iMiTz: str = "30"
+class HardwareLoginPayload(BaseModel):
+    ip: Optional[str] = DEFAULT_AUDIO_IP
+    sUser: str = "admin"
+    sPass: str = ""
 
 
 def send_device_post(ip: str, endpoint: str, data: dict, username: Optional[str] = None, password: Optional[str] = None):
@@ -162,6 +165,23 @@ async def get_audio_status(
             "device": "SDPS Audio Controller",
             "error": str(e)
         }
+
+
+@audio_router.post("/hardware-login")
+def login_to_hardware(payload: HardwareLoginPayload, current_admin=Depends(get_current_admin)):
+    """Authenticate with hardware /Login endpoint."""
+    device_ip = payload.ip or DEFAULT_AUDIO_IP
+    form_data = {
+        "sUser": payload.sUser,
+        "sPass": payload.sPass,
+        "username": payload.sUser,
+        "password": payload.sPass,
+    }
+    raw_res = send_device_post(device_ip, "/Login", form_data, username=payload.sUser, password=payload.sPass)
+    return {
+        "success": True,
+        "raw_response": raw_res
+    }
 
 
 @audio_router.post("/broadcast")
