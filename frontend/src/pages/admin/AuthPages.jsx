@@ -154,12 +154,14 @@ export function AdminLogin() {
     <>
       <Toaster position="top-right" />
       <LoginWrapper>
-        <div className="text-center mb-8">
-          <img
-            src="/logo-real-animated.gif"
-            alt="S.D. Public School Patna"
-            className="w-20 h-20 mx-auto mb-3 object-contain drop-shadow-[0_0_15px_rgba(248,125,14,0.3)]"
-          />
+        <div className="text-center mb-8 flex flex-col items-center">
+          <div className="w-24 h-24 rounded-full bg-white p-2 shadow-[0_0_25px_rgba(248,125,14,0.35)] border-2 border-brand-gold/40 flex items-center justify-center mb-3 group hover:scale-105 transition-transform duration-300">
+            <img
+              src="/logo-real-animated.gif"
+              alt="S.D. Public School Patna"
+              className="w-full h-full object-contain rounded-full"
+            />
+          </div>
           <h1 className="font-headline font-bold text-3xl tracking-tight text-white">SDPS Admin</h1>
           <p className="text-xs uppercase tracking-widest text-brand-gold font-semibold mt-1">Control Panel Login</p>
         </div>
@@ -252,12 +254,14 @@ export function AdminForgotPassword() {
     <>
       <Toaster position="top-right" />
       <LoginWrapper>
-        <div className="text-center mb-6">
-          <img
-            src="/logo-real-animated.gif"
-            alt="S.D. Public School Patna"
-            className="w-16 h-16 mx-auto mb-2 object-contain drop-shadow-[0_0_15px_rgba(248,125,14,0.3)]"
-          />
+        <div className="text-center mb-6 flex flex-col items-center">
+          <div className="w-20 h-20 rounded-full bg-white p-2 shadow-[0_0_20px_rgba(248,125,14,0.3)] border-2 border-brand-gold/40 flex items-center justify-center mb-2">
+            <img
+              src="/logo-real-animated.gif"
+              alt="S.D. Public School Patna"
+              className="w-full h-full object-contain rounded-full"
+            />
+          </div>
           <h1 className="font-headline font-bold text-3xl text-center text-white tracking-tight">Reset Password</h1>
           <p className="text-xs text-slate-400 text-center uppercase tracking-widest mt-1">Admin Account Recovery</p>
         </div>

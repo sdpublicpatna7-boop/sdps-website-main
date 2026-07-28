@@ -205,9 +205,9 @@ export default function AdminAudioBroadcast() {
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-brand-blue/10 rounded-full blur-3xl pointer-events-none" />
 
           <div className="w-full max-w-md bg-white/95 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20 relative z-10 space-y-6">
-            <div className="text-center space-y-2">
-              <div className="w-20 h-20 rounded-2xl bg-white p-2 flex items-center justify-center mx-auto shadow-lg border border-slate-100/80 mb-2">
-                <img src="/logo-real-animated.gif" alt="S.D. Public School Patna" className="w-full h-full object-contain" />
+            <div className="text-center space-y-2 flex flex-col items-center">
+              <div className="w-24 h-24 rounded-full bg-white p-2.5 flex items-center justify-center mx-auto shadow-xl border-2 border-slate-100 mb-2">
+                <img src="/logo-real-animated.gif" alt="S.D. Public School Patna" className="w-full h-full object-contain rounded-full" />
               </div>
               <div className="overline text-brand-orange text-xs font-bold tracking-widest">S.D. PUBLIC SCHOOL</div>
               <h1 className="font-headline text-2xl font-black text-slate-900 tracking-tight">
