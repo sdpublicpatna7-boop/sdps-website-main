@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 audio_router = APIRouter(prefix="/api/admin/audio", tags=["Admin Audio Controller"])
 
-DEFAULT_AUDIO_IP = os.getenv("AUDIO_CONTROLLER_IP", "49.47.128.46")
+DEFAULT_AUDIO_IP = os.getenv("AUDIO_CONTROLLER_IP", "2405:201:a411:8000:ed0d:96b:683d:86cd")
 DEFAULT_HARDWARE_USER = os.getenv("HARDWARE_USER", "user1")
 DEFAULT_HARDWARE_PASS = os.getenv("HARDWARE_PASS", "user123@")
 
