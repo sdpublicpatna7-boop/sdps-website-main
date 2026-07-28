@@ -125,13 +125,13 @@ async def get_tunnel_status(current_admin=Depends(get_current_admin_optional)):
     }
 
 
-WIN_SETUP_SCRIPT = """# SDPS Audio Tunnel Bridge - Windows Setup
+WIN_SETUP_SCRIPT = r"""# SDPS Audio Tunnel Bridge - Windows Setup
 $ErrorActionPreference = "Stop"
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-$D = "C:\\sdps"
+$D = "C:/sdps"
 New-Item -ItemType Directory -Path $D -Force | Out-Null
-$CF = "$D\\cloudflared.exe"
+$CF = "$D/cloudflared.exe"
 
 if (-not (Test-Path $CF)) {
     Write-Host "[~] Downloading cloudflared..." -ForegroundColor Yellow
@@ -150,15 +150,15 @@ New-NetFirewallRule -DisplayName "SDPS Cloudflared In" -Direction Inbound -Progr
 # Stop old background instances
 Get-Process cloudflared -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 Get-Process powershell -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like "*tunnel-bridge*" } | Stop-Process -Force -ErrorAction SilentlyContinue
-Remove-Item "$D\\bridge.log" -Force -ErrorAction SilentlyContinue
-Remove-Item "$D\\tunnel.log" -Force -ErrorAction SilentlyContinue
+Remove-Item "$D/bridge.log" -Force -ErrorAction SilentlyContinue
+Remove-Item "$D/tunnel.log" -Force -ErrorAction SilentlyContinue
 
 $script = @'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-$D = "C:\sdps"
-$CF = "$D\cloudflared.exe"
-$LOG = "$D\tunnel.log"
-$BLOG = "$D\bridge.log"
+$D = "C:/sdps"
+$CF = "$D/cloudflared.exe"
+$LOG = "$D/tunnel.log"
+$BLOG = "$D/bridge.log"
 $URL = "https://api.sdpublic.org/api/admin/audio/tunnel/register"
 $KEY = "sdps-tunnel-2026"
 $HN = $env:COMPUTERNAME
@@ -205,20 +205,20 @@ while ($true) {
 }
 '@
 
-Set-Content -Path "$D\tunnel-bridge.ps1" -Value $script -Encoding UTF8
+Set-Content -Path "$D/tunnel-bridge.ps1" -Value $script -Encoding UTF8
 Write-Host "[+] Created tunnel script" -ForegroundColor Green
 
 $TN = "SDPS Audio Tunnel"
 try { Unregister-ScheduledTask -TaskName $TN -Confirm:$false -ErrorAction SilentlyContinue } catch {}
 
-$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-WindowStyle Hidden -ExecutionPolicy Bypass -File `"C:\sdps\tunnel-bridge.ps1`""
+$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-WindowStyle Hidden -ExecutionPolicy Bypass -File `"C:/sdps/tunnel-bridge.ps1`""
 $trigger = New-ScheduledTaskTrigger -AtLogon
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -RestartCount 9999 -RestartInterval (New-TimeSpan -Minutes 1)
 
 Register-ScheduledTask -TaskName $TN -Action $action -Trigger $trigger -Settings $settings -RunLevel Highest | Out-Null
 
 # Launch in background right now
-Start-Process -FilePath "powershell.exe" -ArgumentList "-WindowStyle Hidden -ExecutionPolicy Bypass -File `"C:\sdps\tunnel-bridge.ps1`"" -NoNewWindow
+Start-Process -FilePath "powershell.exe" -ArgumentList "-WindowStyle Hidden -ExecutionPolicy Bypass -File `"C:/sdps/tunnel-bridge.ps1`"" -NoNewWindow
 Start-ScheduledTask -TaskName $TN -ErrorAction SilentlyContinue
 
 Write-Host "SETUP COMPLETE! SDPS Audio Tunnel is running and registered." -ForegroundColor Green
