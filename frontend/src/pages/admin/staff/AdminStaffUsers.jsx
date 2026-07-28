@@ -33,7 +33,7 @@ const PERMISSION_OPTIONS = [
   { value: "media-tools", label: "All Media Tools (Master Access)" },
 
   // Operations & Messaging
-  { value: "audio-broadcast", label: "SDPS AudioHive (Smart Audio & Bell System)" },
+  { value: "audio-broadcast", label: "Smart Audio & Bell System" },
   { value: "tc-records", label: "TC (Transfer Certificate) Records" },
   { value: "popup", label: "Welcome Popup Banner" },
   { value: "contact-messages", label: "Contact Messages Log" },

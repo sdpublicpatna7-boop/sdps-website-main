@@ -184,7 +184,7 @@ export default function AdminAudioBroadcast() {
   if (!user) {
     return (
       <>
-        <SEO title="Authentication Required | SDPS AudioHive" />
+        <SEO title="Authentication Required | SDPS Smart Audio & Bell Hub" />
         <div className="min-h-screen bg-gradient-to-br from-slate-950 via-brand-navy to-slate-900 flex items-center justify-center p-6 text-slate-900 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-96 h-96 bg-brand-gold/10 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-brand-blue/10 rounded-full blur-3xl pointer-events-none" />
@@ -195,8 +195,8 @@ export default function AdminAudioBroadcast() {
                 <img src="/logo-real-animated.gif" alt="S.D. Public School Patna" className="w-full h-full object-contain" />
               </div>
               <div className="overline text-brand-orange text-xs font-bold tracking-widest">S.D. PUBLIC SCHOOL</div>
-              <h1 className="font-headline text-3xl font-black text-slate-900 tracking-tight">
-                AudioHive
+              <h1 className="font-headline text-2xl font-black text-slate-900 tracking-tight">
+                Audio & Bell Command Hub
               </h1>
               <p className="text-xs text-slate-500 max-w-xs mx-auto">
                 Sign in with your SDPS Admin credentials to access school speakers & bell schedules.
@@ -250,7 +250,7 @@ export default function AdminAudioBroadcast() {
                   </>
                 ) : (
                   <>
-                    <ShieldCheck className="w-4 h-4 text-brand-gold" /> Unlock AudioHive
+                    <ShieldCheck className="w-4 h-4 text-brand-gold" /> Unlock Audio & Bell Hub
                   </>
                 )}
               </button>
@@ -278,7 +278,7 @@ export default function AdminAudioBroadcast() {
           </div>
           <h2 className="text-xl font-bold text-white">Access Restricted</h2>
           <p className="text-xs text-slate-400 leading-relaxed">
-            Your account ({user.name || user.username || user.email}) does not have permission to access SDPS AudioHive. Please contact a Superadmin to grant the <code className="text-brand-gold bg-black/40 px-1.5 py-0.5 rounded font-mono">audio-broadcast</code> module permission.
+            Your account ({user.name || user.username || user.email}) does not have permission to access the Smart Audio & Bell System. Please contact a Superadmin to grant the <code className="text-brand-gold bg-black/40 px-1.5 py-0.5 rounded font-mono">audio-broadcast</code> module permission.
           </p>
           <button
             onClick={logout}
@@ -303,7 +303,7 @@ export default function AdminAudioBroadcast() {
             <div>
               <div className="flex items-center gap-3 mb-3">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur text-brand-gold text-xs font-bold uppercase tracking-wider">
-                  <Radio className="w-4 h-4 animate-pulse text-amber-400" /> SDPS AudioHive Command
+                  <Radio className="w-4 h-4 animate-pulse text-amber-400" /> SDPS Audio & Bell System
                 </div>
                 <button
                   onClick={logout}
@@ -314,7 +314,7 @@ export default function AdminAudioBroadcast() {
                 </button>
               </div>
               <h1 className="font-headline text-3xl md:text-4xl font-black tracking-tight text-white">
-                AudioHive Command Center
+                Smart Audio & Bell Command Hub
               </h1>
               <p className="text-sm text-slate-300 mt-1 max-w-xl">
                 Manage live school broadcasts, automated period bells, room zones, and emergency announcements across S.D. Public School.
