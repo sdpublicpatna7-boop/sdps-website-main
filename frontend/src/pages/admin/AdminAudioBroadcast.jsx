@@ -198,15 +198,133 @@ export default function AdminAudioBroadcast() {
     });
   };
 
-  const handleLoginSubmit = (e) => {
+  const [otpStep, setOtpStep] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpDestHint, setOtpDestHint] = useState("");
+  const [sessionToken, setSessionToken] = useState(localStorage.getItem("sdps_audio_session") || "");
+  const [micStreaming, setMicStreaming] = useState(false);
+
+  // 1. 5-Minute Inactivity Auto Logout
+  useEffect(() => {
+    if (!user) return;
+    let timeoutId;
+    const resetInactivity = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        if (sessionToken) {
+          api.post(`/admin/audio/session/logout?token=${sessionToken}`).catch(() => {});
+        }
+        logout();
+        alert("🔒 Security Timeout: You have been logged out after 5 minutes of inactivity.");
+      }, 5 * 60 * 1000); // 5 minutes = 300,000 ms
+    };
+
+    const events = ["mousemove", "mousedown", "keydown", "touchstart", "scroll"];
+    events.forEach(e => window.addEventListener(e, resetInactivity));
+    resetInactivity();
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      events.forEach(e => window.removeEventListener(e, resetInactivity));
+    };
+  }, [user, sessionToken, logout]);
+
+  // 2. Session Heartbeat & Superadmin Preemption Listener
+  useEffect(() => {
+    if (!user || !sessionToken) return;
+    const interval = setInterval(() => {
+      api.get(`/admin/audio/session/heartbeat?token=${sessionToken}`)
+        .catch(err => {
+          if (err.response?.status === 401 || err.response?.data?.detail?.includes("LOGOUT_PREEMPTED")) {
+            logout();
+            alert("⚠️ Session Terminated: A Superadmin logged in from another device. You have been signed out.");
+          }
+        });
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [user, sessionToken, logout]);
+
+  // OTP Login Handlers
+  const handleOtpRequest = (e) => {
     e.preventDefault();
     setAuthError(null);
     setAuthSubmitting(true);
-    login(loginEmail, loginPass)
-      .catch(err => {
-        setAuthError(err.response?.data?.detail || "Invalid credentials. Please enter your SDPS admin username & password.");
-      })
-      .finally(() => setAuthSubmitting(false));
+
+    api.post("/admin/audio/otp/send", {
+      username: loginEmail,
+      password: loginPass
+    })
+    .then(res => {
+      setOtpStep(true);
+      setOtpDestHint(res.data?.message || "OTP sent to registered WhatsApp / Email.");
+    })
+    .catch(err => {
+      setAuthError(err.response?.data?.detail || "Invalid credentials. Please verify your SDPS admin username & password.");
+    })
+    .finally(() => setAuthSubmitting(false));
+  };
+
+  const handleOtpVerify = (e) => {
+    e.preventDefault();
+    setAuthError(null);
+    setAuthSubmitting(true);
+
+    api.post("/admin/audio/otp/verify", {
+      username: loginEmail,
+      otp: otpCode
+    })
+    .then(res => {
+      const sToken = res.data?.session_token;
+      if (sToken) {
+        setSessionToken(sToken);
+        localStorage.setItem("sdps_audio_session", sToken);
+      }
+      login(loginEmail, loginPass).catch(() => {});
+    })
+    .catch(err => {
+      setAuthError(err.response?.data?.detail || "Invalid or expired OTP code.");
+    })
+    .finally(() => setAuthSubmitting(false));
+  };
+
+  // Phone / Browser Mic Live Stream Handlers
+  const handleStartMicStream = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      setMicStreaming(true);
+      setLastActionMsg({ type: "success", text: "🎙️ Live Phone Microphone Stream Active! Broadcasting live audio..." });
+
+      recorder.ondataavailable = async (e) => {
+        if (e.data.size > 0) {
+          const reader = new FileReader();
+          reader.readAsDataURL(e.data);
+          reader.onloadend = () => {
+            const base64Audio = reader.result.split(',')[1];
+            api.post("/admin/audio/stream-mic", {
+              audio_base64: base64Audio,
+              rooms: roomsInput || "1-200"
+            }).catch(() => {});
+          };
+        }
+      };
+      recorder.start(1000);
+      window._audioMicRecorder = recorder;
+      window._audioMicStream = stream;
+    } catch (err) {
+      setLastActionMsg({ type: "error", text: "Microphone Access Denied: " + err.message });
+    }
+  };
+
+  const handleStopMicStream = () => {
+    if (window._audioMicRecorder) {
+      try { window._audioMicRecorder.stop(); } catch {}
+    }
+    if (window._audioMicStream) {
+      try { window._audioMicStream.getTracks().forEach(t => t.stop()); } catch {}
+    }
+    setMicStreaming(false);
+    setLastActionMsg({ type: "success", text: "Microphone stream stopped." });
   };
 
   const SCHEDULE_OPTIONS = [
@@ -262,51 +380,98 @@ export default function AdminAudioBroadcast() {
               </div>
             )}
 
-            <form onSubmit={handleLoginSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-slate-400" /> Admin Username or Email
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={loginEmail}
-                  onChange={e => setLoginEmail(e.target.value)}
-                  placeholder="admin@sdpublic.org"
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 font-semibold px-4 py-3 rounded-xl focus:outline-none focus:border-brand-navy text-sm"
-                />
-              </div>
+            {!otpStep ? (
+              <form onSubmit={handleOtpRequest} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-slate-400" /> Admin Username or Email
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={loginEmail}
+                    onChange={e => setLoginEmail(e.target.value)}
+                    placeholder="admin@sdpublic.org"
+                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 font-semibold px-4 py-3 rounded-xl focus:outline-none focus:border-brand-navy text-sm"
+                  />
+                </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5 text-slate-400" /> Password
-                </label>
-                <input
-                  type="password"
-                  required
-                  value={loginPass}
-                  onChange={e => setLoginPass(e.target.value)}
-                  placeholder="••••••••••••"
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 font-semibold px-4 py-3 rounded-xl focus:outline-none focus:border-brand-navy text-sm"
-                />
-              </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-slate-400" /> Password
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={loginPass}
+                    onChange={e => setLoginPass(e.target.value)}
+                    placeholder="••••••••••••"
+                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 font-semibold px-4 py-3 rounded-xl focus:outline-none focus:border-brand-navy text-sm"
+                  />
+                </div>
 
-              <button
-                type="submit"
-                disabled={authSubmitting}
-                className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-brand-navy to-brand-blue text-white font-headline font-bold text-sm shadow-lg shadow-brand-navy/20 hover:brightness-110 transition-all flex items-center justify-center gap-2 mt-2"
-              >
-                {authSubmitting ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" /> Verifying Credentials...
-                  </>
-                ) : (
-                  <>
-                    <ShieldCheck className="w-4 h-4 text-brand-gold" /> Unlock Audio & Bell Hub
-                  </>
-                )}
-              </button>
-            </form>
+                <button
+                  type="submit"
+                  disabled={authSubmitting}
+                  className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-brand-navy to-brand-blue text-white font-headline font-bold text-sm shadow-lg shadow-brand-navy/20 hover:brightness-110 transition-all flex items-center justify-center gap-2 mt-2"
+                >
+                  {authSubmitting ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" /> Verifying Credentials...
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="w-4 h-4 text-brand-gold" /> Send 2FA Verification Code
+                    </>
+                  )}
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleOtpVerify} className="space-y-4">
+                <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold">
+                  {otpDestHint}
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-slate-400" /> 6-Digit OTP Verification Code
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={6}
+                    value={otpCode}
+                    onChange={e => setOtpCode(e.target.value)}
+                    placeholder="123456"
+                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 font-mono font-bold text-center tracking-widest text-xl px-4 py-3 rounded-xl focus:outline-none focus:border-brand-navy"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={authSubmitting}
+                  className="w-full py-3.5 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-headline font-bold text-sm shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2"
+                >
+                  {authSubmitting ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" /> Validating OTP & Session...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" /> Verify OTP & Login to Command Hub
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setOtpStep(false)}
+                  className="w-full py-2 text-xs font-bold text-slate-500 hover:text-slate-700 text-center"
+                >
+                  ← Back to Password Login
+                </button>
+              </form>
+            )}
           </div>
         </div>
       </>
@@ -496,6 +661,41 @@ export default function AdminAudioBroadcast() {
                       <option key={n} value={n}>Chime / Announcement Track {n < 10 ? `0${n}` : n}</option>
                     ))}
                   </select>
+                </div>
+              )}
+
+              {/* Mic Live Stream Card (if sMic) */}
+              {source === "sMic" && (
+                <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200/80 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-amber-900 font-bold text-xs">
+                      <Mic className="w-4 h-4 text-amber-600 animate-pulse" />
+                      Live Phone / Browser Voice Streaming
+                    </div>
+                    {micStreaming && (
+                      <span className="px-2.5 py-0.5 rounded-full bg-rose-600 text-white font-bold text-[10px] uppercase tracking-wider animate-pulse">
+                        🔴 Live Voice Stream Active
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-amber-800 leading-relaxed">
+                    Broadcast your live voice directly from your mobile phone or laptop microphone across school speakers in real time.
+                  </p>
+                  {!micStreaming ? (
+                    <button
+                      onClick={handleStartMicStream}
+                      className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:brightness-105 text-white font-headline font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all"
+                    >
+                      <Mic className="w-4 h-4" /> 🎙️ Start Live Mic Voice Stream (Phone / Laptop)
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleStopMicStream}
+                      className="w-full py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-headline font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all"
+                    >
+                      <StopCircle className="w-4 h-4" /> Stop Live Voice Stream
+                    </button>
+                  )}
                 </div>
               )}
 

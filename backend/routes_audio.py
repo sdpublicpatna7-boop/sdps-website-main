@@ -91,6 +91,22 @@ class TunnelRegisterPayload(BaseModel):
     hostname: Optional[str] = None
 
 
+class OtpRequestPayload(BaseModel):
+    username: str
+    password: str
+
+
+class OtpVerifyPayload(BaseModel):
+    username: str
+    otp: str
+
+
+class MicStreamPayload(BaseModel):
+    ip: Optional[str] = DEFAULT_AUDIO_IP
+    audio_base64: str
+    rooms: str = "1-200"
+
+
 @audio_router.post("/tunnel/register")
 async def register_tunnel(payload: TunnelRegisterPayload):
     """Called by school PC script to register its Cloudflare tunnel URL."""
@@ -115,13 +131,247 @@ async def register_tunnel(payload: TunnelRegisterPayload):
 
 @audio_router.get("/tunnel/status")
 async def get_tunnel_status(current_admin=Depends(get_current_admin_optional)):
-    """Check current active tunnel URL."""
+    """Check current active tunnel URL. Masks URL for non-superadmin users."""
     from server import db
     settings = await db.site_settings.find_one({}, {"_id": 0, "cloudflare_tunnel_url": 1, "tunnel_hostname": 1, "tunnel_updated_at": 1})
+    raw_url = _active_tunnel_url or (settings.get("cloudflare_tunnel_url") if settings else None)
+
+    # Check if current user is superadmin / admin
+    is_superadmin = False
+    if current_admin:
+        role = getattr(current_admin, "role", None) or current_admin.get("role", "")
+        if role in ["superadmin", "admin"]:
+            is_superadmin = True
+
+    masked_url = raw_url
+    if raw_url and not is_superadmin:
+        # Mask domain string for non-superadmin e.g. club-strikes-explains-colony -> club-st-XXXXXX.trycloudflare.com
+        parts = raw_url.replace("https://", "").replace("http://", "").split(".")
+        if len(parts) >= 2:
+            sub = parts[0]
+            masked_sub = sub[:6] + "-XXXXXX" if len(sub) > 6 else "XXXXXX"
+            masked_url = "https://" + ".".join([masked_sub] + parts[1:])
+        else:
+            masked_url = "https://XXXXXX.trycloudflare.com"
+
     return {
-        "active_url": _active_tunnel_url or (settings.get("cloudflare_tunnel_url") if settings else None),
+        "active_url": masked_url,
+        "is_masked": not is_superadmin,
         "hostname": settings.get("tunnel_hostname") if settings else None,
         "updated_at": settings.get("tunnel_updated_at") if settings else None,
+    }
+
+
+# ─── 2FA OTP & Single-Session Preemption System ───
+
+@audio_router.post("/otp/send")
+async def send_login_otp(payload: OtpRequestPayload):
+    """Step 1 of Audio Login: Verify password and send 6-digit OTP via Email & WhatsApp."""
+    from server import db
+    from auth import verify_password
+    from email_service import send_email
+    from whatsapp_service import send_whatsapp_text
+
+    username_clean = payload.username.strip().lower()
+    user = await db.users.find_one({
+        "$or": [
+            {"email": username_clean},
+            {"username": username_clean}
+        ]
+    })
+
+    if not user or not verify_password(payload.password, user.get("password_hash", "")):
+        raise HTTPException(status_code=401, detail="Invalid username or password.")
+
+    # Generate 6-digit numeric OTP
+    otp_code = str(random.randint(100000, 999999))
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=5)
+
+    await db.audio_otps.update_one(
+        {"username": user["username"]},
+        {"$set": {
+            "username": user["username"],
+            "otp": otp_code,
+            "expires_at": expires_at.isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }},
+        upsert=True
+    )
+
+    # Send via Email
+    email = user.get("email")
+    if email:
+        subject = "🔑 Your SDPS Audio Hub Login OTP"
+        html = f"""
+        <div style="font-family: sans-serif; padding: 20px; max-width: 500px; border: 1px solid #e2e8f0; border-radius: 16px;">
+            <h2 style="color: #0e3b91;">SDPS Audio Command Hub OTP</h2>
+            <p>Your one-time login verification code is:</p>
+            <div style="font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #f87d0e; margin: 20px 0;">{otp_code}</div>
+            <p style="font-size: 12px; color: #64748b;">This code expires in 5 minutes. Do not share it with anyone.</p>
+        </div>
+        """
+        await send_email(email, subject, html)
+
+    # Send via WhatsApp if phone available
+    phone = user.get("phone")
+    if phone:
+        msg = f"🔑 *SDPS Audio Command Hub OTP*: Your login code is *{otp_code}*. Expires in 5 minutes."
+        await send_whatsapp_text(phone, msg, "Audio Hub OTP")
+
+    dest_hint = email or phone or "registered contact"
+    return {
+        "success": True,
+        "otp_required": True,
+        "username": user["username"],
+        "message": f"OTP verification code sent to {dest_hint}."
+    }
+
+
+@audio_router.post("/otp/verify")
+async def verify_login_otp(payload: OtpVerifyPayload):
+    """Step 2 of Audio Login: Verify OTP and enforce Single-Session with Superadmin Preemption."""
+    from server import db
+    from auth import create_access_token
+
+    username_clean = payload.username.strip().lower()
+    otp_doc = await db.audio_otps.find_one({"username": username_clean})
+
+    if not otp_doc or otp_doc.get("otp") != payload.otp.strip():
+        raise HTTPException(status_code=400, detail="Invalid OTP code entered.")
+
+    exp_str = otp_doc.get("expires_at", "")
+    if exp_str:
+        exp_dt = datetime.fromisoformat(exp_str)
+        if datetime.now(timezone.utc) > exp_dt:
+            raise HTTPException(status_code=400, detail="OTP has expired. Please request a new code.")
+
+    # OTP is valid! Delete used OTP
+    await db.audio_otps.delete_one({"username": username_clean})
+
+    user = await db.users.find_one({"username": username_clean})
+    if not user:
+        raise HTTPException(status_code=404, detail="User account not found.")
+
+    user_role = user.get("role", "staff")
+    user_id = str(user["_id"])
+
+    # ── Single Active Session Check & Preemption ──
+    existing_session = await db.active_audio_sessions.find_one({"active": True})
+
+    if existing_session and existing_session.get("user_id") != user_id:
+        active_role = existing_session.get("role", "staff")
+        active_username = existing_session.get("username", "Another User")
+
+        if user_role in ["superadmin", "admin"]:
+            # Superadmin takes over! Preempt existing non-superadmin session
+            await db.active_audio_sessions.update_many(
+                {"active": True},
+                {"$set": {
+                    "active": False,
+                    "evicted": True,
+                    "evicted_by": user["username"],
+                    "eviction_reason": "Superadmin logged in from another device."
+                }}
+            )
+            logger.info(f"[AUDIO SESSION PREEMPTION] Superadmin {user['username']} logged in. Evicted user {active_username}.")
+        else:
+            # Non-superadmin blocked if someone else is online
+            raise HTTPException(
+                status_code=409,
+                detail=f"Access Denied: User '{active_username}' ({active_role}) is currently logged in. Only one user can manage the Audio System at a time."
+            )
+
+    # Create new single active session token
+    session_token = secrets.token_urlsafe(32)
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    await db.active_audio_sessions.delete_many({}) # clear old sessions
+    await db.active_audio_sessions.insert_one({
+        "session_token": session_token,
+        "user_id": user_id,
+        "username": user["username"],
+        "name": user.get("name", user["username"]),
+        "role": user_role,
+        "active": True,
+        "evicted": False,
+        "login_at": now_iso,
+        "last_activity_at": now_iso
+    })
+
+    jwt_token = create_access_token({
+        "sub": user_id,
+        "email": user.get("email", ""),
+        "role": user_role,
+        "permissions": user.get("permissions", []),
+        "audio_session": session_token
+    })
+
+    return {
+        "success": True,
+        "token": jwt_token,
+        "session_token": session_token,
+        "user": {
+            "id": user_id,
+            "username": user["username"],
+            "name": user.get("name", user["username"]),
+            "role": user_role,
+            "email": user.get("email", "")
+        }
+    }
+
+
+@audio_router.get("/session/heartbeat")
+async def session_heartbeat(token: str = Query(...)):
+    """Heartbeat endpoint called by frontend. Returns session validity and eviction status."""
+    from server import db
+    session = await db.active_audio_sessions.find_one({"session_token": token})
+
+    if not session:
+        raise HTTPException(status_code=401, detail="Session expired or invalidated.")
+
+    if session.get("evicted"):
+        reason = session.get("eviction_reason", "Superadmin logged in from another device.")
+        raise HTTPException(status_code=401, detail=f"LOGOUT_PREEMPTED: {reason}")
+
+    # Update last activity
+    now_iso = datetime.now(timezone.utc).isoformat()
+    await db.active_audio_sessions.update_one(
+        {"session_token": token},
+        {"$set": {"last_activity_at": now_iso}}
+    )
+
+    return {
+        "active": True,
+        "username": session.get("username"),
+        "role": session.get("role")
+    }
+
+
+@audio_router.post("/session/logout")
+async def session_logout(token: Optional[str] = Query(None)):
+    """Logout current user session."""
+    from server import db
+    if token:
+        await db.active_audio_sessions.delete_many({"session_token": token})
+    return {"success": True}
+
+
+@audio_router.post("/stream-mic")
+async def stream_phone_microphone(payload: MicStreamPayload, current_admin=Depends(get_current_admin)):
+    """Relay live phone/browser microphone audio payload to the Audislave hardware controller."""
+    device_ip = payload.ip or DEFAULT_AUDIO_IP
+    form_data = {
+        "sSource": "sMic",
+        "sRooms": payload.rooms,
+        "sAct": "connect",
+        "sAudioData": payload.audio_base64[:500]  # log snippet
+    }
+    raw_res = await send_device_post_async(device_ip, "/BcastDo", form_data)
+    return {
+        "success": True,
+        "streaming": True,
+        "rooms": payload.rooms,
+        "raw_response": raw_res
     }
 
 
