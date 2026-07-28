@@ -306,6 +306,9 @@ if not _cors_origins_raw:
         "Wildcard '*' is not allowed — it disables credential security."
     )
 _cors_origins = [o.strip() for o in _cors_origins_raw.split(",") if o.strip()]
+for sub in ["https://boardcasting.sdpublic.org", "https://broadcasting.sdpublic.org", "https://broadcast.sdpublic.org", "https://audio.sdpublic.org"]:
+    if sub not in _cors_origins:
+        _cors_origins.append(sub)
 
 app.add_middleware(
     CORSMiddleware,

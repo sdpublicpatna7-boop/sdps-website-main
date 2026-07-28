@@ -45,7 +45,16 @@ export function AuthProvider({ children }) {
     setAuthToken(null);
     localStorage.removeItem(SESSION_HINT);
     setUser(null);
-    window.location.href = "/admin/login";
+    if (typeof window !== "undefined" && (
+      window.location.hostname.startsWith("boardcasting.") ||
+      window.location.hostname.startsWith("broadcasting.") ||
+      window.location.hostname.startsWith("broadcast.") ||
+      window.location.hostname.startsWith("audio.")
+    )) {
+      window.location.href = "/";
+    } else {
+      window.location.href = "/admin/login";
+    }
   };
 
   useEffect(() => {
