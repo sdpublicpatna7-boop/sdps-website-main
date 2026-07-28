@@ -9,7 +9,7 @@ import {
   MessageSquare, Megaphone, ScrollText, FilePlus, Home, Hotel,
   BookOpen, Shield, EyeOff, ClipboardList, BookMarked, UserCog,
   Menu, X, Star, Cake, Link2 as LinkIcon, Fingerprint, Lock, CheckSquare, PhoneCall,
-  ChevronDown, ChevronRight
+  ChevronDown, ChevronRight, PanelLeftClose, PanelLeft, ChevronLeft
 } from "lucide-react";
 import { useAuth } from "../../lib/auth";
 import { startPinger } from "../../lib/pinger";
@@ -144,6 +144,23 @@ export default function AdminLayout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [openCategories, setOpenCategories] = useState({});
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem("sdps_admin_sidebar_collapsed") === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleCollapsed = () => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("sdps_admin_sidebar_collapsed", next ? "true" : "false");
+      } catch (e) {}
+      return next;
+    });
+  };
 
   useEffect(() => {
     NAV_CATEGORIES.forEach((cat) => {
@@ -388,8 +405,8 @@ export default function AdminLayout() {
     return { ...cat, items: allowedItems };
   }).filter(Boolean);
 
-  const renderNavLinks = (onItemClick) => (
-    <nav className="py-3 px-3 text-sm space-y-1">
+  const renderNavLinks = (onItemClick, isCollapsed = false) => (
+    <nav className={`py-3 text-sm space-y-1 ${isCollapsed ? "px-2" : "px-3"}`}>
       {filteredCategories.map((cat) => {
         if (cat.type === "single") {
           return (
@@ -398,8 +415,11 @@ export default function AdminLayout() {
               to={cat.to}
               end={cat.end}
               onClick={onItemClick}
+              title={isCollapsed ? cat.label : undefined}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all duration-200 group border ${
+                `flex items-center ${
+                  isCollapsed ? "justify-center p-2.5" : "gap-3 px-3.5 py-2.5"
+                } rounded-xl transition-all duration-200 group border ${
                   isActive
                     ? "admin-link-active bg-gradient-to-r from-brand-orange/20 to-brand-gold/5 text-brand-orange-light font-semibold border-brand-orange/25 shadow-[0_0_12px_rgba(248,125,14,0.1)]"
                     : "text-slate-300 hover:text-white hover:bg-white/[0.04] border-transparent"
@@ -408,7 +428,7 @@ export default function AdminLayout() {
               data-testid={`admin-nav-${cat.label.toLowerCase().replace(/\s/g, "-")}`}
             >
               <cat.icon className="w-4 h-4 shrink-0 transition-transform duration-200 group-hover:scale-110" />
-              <span className="text-[13.5px] font-medium">{cat.label}</span>
+              {!isCollapsed && <span className="text-[13.5px] font-medium">{cat.label}</span>}
             </NavLink>
           );
         }
@@ -425,42 +445,59 @@ export default function AdminLayout() {
             <button
               type="button"
               onClick={() => toggleCategory(cat.id)}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-left transition-all duration-200 border ${
+              title={isCollapsed ? cat.label : undefined}
+              className={`w-full flex items-center ${
+                isCollapsed ? "justify-center p-2.5 relative" : "justify-between px-3.5 py-2.5"
+              } rounded-xl text-left transition-all duration-200 border ${
                 hasActiveChild
                   ? "bg-white/[0.06] text-brand-orange-light font-semibold border-brand-orange/20"
                   : "text-slate-300 hover:text-white hover:bg-white/[0.04] border-transparent"
               }`}
             >
-              <div className="flex items-center gap-3 min-w-0">
+              <div className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3 min-w-0"}`}>
                 <cat.icon
                   className={`w-4 h-4 shrink-0 transition-colors ${
                     hasActiveChild ? "text-brand-orange" : "text-slate-400"
                   }`}
                 />
-                <span className="text-[13px] font-medium truncate">{cat.label}</span>
+                {!isCollapsed && <span className="text-[13px] font-medium truncate">{cat.label}</span>}
               </div>
-              <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-white/10 text-slate-400">
-                  {cat.items.length}
-                </span>
-                {isOpen ? (
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                ) : (
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                )}
-              </div>
+
+              {!isCollapsed ? (
+                <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-white/10 text-slate-400">
+                    {cat.items.length}
+                  </span>
+                  {isOpen ? (
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                  ) : (
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                  )}
+                </div>
+              ) : (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-brand-orange/80" />
+              )}
             </button>
 
             {isOpen && (
-              <div className="ml-4 pl-3.5 border-l border-white/10 space-y-1 pt-1 pb-1.5">
+              <div
+                className={
+                  isCollapsed
+                    ? "space-y-1 py-1 flex flex-col items-center"
+                    : "ml-4 pl-3.5 border-l border-white/10 space-y-1 pt-1 pb-1.5"
+                }
+              >
                 {cat.items.map((item) => (
                   <NavLink
                     key={item.to}
                     to={item.to}
                     end={item.end}
                     onClick={onItemClick}
+                    title={isCollapsed ? item.label : undefined}
                     className={({ isActive }) =>
-                      `flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all duration-150 group border ${
+                      `flex items-center ${
+                        isCollapsed ? "justify-center p-2 w-full" : "gap-2.5 px-3 py-2"
+                      } rounded-lg text-xs transition-all duration-150 group border ${
                         isActive
                           ? "bg-brand-orange/20 text-brand-orange-light font-semibold border-brand-orange/30 shadow-sm"
                           : "text-slate-400 hover:text-slate-100 hover:bg-white/[0.03] border-transparent"
@@ -469,7 +506,7 @@ export default function AdminLayout() {
                     data-testid={`admin-nav-${item.label.toLowerCase().replace(/\s/g, "-")}`}
                   >
                     <item.icon className="w-3.5 h-3.5 shrink-0 transition-transform duration-200 group-hover:scale-110 opacity-70" />
-                    <span className="truncate">{item.label}</span>
+                    {!isCollapsed && <span className="truncate">{item.label}</span>}
                   </NavLink>
                 ))}
               </div>
@@ -610,58 +647,118 @@ export default function AdminLayout() {
       </div>
 
       {/* Desktop Sticky Sidebar (hidden on mobile) */}
-      <aside className="hidden md:flex w-66 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 text-white flex-shrink-0 sticky top-0 h-screen overflow-y-auto no-scrollbar border-r border-slate-800/80 flex-col justify-between">
+      <aside
+        className={`hidden md:flex ${
+          collapsed ? "w-20" : "w-66"
+        } transition-all duration-300 ease-in-out bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 text-white flex-shrink-0 sticky top-0 h-screen overflow-y-auto no-scrollbar border-r border-slate-800/80 flex-col justify-between`}
+      >
         <div>
-          {/* Brand header card */}
-          <div className="m-4 p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] backdrop-blur-md shadow-xl flex items-center gap-3">
-            <div className="relative">
-              {logoUrl ? (
-                <img src={logoUrl} alt="SDPS logo" className="w-10 h-10 rounded-full ring-2 ring-brand-gold/60 shadow-[0_0_12px_rgba(199,161,91,0.3)] bg-white/10 p-0.5 shrink-0 object-contain" />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-white/10 animate-pulse ring-2 ring-brand-gold/60 shrink-0" />
-              )}
-              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-slate-950 rounded-full"></span>
-            </div>
-            <div className="overflow-hidden">
-              <div className="font-headline font-bold text-sm tracking-tight text-white truncate">SDPS Admin</div>
-              <div className="text-[10px] uppercase tracking-[0.15em] text-brand-gold font-semibold truncate">
-                {isStaff ? "Staff Portal" : "Control Panel"}
+          {/* Brand header card with collapse toggle button */}
+          <div
+            className={`m-3 p-3 rounded-2xl bg-white/[0.03] border border-white/[0.08] backdrop-blur-md shadow-xl flex items-center ${
+              collapsed ? "flex-col justify-center gap-2 text-center" : "justify-between gap-3"
+            }`}
+          >
+            <div className={`flex items-center ${collapsed ? "justify-center" : "gap-3 min-w-0"}`}>
+              <div className="relative shrink-0">
+                {logoUrl ? (
+                  <img
+                    src={logoUrl}
+                    alt="SDPS logo"
+                    className="w-9 h-9 rounded-full ring-2 ring-brand-gold/60 shadow-[0_0_12px_rgba(199,161,91,0.3)] bg-white/10 p-0.5 object-contain"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-white/10 animate-pulse ring-2 ring-brand-gold/60 shrink-0" />
+                )}
+                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-slate-950 rounded-full"></span>
               </div>
+              {!collapsed && (
+                <div className="overflow-hidden">
+                  <div className="font-headline font-bold text-sm tracking-tight text-white truncate">
+                    SDPS Admin
+                  </div>
+                  <div className="text-[10px] uppercase tracking-[0.15em] text-brand-gold font-semibold truncate">
+                    {isStaff ? "Staff Portal" : "Control Panel"}
+                  </div>
+                </div>
+              )}
             </div>
+
+            {/* Collapse Toggle Button */}
+            <button
+              onClick={toggleCollapsed}
+              className="p-1.5 rounded-xl bg-white/5 hover:bg-brand-orange/20 text-slate-400 hover:text-brand-orange-light border border-white/10 transition-all shrink-0"
+              title={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+              aria-label={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+              data-testid="admin-sidebar-toggle"
+            >
+              {collapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+            </button>
           </div>
 
           {/* Access level indicator */}
-          <div className="px-6 py-2.5 flex items-center justify-between border-b border-white/[0.06] pb-4">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Access Tier</span>
-            <span className={`text-[9px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
-              isStaff 
-                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/25" 
-                : "bg-brand-orange/15 text-brand-orange-light border-brand-orange/30 shadow-[0_0_8px_rgba(248,125,14,0.1)]"
-            }`}>
-              {isStaff ? "Staff" : "Superadmin"}
-            </span>
-          </div>
+          {!collapsed ? (
+            <div className="px-5 py-2 flex items-center justify-between border-b border-white/[0.06] pb-3 mb-2">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Access Tier
+              </span>
+              <span
+                className={`text-[9px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
+                  isStaff
+                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/25"
+                    : "bg-brand-orange/15 text-brand-orange-light border-brand-orange/30 shadow-[0_0_8px_rgba(248,125,14,0.1)]"
+                }`}
+              >
+                {isStaff ? "Staff" : "Superadmin"}
+              </span>
+            </div>
+          ) : (
+            <div
+              className="flex justify-center border-b border-white/[0.06] pb-2 mb-2"
+              title={isStaff ? "Staff Tier" : "Superadmin Tier"}
+            >
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  isStaff ? "bg-emerald-400" : "bg-brand-orange"
+                }`}
+              />
+            </div>
+          )}
 
-          {renderNavLinks()}
+          {renderNavLinks(null, collapsed)}
         </div>
 
         {/* Footer profile container */}
-        <div className="p-4 m-3 rounded-2xl bg-white/[0.02] border border-white/[0.06] backdrop-blur-sm flex flex-col gap-2.5 shrink-0 mt-6">
-          <div className="flex items-center gap-2.5">
+        <div
+          className={`p-3 m-3 rounded-2xl bg-white/[0.02] border border-white/[0.06] backdrop-blur-sm flex flex-col gap-2 shrink-0 ${
+            collapsed ? "items-center text-center" : ""
+          }`}
+        >
+          <div
+            className={`flex items-center ${collapsed ? "justify-center" : "gap-2.5"}`}
+            title={`${user.name} (${user.email})`}
+          >
             <div className="w-8 h-8 rounded-lg bg-brand-orange/10 border border-brand-orange/20 flex items-center justify-center text-brand-orange-light font-bold text-sm shrink-0">
               {user.name ? user.name.charAt(0).toUpperCase() : "A"}
             </div>
-            <div className="overflow-hidden">
-              <div className="text-[11px] font-semibold text-slate-200 truncate">{user.name}</div>
-              <div className="text-[9px] text-slate-500 truncate">{user.email}</div>
-            </div>
+            {!collapsed && (
+              <div className="overflow-hidden">
+                <div className="text-[11px] font-semibold text-slate-200 truncate">
+                  {user.name}
+                </div>
+                <div className="text-[9px] text-slate-500 truncate">{user.email}</div>
+              </div>
+            )}
           </div>
-          <button 
-            onClick={logout} 
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-red-400 hover:bg-red-500/10 border border-white/5 hover:border-red-500/20 transition-all"
+          <button
+            onClick={logout}
+            className={`w-full flex items-center justify-center gap-2 ${
+              collapsed ? "p-2" : "px-3 py-2"
+            } rounded-xl text-xs font-semibold text-slate-400 hover:text-red-400 hover:bg-red-500/10 border border-white/5 hover:border-red-500/20 transition-all`}
             data-testid="admin-logout-btn"
+            title="Logout"
           >
-            <LogOut className="w-3.5 h-3.5" /> Logout
+            <LogOut className="w-3.5 h-3.5" /> {!collapsed && "Logout"}
           </button>
         </div>
       </aside>
