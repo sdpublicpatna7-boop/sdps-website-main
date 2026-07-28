@@ -228,7 +228,7 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
                                      (position || "").toLowerCase().includes("head boy") ||
                                      (position || "").toLowerCase().includes("head girl");
               const isWinnerVice = winner.is_vice && isSchoolCaptain;
-              const isWinnerAppointed = isAppointed || winner.is_vice;
+              const isWinnerAppointed = isAppointed || !isSchoolCaptain || winner.is_vice;
 
               return (
                 <div key={winner.candidate_id || wIdx} className={`flex items-center gap-6 ${wIdx > 0 ? "pt-6" : ""}`}>
