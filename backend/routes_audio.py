@@ -154,29 +154,38 @@ async def get_audio_status(
 
     user_to_use = username or DEFAULT_HARDWARE_USER
     pass_to_use = password or DEFAULT_HARDWARE_PASS
-    url = f"http://{target_ip}/"
-    kwargs = {"timeout": 3.0, "auth": (user_to_use, pass_to_use)}
+    
+    # Try specified IP/port first, then fallback to :8080 if standard port fails
+    ips_to_try = [target_ip]
+    if ":" not in target_ip and not target_ip.startswith("http"):
+        ips_to_try.append(f"{target_ip}:8080")
 
-    try:
-        res = requests.get(url, **kwargs)
-        online = res.status_code in (200, 401, 403)
-        requires_auth = res.status_code in (401, 403)
-        return {
-            "success": True,
-            "online": online,
-            "requires_auth": requires_auth,
-            "ip": target_ip,
-            "device": "SDPS Audio Controller",
-            "statusCode": res.status_code
-        }
-    except Exception as e:
-        return {
-            "success": False,
-            "online": False,
-            "ip": target_ip,
-            "device": "SDPS Audio Controller",
-            "error": str(e)
-        }
+    last_error = None
+    for attempt_ip in ips_to_try:
+        url = f"http://{attempt_ip}/" if not attempt_ip.startswith("http") else attempt_ip
+        kwargs = {"timeout": 3.0, "auth": (user_to_use, pass_to_use)}
+        try:
+            res = requests.get(url, **kwargs)
+            online = res.status_code in (200, 401, 403)
+            requires_auth = res.status_code in (401, 403)
+            return {
+                "success": True,
+                "online": online,
+                "requires_auth": requires_auth,
+                "ip": attempt_ip,
+                "device": "SDPS Audio Controller",
+                "statusCode": res.status_code
+            }
+        except Exception as e:
+            last_error = str(e)
+
+    return {
+        "success": False,
+        "online": False,
+        "ip": target_ip,
+        "device": "SDPS Audio Controller",
+        "error": last_error
+    }
 
 
 @audio_router.post("/hardware-login")
