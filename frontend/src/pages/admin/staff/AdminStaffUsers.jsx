@@ -327,54 +327,99 @@ export function AdminStaffUsers() {
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                 />
               </div>
-              <div>
-                <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">
-                  {editing ? "New Password (leave blank to keep)" : "Password *"}
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPw ? "text" : "password"}
-                    required={!editing}
-                    placeholder="Enter login password"
-                    className="w-full px-3 py-2 border rounded-lg pr-10"
-                    value={form.password}
-                    onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPw(!showPw)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-ink/40"
-                  >
-                    {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-                {form.password ? (
-                  <div className="mt-2 space-y-1 bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-[11px]">
-                    <div className="font-bold text-slate-700 mb-1">Strong Password Policy:</div>
-                    <div className="grid grid-cols-2 gap-x-2 gap-y-1">
-                      <span className={form.password.length >= 8 ? "text-emerald-600 font-bold flex items-center gap-1" : "text-slate-400 flex items-center gap-1"}>
-                        {form.password.length >= 8 ? "✓" : "○"} 8+ characters
-                      </span>
-                      <span className={/[A-Z]/.test(form.password) ? "text-emerald-600 font-bold flex items-center gap-1" : "text-slate-400 flex items-center gap-1"}>
-                        {/[A-Z]/.test(form.password) ? "✓" : "○"} Uppercase (A-Z)
-                      </span>
-                      <span className={/[a-z]/.test(form.password) ? "text-emerald-600 font-bold flex items-center gap-1" : "text-slate-400 flex items-center gap-1"}>
-                        {/[a-z]/.test(form.password) ? "✓" : "○"} Lowercase (a-z)
-                      </span>
-                      <span className={/[0-9]/.test(form.password) ? "text-emerald-600 font-bold flex items-center gap-1" : "text-slate-400 flex items-center gap-1"}>
-                        {/[0-9]/.test(form.password) ? "✓" : "○"} Number (0-9)
-                      </span>
-                      <span className={/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?/]/.test(form.password) ? "text-emerald-600 font-bold col-span-2 flex items-center gap-1" : "text-slate-400 col-span-2 flex items-center gap-1"}>
-                        {/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?/]/.test(form.password) ? "✓" : "○"} Special Symbol (!@#$%^&*)
-                      </span>
-                    </div>
+              {!editing && (
+                <div>
+                  <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1.5">
+                    Password Setting Method *
+                  </label>
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, password_mode: "admin" })}
+                      className={`p-2.5 rounded-xl border text-xs font-bold transition-all text-left flex flex-col justify-between cursor-pointer ${
+                        (form.password_mode || "admin") === "admin"
+                          ? "bg-blue-50 border-brand-blue text-brand-blue ring-2 ring-brand-blue/20"
+                          : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
+                      }`}
+                    >
+                      <span className="flex items-center gap-1.5">🔑 Set by Admin</span>
+                      <span className="text-[10px] font-normal text-slate-500 mt-0.5">Admin enters password in form</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, password_mode: "user", password: "" })}
+                      className={`p-2.5 rounded-xl border text-xs font-bold transition-all text-left flex flex-col justify-between cursor-pointer ${
+                        form.password_mode === "user"
+                          ? "bg-amber-100/80 border-amber-500 text-amber-950 ring-2 ring-amber-400/30"
+                          : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
+                      }`}
+                    >
+                      <span className="flex items-center gap-1.5">📩 Set by User</span>
+                      <span className="text-[10px] font-normal text-amber-800 mt-0.5">User sets password via link</span>
+                    </button>
                   </div>
-                ) : (
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    Must be 8+ chars with uppercase, lowercase, number & special symbol.
+                </div>
+              )}
+
+              {form.password_mode === "user" && !editing ? (
+                <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1">
+                  <div className="font-bold text-amber-950 flex items-center gap-1.5">
+                    <span>📩 User Password Setup Selected</span>
+                  </div>
+                  <p className="text-[11px] text-amber-800 leading-relaxed">
+                    Password box is disabled. An onboarding message will instruct the user: <strong>"Kindly set your password using the link below."</strong>
                   </p>
-                )}
-              </div>
+                </div>
+              ) : (
+                <div>
+                  <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">
+                    {editing ? "New Password (leave blank to keep)" : "Password *"}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPw ? "text" : "password"}
+                      required={!editing && (form.password_mode || "admin") === "admin"}
+                      placeholder="Enter login password"
+                      className="w-full px-3 py-2 border rounded-lg pr-10"
+                      value={form.password}
+                      onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPw(!showPw)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-ink/40"
+                    >
+                      {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {form.password ? (
+                    <div className="mt-2 space-y-1 bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-[11px]">
+                      <div className="font-bold text-slate-700 mb-1">Strong Password Policy:</div>
+                      <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+                        <span className={form.password.length >= 8 ? "text-emerald-600 font-bold flex items-center gap-1" : "text-slate-400 flex items-center gap-1"}>
+                          {form.password.length >= 8 ? "✓" : "○"} 8+ characters
+                        </span>
+                        <span className={/[A-Z]/.test(form.password) ? "text-emerald-600 font-bold flex items-center gap-1" : "text-slate-400 flex items-center gap-1"}>
+                          {/[A-Z]/.test(form.password) ? "✓" : "○"} Uppercase (A-Z)
+                        </span>
+                        <span className={/[a-z]/.test(form.password) ? "text-emerald-600 font-bold flex items-center gap-1" : "text-slate-400 flex items-center gap-1"}>
+                          {/[a-z]/.test(form.password) ? "✓" : "○"} Lowercase (a-z)
+                        </span>
+                        <span className={/[0-9]/.test(form.password) ? "text-emerald-600 font-bold flex items-center gap-1" : "text-slate-400 flex items-center gap-1"}>
+                          {/[0-9]/.test(form.password) ? "✓" : "○"} Number (0-9)
+                        </span>
+                        <span className={/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?/]/.test(form.password) ? "text-emerald-600 font-bold col-span-2 flex items-center gap-1" : "text-slate-400 col-span-2 flex items-center gap-1"}>
+                          {/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?/]/.test(form.password) ? "✓" : "○"} Special Symbol (!@#$%^&*)
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Must be 8+ chars with uppercase, lowercase, number & special symbol.
+                    </p>
+                  )}
+                </div>
+              )}
               <div>
                 <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">
                   Role *
@@ -548,7 +593,7 @@ export function AdminStaffUsers() {
                            (form.custom_note ? `📝 Message from Administrator:\n${form.custom_note}\n\n` : "") +
                            `Your administrator account is ready for ${form.portal_target === "broadcasting" ? "SDPS Audio Broadcast & Smart Bell System" : "SDPS Main Admin Portal"}.\n\n` +
                            `👤 Username/Email: ${form.username || form.email || "[username]"}\n` +
-                           `🔐 Initial Password: ${form.password || "[password]"}\n\n` +
+                           `🔐 Password: ${form.password_mode === "user" ? "Kindly set your password using the link below." : (form.password || "[password]")}\n\n` +
                            `🌐 Direct Login Portal:\n${form.portal_target === "broadcasting" ? "https://boardcasting.sdpublic.org" : "https://sdpublic.org/admin"}\n\n` +
                            `🔑 Set / Change Password Link:\n${form.portal_target === "broadcasting" ? "https://boardcasting.sdpublic.org/admin/forgot-password" : "https://sdpublic.org/admin/forgot-password"}`}
                         </div>

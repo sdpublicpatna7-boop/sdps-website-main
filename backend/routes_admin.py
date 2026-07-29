@@ -1148,16 +1148,22 @@ async def create_staff_user(payload: Dict[str, Any] = Body(...), admin: TokenDat
     username = (payload.get("username") or payload.get("email") or "").strip()
     email = (payload.get("email") or "").strip()
     phone = (payload.get("phone") or "").strip()
+    password_mode = payload.get("password_mode", "admin")
     password = payload.get("password")
     name = (payload.get("name") or "Staff Member").strip()
 
-    if not username or not password:
-        raise HTTPException(status_code=400, detail="Username/Email and Password are required")
+    if not username:
+        raise HTTPException(status_code=400, detail="Username or Email is required")
 
-    try:
-        _validate_password(password)
-    except ValueError as val_err:
-        raise HTTPException(status_code=400, detail=str(val_err))
+    is_user_set_password = (password_mode == "user") or not password
+    if is_user_set_password:
+        import secrets
+        password = f"SDPS#{secrets.token_hex(4).upper()}!2026"
+    else:
+        try:
+            _validate_password(password)
+        except ValueError as val_err:
+            raise HTTPException(status_code=400, detail=str(val_err))
 
     or_conditions = [
         {"username": {"$regex": f"^{re.escape(username)}$", "$options": "i"}},
@@ -1182,6 +1188,7 @@ async def create_staff_user(payload: Dict[str, Any] = Body(...), admin: TokenDat
         "role": payload.get("role", "staff"),
         "permissions": payload.get("permissions", []),
         "password_hash": hash_password(password),
+        "password_mode": password_mode,
         "created_at": now_iso(),
     }
     await db.admin_users.insert_one(user.copy())
@@ -1205,6 +1212,9 @@ async def create_staff_user(payload: Dict[str, Any] = Body(...), admin: TokenDat
         note_email_html = f'<blockquote style="background:#fef3c7;border-left:4px solid #f59e0b;padding:12px;margin:12px 0;border-radius:6px;color:#78350f;font-size:13px;"><strong>📝 Message from Administrator:</strong><br/>{custom_note}</blockquote>' if custom_note else ""
         note_wa_txt = f"📝 Message from Administrator:\n{custom_note}\n\n" if custom_note else ""
 
+        password_display_html = '<span style="color:#d97706;font-weight:bold;">Kindly set your password using the link below.</span>' if is_user_set_password else f'<code style="background:#e2e8f0;padding:2px 6px;border-radius:4px;color:#0E3B91;">{password}</code>'
+        password_display_wa = "Kindly set your password using the link below." if is_user_set_password else password
+
         if notification_channel in ("email", "both") and email and "@" in email:
             body = render_template(
                 title=f"Welcome Onboard to {portal_name}",
@@ -1214,15 +1224,12 @@ async def create_staff_user(payload: Dict[str, Any] = Body(...), admin: TokenDat
                 {note_email_html}
                 <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:12px;padding:16px;margin:16px 0;font-size:14px;">
                     <p style="margin:4px 0;"><strong>👤 Username / Email:</strong> <code style="background:#e2e8f0;padding:2px 6px;border-radius:4px;color:#0E3B91;">{username}</code></p>
-                    <p style="margin:4px 0;"><strong>🔐 Initial Password:</strong> <code style="background:#e2e8f0;padding:2px 6px;border-radius:4px;color:#0E3B91;">{password}</code></p>
+                    <p style="margin:4px 0;"><strong>🔐 Initial Password:</strong> {password_display_html}</p>
                     <p style="margin:4px 0;"><strong>🌐 Target Portal:</strong> <a href="{portal_url}" style="color:#0E3B91;font-weight:bold;">{portal_url}</a></p>
                 </div>
-                <p style="font-size:14px;">Please click below to log in and set/change your password for security:</p>
+                <p style="font-size:14px;">Please click below to set your password and log in:</p>
                 <div style="text-align:center;margin:24px 0;">
-                    <a href="{portal_url}" style="background:#0E3B91;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block;">🚀 Login to {portal_name}</a>
-                </div>
-                <div style="text-align:center;">
-                    <a href="{reset_url}" style="color:#f97316;font-size:13px;font-weight:bold;">🔑 Set / Change Your Password Anytime</a>
+                    <a href="{reset_url}" style="background:#0E3B91;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block;">🔑 Set Your Password & Login to {portal_name}</a>
                 </div>
                 """
             )
@@ -1239,10 +1246,10 @@ async def create_staff_user(payload: Dict[str, Any] = Body(...), admin: TokenDat
                     f"{note_wa_txt}"
                     f"Your administrator account is ready for {portal_name}.\n\n"
                     f"👤 Username/Email: {username}\n"
-                    f"🔐 Password: {password}\n\n"
+                    f"🔐 Password: {password_display_wa}\n\n"
                     f"🌐 Direct Login Portal:\n{portal_url}\n\n"
-                    f"🔑 Kindly set / change your password anytime here:\n{reset_url}\n\n"
-                    f"Please log in and set your new password for security."
+                    f"🔑 Kindly set your password using this link:\n{reset_url}\n\n"
+                    f"Please click the link above to set your password before logging in."
                 )
                 welcome_wa_res = await send_whatsapp_text(phone, wa_msg, subject="Welcome Onboard Admin Account")
             except Exception as e:
