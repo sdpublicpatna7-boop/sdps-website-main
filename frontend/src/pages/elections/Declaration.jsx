@@ -67,7 +67,7 @@ export default function Declaration() {
               return (
                 <div key={p.key} className={`rounded-3xl border-2 border-[color:var(--sdps-gold)] p-8 ${i % 2 ? "bg-[#FFFCF1]" : "bg-white"}`}>
                   <div className="text-[11px] tracking-[0.32em] uppercase font-bold text-[color:var(--sdps-muted)]">Post {i + 1}</div>
-                  <h2 className="font-display text-3xl md:text-4xl font-black hero-3d mt-1">{p.title}</h2>
+                  <h2 className="font-display text-3xl md:text-4xl font-black hero-3d mt-1">{p?.title || p?.name || "Council Position"}</h2>
                   <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
                     <div className="md:col-span-1">
                       <div className="relative w-44 h-44 mx-auto">

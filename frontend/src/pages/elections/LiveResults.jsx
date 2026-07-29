@@ -210,16 +210,19 @@ const KPI = ({ icon: Icon, label, value, accent }) => (
   </div>
 );
 
-const PostBlock = ({ post, list, appointedKeys = [], viceCandidateIds = [] }) => {
-  const total = Math.max(1, list.reduce((s, x) => s + (x.votes || 0), 0));
-  const sorted = [...list].sort((a, b) => (b.votes || 0) - (a.votes || 0));
-  const isPostAppointed = appointedKeys.includes(post.key);
-  const viceWinner = sorted.find(c => viceCandidateIds.includes(c.candidate_id));
+const PostBlock = ({ post = {}, list = [], appointedKeys = [], viceCandidateIds = [] }) => {
+  if (!post) return null;
+  const postKey = post.key || post.id || "unknown";
+  const postTitle = post.title || post.name || "Council Position";
+  const total = Math.max(1, (list || []).reduce((s, x) => s + (x?.votes || 0), 0));
+  const sorted = [...(list || [])].sort((a, b) => (b?.votes || 0) - (a?.votes || 0));
+  const isPostAppointed = (appointedKeys || []).includes(postKey);
+  const viceWinner = sorted.find(c => c && viceCandidateIds.includes(c.candidate_id));
 
   return (
     <div className="glass rounded-3xl p-7">
       <div className="flex items-center justify-between mb-5">
-        <h2 className="font-display text-3xl md:text-4xl font-black hero-3d">{post.title}</h2>
+        <h2 className="font-display text-3xl md:text-4xl font-black hero-3d">{postTitle}</h2>
         {sorted[0] && (sorted[0].votes || 0) > 0 && (() => {
           const maxVotes = sorted[0].votes || 0;
           const winners = sorted.filter(c => (c.votes || 0) === maxVotes && !viceCandidateIds.includes(c.candidate_id));
