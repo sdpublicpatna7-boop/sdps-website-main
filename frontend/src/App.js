@@ -108,6 +108,7 @@ const AdminThumbnailGenerator = lazy(() => import("@/pages/admin/special/AdminTh
 // StaffModules
 const AdminHolidayHomework = lazy(() => import("@/pages/admin/staff/AdminHolidayHomework"));
 const AdminStaffUsers = lazy(() => import("@/pages/admin/staff/AdminStaffUsers"));
+const AdminHouseMentors = lazy(() => import("@/pages/admin/special/AdminHouseMentors"));
 
 // WhatsAppMarketing, FeeReminders and BirthdayGreetings
 const WhatsAppMarketing = lazy(() => import("@/pages/admin/WhatsAppMarketing"));
@@ -223,6 +224,7 @@ function App() {
                   <Route path="calendar" element={<AdminCalendar />} />
                   <Route path="holidays" element={<AdminHolidays />} />
                   <Route path="council-members" element={<AdminCouncilMembers />} />
+                  <Route path="house-mentors" element={<Suspense fallback={<AdminLoading />}><AdminHouseMentors /></Suspense>} />
                   <Route path="election-posters" element={<AdminElectionPosters />} />
                   <Route path="council-results" element={<AdminCouncilResults />} />
                   <Route path="admission-enquiries" element={<AdminEnquiries />} />

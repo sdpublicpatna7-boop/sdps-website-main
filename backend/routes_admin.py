@@ -35,7 +35,7 @@ from image_utils import compress_and_save, save_raw_file, UnsafeUploadError, UPL
 from models import (
     AdminLogin, AdminPasswordReset, AdminPasswordResetConfirm, AdminChangePassword, _validate_password,
     News, Notice, GalleryImage, VideoItem, CalendarEvent, Holiday,
-    CouncilMember, ElectionPoster, CouncilResult, FormQuestion,
+    CouncilMember, ElectionPoster, CouncilResult, HouseMentor, FormQuestion,
     CareerPost, AlumniMeet, AlumniSettings, TCRecord, PopupSettings,
     SiteSettings, now_iso, new_id, AdmissionEnquiry,
     EligibilityRow, FeeStructureRow, HostelFeeRow, HostelGalleryItem,
@@ -347,6 +347,7 @@ _register_crud("/videos", "videos", VideoItem, "created_at", -1, permission="gal
 _register_crud("/calendar", "calendar", CalendarEvent, "date", 1, permission="calendar")
 _register_crud("/holidays", "holidays", Holiday, "date", 1, permission="calendar")
 _register_crud("/council-members", "council_members", CouncilMember, "order", 1, permission="council")
+_register_crud("/house-mentors", "house_mentors", HouseMentor, "order", 1, permission="council")
 _register_crud("/election-posters", "election_posters", ElectionPoster, "year", -1, permission="council")
 _register_crud("/council-results", "council_results", CouncilResult, "year", -1, permission="council")
 _register_crud("/enquiry-questions", "enquiry_questions", FormQuestion, "order", 1, permission="admissions")

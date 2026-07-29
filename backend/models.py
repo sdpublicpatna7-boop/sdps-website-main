@@ -156,6 +156,19 @@ class CouncilResult(BaseDoc):
     notes: Optional[str] = None
 
 
+class HouseMentor(BaseDoc):
+    id: str = Field(default_factory=new_id)
+    name: str
+    house: str  # Ruby, Sapphire, Emerald, Topaz
+    designation: Optional[str] = "House Mentor"
+    subject: Optional[str] = ""
+    photo_url: Optional[str] = ""
+    contact_phone: Optional[str] = ""
+    is_house_master: bool = False
+    order: int = 0
+    created_at: str = Field(default_factory=now_iso)
+
+
 # ---- Admission Enquiry & Form ----
 class FormQuestion(BaseDoc):
     id: str = Field(default_factory=new_id)
