@@ -1107,34 +1107,36 @@ export default function AdminAudioBroadcast() {
             </div>
 
             <div className="overflow-x-auto rounded-2xl border border-slate-200">
-              <table className="w-full text-left text-xs">
+              <table className="w-full text-left text-xs align-middle">
                 <thead className="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider border-b border-slate-200">
                   <tr>
-                    <th className="p-3.5">Node Hostname</th>
-                    <th className="p-3.5">Tunnel URL</th>
-                    <th className="p-3.5">Hardware Target IP</th>
-                    <th className="p-3.5">Last Heartbeat</th>
-                    <th className="p-3.5">Node Status</th>
-                    <th className="p-3.5 text-right">Action</th>
+                    <th className="py-3.5 px-4 whitespace-nowrap">Node Hostname</th>
+                    <th className="py-3.5 px-4 whitespace-nowrap">Tunnel URL</th>
+                    <th className="py-3.5 px-4 whitespace-nowrap">Hardware Target IP</th>
+                    <th className="py-3.5 px-4 whitespace-nowrap">Last Heartbeat</th>
+                    <th className="py-3.5 px-4 whitespace-nowrap">Node Status</th>
+                    <th className="py-3.5 px-4 whitespace-nowrap text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 font-medium text-slate-800">
                   {tunnelNodes.length > 0 ? (
                     tunnelNodes.map((node, idx) => (
-                      <tr key={idx} className={`hover:bg-slate-50 transition-colors ${node.is_primary ? "bg-emerald-50/40" : ""}`}>
-                        <td className="p-3.5 font-bold text-slate-900 flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-slate-400" />
-                          {node.hostname}
+                      <tr key={idx} className={`hover:bg-slate-50 transition-colors align-middle ${node.is_primary ? "bg-emerald-50/40" : ""}`}>
+                        <td className="py-3.5 px-4 font-bold text-slate-900 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${node.is_primary ? "bg-emerald-500" : "bg-amber-500"}`} />
+                            <span>{node.hostname}</span>
+                          </div>
                         </td>
-                        <td className="p-3.5 font-mono text-slate-600 truncate max-w-[220px]">
+                        <td className="py-3.5 px-4 font-mono text-slate-600 truncate max-w-[240px] whitespace-nowrap">
                           {node.tunnel_url}
                         </td>
-                        <td className="p-3.5 font-mono text-slate-500">{node.target_ip}</td>
-                        <td className="p-3.5 text-slate-500">
+                        <td className="py-3.5 px-4 font-mono text-slate-500 whitespace-nowrap">{node.target_ip}</td>
+                        <td className="py-3.5 px-4 text-slate-500 whitespace-nowrap">
                           {node.last_ping ? new Date(node.last_ping).toLocaleTimeString() : "Never"}
                         </td>
-                        <td className="p-3.5">
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center whitespace-nowrap px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
                             node.status === "ACTIVE"
                               ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
                               : node.status === "STANDBY"
@@ -1144,19 +1146,21 @@ export default function AdminAudioBroadcast() {
                             {node.status_label}
                           </span>
                         </td>
-                        <td className="p-3.5 text-right">
+                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
                           {!node.is_primary && node.status !== "OFFLINE" ? (
                             <button
                               onClick={() => handleSelectPrimary(node.hostname)}
                               disabled={tunnelLoading}
-                              className="px-3 py-1.5 bg-brand-navy hover:bg-brand-blue text-white font-bold rounded-lg text-xs transition-colors shadow-sm"
+                              className="px-3.5 py-1.5 bg-brand-navy hover:bg-brand-blue text-white font-bold rounded-xl text-xs transition-all shadow-xs whitespace-nowrap"
                             >
-                              Promote to Active Primary
+                              Promote to Active
                             </button>
                           ) : node.is_primary ? (
-                            <span className="text-[11px] font-bold text-emerald-600">Active Primary ✓</span>
+                            <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 whitespace-nowrap">
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Active Primary
+                            </span>
                           ) : (
-                            <span className="text-[11px] text-slate-400">Offline</span>
+                            <span className="text-xs text-slate-400 whitespace-nowrap">Offline</span>
                           )}
                         </td>
                       </tr>
