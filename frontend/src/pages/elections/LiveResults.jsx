@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import api from "../../lib/api";
-import { Crown, Sparkles, Users, ShieldCheck, RefreshCw, Lock, Clock, Award } from "lucide-react";
+import { Crown, Sparkles, Users, ShieldCheck, RefreshCw, Lock, Clock, Award, Share2 } from "lucide-react";
 import { photoUrl, parseCandidateTransform } from "../../lib/api_elections";
+import { shareResultCard } from "../../lib/shareCard";
 
 const renderCandPhoto = (photo, name, className = "w-full h-full object-cover") => {
   if (!photo) return null;
@@ -211,6 +212,7 @@ const KPI = ({ icon: Icon, label, value, accent }) => (
 );
 
 const PostBlock = ({ post = {}, list = [], appointedKeys = [], viceCandidateIds = [] }) => {
+  const cardRef = useRef(null);
   if (!post) return null;
   const postKey = post.key || post.id || "unknown";
   const postTitle = post.title || post.name || "Council Position";
@@ -218,11 +220,24 @@ const PostBlock = ({ post = {}, list = [], appointedKeys = [], viceCandidateIds 
   const sorted = [...(list || [])].sort((a, b) => (b?.votes || 0) - (a?.votes || 0));
   const isPostAppointed = (appointedKeys || []).includes(postKey);
   const viceWinner = sorted.find(c => c && viceCandidateIds.includes(c.candidate_id));
+  const winnerCandidate = sorted[0];
 
   return (
-    <div className="glass rounded-3xl p-7">
-      <div className="flex items-center justify-between mb-5">
-        <h2 className="font-display text-3xl md:text-4xl font-black hero-3d">{postTitle}</h2>
+    <div ref={cardRef} className="glass rounded-3xl p-7 bg-white">
+      <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
+        <div className="flex items-center gap-3">
+          <h2 className="font-display text-3xl md:text-4xl font-black hero-3d">{postTitle}</h2>
+          <button
+            type="button"
+            data-no-share="true"
+            onClick={() => shareResultCard(cardRef.current, postTitle, winnerCandidate?.name)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black transition-all shadow-xs active:scale-95 cursor-pointer shrink-0"
+            title="Share Card Image"
+          >
+            <Share2 className="w-3.5 h-3.5 text-slate-600" />
+            <span>Share Card</span>
+          </button>
+        </div>
         {sorted[0] && (sorted[0].votes || 0) > 0 && (() => {
           const maxVotes = sorted[0].votes || 0;
           const winners = sorted.filter(c => (c.votes || 0) === maxVotes && !viceCandidateIds.includes(c.candidate_id));

@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { Crown, Users, ShieldCheck, Sparkles, RefreshCw, BarChart3, Printer } from "lucide-react";
+import { Crown, Users, ShieldCheck, Sparkles, RefreshCw, BarChart3, Printer, Share2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import api from "../../lib/api";
 import { photoUrl, parseCandidateTransform } from "../../lib/api_elections";
+import { shareResultCard } from "../../lib/shareCard";
 
 const renderCandPhoto = (photo, name, className = "w-full h-full object-cover rounded-2xl") => {
   if (!photo) return null;
@@ -93,74 +94,91 @@ export default function AdminElectionsResults() {
       )}
 
       {/* Results by Post */}
-      {data?.posts?.map(post => {
-        const candidates = data.by_post?.[post.key] || [];
-        const total = Math.max(1, candidates.reduce((s, c) => s + (c.votes || 0), 0));
-        const sorted = [...candidates].sort((a, b) => b.votes - a.votes);
+      {data?.posts?.map(post => (
+        <AdminPostCard key={post.key} post={post} candidates={data.by_post?.[post.key] || []} />
+      ))}
+    </div>
+  );
+}
 
-        return (
-          <div key={post.key} className="bg-white rounded-3xl border border-slate-200/60 shadow-[0_4px_24px_rgba(0,0,0,0.02)] overflow-hidden hover:border-slate-350 transition-colors duration-300 animate-in slide-in-from-bottom-4 duration-300">
-            <div className="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2">
-              <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
-                <Crown className="w-5 h-5 text-amber-500" />
-                {post?.title || post?.name || "Position"}
-              </h2>
-              {sorted[0] && sorted[0].votes > 0 && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-amber-100 to-amber-50 text-amber-800 text-xs font-extrabold border border-amber-200/60 shadow-sm animate-pulse">
-                  <Crown className="w-3.5 h-3.5" /> Leading: {sorted[0].name} ({sorted[0].votes} {sorted[0].votes === 1 ? 'vote' : 'votes'})
-                </span>
-              )}
-            </div>
-            <div className="p-6 space-y-5">
-              {sorted.length === 0 ? (
-                <p className="text-slate-400 text-sm font-semibold">No candidates registered.</p>
-              ) : (
-                sorted.map((c, i) => {
-                  const pct = Math.round((c.votes / total) * 100);
-                  const isLeader = i === 0 && c.votes > 0;
-                  return (
-                    <div key={c.candidate_id || c.name} className="flex items-center gap-4 group">
-                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white font-black text-lg shrink-0 shadow-sm border transition-transform duration-300 group-hover:scale-105 ${
-                        isLeader 
-                          ? "bg-gradient-to-br from-amber-400 via-amber-500 to-orange-500 border-amber-300" 
-                          : "bg-gradient-to-br from-slate-200 to-slate-300 border-slate-100"
-                      }`}>
-                        {c.photo ? (
-                          renderCandPhoto(c.photo, c.name)
-                        ) : (
-                          c.name?.[0]
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className={`font-bold text-sm truncate flex items-center gap-1.5 ${isLeader ? "text-amber-800" : "text-slate-700"}`}>
-                            {c.name}
-                            {isLeader && <Crown className="w-4 h-4 text-amber-500 inline" />}
-                          </span>
-                          <span className="text-xs font-extrabold tabular-nums text-slate-800">
-                            {c.votes} {c.votes === 1 ? 'vote' : 'votes'} <span className="text-slate-400 font-bold">({pct}%)</span>
-                          </span>
-                        </div>
-                        <div className="h-3 rounded-full bg-slate-50 border border-slate-100 overflow-hidden shadow-inner">
-                          <div
-                            className="h-full rounded-full transition-all duration-1000 ease-out"
-                            style={{
-                              width: `${pct}%`,
-                              background: isLeader
-                                ? "linear-gradient(90deg, #f59e0b, #ea580c)"
-                                : "linear-gradient(90deg, #94a3b8, #475569)"
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        );
-      })}
+function AdminPostCard({ post, candidates }) {
+  const cardRef = useRef(null);
+  const total = Math.max(1, candidates.reduce((s, c) => s + (c.votes || 0), 0));
+  const sorted = [...candidates].sort((a, b) => b.votes - a.votes);
+  const postTitle = post?.title || post?.name || "Position";
+
+  return (
+    <div ref={cardRef} className="bg-white rounded-3xl border border-slate-200/60 shadow-[0_4px_24px_rgba(0,0,0,0.02)] overflow-hidden hover:border-slate-350 transition-colors duration-300 animate-in slide-in-from-bottom-4 duration-300">
+      <div className="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
+            <Crown className="w-5 h-5 text-amber-500" />
+            {postTitle}
+          </h2>
+          <button
+            type="button"
+            data-no-share="true"
+            onClick={() => shareResultCard(cardRef.current, postTitle, sorted[0]?.name)}
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black transition-all active:scale-95 cursor-pointer shrink-0"
+            title="Share Card Image"
+          >
+            <Share2 className="w-3.5 h-3.5 text-slate-600" />
+            <span>Share Card</span>
+          </button>
+        </div>
+        {sorted[0] && sorted[0].votes > 0 && (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-amber-100 to-amber-50 text-amber-800 text-xs font-extrabold border border-amber-200/60 shadow-sm animate-pulse">
+            <Crown className="w-3.5 h-3.5" /> Leading: {sorted[0].name} ({sorted[0].votes} {sorted[0].votes === 1 ? 'vote' : 'votes'})
+          </span>
+        )}
+      </div>
+      <div className="p-6 space-y-5">
+        {sorted.length === 0 ? (
+          <p className="text-slate-400 text-sm font-semibold">No candidates registered.</p>
+        ) : (
+          sorted.map((c, i) => {
+            const pct = Math.round((c.votes / total) * 100);
+            const isLeader = i === 0 && c.votes > 0;
+            return (
+              <div key={c.candidate_id || c.name} className="flex items-center gap-4 group">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white font-black text-lg shrink-0 shadow-sm border transition-transform duration-300 group-hover:scale-105 ${
+                  isLeader 
+                    ? "bg-gradient-to-br from-amber-400 via-amber-500 to-orange-500 border-amber-300" 
+                    : "bg-gradient-to-br from-slate-200 to-slate-300 border-slate-100"
+                }`}>
+                  {c.photo ? (
+                    renderCandPhoto(c.photo, c.name)
+                  ) : (
+                    c.name?.[0]
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className={`font-bold text-sm truncate flex items-center gap-1.5 ${isLeader ? "text-amber-800" : "text-slate-700"}`}>
+                      {c.name}
+                      {isLeader && <Crown className="w-4 h-4 text-amber-500 inline" />}
+                    </span>
+                    <span className="text-xs font-extrabold tabular-nums text-slate-800">
+                      {c.votes} {c.votes === 1 ? 'vote' : 'votes'} <span className="text-slate-400 font-bold">({pct}%)</span>
+                    </span>
+                  </div>
+                  <div className="h-3 rounded-full bg-slate-50 border border-slate-100 overflow-hidden shadow-inner">
+                    <div
+                      className="h-full rounded-full transition-all duration-1000 ease-out"
+                      style={{
+                        width: `${pct}%`,
+                        background: isLeader
+                          ? "linear-gradient(90deg, #f59e0b, #ea580c)"
+                          : "linear-gradient(90deg, #94a3b8, #475569)"
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
     </div>
   );
 }
