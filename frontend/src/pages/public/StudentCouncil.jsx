@@ -710,7 +710,39 @@ export default function StudentCouncil() {
         {tab === "profiles" && (
           <>
             {profiles.length === 0 ? (
-              <div className="text-center text-brand-ink/60 py-10 italic">Profiles coming soon.</div>
+              electionStatus === "countdown" ? (
+                <div className="bg-white/90 backdrop-blur-xl rounded-3xl border border-brand-gold/40 p-8 md:p-12 text-center shadow-xl relative overflow-hidden my-4">
+                  <div className="absolute top-0 right-0 w-80 h-80 bg-brand-gold/10 rounded-full blur-3xl pointer-events-none" />
+                  <div className="absolute bottom-0 left-0 w-60 h-60 bg-brand-blue/10 rounded-full blur-3xl pointer-events-none" />
+
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#F4D571] to-[#B9892B] flex items-center justify-center mx-auto mb-5 shadow-lg shadow-brand-gold/25 animate-bounce">
+                    <Trophy className="w-8 h-8 text-white" />
+                  </div>
+
+                  <div className="overline mb-2 text-brand-orange">SDPS Student Council Elections 2026-27</div>
+                  <h2 className="font-headline text-2xl md:text-3xl font-black text-brand-ink mb-3 tracking-tight">
+                    Official Council Members & Results Declaration
+                  </h2>
+                  <p className="text-sm text-slate-600 mb-8 max-w-md mx-auto">
+                    The official polling data is locked and undergoing final validation. Elected council members will be revealed in:
+                  </p>
+
+                  <div className="grid grid-cols-4 gap-3 max-w-md mx-auto mb-8">
+                    <CountdownCard value={Math.floor(remaining / 86400)} label="Days" />
+                    <CountdownCard value={Math.floor((remaining % 86400) / 3600)} label="Hours" />
+                    <CountdownCard value={Math.floor((remaining % 3600) / 60)} label="Mins" />
+                    <CountdownCard value={remaining % 60} label="Secs" />
+                  </div>
+
+                  {publishAt && (
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-600">
+                      <Clock className="w-4 h-4 text-brand-orange" /> Scheduled Declaration: {new Date(publishAt).toLocaleString()}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center text-brand-ink/60 py-10 italic">Profiles coming soon.</div>
+              )
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
