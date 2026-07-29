@@ -254,11 +254,11 @@ export function AdminIntegrationKeys() {
           <div className="p-4 rounded-xl bg-slate-900 text-white space-y-2 border border-slate-800">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                🍎 macOS Setup Command (Terminal)
+                🍎 macOS Master Setup Command (Terminal)
               </span>
               <button
                 onClick={() => {
-                  navigator.clipboard.writeText("curl -sL https://api.sdpublic.org/api/admin/audio/setup-mac.sh | sudo bash");
+                  navigator.clipboard.writeText("curl -sL https://api.sdpublic.org/api/audio/setup-mac.sh | sudo bash");
                   toast.success("macOS command copied!");
                 }}
                 className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold rounded-md transition-colors"
@@ -267,18 +267,18 @@ export function AdminIntegrationKeys() {
               </button>
             </div>
             <code className="block font-mono text-[11px] text-emerald-400 bg-slate-950 p-2.5 rounded-lg overflow-x-auto select-all">
-              curl -sL https://api.sdpublic.org/api/admin/audio/setup-mac.sh | sudo bash
+              curl -sL https://api.sdpublic.org/api/audio/setup-mac.sh | sudo bash
             </code>
           </div>
 
           <div className="p-4 rounded-xl bg-slate-900 text-white space-y-2 border border-slate-800">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                🪟 Windows Setup Command (PowerShell Admin)
+                🪟 Windows Master Setup Command (PowerShell Admin)
               </span>
               <button
                 onClick={() => {
-                  navigator.clipboard.writeText("[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-RestMethod https://api.sdpublic.org/api/admin/audio/setup-win.ps1 | iex");
+                  navigator.clipboard.writeText("[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-RestMethod https://api.sdpublic.org/api/audio/setup-win.ps1 | iex");
                   toast.success("Windows command copied!");
                 }}
                 className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold rounded-md transition-colors"
@@ -287,7 +287,7 @@ export function AdminIntegrationKeys() {
               </button>
             </div>
             <code className="block font-mono text-[11px] text-sky-400 bg-slate-950 p-2.5 rounded-lg overflow-x-auto select-all">
-              [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-RestMethod https://api.sdpublic.org/api/admin/audio/setup-win.ps1 | iex
+              [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-RestMethod https://api.sdpublic.org/api/audio/setup-win.ps1 | iex
             </code>
           </div>
         </div>
