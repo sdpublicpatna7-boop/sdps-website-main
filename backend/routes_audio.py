@@ -110,6 +110,10 @@ class MicStreamPayload(BaseModel):
     rooms: str = "1-200"
 
 
+class SelectPrimaryPayload(BaseModel):
+    hostname: str
+
+
 @audio_router.post("/tunnel/register")
 async def register_tunnel(payload: TunnelRegisterPayload):
     """Called by school PC script to register its Cloudflare tunnel URL."""
@@ -117,26 +121,65 @@ async def register_tunnel(payload: TunnelRegisterPayload):
     if payload.api_key != TUNNEL_API_KEY:
         raise HTTPException(status_code=403, detail="Invalid tunnel API key")
 
-    _active_tunnel_url = payload.tunnel_url.rstrip("/")
+    clean_url = payload.tunnel_url.rstrip("/")
+    hostname_clean = (payload.hostname or "UNKNOWN-PC").strip()
+    now_iso = datetime.now(timezone.utc).isoformat()
+
     from server import db
-    await db.site_settings.update_one(
-        {},
+
+    # 1. Update/upsert node entry in db.audio_tunnels collection
+    await db.audio_tunnels.update_one(
+        {"hostname": hostname_clean},
         {"$set": {
-            "cloudflare_tunnel_url": _active_tunnel_url,
-            "tunnel_hostname": payload.hostname or "unknown",
-            "tunnel_updated_at": datetime.now(timezone.utc).isoformat()
+            "hostname": hostname_clean,
+            "tunnel_url": clean_url,
+            "target_ip": DEFAULT_AUDIO_IP,
+            "last_ping": now_iso,
+            "updated_at": now_iso
         }},
         upsert=True
     )
-    logger.info(f"Tunnel registered: {_active_tunnel_url} from {payload.hostname}")
-    return {"success": True, "tunnel_url": _active_tunnel_url}
+
+    # 2. Check current active primary tunnel in db.site_settings
+    settings = await db.site_settings.find_one({}, {"_id": 0, "cloudflare_tunnel_url": 1, "primary_hostname": 1, "tunnel_updated_at": 1})
+    current_primary_host = settings.get("primary_hostname") if settings else None
+
+    # If no primary set or primary is this host or primary stale (> 10 mins), auto-promote
+    should_promote = False
+    if not _active_tunnel_url or not current_primary_host or current_primary_host == hostname_clean:
+        should_promote = True
+    else:
+        last_up = settings.get("tunnel_updated_at")
+        if last_up:
+            try:
+                dt = datetime.fromisoformat(last_up)
+                if (datetime.now(timezone.utc) - dt).total_seconds() > 600:
+                    should_promote = True
+            except Exception:
+                should_promote = True
+
+    if should_promote:
+        _active_tunnel_url = clean_url
+        await db.site_settings.update_one(
+            {},
+            {"$set": {
+                "cloudflare_tunnel_url": clean_url,
+                "primary_hostname": hostname_clean,
+                "tunnel_hostname": hostname_clean,
+                "tunnel_updated_at": now_iso
+            }},
+            upsert=True
+        )
+
+    logger.info(f"Tunnel node pinged: {clean_url} from [{hostname_clean}] (Promoted: {should_promote})")
+    return {"success": True, "tunnel_url": clean_url, "promoted": should_promote}
 
 
 @audio_router.get("/tunnel/status")
 async def get_tunnel_status(current_admin=Depends(get_current_admin_optional)):
-    """Check current active tunnel URL. Masks URL for non-superadmin users."""
+    """Check current active primary tunnel URL. Masks URL for non-superadmin users."""
     from server import db
-    settings = await db.site_settings.find_one({}, {"_id": 0, "cloudflare_tunnel_url": 1, "tunnel_hostname": 1, "tunnel_updated_at": 1})
+    settings = await db.site_settings.find_one({}, {"_id": 0, "cloudflare_tunnel_url": 1, "tunnel_hostname": 1, "primary_hostname": 1, "tunnel_updated_at": 1})
     raw_url = _active_tunnel_url or (settings.get("cloudflare_tunnel_url") if settings else None)
 
     # Check if current user is superadmin / admin
@@ -148,7 +191,6 @@ async def get_tunnel_status(current_admin=Depends(get_current_admin_optional)):
 
     masked_url = raw_url
     if raw_url and not is_superadmin:
-        # Mask domain string for non-superadmin e.g. club-strikes-explains-colony -> club-st-XXXXXX.trycloudflare.com
         parts = raw_url.replace("https://", "").replace("http://", "").split(".")
         if len(parts) >= 2:
             sub = parts[0]
@@ -160,8 +202,115 @@ async def get_tunnel_status(current_admin=Depends(get_current_admin_optional)):
     return {
         "active_url": masked_url,
         "is_masked": not is_superadmin,
-        "hostname": settings.get("tunnel_hostname") if settings else None,
+        "hostname": settings.get("primary_hostname") or settings.get("tunnel_hostname") if settings else None,
         "updated_at": settings.get("tunnel_updated_at") if settings else None,
+    }
+
+
+@audio_router.get("/tunnel/list")
+async def list_all_tunnels(current_admin=Depends(get_current_admin_optional)):
+    """Retrieve list of all registered active and standby audio tunnel nodes."""
+    from server import db
+    settings = await db.site_settings.find_one({}, {"_id": 0, "cloudflare_tunnel_url": 1, "primary_hostname": 1})
+    active_primary_url = _active_tunnel_url or (settings.get("cloudflare_tunnel_url") if settings else "")
+    primary_host = settings.get("primary_hostname") if settings else ""
+
+    is_superadmin = False
+    if current_admin:
+        role = getattr(current_admin, "role", None) or current_admin.get("role", "")
+        if role in ["superadmin", "admin"]:
+            is_superadmin = True
+
+    tunnels_cursor = db.audio_tunnels.find({}, {"_id": 0})
+    tunnel_docs = await tunnels_cursor.to_list(length=50)
+
+    nodes = []
+    now_dt = datetime.now(timezone.utc)
+
+    for doc in tunnel_docs:
+        url = doc.get("tunnel_url", "")
+        host = doc.get("hostname", "UNKNOWN")
+        last_p = doc.get("last_ping", "")
+
+        # Compute status: ACTIVE, STANDBY, or OFFLINE
+        is_active_primary = (url == active_primary_url) or (host == primary_host)
+        is_recent = False
+        if last_p:
+            try:
+                dt = datetime.fromisoformat(last_p)
+                if (now_dt - dt).total_seconds() < 300: # pinged within 5 mins
+                    is_recent = True
+            except Exception:
+                pass
+
+        if is_active_primary and is_recent:
+            status = "ACTIVE"
+            status_label = "PRIMARY ACTIVE 🟢"
+        elif is_recent:
+            status = "STANDBY"
+            status_label = "STANDBY READY 🟡"
+        else:
+            status = "OFFLINE"
+            status_label = "OFFLINE 🔴"
+
+        # Masking for non-superadmins
+        display_url = url
+        if url and not is_superadmin:
+            parts = url.replace("https://", "").replace("http://", "").split(".")
+            if len(parts) >= 2:
+                sub = parts[0]
+                masked_sub = sub[:6] + "-XXXXXX" if len(sub) > 6 else "XXXXXX"
+                display_url = "https://" + ".".join([masked_sub] + parts[1:])
+            else:
+                display_url = "https://XXXXXX.trycloudflare.com"
+
+        nodes.append({
+            "hostname": host,
+            "tunnel_url": display_url,
+            "raw_url": url if is_superadmin else None,
+            "target_ip": doc.get("target_ip", DEFAULT_AUDIO_IP),
+            "status": status,
+            "status_label": status_label,
+            "is_primary": is_active_primary,
+            "last_ping": last_p
+        })
+
+    return {
+        "success": True,
+        "count": len(nodes),
+        "primary_url": active_primary_url if is_superadmin else (nodes[0]["tunnel_url"] if nodes else ""),
+        "tunnels": nodes
+    }
+
+
+@audio_router.post("/tunnel/select-primary")
+async def select_primary_tunnel(payload: SelectPrimaryPayload, current_admin=Depends(get_current_admin)):
+    """Manually select a standby node as the primary active audio tunnel."""
+    global _active_tunnel_url
+    from server import db
+    node = await db.audio_tunnels.find_one({"hostname": payload.hostname})
+    if not node:
+        raise HTTPException(status_code=404, detail=f"Tunnel node '{payload.hostname}' not found.")
+
+    clean_url = node["tunnel_url"]
+    _active_tunnel_url = clean_url
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    await db.site_settings.update_one(
+        {},
+        {"$set": {
+            "cloudflare_tunnel_url": clean_url,
+            "primary_hostname": payload.hostname,
+            "tunnel_hostname": payload.hostname,
+            "tunnel_updated_at": now_iso
+        }},
+        upsert=True
+    )
+
+    return {
+        "success": True,
+        "hostname": payload.hostname,
+        "active_url": clean_url
     }
 
 
