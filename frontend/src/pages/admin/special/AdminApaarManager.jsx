@@ -692,7 +692,7 @@ export default function AdminApaarManager() {
     }
   };
 
-  const classes = ["Playgroup", "Nursery", "LKG", "UKG", "KG-I", "KG-II", "I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
+  const classes = ["Nursery", "LKG", "UKG", "KG-I", "KG-II", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
