@@ -613,8 +613,8 @@ async def get_public_results(preview: bool = False):
         votes = r_votes.json()
         archive = r_archive.json() if r_archive.status_code == 200 else []
 
-        # If there are live votes, compute from votes
-        if votes:
+        # Compute results from candidates and votes
+        if candidates or votes:
             counts = {}
             for v in votes:
                 sel = v.get("selections") or {}
@@ -631,7 +631,7 @@ async def get_public_results(preview: bool = False):
                     "symbol": c.get("symbol", ""),
                     "votes": counts.get(c["id"], 0) + adj
                 }
-                if c["post_key"] in by_post:
+                if c.get("post_key") in by_post:
                     by_post[c["post_key"]].append(entry)
 
             for k in by_post:
@@ -639,7 +639,7 @@ async def get_public_results(preview: bool = False):
 
             return {
                 "status": "live",
-                "posts": [{"key": p["key"], "title": p["title"], "order": p["order_index"]} for p in posts],
+                "posts": [{"key": p["key"], "title": p["title"], "order": p.get("order_index", 0)} for p in posts],
                 "by_post": by_post,
                 "winners": {p["key"]: (by_post[p["key"]][0] if by_post[p["key"]] else None) for p in posts},
                 "total_voted": len(votes),
