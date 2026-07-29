@@ -577,15 +577,23 @@ async def get_public_results(preview: bool = False):
         if not publish_time_str and not preview:
             return {"status": "sealed", "message": "Results have not been scheduled for release yet."}
 
-        now = datetime.now(timezone.utc)
-        if now < publish_dt:
-            remaining = (publish_dt - now).total_seconds()
-            return {
-                "status": "countdown",
-                "publish_at": publish_time_str,
-                "remaining_seconds": max(0, int(remaining)),
-                "message": "Results will be published soon."
-            }
+        publish_dt = None
+        if publish_time_str:
+            try:
+                publish_dt = datetime.fromisoformat(publish_time_str.replace("Z", "+00:00"))
+            except Exception:
+                pass
+
+        if not preview and publish_dt:
+            now = datetime.now(timezone.utc)
+            if now < publish_dt:
+                remaining = (publish_dt - now).total_seconds()
+                return {
+                    "status": "countdown",
+                    "publish_at": publish_time_str,
+                    "remaining_seconds": max(0, int(remaining)),
+                    "message": "Results will be published soon."
+                }
 
         # 2. Time has passed — return full results (no auth required)
         # Fetch posts, candidates, votes, and archive concurrently
