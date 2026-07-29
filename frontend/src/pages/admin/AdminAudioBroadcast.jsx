@@ -832,7 +832,7 @@ export default function AdminAudioBroadcast() {
                   >
                     {HARDWARE_AUDIO_CATALOG.map(t => (
                       <option key={t.id} value={t.id}>
-                        Track #{t.id} ({t.code}) — {t.title} ({t.category})
+                        {t.code} — {t.title}
                       </option>
                     ))}
                   </select>
