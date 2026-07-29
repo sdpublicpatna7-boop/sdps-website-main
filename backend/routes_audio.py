@@ -925,26 +925,22 @@ async def get_audio_status(
     """Ping Audio Controller device to verify hardware connectivity."""
     from server import db
 
-    # If Cloudflare tunnel is configured (env var or auto-registered), always use it
-    tunnel = await _get_tunnel_url_async()
+    # Prepare fallback targets: try tunnel first, then direct user-specified IP
+    ips_to_try = []
     if tunnel and tunnel.startswith("http"):
-        target_ip = tunnel
-    else:
-        target_ip = "192.168.29.71"
+        ips_to_try.append(tunnel)
+    if ip and ip not in ips_to_try:
+        ips_to_try.append(ip)
+    if "192.168.29.71" not in ips_to_try:
+        ips_to_try.append("192.168.29.71")
 
     user_to_use = username or DEFAULT_HARDWARE_USER
     pass_to_use = password or DEFAULT_HARDWARE_PASS
     
-    # Try specified IP/port first, then fallback to :5060 and :8080 if standard port fails
-    ips_to_try = [target_ip]
-    if not tunnel and ":" not in target_ip and not target_ip.startswith("http"):
-        ips_to_try.append(f"{target_ip}:5060")
-        ips_to_try.append(f"{target_ip}:8080")
-
     last_error = None
     for attempt_ip in ips_to_try:
-        url = format_device_url(attempt_ip, "/", tunnel_url=tunnel)
-        kwargs = {"timeout": 4.0, "auth": (user_to_use, pass_to_use)}
+        url = format_device_url(attempt_ip, "/", tunnel_url=attempt_ip if attempt_ip.startswith("http") else None)
+        kwargs = {"timeout": 3.0, "auth": (user_to_use, pass_to_use)}
         try:
             res = requests.get(url, **kwargs)
             online = res.status_code in (200, 401, 403)
@@ -958,6 +954,7 @@ async def get_audio_status(
                 "statusCode": res.status_code
             }
         except Exception as e:
+            last_error = str(e)
             last_error = str(e)
 
     return {
