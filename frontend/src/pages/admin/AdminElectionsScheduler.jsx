@@ -178,6 +178,16 @@ export default function AdminElectionsScheduler() {
                   <div className="text-[8px] sm:text-[9px] uppercase tracking-widest font-extrabold text-amber-400 mt-1.5">Seconds</div>
                 </div>
               </div>
+              <div className="pt-2">
+                <a
+                  href="/student-council/preview"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs shadow-md transition"
+                >
+                  👁️ Open Secret Results Preview Page (Bypass Countdown)
+                </a>
+              </div>
             </div>
           )}
         </div>

@@ -451,6 +451,11 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
    MAIN COMPONENT
    ─────────────────────────────────────────────────────── */
 export default function StudentCouncil() {
+  const isPreview = typeof window !== "undefined" && (
+    window.location.pathname.includes("/preview") ||
+    window.location.search.includes("preview=true")
+  );
+
   const [tab, setTab] = useState("results"); // Default to Results tab!
   const [profiles, setProfiles] = useState([]);
   const [posters, setPosters] = useState([]);
@@ -487,13 +492,13 @@ export default function StudentCouncil() {
     // Check live results countdown
     api.get("/elections/public-results").then(r => {
       const d = r.data;
-      if (d.status === "countdown") {
+      if (d.status === "countdown" && !isPreview) {
         setElectionStatus("countdown");
         setRemaining(d.remaining_seconds);
         setPublishAt(d.publish_at);
-      } else if (d.status === "live") {
+      } else if (d.status === "live" || isPreview) {
         setElectionStatus("live");
-        setTab("results"); // Switch directly to results tab since results are published!
+        setTab("results"); // Switch directly to results tab since results are published or previewed!
         setTotalVoted(d.total_voted || 0);
         
         // Compile the live results — preserve ALL candidates per post
@@ -672,6 +677,13 @@ export default function StudentCouncil() {
 
   return (
     <>
+      {isPreview && (
+        <div className="bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-widest text-center py-3 px-4 shadow-md flex items-center justify-center gap-2 sticky top-0 z-50 border-b border-amber-500">
+          <Sparkles className="w-4 h-4 text-slate-950 animate-spin" />
+          <span>ADMIN PREVIEW MODE — Bypassing Live Countdown for Results Validation</span>
+        </div>
+      )}
+
       <section className="bg-hero-grad py-16 relative overflow-hidden">
         {/* Decorative orbs */}
         <div className="absolute -top-20 -right-20 w-64 h-64 bg-brand-gold/10 rounded-full blur-3xl pointer-events-none" />

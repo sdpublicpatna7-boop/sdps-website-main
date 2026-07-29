@@ -183,6 +183,7 @@ function App() {
                   <Route path="/notices" element={<NoticesList />} />
                   <Route path="/calendar" element={<CalendarPage />} />
                   <Route path="/student-council" element={<StudentCouncil />} />
+                  <Route path="/student-council/preview" element={<StudentCouncil />} />
                   <Route path="/admissions" element={<AdmissionsLanding />} />
                   <Route path="/admission-enquiry" element={<AdmissionEnquiry />} />
                   <Route path="/admission-form" element={<AdmissionForm />} />
