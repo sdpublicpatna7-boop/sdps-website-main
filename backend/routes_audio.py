@@ -716,40 +716,42 @@ KEY="sdps-tunnel-2026"
 HN=$(hostname -s)
 
 find_device_ip() {
-    # 1. Test known standard IPs
-    for TEST in "192.168.29.252" "192.168.29.71" "192.168.29.9"; do
-        if curl -s -m 1 "http://${TEST}/BcastDo" >/dev/null 2>&1 || curl -s -m 1 "http://${TEST}" >/dev/null 2>&1; then
+    # 1. Probe known primary IPs
+    for TEST in "192.168.29.252" "192.168.29.71" "192.168.29.9" "192.168.4.252" "192.168.1.252"; do
+        if curl -s -m 0.5 "http://${TEST}/BcastDo" >/dev/null 2>&1 || curl -s -m 0.5 "http://${TEST}" >/dev/null 2>&1; then
             echo "${TEST}"
             return
         fi
     done
-    # 2. Test localhost if running on same broadcasting machine
-    if curl -s -m 1 "http://127.0.0.1/BcastDo" >/dev/null 2>&1 || curl -s -m 1 "http://127.0.0.1:8000" >/dev/null 2>&1; then
+    # 2. Probe localhost if running on same broadcasting machine
+    if curl -s -m 0.5 "http://127.0.0.1/BcastDo" >/dev/null 2>&1 || curl -s -m 0.5 "http://127.0.0.1:8000" >/dev/null 2>&1; then
         echo "127.0.0.1"
         return
     fi
-    # 3. Auto-detect machine LAN IP & fast-scan subnet for /BcastDo response
+    # 3. Multi-Subnet Deep Scanner (192.168.29.x, 192.168.4.x, 192.168.1.x, 192.168.0.x)
     LOCAL_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || route get default 2>/dev/null | grep gateway | awk '{print $2}')
-    if [ -n "$LOCAL_IP" ]; then
-        SUBNET=$(echo "$LOCAL_IP" | cut -d. -f1-3)
-        rm -f "$SDPS_DIR/found_ip.txt"
-        for i in $(seq 1 254); do
-            TEST_IP="${SUBNET}.${i}"
-            (curl -s -m 0.2 "http://${TEST_IP}/BcastDo" >/dev/null 2>&1 && echo "$TEST_IP" > "$SDPS_DIR/found_ip.txt") &
-        done
-        wait
-        if [ -f "$SDPS_DIR/found_ip.txt" ]; then
-            FOUND=$(head -n 1 "$SDPS_DIR/found_ip.txt")
-            rm -f "$SDPS_DIR/found_ip.txt"
-            if [ -n "$FOUND" ]; then
-                echo "$FOUND"
-                return
-            fi
+    PRIMARY_SUBNET=$(echo "$LOCAL_IP" | cut -d. -f1-3)
+    SUBNETS=("$PRIMARY_SUBNET" "192.168.29" "192.168.4" "192.168.1" "192.168.0")
+
+    rm -f "$SDPS_DIR/found_ip.txt"
+    for SUB in "${SUBNETS[@]}"; do
+        if [ -n "$SUB" ]; then
+            for i in $(seq 1 254); do
+                TEST_IP="${SUB}.${i}"
+                (curl -s -m 0.15 "http://${TEST_IP}/BcastDo" >/dev/null 2>&1 && echo "$TEST_IP" > "$SDPS_DIR/found_ip.txt") &
+            done
         fi
-        echo "$LOCAL_IP"
-        return
+    done
+    wait
+    if [ -f "$SDPS_DIR/found_ip.txt" ]; then
+        FOUND=$(head -n 1 "$SDPS_DIR/found_ip.txt")
+        rm -f "$SDPS_DIR/found_ip.txt"
+        if [ -n "$FOUND" ]; then
+            echo "$FOUND"
+            return
+        fi
     fi
-    echo "192.168.29.71"
+    echo "192.168.29.252"
 }
 
 while true; do
