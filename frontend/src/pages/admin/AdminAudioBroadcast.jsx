@@ -127,7 +127,7 @@ export default function AdminAudioBroadcast() {
   const [authError, setAuthError] = useState(null);
   const [authSubmitting, setAuthSubmitting] = useState(false);
 
-  const [deviceIp, setDeviceIp] = useState(localStorage.getItem("sdps_audio_ip") || "192.168.29.71");
+  const [deviceIp, setDeviceIp] = useState("");
   const [activeTunnelUrl, setActiveTunnelUrl] = useState(null);
   const [tunnelHostname, setTunnelHostname] = useState(null);
   const [deviceStatus, setDeviceStatus] = useState({ online: false, checking: true, error: null });
@@ -230,8 +230,7 @@ export default function AdminAudioBroadcast() {
     const cleanIp = (newIp || "").trim();
     if (!cleanIp) return;
     setDeviceIp(cleanIp);
-    localStorage.setItem("sdps_audio_ip", cleanIp);
-    setLastActionMsg({ type: "success", text: `Broadcasting IP set to ${cleanIp}. Connecting via Tunnel...` });
+    setLastActionMsg({ type: "success", text: `Broadcasting IP updated to ${cleanIp} for all users. Connecting via Tunnel...` });
     api.post("/admin/audio/ip/update", { ip: cleanIp })
       .then(() => {
         pingDevice(cleanIp);
@@ -299,20 +298,35 @@ export default function AdminAudioBroadcast() {
 
   useEffect(() => {
     if (!user) return;
-    api.get("/admin/audio/ddns/get")
-      .then(res => {
-        if (res.data?.ip) {
-          setDeviceIp(res.data.ip);
-          localStorage.setItem("sdps_audio_ip", res.data.ip);
-          pingDevice(res.data.ip);
-        } else {
+    const syncGlobalIp = () => {
+      api.get("/admin/audio/ddns/get")
+        .then(res => {
+          if (res.data?.ip) {
+            setDeviceIp(prev => {
+              if (document.activeElement?.id !== "broadcasting-ip-input") {
+                return res.data.ip;
+              }
+              return prev;
+            });
+            pingDevice(res.data.ip);
+          } else {
+            pingDevice();
+          }
+        })
+        .catch(() => {
           pingDevice();
-        }
-      })
-      .catch(() => {
-        pingDevice();
-      });
+        });
+    };
+
+    syncGlobalIp();
     fetchTunnelList();
+
+    const interval = setInterval(() => {
+      syncGlobalIp();
+      fetchTunnelList();
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, [user]);
 
   // Handle Broadcast Actions (connect, cancel, listen, localspk)
@@ -760,19 +774,17 @@ export default function AdminAudioBroadcast() {
                 <span className="text-slate-400 font-medium shrink-0">Broadcasting IP:</span>
                 <div className="flex items-center gap-1.5">
                   <input
+                    id="broadcasting-ip-input"
                     type="text"
                     value={deviceIp}
-                    onChange={(e) => {
-                      setDeviceIp(e.target.value);
-                      localStorage.setItem("sdps_audio_ip", e.target.value);
-                    }}
+                    onChange={(e) => setDeviceIp(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         saveAndConnectIp(deviceIp);
                       }
                     }}
                     className="bg-black/50 text-amber-300 border border-white/20 px-2.5 py-1 rounded-md font-mono text-xs w-36 focus:outline-none focus:border-amber-400 shadow-inner"
-                    placeholder="192.168.29.113"
+                    placeholder="Enter Broadcasting IP"
                   />
                   <button
                     type="button"
