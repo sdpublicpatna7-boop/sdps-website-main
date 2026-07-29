@@ -103,7 +103,7 @@ export default function AdminElectionsResults() {
             <div className="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2">
               <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
                 <Crown className="w-5 h-5 text-amber-500" />
-                {post.title}
+                {post?.title || post?.name || "Position"}
               </h2>
               {sorted[0] && sorted[0].votes > 0 && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-amber-100 to-amber-50 text-amber-800 text-xs font-extrabold border border-amber-200/60 shadow-sm animate-pulse">
