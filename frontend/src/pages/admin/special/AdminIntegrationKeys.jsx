@@ -225,7 +225,7 @@ export function AdminIntegrationKeys() {
       </div>
 
       {/* ── REGISTERED AUDIO TUNNEL NODES & STANDBY REDUNDANCY ── */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 mt-8 space-y-4 shadow-xs">
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 mt-8 space-y-6 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center text-brand-navy">
@@ -236,7 +236,7 @@ export function AdminIntegrationKeys() {
                 School Audio Hardware Cloudflare Tunnels
               </h2>
               <p className="text-xs text-slate-500">
-                Registered active & standby tunnel nodes connecting school PCs to hardware controller (192.168.29.71).
+                Registered active & standby tunnel nodes connecting school PCs to hardware controller (192.168.29.252).
               </p>
             </div>
           </div>
@@ -247,6 +247,49 @@ export function AdminIntegrationKeys() {
           >
             <RefreshCw className={`w-3.5 h-3.5 ${tunnelLoading ? "animate-spin" : ""}`} /> Refresh Nodes
           </button>
+        </div>
+
+        {/* ── 1-LINE TUNNEL SETUP COMMANDS FOR MAC & WINDOWS ── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-4 rounded-xl bg-slate-900 text-white space-y-2 border border-slate-800">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                🍎 macOS Setup Command (Terminal)
+              </span>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText("curl -sL https://api.sdpublic.org/api/admin/audio/setup-mac.sh | sudo bash");
+                  toast.success("macOS command copied!");
+                }}
+                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold rounded-md transition-colors"
+              >
+                Copy Mac Cmd
+              </button>
+            </div>
+            <code className="block font-mono text-[11px] text-emerald-400 bg-slate-950 p-2.5 rounded-lg overflow-x-auto select-all">
+              curl -sL https://api.sdpublic.org/api/admin/audio/setup-mac.sh | sudo bash
+            </code>
+          </div>
+
+          <div className="p-4 rounded-xl bg-slate-900 text-white space-y-2 border border-slate-800">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                🪟 Windows Setup Command (PowerShell Admin)
+              </span>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText("[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-RestMethod https://api.sdpublic.org/api/admin/audio/setup-win.ps1 | iex");
+                  toast.success("Windows command copied!");
+                }}
+                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold rounded-md transition-colors"
+              >
+                Copy Win Cmd
+              </button>
+            </div>
+            <code className="block font-mono text-[11px] text-sky-400 bg-slate-950 p-2.5 rounded-lg overflow-x-auto select-all">
+              [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-RestMethod https://api.sdpublic.org/api/admin/audio/setup-win.ps1 | iex
+            </code>
+          </div>
         </div>
 
         <div className="overflow-x-auto rounded-xl border border-slate-200">
