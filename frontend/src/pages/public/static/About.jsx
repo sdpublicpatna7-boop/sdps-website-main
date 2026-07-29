@@ -43,12 +43,12 @@ export function About() {
       <SEO 
         title="About Us"
         description="Learn about the history, vision, and legacy of S.D. Public School, Patna. Founded in 1994, standalone as a beacon of academic excellence and value-based education."
-        keywords="About SDPS, S.D. Public School history, Suryamuni Devi Public School vision, Patna CBSE school about"
+        keywords="About SDPS, S.D. Public School history, Suryamuni Devi Public School vision, Patna school about"
       />
       <PageHero
-        overline="Our Story"
+        pill="Our 30+ Year Legacy"
         title="About S.D. Public School"
-        subtitle="Our Legacy, Your Future — Founded in 1994, standing tall as a beacon of holistic education."
+        subtitle="Founded in 1994, S.D. Public School (Suryamuni Devi Public School) has grown into a premier institution dedicated to academic excellence, discipline, and character building in Patna."
         bgImage={trustLogoUrl}
       />
 
@@ -61,9 +61,9 @@ export function About() {
         {/* Key Metrics / Stats */}
         <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
           {[
-            { value: "1994", label: "Year Founded", desc: "Est. 13 November", color: "from-brand-blue/10 to-brand-blue/5", textColor: "text-brand-blue" },
-            { value: "30+", label: "Years of Legacy", desc: "Empowering Generations", color: "from-brand-orange/10 to-brand-orange/5", textColor: "text-brand-orange" },
-            { value: "100%", label: "CBSE Curriculum", desc: "Holistic Academics", color: "from-emerald-500/10 to-emerald-500/5", textColor: "text-emerald-600" },
+            { value: "30+", label: "Years of Legacy", desc: "Founded in 1994", color: "from-brand-blue/10 to-brand-blue/5", textColor: "text-brand-blue" },
+            { value: "100%", label: "Academic Standard", desc: "Holistic Excellence", color: "from-brand-orange/10 to-brand-orange/5", textColor: "text-brand-orange" },
+            { value: "Value", label: "Core Philosophy", desc: "Character Focused", color: "from-emerald-500/10 to-emerald-500/5", textColor: "text-emerald-600" },
             { value: "Patna-07", label: "Campus Location", desc: "Maurya Colony", color: "from-purple-500/10 to-purple-500/5", textColor: "text-purple-600" }
           ].map((stat, idx) => (
             <div key={idx} className="bg-white rounded-2xl border border-black/5 p-6 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 shadow-sm relative overflow-hidden group">
@@ -203,7 +203,7 @@ export function About() {
               <div className="text-xs uppercase font-extrabold text-brand-orange tracking-widest border-b border-black/5 pb-2 mb-3">Quick Facts</div>
               {[
                 { label: "Governing Body", value: "Suryamuni Devi Foundation Trust", icon: Landmark },
-                { label: "Curriculum", value: "Central Board of Secondary Education (CBSE)", icon: GraduationCap },
+                { label: "Curriculum", value: "Comprehensive Academic Standard", icon: GraduationCap },
                 { label: "Campus Location", value: "Maurya Colony, Patna 800007", icon: MapPin },
                 { label: "Admissions Desk", value: "+91 99551 90262", icon: Phone },
                 { label: "Support Email", value: "helpdesk@sdpublic.org", icon: Mail },

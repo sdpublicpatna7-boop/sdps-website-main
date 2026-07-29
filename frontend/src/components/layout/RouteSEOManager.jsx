@@ -4,19 +4,19 @@ import SEO from "./SEO";
 const ROUTE_META_MAP = {
   // Public Pages
   "/": {
-    title: "Best CBSE School in Patna | S.D. Public School (SDPS Patna)",
-    desc: "S.D. Public School (Suryamuni Devi Public School), Patna — Ranked among the best CBSE schools in Patna, Bihar. Modern smart classes, sports facilities, experienced faculty & values since 1994.",
-    keywords: "best school in patna, best cbse school in patna, top school in patna, cbse school in patna, schools in patna, sd public school patna, suryamuni devi public school, top 10 schools in patna"
+    title: "Best School in Patna | S.D. Public School (SDPS Patna)",
+    desc: "S.D. Public School (Suryamuni Devi Public School), Patna — Ranked among the best schools in Patna, Bihar. Modern smart classes, sports facilities, experienced faculty & values since 1994.",
+    keywords: "best school in patna, top school in patna, schools in patna, sd public school patna, suryamuni devi public school, top 10 schools in patna"
   },
   "/about": {
-    title: "About Us & School History | Best CBSE School in Patna — SDPS",
+    title: "About Us & School History | Best School in Patna — SDPS",
     desc: "Learn about S.D. Public School Patna, our founder's vision, leadership, awards, 30+ year legacy, and academic ethos in Patna, Bihar.",
-    keywords: "sd public school patna history, best cbse school in patna legacy, suryamuni devi public school about"
+    keywords: "sd public school patna history, best school in patna legacy, suryamuni devi public school about"
   },
   "/academics": {
-    title: "Academic Excellence & CBSE Curriculum | S.D. Public School, Patna",
-    desc: "Explore CBSE curriculum, smart classrooms, science labs, computer labs, and holistic education standards at S.D. Public School Patna.",
-    keywords: "cbse curriculum patna, best academic school in patna, smart classes school patna"
+    title: "Academic Excellence & Curriculum | S.D. Public School, Patna",
+    desc: "Explore curriculum, smart classrooms, science labs, computer labs, and holistic education standards at S.D. Public School Patna.",
+    keywords: "curriculum patna, best academic school in patna, smart classes school patna"
   },
   "/house-system": {
     title: "House System & Co-Curricular Activities | S.D. Public School, Patna",
@@ -74,34 +74,34 @@ const ROUTE_META_MAP = {
     keywords: "sdps student council, house captains sd public school"
   },
   "/admissions": {
-    title: "Admissions Open 2026-27 | Best CBSE School in Patna | SDPS",
-    desc: "Admissions open for Academic Session 2026-27 at S.D. Public School Patna. Apply online for Nursery to Class XII or download prospectus.",
-    keywords: "admission in cbse school patna, school admission in patna 2026-27, best school in patna admission"
+    title: "Admissions Open 2026-27 | Best School in Patna | SDPS",
+    desc: "Admissions open for 2026-27 academic session at S.D. Public School Patna (Playgroup to Class 8). Apply online or visit our campus at Maurya Colony, Patna.",
+    keywords: "school admission in patna 2026-27, best school in patna admission"
   },
   "/admission-enquiry": {
-    title: "Admission Enquiry Form | S.D. Public School, Patna",
-    desc: "Submit an online admission enquiry for S.D. Public School Patna. Get instant details regarding seats, fees, and syllabus.",
-    keywords: "admission enquiry patna school, sdps admission enquiry"
+    title: "Admission Enquiry 2026-27 | S.D. Public School, Patna",
+    desc: "Submit your admission enquiry for S.D. Public School Patna. Get details on eligibility, fee structure, campus facilities, and admission process.",
+    keywords: "sdps admission enquiry, admission process patna school"
+  },
+  "/admission-eligibility": {
+    title: "Admissions Eligibility Criteria | S.D. Public School, Patna",
+    desc: "View age criteria, class eligibility rules, document requirements, and admission guidelines for S.D. Public School Patna.",
+    keywords: "admission age limit patna, school age criteria patna"
   },
   "/admission-form": {
     title: "Online Admission Application Form | S.D. Public School, Patna",
     desc: "Complete online application form for new student admission at S.D. Public School Patna.",
     keywords: "online school admission form patna, sdps application form"
   },
-  "/admission-eligibility": {
-    title: "Admission Eligibility & Age Criteria | S.D. Public School, Patna",
-    desc: "Check age criteria, document requirements, and admission eligibility rules for Nursery to Class XII at SDPS Patna.",
-    keywords: "cbse admission age limit patna, school age criteria patna"
-  },
   "/fee-structure": {
-    title: "Fee Structure 2026-27 | CBSE School in Patna | S.D. Public School",
-    desc: "Transparent tuition fee structure, admission fees, hostel charges, and payment guidelines at S.D. Public School Patna.",
-    keywords: "cbse school fee structure patna, sd public school fees"
+    title: "Fee Structure 2026-27 | S.D. Public School Patna",
+    desc: "Transparent and affordable fee structure for Playgroup, Nursery, LKG, UKG, and Classes 1 to 8 at S.D. Public School Patna.",
+    keywords: "school fee structure patna, sd public school fees"
   },
   "/careers": {
-    title: "Teacher Vacancies & Careers | S.D. Public School, Patna",
-    desc: "Join our teaching & administrative team at SDPS Patna. View job openings and submit teacher application online.",
-    keywords: "teacher jobs in patna, school recruitment patna, teaching vacancy in cbse school patna"
+    title: "Career & Teaching Vacancies | S.D. Public School, Patna",
+    desc: "Join the dedicated teaching and administrative team at S.D. Public School Patna. View current job openings and apply online.",
+    keywords: "teacher jobs in patna, school recruitment patna, teaching vacancy in school patna"
   },
   "/alumni": {
     title: "Alumni Association & Network | S.D. Public School, Patna",

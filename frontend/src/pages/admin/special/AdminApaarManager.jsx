@@ -634,7 +634,7 @@ export default function AdminApaarManager() {
       </td>
       <td class="school-info" style="vertical-align: middle;">
         <h1 class="school-title">S.D. PUBLIC SCHOOL</h1>
-        <p class="school-sub">Empowering Generations Since 1994 · CBSE Affiliated (No. 330768)</p>
+        <p class="school-sub">Empowering Generations Since 1994</p>
         <p class="school-addr">Maurya Colony, Near R.O.B Kumhrar, Gulzarbagh Road, Patna, Bihar 800007 | Ph: +91 99551 90262, +91 99551 90162</p>
       </td>
     </tr>

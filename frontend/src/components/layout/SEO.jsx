@@ -1,9 +1,9 @@
 import { Helmet } from "react-helmet-async";
 
 export default function SEO({ title, description, keywords, ogImage, ogUrl, schema }) {
-  const defaultTitle = "Best CBSE School in Patna | S.D. Public School (SDPS Patna)";
-  const defaultDesc = "S.D. Public School (Suryamuni Devi Public School), Patna, Bihar — Recognized as one of the best CBSE schools in Patna. Top academics, smart classes, sports, and holistic student development since 1994. Admissions open for 2026-27.";
-  const defaultKeywords = "best school in patna, best cbse school in patna, top school in patna, cbse school in patna, schools in patna, sd public school patna, suryamuni devi public school patna, top 10 schools in patna, play school in patna, admission in cbse school patna";
+  const defaultTitle = "Best School in Patna | S.D. Public School (SDPS Patna)";
+  const defaultDesc = "S.D. Public School (Suryamuni Devi Public School), Patna, Bihar — Recognized as one of the best schools in Patna. Top academics, smart classes, sports, and holistic student development since 1994. Admissions open for 2026-27.";
+  const defaultKeywords = "best school in patna, top school in patna, schools in patna, sd public school patna, suryamuni devi public school patna, top 10 schools in patna, play school in patna, admission in school patna";
 
   const fullTitle = title 
     ? (title.includes("S.D. Public School") || title.includes("SDPS") ? title : `${title} | S.D. Public School, Patna`) 

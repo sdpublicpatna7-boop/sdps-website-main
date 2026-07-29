@@ -26,11 +26,11 @@ const DEFAULT_FACILITIES = [
     video_url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
     audio_narrative: "Welcome to the SDPS Smart Digital Classroom. Every classroom features 4K interactive displays, dual-view whiteboards, and comfortable ergonomic seating.",
     hotspots: [
-      { id: "h1", title: '75" 4K Interactive Display', x: 48, y: 38, detail: "Touch-enabled smart panel preloaded with CBSE animated 3D modules and live digital annotation software." },
+      { id: "h1", title: '75" 4K Interactive Display', x: 48, y: 38, detail: "Touch-enabled smart panel preloaded with animated 3D modules and live digital annotation software." },
       { id: "h2", title: "Ergonomic Modular Benches", x: 30, y: 68, detail: "Postural-support furniture designed for student comfort during long learning sessions." },
       { id: "h3", title: "Acoustic Insulation & CCTV", x: 75, y: 25, detail: "24/7 security surveillance and sound-softened acoustics for distraction-free learning." }
     ],
-    equipment_list: ['75" 4K Touch IFP Display', "CBSE 3D Animated Curriculum", "Ergonomic Seating", "High-Speed Wi-Fi 6", "24/7 HD CCTV Camera"],
+    equipment_list: ['75" 4K Touch IFP Display', "3D Animated Curriculum", "Ergonomic Seating", "High-Speed Wi-Fi 6", "24/7 HD CCTV Camera"],
     order: 1,
     is_active: true
   },
@@ -38,7 +38,7 @@ const DEFAULT_FACILITIES = [
     id: "tour-physics-lab",
     title: "Composite Science & Physics Lab",
     category: "labs",
-    description: "Modern science laboratory equipped with optical benches, spectrometers, laser experiment kits, and electrical circuit boards for Class IX-XII CBSE practicals.",
+    description: "Modern science laboratory equipped with optical benches, spectrometers, laser experiment kits, and electrical circuit boards for Class IX-XII practicals.",
     panorama_url: "https://sdpublic.org/assets/img/learning_beyond.png",
     video_url: "",
     audio_narrative: "Here is our State-of-the-Art Science Laboratory. Students conduct hands-on experiments in physics, chemistry, and biology with lab safety gear.",
@@ -238,7 +238,7 @@ export default function CampusTour() {
               S.D. Public School Campus Tour
             </h1>
             <p className="text-slate-300 text-xs sm:text-sm mt-2 max-w-2xl leading-relaxed">
-              Explore our world-class CBSE infrastructure, smart digital classrooms, state-of-the-art labs, sports arena, and residential hostel facilities in 360° pan-view.
+              Explore our world-class infrastructure, smart digital classrooms, state-of-the-art labs, sports arena, and residential hostel facilities in 360° pan-view.
             </p>
           </div>
 

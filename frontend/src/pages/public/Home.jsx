@@ -194,7 +194,7 @@ export default function Home() {
     "@type": "School",
     "name": "S.D. Public School, Patna",
     "alternateName": "Suryamuni Devi Public School",
-    "description": "S.D. Public School (Suryamuni Devi Public School) is a top-ranked co-educational CBSE school in Patna, Bihar, offering premium education, experienced faculty, and smart classrooms.",
+    "description": "S.D. Public School (Suryamuni Devi Public School) is a top-ranked co-educational school in Patna, Bihar, offering premium education, experienced faculty, and smart classrooms.",
     "url": "https://sdpublic.org",
     "logo": settings?.logo_url ? (settings.logo_url.startsWith("http") ? settings.logo_url : `https://sdpublic.org${settings.logo_url}`) : "https://sdpublic.org/assets/img/logo.png",
     "address": {
@@ -217,9 +217,9 @@ export default function Home() {
   return (
     <>
       <SEO 
-        title="Best CBSE School in Patna | S.D. Public School (SDPS Patna)" 
-        description="S.D. Public School (Suryamuni Devi Public School), Patna, Bihar — Top CBSE school ranked among the best schools in Patna. Premium academics, smart classes, sports, and holistic development since 1994. Admissions open for 2026-27."
-        keywords="best school in patna, best cbse school in patna, top school in patna, cbse school in patna, schools in patna, sd public school patna, suryamuni devi public school patna, top 10 schools in patna, play school in patna, admission in cbse school patna"
+        title="Best School in Patna | S.D. Public School (SDPS Patna)" 
+        description="S.D. Public School (Suryamuni Devi Public School), Patna, Bihar — Top school ranked among the best schools in Patna. Premium academics, smart classes, sports, and holistic development since 1994. Admissions open for 2026-27."
+        keywords="best school in patna, top school in patna, schools in patna, sd public school patna, suryamuni devi public school patna, top 10 schools in patna, play school in patna, admission in school patna"
         schema={schoolSchema}
       />
       {/* HERO */}
@@ -238,11 +238,11 @@ export default function Home() {
                 Welcome to <span className="brand-gradient-text italic font-bold pr-2">S.D. Public</span>
                 <br /> School, <span className="gold-gradient-text">Patna</span>
                 <span className="block text-xs sm:text-sm font-bold text-brand-orange mt-2 tracking-wider uppercase bg-brand-orange/10 px-3 py-1 rounded-full w-max">
-                  🏆 Top CBSE School in Patna, Bihar
+                  🏆 Top School in Patna, Bihar
                 </span>
               </h1>
               <p className="mt-6 text-slate-600 text-base sm:text-lg leading-relaxed max-w-xl">
-                Recognized among the <strong className="text-brand-blue font-bold">best CBSE schools in Patna</strong>, S.D. Public School (Suryamuni Devi Public School) nurtures young minds through a perfect blend of academic excellence,
+                Recognized among the <strong className="text-brand-blue font-bold">best schools in Patna</strong>, S.D. Public School (Suryamuni Devi Public School) nurtures young minds through a perfect blend of academic excellence,
                 moral values, and creative learning with a legacy of <strong className="text-brand-blue">30+ years</strong>.
               </p>
               

@@ -57,7 +57,7 @@ export function AdmissionEnquiry() {
       <SEO 
         title="Admission Enquiry"
         description="Submit an admission enquiry for your child at S.D. Public School, Patna. Fill out student details, and our admissions office will reach out to you."
-        keywords="SDPS admission enquiry, school admissions Patna, CBSE school enquiry Patna"
+        keywords="SDPS admission enquiry, school admissions Patna, school enquiry Patna"
       />
       <Toaster position="top-right" />
       <section className="bg-hero-grad py-14">
@@ -254,7 +254,7 @@ export function AdmissionForm() {
       <SEO 
         title="Online Admission Form"
         description="Fill out the official online student admission form for S.D. Public School, Patna. Upload required certificates and pay the registration fee securely."
-        keywords="online admission form SDPS, S.D. Public School registration, CBSE school application Patna"
+        keywords="online admission form SDPS, S.D. Public School registration, school application Patna"
       />
       <Toaster position="top-right"/>
       <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
