@@ -37,8 +37,9 @@ export default class ErrorBoundary extends React.Component {
       sessionStorage.clear();
       localStorage.removeItem("sdps_site_settings");
     } catch (e) {}
-    const cleanUrl = window.location.origin + window.location.pathname;
-    window.location.href = `${cleanUrl}?v=${Date.now()}`;
+    const searchParams = new URLSearchParams(window.location.search);
+    searchParams.set("v", Date.now().toString());
+    window.location.href = `${window.location.origin}${window.location.pathname}?${searchParams.toString()}`;
   };
 
   render() {
