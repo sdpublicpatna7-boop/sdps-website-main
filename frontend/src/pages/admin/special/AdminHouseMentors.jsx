@@ -22,48 +22,56 @@ import {
 
 const DEFAULT_HOUSES = [
   {
-    id: "ruby",
-    name: "Ruby House",
+    id: "aryabhatta",
+    name: "Aryabhatta House",
+    army: "Red Army",
     color: "red",
     badgeBg: "bg-red-50",
     badgeBorder: "border-red-200",
     headerBg: "from-red-600 to-rose-700",
     accentColor: "text-red-600",
-    motto: "Courage & Honor",
-    icon: "🔴"
+    motto: "Knowledge · Wisdom · Discovery",
+    icon: "🔴",
+    logoImg: "/images/houses/aryabhatta.jpg"
   },
   {
-    id: "sapphire",
-    name: "Sapphire House",
-    color: "blue",
-    badgeBg: "bg-blue-50",
-    badgeBorder: "border-blue-200",
-    headerBg: "from-blue-600 to-indigo-700",
-    accentColor: "text-blue-600",
-    motto: "Loyalty & Truth",
-    icon: "🔵"
-  },
-  {
-    id: "emerald",
-    name: "Emerald House",
-    color: "emerald",
-    badgeBg: "bg-emerald-50",
-    badgeBorder: "border-emerald-200",
-    headerBg: "from-emerald-600 to-teal-700",
-    accentColor: "text-emerald-600",
-    motto: "Peace & Harmony",
-    icon: "🟢"
-  },
-  {
-    id: "topaz",
-    name: "Topaz House",
+    id: "ashoka",
+    name: "Ashoka House",
+    army: "Yellow Army",
     color: "amber",
     badgeBg: "bg-amber-50",
     badgeBorder: "border-amber-200",
     headerBg: "from-amber-500 to-yellow-600",
     accentColor: "text-amber-600",
-    motto: "Wisdom & Excellence",
-    icon: "🟡"
+    motto: "Strength · Courage · Compassion",
+    icon: "🟡",
+    logoImg: "/images/houses/ashoka.jpg"
+  },
+  {
+    id: "chanakya",
+    name: "Chanakya House",
+    army: "Blue Army",
+    color: "blue",
+    badgeBg: "bg-blue-50",
+    badgeBorder: "border-blue-200",
+    headerBg: "from-blue-600 to-indigo-700",
+    accentColor: "text-blue-600",
+    motto: "Wisdom · Strategy · Integrity",
+    icon: "🔵",
+    logoImg: "/images/houses/chanakya.jpg"
+  },
+  {
+    id: "gautam",
+    name: "Gautam House",
+    army: "Green Army",
+    color: "emerald",
+    badgeBg: "bg-emerald-50",
+    badgeBorder: "border-emerald-200",
+    headerBg: "from-emerald-600 to-teal-700",
+    accentColor: "text-emerald-600",
+    motto: "Kindness · Mindfulness · Compassion",
+    icon: "🟢",
+    logoImg: "/images/houses/gautam.jpg"
   }
 ];
 
@@ -84,7 +92,7 @@ export function AdminHouseMentors() {
 
   const [form, setForm] = useState({
     name: "",
-    house: "Ruby House",
+    house: "Aryabhatta House",
     designation: "House Mentor",
     subject: "",
     photo_url: "",
@@ -111,7 +119,7 @@ export function AdminHouseMentors() {
     fetchMentors();
   }, []);
 
-  const handleOpenAdd = (houseName = "Ruby House") => {
+  const handleOpenAdd = (houseName = "Aryabhatta House") => {
     setEditingMentor(null);
     setForm({
       name: "",
@@ -131,7 +139,7 @@ export function AdminHouseMentors() {
     setEditingMentor(mentor);
     setForm({
       name: mentor.name || "",
-      house: mentor.house || "Ruby House",
+      house: mentor.house || "Aryabhatta House",
       designation: mentor.designation || "House Mentor",
       subject: mentor.subject || "",
       photo_url: mentor.photo_url || "",
@@ -230,7 +238,7 @@ export function AdminHouseMentors() {
                 <span>Print Official Roster</span>
               </button>
               <button
-                onClick={() => handleOpenAdd("Ruby House")}
+                onClick={() => handleOpenAdd("Aryabhatta House")}
                 className="px-4 py-2.5 rounded-xl bg-brand-navy hover:bg-brand-blue text-white text-xs font-bold flex items-center gap-2 shadow-md transition-all cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
@@ -282,18 +290,26 @@ export function AdminHouseMentors() {
                   {/* House Column Header */}
                   <div className={`p-4 bg-gradient-to-r ${house.headerBg} text-white space-y-1 relative`}>
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl">{house.icon}</span>
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={house.logoImg}
+                          alt={house.name}
+                          className="w-10 h-10 rounded-full object-cover border-2 border-white/80 shadow-md shrink-0 bg-white"
+                          onError={(e) => { e.target.style.display = 'none'; }}
+                        />
                         <div>
-                          <h3 className="font-headline font-bold text-base tracking-wide uppercase drop-shadow-xs">
+                          <div className="text-[9px] font-extrabold uppercase tracking-widest text-white/80">
+                            {house.army}
+                          </div>
+                          <h3 className="font-headline font-bold text-base tracking-wide uppercase drop-shadow-xs leading-tight">
                             {house.name}
                           </h3>
-                          <span className="text-[10px] uppercase font-semibold text-white/90 tracking-wider">
+                          <span className="text-[10px] uppercase font-semibold text-white/90 tracking-wider block">
                             {house.motto}
                           </span>
                         </div>
                       </div>
-                      <span className="px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-white text-[11px] font-bold">
+                      <span className="px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-white text-[11px] font-bold shrink-0">
                         {houseMentors.length} Mentors
                       </span>
                     </div>
