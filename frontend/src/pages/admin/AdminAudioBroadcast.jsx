@@ -1394,6 +1394,51 @@ export default function AdminAudioBroadcast() {
               </div>
             </div>
 
+            {/* 1-Line Auto-Start Setup Prompts */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 rounded-2xl bg-slate-900 text-white space-y-2 border border-slate-800 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                    🪟 Windows Auto-Start Command (PowerShell Admin)
+                  </span>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText("[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-RestMethod https://api.sdpublic.org/api/audio/setup-win.ps1 | iex");
+                      toast.success("Windows Auto-Start setup command copied!");
+                    }}
+                    className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold rounded-lg transition-colors cursor-pointer"
+                  >
+                    Copy Win Cmd
+                  </button>
+                </div>
+                <code className="block font-mono text-[11px] text-sky-400 bg-slate-950 p-2.5 rounded-xl overflow-x-auto select-all border border-slate-800">
+                  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-RestMethod https://api.sdpublic.org/api/audio/setup-win.ps1 | iex
+                </code>
+                <p className="text-[10px] text-slate-400">Installs 24/7 background service targeting {deviceIp || "configured IP"}. Auto-starts on PC restart.</p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-900 text-white space-y-2 border border-slate-800 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                    🍎 macOS Auto-Start Command (Terminal)
+                  </span>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText("curl -sL https://api.sdpublic.org/api/audio/setup-mac.sh | sudo bash");
+                      toast.success("macOS Auto-Start setup command copied!");
+                    }}
+                    className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold rounded-lg transition-colors cursor-pointer"
+                  >
+                    Copy Mac Cmd
+                  </button>
+                </div>
+                <code className="block font-mono text-[11px] text-emerald-400 bg-slate-950 p-2.5 rounded-xl overflow-x-auto select-all border border-slate-800">
+                  curl -sL https://api.sdpublic.org/api/audio/setup-mac.sh | sudo bash
+                </code>
+                <p className="text-[10px] text-slate-400">Installs LaunchDaemon background service. Auto-starts on Mac boot.</p>
+              </div>
+            </div>
+
             <div className="overflow-x-auto rounded-2xl border border-slate-200">
               <table className="w-full text-left text-xs align-middle">
                 <thead className="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider border-b border-slate-200">
