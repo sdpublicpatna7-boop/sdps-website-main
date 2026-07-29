@@ -669,15 +669,20 @@ $TN = "SDPS Audio Tunnel"
 try { Unregister-ScheduledTask -TaskName $TN -Confirm:$false -ErrorAction SilentlyContinue } catch {}
 
 $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-WindowStyle Hidden -ExecutionPolicy Bypass -File `"C:\sdps\tunnel-bridge.ps1`""
-$trigger = New-ScheduledTaskTrigger -AtLogon
-$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
+$triggerStartup = New-ScheduledTaskTrigger -AtStartup
+$triggerLogon = New-ScheduledTaskTrigger -AtLogon
+$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1)
 
-Register-ScheduledTask -TaskName $TN -Action $action -Trigger $trigger -Settings $settings -RunLevel Highest | Out-Null
+try {
+    Register-ScheduledTask -TaskName $TN -Action $action -Trigger @($triggerStartup, $triggerLogon) -Settings $settings -User "NT AUTHORITY\SYSTEM" -RunLevel Highest | Out-Null
+} catch {
+    Register-ScheduledTask -TaskName $TN -Action $action -Trigger @($triggerStartup, $triggerLogon) -Settings $settings -RunLevel Highest | Out-Null
+}
 
 # Run directly right now to show output
 powershell.exe -ExecutionPolicy Bypass -File "C:\sdps\tunnel-bridge.ps1"
 
-Write-Host "SETUP COMPLETE! SDPS Audio Tunnel is running and registered." -ForegroundColor Green
+Write-Host "SETUP COMPLETE! SDPS Audio Tunnel is configured to AUTO-START on PC restart & boot!" -ForegroundColor Green
 """
 
 MAC_SETUP_SCRIPT = """#!/bin/bash
