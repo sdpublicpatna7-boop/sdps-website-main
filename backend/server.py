@@ -39,7 +39,7 @@ from models import SiteSettings, PopupSettings, AlumniSettings, new_id, Linktree
 # ── Keep-alive: stop Render free services from idling out (spin down ~15 min) ──
 KEEPALIVE_INTERVAL_SEC = int(os.environ.get("KEEPALIVE_INTERVAL_SEC", "720"))  # 12 min
 SELF_URL = (os.environ.get("RENDER_EXTERNAL_URL") or os.environ.get("SELF_URL", "")).rstrip("/")
-WA_URL = os.environ.get("WA_SERVICE_URL", "").rstrip("/")
+WA_URL = os.environ.get("WA_SERVICE_URL", "https://wa.sdpublic.org").rstrip("/")
 
 
 async def _keepalive_loop():

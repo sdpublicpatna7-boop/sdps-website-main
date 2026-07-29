@@ -37,7 +37,7 @@ def get_real_ip(request: Request) -> str:
 
 limiter = Limiter(key_func=get_real_ip)
 
-WA_SERVICE_URL = os.environ.get("WA_SERVICE_URL", "http://localhost:3001")
+WA_SERVICE_URL = os.environ.get("WA_SERVICE_URL", "https://wa.sdpublic.org")
 WA_API_SECRET = os.environ.get("WA_API_SECRET", "")
 if WA_API_SECRET == "change-me-secret":
     raise RuntimeError(

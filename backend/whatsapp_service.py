@@ -12,7 +12,7 @@ import httpx
 
 logger = logging.getLogger("sdps.whatsapp")
 
-WA_SERVICE_URL = os.environ.get("WA_SERVICE_URL", "http://localhost:3001")
+WA_SERVICE_URL = os.environ.get("WA_SERVICE_URL", "https://wa.sdpublic.org")
 WA_API_SECRET = os.environ.get("WA_API_SECRET", "")
 _WA_HEADERS = {"X-WA-Secret": WA_API_SECRET}
 
