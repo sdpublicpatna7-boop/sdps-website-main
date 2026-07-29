@@ -235,9 +235,11 @@ export default function AdminAudioBroadcast() {
     api.post("/admin/audio/ip/update", { ip: cleanIp })
       .then(() => {
         pingDevice(cleanIp);
+        fetchTunnelList();
       })
       .catch(() => {
         pingDevice(cleanIp);
+        fetchTunnelList();
       });
   };
 
@@ -297,7 +299,19 @@ export default function AdminAudioBroadcast() {
 
   useEffect(() => {
     if (!user) return;
-    pingDevice();
+    api.get("/admin/audio/ddns/get")
+      .then(res => {
+        if (res.data?.ip) {
+          setDeviceIp(res.data.ip);
+          localStorage.setItem("sdps_audio_ip", res.data.ip);
+          pingDevice(res.data.ip);
+        } else {
+          pingDevice();
+        }
+      })
+      .catch(() => {
+        pingDevice();
+      });
     fetchTunnelList();
   }, [user]);
 
