@@ -943,13 +943,16 @@ async def get_audio_status(
 ):
     """Ping Audio Controller device to verify hardware connectivity."""
     from server import db
+    tunnel = await _get_tunnel_url_async()
 
-    # Prepare fallback targets: try tunnel first, then direct user-specified IP
+    # Prepare fallback targets: try direct user-specified IP first, then tunnel, then defaults
     ips_to_try = []
-    if tunnel and tunnel.startswith("http"):
+    if ip and ip.strip():
+        ips_to_try.append(ip.strip())
+    if tunnel and tunnel.startswith("http") and tunnel not in ips_to_try:
         ips_to_try.append(tunnel)
-    if ip and ip not in ips_to_try:
-        ips_to_try.append(ip)
+    if "192.168.29.252" not in ips_to_try:
+        ips_to_try.append("192.168.29.252")
     if "192.168.29.71" not in ips_to_try:
         ips_to_try.append("192.168.29.71")
 
@@ -958,28 +961,36 @@ async def get_audio_status(
     
     last_error = None
     for attempt_ip in ips_to_try:
-        url = format_device_url(attempt_ip, "/", tunnel_url=attempt_ip if attempt_ip.startswith("http") else None)
-        kwargs = {"timeout": 3.0, "auth": (user_to_use, pass_to_use)}
-        try:
-            res = requests.get(url, **kwargs)
-            online = res.status_code in (200, 401, 403)
-            requires_auth = res.status_code in (401, 403)
-            return {
-                "success": True,
-                "online": online,
-                "requires_auth": requires_auth,
-                "ip": attempt_ip,
-                "device": "SDPS Audio Controller",
-                "statusCode": res.status_code
-            }
-        except Exception as e:
-            last_error = str(e)
-            last_error = str(e)
+        urls_for_ip = []
+        if attempt_ip.startswith("http"):
+            urls_for_ip.append(attempt_ip.rstrip('/') + "/")
+            urls_for_ip.append(attempt_ip.rstrip('/') + "/BcastDo")
+        else:
+            urls_for_ip.append(f"http://{attempt_ip}/")
+            urls_for_ip.append(f"http://{attempt_ip}/BcastDo")
+
+        for url in urls_for_ip:
+            kwargs = {"timeout": 3.0, "auth": (user_to_use, pass_to_use)}
+            try:
+                res = requests.get(url, **kwargs)
+                body = res.text
+                online = res.status_code in (200, 204, 302, 401, 403, 404) or "sMsg" in body or "Page Not Found" in body
+                if online:
+                    return {
+                        "success": True,
+                        "online": True,
+                        "requires_auth": res.status_code in (401, 403),
+                        "ip": attempt_ip,
+                        "device": "SDPS Audio Controller",
+                        "statusCode": res.status_code
+                    }
+            except Exception as e:
+                last_error = str(e)
 
     return {
         "success": False,
         "online": False,
-        "ip": target_ip,
+        "ip": ip or DEFAULT_AUDIO_IP,
         "device": "SDPS Audio Controller",
         "error": last_error
     }
