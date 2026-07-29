@@ -29,7 +29,7 @@ SMTP_PORT     = int(os.environ.get("SMTP_PORT", "465"))
 SMTP_USER     = os.environ.get("SMTP_USER", "")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
 
-LOGO_URL = "https://sdpublic.org/assets/img/logo.png"
+LOGO_URL = "https://www.sdpublic.org/logo-real-animated.gif"
 
 
 from message_logger import log_message
