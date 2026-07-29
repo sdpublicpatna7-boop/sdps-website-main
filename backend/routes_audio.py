@@ -716,11 +716,13 @@ KEY="sdps-tunnel-2026"
 HN=$(hostname -s)
 
 find_device_ip() {
-    # 1. Test last known standard IP
-    if curl -s -m 1 "http://192.168.29.71/BcastDo" >/dev/null 2>&1 || curl -s -m 1 "http://192.168.29.71" >/dev/null 2>&1; then
-        echo "192.168.29.71"
-        return
-    fi
+    # 1. Test known standard IPs
+    for TEST in "192.168.29.252" "192.168.29.71" "192.168.29.9"; do
+        if curl -s -m 1 "http://${TEST}/BcastDo" >/dev/null 2>&1 || curl -s -m 1 "http://${TEST}" >/dev/null 2>&1; then
+            echo "${TEST}"
+            return
+        fi
+    done
     # 2. Test localhost if running on same broadcasting machine
     if curl -s -m 1 "http://127.0.0.1/BcastDo" >/dev/null 2>&1 || curl -s -m 1 "http://127.0.0.1:8000" >/dev/null 2>&1; then
         echo "127.0.0.1"
@@ -852,7 +854,6 @@ def format_device_url(ip_str: str, endpoint: str = "", tunnel_url: Optional[str]
 
 async def send_device_post_async(ip: str, endpoint: str, data: dict, username: Optional[str] = None, password: Optional[str] = None):
     tunnel = await _get_tunnel_url_async()
-    url = format_device_url(ip, endpoint, tunnel_url=tunnel)
     user_to_use = username or DEFAULT_HARDWARE_USER
     pass_to_use = password or DEFAULT_HARDWARE_PASS
 
@@ -865,14 +866,32 @@ async def send_device_post_async(ip: str, endpoint: str, data: dict, username: O
         "data": data,
         "headers": {"Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"},
         "auth": (user_to_use, pass_to_use),
-        "timeout": 5.0
+        "timeout": 4.0
     }
-    try:
-        response = requests.post(url, **kwargs)
-        return response.text
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error connecting to Audio Controller device at {url}: {e}")
-        raise HTTPException(status_code=504, detail=f"Audio Controller device at {url} is unreachable: {str(e)}")
+
+    urls_to_try = []
+    if tunnel:
+        urls_to_try.append(f"{tunnel.rstrip('/')}{endpoint}")
+
+    clean_ip = (ip or DEFAULT_AUDIO_IP).strip()
+    if clean_ip.startswith("http"):
+        urls_to_try.append(f"{clean_ip.rstrip('/')}{endpoint}")
+    else:
+        urls_to_try.append(f"http://{clean_ip}{endpoint}")
+
+    if "http://192.168.29.252" + endpoint not in urls_to_try:
+        urls_to_try.append(f"http://192.168.29.252{endpoint}")
+
+    last_error = None
+    for url in urls_to_try:
+        try:
+            response = requests.post(url, **kwargs)
+            return response.text
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"Error connecting to Audio Controller device at {url}: {e}")
+            last_error = str(e)
+
+    raise HTTPException(status_code=504, detail=f"Audio Controller device is unreachable: {last_error}")
 
 
 
