@@ -399,7 +399,6 @@ export default function AdminAudioBroadcast() {
   const [otpCode, setOtpCode] = useState("");
   const [otpDestHint, setOtpDestHint] = useState("");
   const [sessionToken, setSessionToken] = useState(localStorage.getItem("sdps_audio_session") || "");
-  const [micStreaming, setMicStreaming] = useState(false);
 
   // 1. 5-Minute Inactivity Auto Logout
   useEffect(() => {
@@ -484,13 +483,55 @@ export default function AdminAudioBroadcast() {
     .finally(() => setAuthSubmitting(false));
   };
 
+  const [micStreaming, setMicStreaming] = useState(false);
+  const [micVolumeLevel, setMicVolumeLevel] = useState(0);
+
   // Phone / Browser Mic Live Stream Handlers
   const handleStartMicStream = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
       setMicStreaming(true);
-      setLastActionMsg({ type: "success", text: "🎙️ Live Phone Microphone Stream Active! Broadcasting live audio..." });
+
+      const targetRooms = roomsInput || "1-200";
+      // 1. Automatically connect speaker relay to target rooms
+      api.post("/admin/audio/broadcast", {
+        ip: deviceIp,
+        sSource: "sMic",
+        sFilename: "1",
+        sDest: destSelect,
+        sRooms: targetRooms,
+        sAct: "connect"
+      })
+      .then(() => {
+        setLastActionMsg({ type: "success", text: `🎙️ Speaker Relay OPENED to Rooms [${targetRooms}]! Live voice streaming active.` });
+      })
+      .catch(() => {});
+
+      // 2. Real-time WebAudio level visualizer
+      try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const sourceNode = audioContext.createMediaStreamSource(stream);
+        const analyser = audioContext.createAnalyser();
+        analyser.fftSize = 64;
+        sourceNode.connect(analyser);
+
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        const updateLevel = () => {
+          if (!window._audioMicStream) return;
+          analyser.getByteFrequencyData(dataArray);
+          let sum = 0;
+          for (let i = 0; i < dataArray.length; i++) {
+            sum += dataArray[i];
+          }
+          const average = sum / dataArray.length;
+          const volumePercent = Math.min(100, Math.round((average / 128) * 100));
+          setMicVolumeLevel(volumePercent);
+          window._micAnimFrame = requestAnimationFrame(updateLevel);
+        };
+        updateLevel();
+        window._audioContext = audioContext;
+      } catch {}
 
       recorder.ondataavailable = async (e) => {
         if (e.data.size > 0) {
@@ -500,12 +541,12 @@ export default function AdminAudioBroadcast() {
             const base64Audio = reader.result.split(',')[1];
             api.post("/admin/audio/stream-mic", {
               audio_base64: base64Audio,
-              rooms: roomsInput || "1-200"
+              rooms: targetRooms
             }).catch(() => {});
           };
         }
       };
-      recorder.start(1000);
+      recorder.start(500);
       window._audioMicRecorder = recorder;
       window._audioMicStream = stream;
     } catch (err) {
@@ -514,14 +555,28 @@ export default function AdminAudioBroadcast() {
   };
 
   const handleStopMicStream = () => {
-    if (window._audioMicRecorder) {
-      try { window._audioMicRecorder.stop(); } catch {}
-    }
-    if (window._audioMicStream) {
-      try { window._audioMicStream.getTracks().forEach(t => t.stop()); } catch {}
-    }
+    if (window._micAnimFrame) cancelAnimationFrame(window._micAnimFrame);
+    if (window._audioContext) { try { window._audioContext.close(); } catch {} }
+    if (window._audioMicRecorder) { try { window._audioMicRecorder.stop(); } catch {} }
+    if (window._audioMicStream) { try { window._audioMicStream.getTracks().forEach(t => t.stop()); } catch {} }
+
+    window._audioMicRecorder = null;
+    window._audioMicStream = null;
     setMicStreaming(false);
-    setLastActionMsg({ type: "success", text: "Microphone stream stopped." });
+    setMicVolumeLevel(0);
+
+    // Automatically disconnect hardware speaker relay
+    const targetRooms = roomsInput || "1-200";
+    api.post("/admin/audio/broadcast", {
+      ip: deviceIp,
+      sSource: "sMic",
+      sFilename: "1",
+      sDest: destSelect,
+      sRooms: targetRooms,
+      sAct: "cancel"
+    }).catch(() => {});
+
+    setLastActionMsg({ type: "success", text: "Microphone stream stopped & hardware speaker relay closed." });
   };
 
   const SCHEDULE_OPTIONS = [
@@ -913,17 +968,37 @@ export default function AdminAudioBroadcast() {
                   <p className="text-xs text-amber-800 leading-relaxed">
                     Broadcast your live voice directly from your mobile phone or laptop microphone across school speakers in real time.
                   </p>
+                  {micStreaming && (
+                    <div className="space-y-1.5 bg-white p-3 rounded-xl border border-amber-200 shadow-inner">
+                      <div className="flex justify-between text-[11px] font-bold text-slate-700">
+                        <span className="flex items-center gap-1">🎤 Live Mic Input Volume:</span>
+                        <span className="font-mono text-emerald-600">{micVolumeLevel}%</span>
+                      </div>
+                      <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200 p-0.5">
+                        <div
+                          className="bg-gradient-to-r from-emerald-500 via-amber-500 to-rose-500 h-full rounded-full transition-all duration-75"
+                          style={{ width: `${Math.max(4, micVolumeLevel)}%` }}
+                        />
+                      </div>
+                      <div className="text-[10px] text-emerald-800 font-semibold flex items-center justify-between pt-0.5">
+                        <span className="flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" />
+                          <span>Hardware Speaker Relay OPENED on Rooms [{roomsInput || "1-200"}]</span>
+                        </span>
+                      </div>
+                    </div>
+                  )}
                   {!micStreaming ? (
                     <button
                       onClick={handleStartMicStream}
-                      className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:brightness-105 text-white font-headline font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all"
+                      className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:brightness-105 text-white font-headline font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
                     >
                       <Mic className="w-4 h-4" /> 🎙️ Start Live Mic Voice Stream (Phone / Laptop)
                     </button>
                   ) : (
                     <button
                       onClick={handleStopMicStream}
-                      className="w-full py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-headline font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all"
+                      className="w-full py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-headline font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
                     >
                       <StopCircle className="w-4 h-4" /> Stop Live Voice Stream
                     </button>
