@@ -272,11 +272,10 @@ const ConfettiShower = () => {
 };
 
 const IndividualCaptainCard = ({ role, houseName, person, roleColor, isVice }) => {
-  const itemRef = useRef(null);
   const photoSrc = person?.photo_url || person?.photo;
 
   return (
-    <div ref={itemRef} className="bg-slate-50/90 rounded-2xl p-3.5 border border-slate-200/80 text-center flex flex-col items-center relative group">
+    <div className="bg-slate-50/90 rounded-2xl p-3.5 border border-slate-200/80 text-center flex flex-col items-center relative group">
       <div className={`text-[9px] uppercase tracking-widest font-black ${roleColor} mb-2 flex items-center gap-1`}>
         {isVice ? <Award className="w-3 h-3 text-purple-500" /> : <Crown className="w-3 h-3 text-amber-500" />} {role}
       </div>
@@ -293,18 +292,6 @@ const IndividualCaptainCard = ({ role, houseName, person, roleColor, isVice }) =
           </div>
           <h5 className="font-headline font-extrabold text-xs text-slate-900 leading-tight">{person.name}</h5>
           {person.year && <span className="text-[9px] text-slate-400 font-bold block mt-0.5">{person.year}</span>}
-          <div className="mt-2.5 flex justify-center">
-            <button
-              type="button"
-              data-no-share="true"
-              onClick={() => shareResultCard(itemRef.current, `${houseName} ${role}`, person.name)}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white hover:bg-slate-100 text-slate-700 text-[10px] font-black border border-slate-200/80 shadow-xs transition-all active:scale-95 cursor-pointer"
-              title="Share Card Image"
-            >
-              <Share2 className="w-3 h-3 text-slate-500" />
-              <span>Share Card</span>
-            </button>
-          </div>
         </div>
       ) : (
         <div className="py-2 text-[11px] text-slate-400 italic">To be announced</div>
@@ -314,10 +301,9 @@ const IndividualCaptainCard = ({ role, houseName, person, roleColor, isVice }) =
 };
 
 /* ───────────────────────────────────────────────────────
-   HOUSE CARD COMPONENT WITH SHARE BUTTON
+   HOUSE CARD COMPONENT
    ─────────────────────────────────────────────────────── */
 const HouseCard = ({ house, profiles }) => {
-  const cardRef = useRef(null);
   const dynamicCaptains = (profiles || []).filter(p => {
     const pos = (p?.position || "").toLowerCase();
     const hName = (p?.house || "").toLowerCase();
@@ -333,7 +319,7 @@ const HouseCard = ({ house, profiles }) => {
   const houseVices = dynamicVices.length > 0 ? dynamicVices : (house.defaultVice ? [house.defaultVice] : []);
 
   return (
-    <div ref={cardRef} className={`bg-white rounded-3xl border-2 ${house.borderColor} p-6 shadow-xl relative overflow-hidden transition-all duration-300 hover:shadow-2xl`}>
+    <div className={`bg-white rounded-3xl border-2 ${house.borderColor} p-6 shadow-xl relative overflow-hidden transition-all duration-300 hover:shadow-2xl`}>
       {/* Header Banner with Crest Logo */}
       <div className="flex items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
         <div className="flex items-center gap-4">
@@ -350,18 +336,6 @@ const HouseCard = ({ house, profiles }) => {
             <p className={`text-xs font-bold ${house.textColor} mt-0.5`}>{house.motto}</p>
           </div>
         </div>
-
-        {/* Share Whole House Button */}
-        <button
-          type="button"
-          data-no-share="true"
-          onClick={() => shareResultCard(cardRef.current, house.name, houseCaptains[0]?.name, houseVices[0]?.name)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black transition-all shadow-xs active:scale-95 cursor-pointer shrink-0"
-          title="Share House Card"
-        >
-          <Share2 className="w-3.5 h-3.5 text-slate-600" />
-          <span className="hidden sm:inline">Share House</span>
-        </button>
       </div>
 
       {/* Captains Breakdown */}
@@ -374,10 +348,9 @@ const HouseCard = ({ house, profiles }) => {
 };
 
 /* ───────────────────────────────────────────────────────
-   INDIVIDUAL WINNER CARD (card-wise standalone card)
+   INDIVIDUAL WINNER CARD
    ─────────────────────────────────────────────────────── */
 const IndividualWinnerCard = ({ winner, position, totalVotes, index, wIdx, isAppointedPost, isDisciplineHead }) => {
-  const winnerRef = useRef(null);
   if (!winner) return null;
   const winnerPhoto = winner?.photo ? (winner.photo.startsWith("data:") || winner.photo.startsWith("http") ? winner.photo : fullUrl(winner.photo)) : null;
   const winnerPct = totalVotes > 0 ? Math.round(((winner?.votes || 0) / totalVotes) * 100) : 0;
@@ -391,7 +364,7 @@ const IndividualWinnerCard = ({ winner, position, totalVotes, index, wIdx, isApp
   const isSecondaryAppointed = (isSecondaryCandidate || isAppointedPost) && !isSchoolCaptain;
 
   return (
-    <div ref={winnerRef} className={`bg-slate-50/80 p-4 sm:p-5 rounded-2xl border border-slate-200/60 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left ${wIdx > 0 ? "mt-4" : ""}`}>
+    <div className={`bg-slate-50/80 p-4 sm:p-5 rounded-2xl border border-slate-200/60 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left ${wIdx > 0 ? "mt-4" : ""}`}>
       <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 w-full sm:w-auto min-w-0 flex-1">
         {/* Winner photo with crown / star */}
         <div className="relative shrink-0">
@@ -493,18 +466,6 @@ const IndividualWinnerCard = ({ winner, position, totalVotes, index, wIdx, isApp
           </div>
         </div>
       </div>
-
-      {/* Card Share Button */}
-      <button
-        type="button"
-        data-no-share="true"
-        onClick={() => shareResultCard(winnerRef.current, position, winner.name)}
-        className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-black transition-all shadow-md active:scale-95 cursor-pointer w-full sm:w-auto shrink-0 mt-2 sm:mt-0"
-        title="Share Individual Winner Card"
-      >
-        <Share2 className="w-3.5 h-3.5 text-amber-300" />
-        <span>Share Card</span>
-      </button>
     </div>
   );
 };
@@ -513,7 +474,6 @@ const IndividualWinnerCard = ({ winner, position, totalVotes, index, wIdx, isApp
    WINNER SPOTLIGHT CARD (hero section per post)
    ─────────────────────────────────────────────────────── */
 const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, index, isAppointed }) => {
-  const cardRef = useRef(null);
   const lowerPos = (position || "").toLowerCase();
   const isDisciplineHead = lowerPos.includes("discipline");
   const isAppointedPost = isAppointed || isDisciplineHead;
@@ -524,7 +484,7 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
       style={{ animationDelay: `${index * 0.2}s` }}
     >
       {/* Main card */}
-      <div ref={cardRef} className="relative bg-white rounded-3xl border border-black/[0.06] overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 group">
+      <div className="relative bg-white rounded-3xl border border-black/[0.06] overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 group">
         
         {/* Gold/Blue accent header */}
         <div className="relative bg-gradient-to-r from-[#0E3B91] via-[#1a55b6] to-[#0E3B91] px-4 sm:px-6 py-5 overflow-hidden">
@@ -548,22 +508,6 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
                   <span className="text-xs font-bold text-white/90">Appointed</span>
                 </div>
               )}
-
-              {/* Share Full Card & Stats Button */}
-              <button
-                type="button"
-                data-no-share="true"
-                onClick={() => {
-                  const primaryWinner = winners[0]?.name || "";
-                  const viceWinner = winners[1]?.name || "";
-                  shareResultCard(cardRef.current, position, primaryWinner, viceWinner);
-                }}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/20 hover:bg-white/35 backdrop-blur border border-white/30 text-white text-xs font-black transition-all shadow-sm active:scale-95 cursor-pointer shrink-0"
-                title="Share Full Position Card with All Candidate Stats"
-              >
-                <Share2 className="w-3.5 h-3.5 text-amber-300" />
-                <span>Share Full Card & Stats</span>
-              </button>
             </div>
           </div>
         </div>

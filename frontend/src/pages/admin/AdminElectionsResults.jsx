@@ -102,30 +102,17 @@ export default function AdminElectionsResults() {
 }
 
 function AdminPostCard({ post, candidates }) {
-  const cardRef = useRef(null);
   const total = Math.max(1, candidates.reduce((s, c) => s + (c.votes || 0), 0));
   const sorted = [...candidates].sort((a, b) => b.votes - a.votes);
   const postTitle = post?.title || post?.name || "Position";
 
   return (
-    <div ref={cardRef} className="bg-white rounded-3xl border border-slate-200/60 shadow-[0_4px_24px_rgba(0,0,0,0.02)] overflow-hidden hover:border-slate-350 transition-colors duration-300 animate-in slide-in-from-bottom-4 duration-300">
+    <div className="bg-white rounded-3xl border border-slate-200/60 shadow-[0_4px_24px_rgba(0,0,0,0.02)] overflow-hidden hover:border-slate-350 transition-colors duration-300 animate-in slide-in-from-bottom-4 duration-300">
       <div className="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-3">
-          <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
-            <Crown className="w-5 h-5 text-amber-500" />
-            {postTitle}
-          </h2>
-          <button
-            type="button"
-            data-no-share="true"
-            onClick={() => shareResultCard(cardRef.current, postTitle, sorted[0]?.name)}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black transition-all active:scale-95 cursor-pointer shrink-0"
-            title="Share Card Image"
-          >
-            <Share2 className="w-3.5 h-3.5 text-slate-600" />
-            <span>Share Card</span>
-          </button>
-        </div>
+        <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
+          <Crown className="w-5 h-5 text-amber-500" />
+          {postTitle}
+        </h2>
         {sorted[0] && sorted[0].votes > 0 && (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-amber-100 to-amber-50 text-amber-800 text-xs font-extrabold border border-amber-200/60 shadow-sm animate-pulse">
             <Crown className="w-3.5 h-3.5" /> Leading: {sorted[0].name} ({sorted[0].votes} {sorted[0].votes === 1 ? 'vote' : 'votes'})
