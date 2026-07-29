@@ -531,6 +531,118 @@ export default function AdminApaarManager() {
     document.body.removeChild(link);
   };
 
+  const exportPDF = () => {
+    if (!sortedSubmissions || sortedSubmissions.length === 0) {
+      toast.error("No submissions available to export.");
+      return;
+    }
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast.error("Please allow popups to export PDF.");
+      return;
+    }
+
+    const rowsHtml = sortedSubmissions.map((s, idx) => `
+      <tr style="border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+        <td style="padding: 8px 10px; text-align: center; color: #64748b;">${idx + 1}</td>
+        <td style="padding: 8px 10px; font-weight: 700; color: #0f172a; font-family: monospace;">${s.admission_no || "—"}</td>
+        <td style="padding: 8px 10px; font-weight: 600; color: #0E3B91;">${s.student_name || "—"}</td>
+        <td style="padding: 8px 10px; color: #334155;">Class-${s.class_name || ""} ${s.section ? `(${s.section})` : ""}</td>
+        <td style="padding: 8px 10px; color: #334155;">${s.student_aadhaar_name || "—"}</td>
+        <td style="padding: 8px 10px; font-family: monospace; color: #475569;">${s.mobile_no || "—"}</td>
+        <td style="padding: 8px 10px; color: #64748b;">${s.created_at ? new Date(s.created_at).toLocaleDateString() : "—"}</td>
+      </tr>
+    `).join("");
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>APAAR_Registry_Submissions_Report_${new Date().toISOString().split("T")[0]}</title>
+        <style>
+          @page { size: A4 portrait; margin: 12mm; }
+          body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; background: #fff; }
+          .header-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; border-bottom: 2px solid #0E3B91; padding-bottom: 8px; }
+          .logo { width: 65px; height: 65px; object-fit: contain; }
+          .school-info { padding-left: 12px; }
+          .school-title { font-size: 20px; font-weight: 800; color: #0E3B91; margin: 0; letter-spacing: 0.5px; }
+          .school-sub { font-size: 10px; font-weight: 600; color: #f87d0e; text-transform: uppercase; margin: 2px 0 0 0; }
+          .school-addr { font-size: 10px; color: #475569; margin: 3px 0 0 0; }
+          .doc-banner { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+          .doc-title { font-size: 13px; font-weight: 800; color: #0E3B91; margin: 0; text-transform: uppercase; tracking: 0.5px; }
+          .doc-meta { font-size: 10px; color: #64748b; margin: 2px 0 0 0; }
+          .report-table { width: 100%; border-collapse: collapse; text-align: left; }
+          .report-table th { background: #0E3B91; color: #ffffff; font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 8px 10px; letter-spacing: 0.5px; }
+          .report-table tr:nth-child(even) { background-color: #f8fafc; }
+          .footer { margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 8px; text-align: center; font-size: 9px; color: #94a3b8; }
+          @media print {
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <table class="header-table">
+          <tr>
+            <td style="width: 70px; vertical-align: middle;">
+              <img src="https://www.sdpublic.org/logo-real-animated.gif" class="logo" alt="SDPS Logo" />
+            </td>
+            <td class="school-info" style="vertical-align: middle;">
+              <h1 class="school-title">S.D. PUBLIC SCHOOL</h1>
+              <p class="school-sub">Empowering Generations Since 1994 · CBSE Affiliated</p>
+              <p class="school-addr">Maurya Colony, Near R.O.B Kumhrar, Gulzarbagh Road, Patna, Bihar 800007 | Ph: +91 99551 90262</p>
+            </td>
+          </tr>
+        </table>
+
+        <div class="doc-banner">
+          <div>
+            <h2 class="doc-title">APAAR ID Registry Submissions Report</h2>
+            <p class="doc-meta">Official Student Consent & APAAR Registration Data</p>
+          </div>
+          <div style="text-align: right; font-size: 10px; color: #475569;">
+            <strong>Generated:</strong> ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}<br/>
+            <strong>Total Submissions:</strong> <span style="color: #0E3B91; font-weight: 800;">${sortedSubmissions.length}</span>
+          </div>
+        </div>
+
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th style="width: 30px; text-align: center;">#</th>
+              <th>ADM NO</th>
+              <th>STUDENT (SCHOOL)</th>
+              <th>CLASS / SEC</th>
+              <th>STUDENT (AADHAAR)</th>
+              <th>MOBILE NO</th>
+              <th>DATE</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+
+        <div class="footer">
+          S.D. Public School Patna · Confidential Official APAAR Record Document · Generated via SDPS Admin Portal
+        </div>
+
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+            }, 500);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  };
+
   const classes = ["Nursery", "LKG", "UKG", "KG-I", "KG-II", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
 
   return (
@@ -558,12 +670,20 @@ export default function AdminApaarManager() {
             <RefreshCw className="w-3.5 h-3.5" /> Refresh
           </button>
           {activeTab === "submissions" && (
-            <button
-              onClick={exportToCSV}
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#0E3B91] hover:bg-[#0E3B91]/90 text-white font-bold rounded-xl text-xs shadow-sm transition"
-            >
-              <Download className="w-4 h-4" /> Export CSV
-            </button>
+            <>
+              <button
+                onClick={exportToCSV}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl text-xs shadow-sm transition"
+              >
+                <Download className="w-4 h-4" /> Export CSV
+              </button>
+              <button
+                onClick={exportPDF}
+                className="flex items-center gap-1.5 px-4 py-2 bg-[#0E3B91] hover:bg-[#0E3B91]/90 text-white font-bold rounded-xl text-xs shadow-md transition"
+              >
+                <FileText className="w-4 h-4" /> Export PDF
+              </button>
+            </>
           )}
         </div>
       </div>
