@@ -55,11 +55,17 @@ function PageHero({ title, subtitle, overline, bgImage, pill }) {
           <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-white/90" />
         </div>
       )}
-      <div className="relative max-w-6xl mx-auto px-6 text-center">
-        {pill && <div className="inline-flex items-center gap-2 bg-brand-blue/10 text-brand-blue text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full mb-4">{pill}</div>}
-        {overline && !pill && <div className="overline mb-3">{overline}</div>}
-        <h1 className="legacy-title brand-gradient-text">{title}</h1>
-        {subtitle && <p className="mt-4 text-brand-ink/70 max-w-2xl mx-auto">{subtitle}</p>}
+      <div className="relative max-w-6xl mx-auto px-6 flex flex-col items-center justify-center text-center space-y-3">
+        {pill && (
+          <div className="w-full flex justify-center mb-1">
+            <span className="inline-flex items-center gap-2 bg-brand-blue/10 text-brand-blue text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full">
+              {pill}
+            </span>
+          </div>
+        )}
+        {overline && !pill && <div className="overline mb-1">{overline}</div>}
+        <h1 className="legacy-title brand-gradient-text block w-full">{title}</h1>
+        {subtitle && <p className="text-brand-ink/70 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">{subtitle}</p>}
       </div>
     </section>
   );
