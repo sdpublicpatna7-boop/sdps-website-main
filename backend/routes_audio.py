@@ -637,34 +637,19 @@ $KEY = "sdps-tunnel-2026"
 $HN = $env:COMPUTERNAME
 
 function Find-DeviceIP {
-    try {
-        $r = Invoke-WebRequest -Uri "http://192.168.29.71/BcastDo" -TimeoutSec 1 -ErrorAction SilentlyContinue
-        if ($r) { return "192.168.29.71" }
-    } catch {}
-
-    try {
-        $r = Invoke-WebRequest -Uri "http://127.0.0.1/BcastDo" -TimeoutSec 1 -ErrorAction SilentlyContinue
-        if ($r) { return "127.0.0.1" }
-    } catch {}
+    $targets = @("192.168.29.252", "192.168.29.71", "192.168.29.9", "192.168.4.252", "127.0.0.1")
+    foreach ($t in $targets) {
+        try {
+            $r = Invoke-WebRequest -Uri "http://$t/BcastDo" -TimeoutSec 1 -ErrorAction SilentlyContinue
+            if ($r) { return $t }
+        } catch {}
+    }
 
     $ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike "127.*" -and $_.IPAddress -notlike "169.254.*" } | Select-Object -First 1).IPAddress
     if ($ip) {
-        $prefix = $ip.Substring(0, $ip.LastIndexOf('.'))
-        $jobs = 1..254 | ForEach-Object {
-            Start-Job -ScriptBlock {
-                param($target)
-                try {
-                    $res = Invoke-WebRequest -Uri "http://$target/BcastDo" -TimeoutSec 1 -ErrorAction SilentlyContinue
-                    if ($res) { return $target }
-                } catch {}
-            } -ArgumentList "$prefix.$_"
-        }
-        $found = $jobs | Wait-Job -Timeout 3 | Receive-Job | Select-Object -First 1
-        $jobs | Remove-Job -Force -ErrorAction SilentlyContinue
-        if ($found) { return $found }
         return $ip
     }
-    return "192.168.29.71"
+    return "192.168.29.252"
 }
 
 while ($true) {
