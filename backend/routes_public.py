@@ -1587,13 +1587,13 @@ async def public_video_support_agent_chat(payload: Dict[str, Any] = Body(...)):
 
     # Fee payment & Fee structure queries
     if any(k in prompt for k in ["fee", "pay", "payment", "charge", "cost", "price", "tuition", "dues", "installments", "online fee"]):
-        reply = "Hey! S.D. Public School provides an online fee payment portal. Day scholar monthly tuition ranges from ₹1,200 for Nursery to ₹2,600 for Class XII. You can pay your fees directly online at /fee-payment or view the complete fee structure circular at /fee-structure."
+        reply = "Hey! S.D. Public School provides an online fee payment portal. Day scholar monthly tuition ranges from ₹1,200 for Nursery to ₹1,850 for Class VIII. You can pay your fees directly online at /fee-payment or view the complete fee structure circular at /fee-structure."
         action = {"type": "navigate", "url": "/fee-payment", "label": "💳 Direct Fee Payment Portal"}
     elif any(k in prompt for k in ["apply", "admission", "form", "register", "join", "eligibility", "seat", "vacancy"]):
-        reply = "Admissions for session 2026-27 are currently open from Nursery to Class XII! You can fill out the online admission enquiry form at /admission-form or view age eligibility criteria at /admission-eligibility."
+        reply = "Admissions for session 2026-27 are currently open from Playgroup / Nursery to Class VIII! You can fill out the online admission enquiry form at /admission-form or view age eligibility criteria at /admission-eligibility."
         action = {"type": "navigate", "url": "/admission-form", "label": "📝 Online Admission Form"}
     elif any(k in prompt for k in ["timing", "hour", "time", "schedule", "open", "close", "holiday"]):
-        reply = "School operational timings: Pre-School (Nursery to KG-II) runs 08:30 AM to 12:30 PM. Classes I to XII run 07:30 AM to 01:30 PM (Summer) and 08:00 AM to 02:00 PM (Winter). Helpdesk is open Monday to Saturday, 08:00 AM to 03:00 PM."
+        reply = "School operational timings: Pre-School (Nursery to KG-II) runs 08:30 AM to 12:30 PM. Classes I to VIII run 07:30 AM to 01:30 PM (Summer) and 08:00 AM to 02:00 PM (Winter). Helpdesk is open Monday to Saturday, 08:00 AM to 03:00 PM."
         action = {"type": "navigate", "url": "/calendar", "label": "📅 Academic Calendar"}
     elif any(k in prompt for k in ["hostel", "boarding", "lodging", "stay", "mess"]):
         reply = "SDPS provides safe and modern residential hostel facilities with 24/7 CCTV surveillance, nutritious meals, structured evening study hours, and sports amenities. Learn more at /hostel."
@@ -1642,7 +1642,7 @@ async def get_campus_tour_facilities():
                 "id": "tour-physics-lab",
                 "title": "Composite Science & Physics Lab",
                 "category": "labs",
-                "description": "Modern science laboratory equipped with optical benches, spectrometers, laser experiment kits, and electrical circuit boards for Class IX-XII CBSE practicals.",
+                "description": "Modern science laboratory equipped with optical benches, spectrometers, laser experiment kits, and electrical circuit boards for Class I-VIII practicals & experiments.",
                 "panorama_url": "https://sdpublic.org/assets/img/learning_beyond.png",
                 "video_url": "",
                 "audio_narrative": "Here is our State-of-the-Art Science Laboratory. Students conduct hands-on experiments in physics, chemistry, and biology with lab safety gear.",

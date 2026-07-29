@@ -119,8 +119,6 @@ const DEFAULT_FEE_ROWS = [
   { id: "3", class_name: "Class I - Class III", admission_fee: "₹6,000", tuition_fee: "₹1,500", annual_fee: "₹3,000" },
   { id: "4", class_name: "Class IV - Class V", admission_fee: "₹6,500", tuition_fee: "₹1,650", annual_fee: "₹3,000" },
   { id: "5", class_name: "Class VI - Class VIII", admission_fee: "₹7,500", tuition_fee: "₹1,850", annual_fee: "₹3,500" },
-  { id: "6", class_name: "Class IX - Class X", admission_fee: "₹8,500", tuition_fee: "₹2,100", annual_fee: "₹4,000" },
-  { id: "7", class_name: "Class XI - Class XII", admission_fee: "₹10,000", tuition_fee: "₹2,600", annual_fee: "₹4,500" },
 ];
 
 export default function FeeStructure() {

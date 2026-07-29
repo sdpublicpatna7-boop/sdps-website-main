@@ -94,7 +94,7 @@ export default function AdmissionsEligibility() {
             <div className="font-headline font-semibold text-amber-800 mb-2 flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-amber-600" /> Important Notes
             </div>
-            <p className="text-sm text-amber-700">The minimum age limit to appear for the CBSE Class 10th board exam is <strong>14 years</strong>, which means the candidate must have completed 14 years of age as on <strong>31st December</strong> of the year of examination.</p>
+            <p className="text-sm text-amber-700">Age criteria is calculated as on <strong>31st March</strong> of the academic session. S.D. Public School offers admissions from Playgroup up to <strong>Class VIII</strong>.</p>
             <p className="text-sm text-amber-700 mt-2">Admission is open to all, subject to seat availability and school norms.</p>
           </div>
           <div className="bg-white border border-black/5 rounded-2xl p-5 space-y-3">
