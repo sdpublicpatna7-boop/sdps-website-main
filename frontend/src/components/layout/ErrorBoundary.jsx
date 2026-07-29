@@ -60,6 +60,14 @@ export default class ErrorBoundary extends React.Component {
               </p>
             </div>
 
+            {/* Debug details if available */}
+            {this.state.error && (
+              <div className="text-left bg-slate-950 p-3 rounded-xl border border-slate-800 text-[11px] font-mono text-rose-300 overflow-x-auto max-h-40">
+                <div className="font-bold text-rose-400 mb-1">{this.state.error.name}: {this.state.error.message}</div>
+                <pre className="text-[10px] text-slate-500 whitespace-pre-wrap">{this.state.error.stack}</pre>
+              </div>
+            )}
+
             <div className="flex flex-col gap-3 pt-2">
               <button
                 onClick={this.handleReload}
@@ -68,9 +76,25 @@ export default class ErrorBoundary extends React.Component {
                 <RefreshCw className="w-4 h-4" /> Reload Latest Version
               </button>
 
+              <button
+                onClick={() => {
+                  try {
+                    sessionStorage.clear();
+                    localStorage.clear();
+                    if ('caches' in window) {
+                      caches.keys().then(names => names.forEach(name => caches.delete(name)));
+                    }
+                  } catch (e) {}
+                  window.location.href = window.location.origin + window.location.pathname + "?reset=" + Date.now();
+                }}
+                className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs py-2.5 rounded-xl border border-slate-700 transition flex items-center justify-center gap-2"
+              >
+                <RefreshCw className="w-3.5 h-3.5 text-amber-400" /> Clear Cache & Hard Reset
+              </button>
+
               <a
                 href="/"
-                className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs py-3 rounded-xl border border-slate-700 transition flex items-center justify-center gap-2"
+                className="w-full text-slate-400 hover:text-white font-bold text-xs py-2 transition flex items-center justify-center gap-2"
               >
                 <Home className="w-4 h-4" /> Back to Home
               </a>
@@ -79,7 +103,6 @@ export default class ErrorBoundary extends React.Component {
         </div>
       );
     }
-
     return this.props.children;
   }
 }
