@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 audio_router = APIRouter(prefix="/api/admin/audio", tags=["Admin Audio Controller"])
 
-DEFAULT_AUDIO_IP = os.getenv("AUDIO_CONTROLLER_IP", "192.168.29.71")
+DEFAULT_AUDIO_IP = os.getenv("AUDIO_CONTROLLER_IP", "192.168.29.113")
 CLOUDFLARE_TUNNEL_URL = os.getenv("CLOUDFLARE_TUNNEL_URL", "")  # e.g. https://sdps-audio.cfargotunnel.com
 DEFAULT_HARDWARE_USER = os.getenv("HARDWARE_USER", "user1")
 DEFAULT_HARDWARE_PASS = os.getenv("HARDWARE_PASS", "user123@")
@@ -816,8 +816,15 @@ def get_mac_setup_script():
 
 
 @public_audio_router.get("/ddns/get")
-def get_public_ddns_ip():
+async def get_public_ddns_ip():
     """Public endpoint to fetch master broadcasting IP for school PC setup scripts."""
+    try:
+        from server import db
+        settings = await db.site_settings.find_one({}, {"_id": 0, "audio_device_ip": 1})
+        if settings and settings.get("audio_device_ip"):
+            return {"ip": settings.get("audio_device_ip")}
+    except Exception:
+        pass
     return {"ip": DEFAULT_AUDIO_IP}
 
 
