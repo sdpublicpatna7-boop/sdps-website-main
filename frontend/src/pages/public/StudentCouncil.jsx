@@ -527,27 +527,43 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
       <div ref={cardRef} className="relative bg-white rounded-3xl border border-black/[0.06] overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 group">
         
         {/* Gold/Blue accent header */}
-        <div className="relative bg-gradient-to-r from-[#0E3B91] via-[#1a55b6] to-[#0E3B91] px-6 py-5 overflow-hidden">
+        <div className="relative bg-gradient-to-r from-[#0E3B91] via-[#1a55b6] to-[#0E3B91] px-4 sm:px-6 py-5 overflow-hidden">
           <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_30%,rgba(255,255,255,0.08)_50%,transparent_70%)] bg-[length:200%_100%] group-hover:animate-[gold-shimmer_2s_linear]" />
-          <div className="relative flex items-center justify-between gap-3">
+          <div className="relative flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
             <div>
               <div className="text-[10px] tracking-[0.3em] uppercase font-bold text-blue-200/80 mb-1">Position</div>
-              <h3 className="font-headline text-xl font-black text-white tracking-tight">{position}</h3>
+              <h3 className="font-headline text-xl sm:text-2xl font-black text-white tracking-tight">{position}</h3>
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {!isAppointedPost && (
-                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur border border-white/20">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur border border-white/20">
                   <Users className="w-3.5 h-3.5 text-white/80" />
                   <span className="text-xs font-bold text-white/90 tabular-nums">{totalVotes} votes cast</span>
                 </div>
               )}
               {isAppointedPost && (
-                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur border border-white/20">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur border border-white/20">
                   <Star className="w-3.5 h-3.5 text-white/80 fill-white" />
                   <span className="text-xs font-bold text-white/90">Appointed</span>
                 </div>
               )}
+
+              {/* Share Full Card & Stats Button */}
+              <button
+                type="button"
+                data-no-share="true"
+                onClick={() => {
+                  const primaryWinner = winners[0]?.name || "";
+                  const viceWinner = winners[1]?.name || "";
+                  shareResultCard(cardRef.current, position, primaryWinner, viceWinner);
+                }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/20 hover:bg-white/35 backdrop-blur border border-white/30 text-white text-xs font-black transition-all shadow-sm active:scale-95 cursor-pointer shrink-0"
+                title="Share Full Position Card with All Candidate Stats"
+              >
+                <Share2 className="w-3.5 h-3.5 text-amber-300" />
+                <span>Share Full Card & Stats</span>
+              </button>
             </div>
           </div>
         </div>
