@@ -171,26 +171,36 @@ async def send_login_otp(payload: OtpRequestPayload):
     from auth import verify_password
     from email_service import send_email
     from whatsapp_service import send_whatsapp_text
+    import re
 
-    username_clean = payload.username.strip().lower()
-    user = await db.users.find_one({
+    identifier = payload.username.strip().lower()
+    user = await db.admin_users.find_one({
         "$or": [
-            {"email": username_clean},
-            {"username": username_clean}
+            {"email": identifier},
+            {"username": identifier},
+            {"phone": identifier},
+            {"email": {"$regex": f"^{re.escape(identifier)}$", "$options": "i"}},
+            {"username": {"$regex": f"^{re.escape(identifier)}$", "$options": "i"}},
+            {"phone": {"$regex": f"^{re.escape(identifier)}$", "$options": "i"}}
         ]
     })
 
     if not user or not verify_password(payload.password, user.get("password_hash", "")):
         raise HTTPException(status_code=401, detail="Invalid username or password.")
 
+    if not user.get("is_active", True):
+        raise HTTPException(status_code=403, detail="Account is disabled.")
+
+    target_username = user.get("username") or user.get("email") or identifier
+
     # Generate 6-digit numeric OTP
     otp_code = str(random.randint(100000, 999999))
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=5)
 
     await db.audio_otps.update_one(
-        {"username": user["username"]},
+        {"username": target_username},
         {"$set": {
-            "username": user["username"],
+            "username": target_username,
             "otp": otp_code,
             "expires_at": expires_at.isoformat(),
             "created_at": datetime.now(timezone.utc).isoformat()
@@ -222,7 +232,7 @@ async def send_login_otp(payload: OtpRequestPayload):
     return {
         "success": True,
         "otp_required": True,
-        "username": user["username"],
+        "username": target_username,
         "message": f"OTP verification code sent to {dest_hint}."
     }
 
@@ -232,9 +242,15 @@ async def verify_login_otp(payload: OtpVerifyPayload):
     """Step 2 of Audio Login: Verify OTP and enforce Single-Session with Superadmin Preemption."""
     from server import db
     from auth import create_access_token
+    import re
 
-    username_clean = payload.username.strip().lower()
-    otp_doc = await db.audio_otps.find_one({"username": username_clean})
+    identifier = payload.username.strip().lower()
+    otp_doc = await db.audio_otps.find_one({
+        "$or": [
+            {"username": identifier},
+            {"username": {"$regex": f"^{re.escape(identifier)}$", "$options": "i"}}
+        ]
+    })
 
     if not otp_doc or otp_doc.get("otp") != payload.otp.strip():
         raise HTTPException(status_code=400, detail="Invalid OTP code entered.")
@@ -246,11 +262,20 @@ async def verify_login_otp(payload: OtpVerifyPayload):
             raise HTTPException(status_code=400, detail="OTP has expired. Please request a new code.")
 
     # OTP is valid! Delete used OTP
-    await db.audio_otps.delete_one({"username": username_clean})
+    await db.audio_otps.delete_one({"_id": otp_doc["_id"]})
 
-    user = await db.users.find_one({"username": username_clean})
+    user = await db.admin_users.find_one({
+        "$or": [
+            {"email": identifier},
+            {"username": identifier},
+            {"phone": identifier},
+            {"email": {"$regex": f"^{re.escape(identifier)}$", "$options": "i"}},
+            {"username": {"$regex": f"^{re.escape(identifier)}$", "$options": "i"}},
+            {"phone": {"$regex": f"^{re.escape(identifier)}$", "$options": "i"}}
+        ]
+    })
     if not user:
-        raise HTTPException(status_code=404, detail="User account not found.")
+        raise HTTPException(status_code=404, detail="Admin account not found.")
 
     user_role = user.get("role", "staff")
     user_id = str(user["_id"])
@@ -262,6 +287,7 @@ async def verify_login_otp(payload: OtpVerifyPayload):
         active_role = existing_session.get("role", "staff")
         active_username = existing_session.get("username", "Another User")
 
+        u_name = user.get("username") or user.get("email") or identifier
         if user_role in ["superadmin", "admin"]:
             # Superadmin takes over! Preempt existing non-superadmin session
             await db.active_audio_sessions.update_many(
@@ -269,11 +295,11 @@ async def verify_login_otp(payload: OtpVerifyPayload):
                 {"$set": {
                     "active": False,
                     "evicted": True,
-                    "evicted_by": user["username"],
+                    "evicted_by": u_name,
                     "eviction_reason": "Superadmin logged in from another device."
                 }}
             )
-            logger.info(f"[AUDIO SESSION PREEMPTION] Superadmin {user['username']} logged in. Evicted user {active_username}.")
+            logger.info(f"[AUDIO SESSION PREEMPTION] Superadmin {u_name} logged in. Evicted user {active_username}.")
         else:
             # Non-superadmin blocked if someone else is online
             raise HTTPException(
@@ -284,13 +310,14 @@ async def verify_login_otp(payload: OtpVerifyPayload):
     # Create new single active session token
     session_token = secrets.token_urlsafe(32)
     now_iso = datetime.now(timezone.utc).isoformat()
+    u_name = user.get("username") or user.get("email") or identifier
 
     await db.active_audio_sessions.delete_many({}) # clear old sessions
     await db.active_audio_sessions.insert_one({
         "session_token": session_token,
         "user_id": user_id,
-        "username": user["username"],
-        "name": user.get("name", user["username"]),
+        "username": u_name,
+        "name": user.get("name", u_name),
         "role": user_role,
         "active": True,
         "evicted": False,
@@ -312,8 +339,8 @@ async def verify_login_otp(payload: OtpVerifyPayload):
         "session_token": session_token,
         "user": {
             "id": user_id,
-            "username": user["username"],
-            "name": user.get("name", user["username"]),
+            "username": u_name,
+            "name": user.get("name", u_name),
             "role": user_role,
             "email": user.get("email", "")
         }
