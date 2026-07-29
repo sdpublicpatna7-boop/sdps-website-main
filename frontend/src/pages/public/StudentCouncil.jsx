@@ -525,23 +525,28 @@ export default function StudentCouncil() {
         });
 
         (d.posts || []).forEach(post => {
-          const candidates = d.by_post?.[post.key] || [];
-          const sorted = [...candidates].sort((a, b) => b.votes - a.votes);
+          if (!post) return;
+          const postKey = post.key || post.id || "unknown";
+          const postTitle = post.title || post.name || "Council Position";
+          const candidates = d.by_post?.[postKey] || [];
+          const sorted = [...candidates].sort((a, b) => (b?.votes || 0) - (a?.votes || 0));
           if (sorted.length > 0) {
-            const total = sorted.reduce((sum, c) => sum + (c.votes || 0), 0);
-            const isAppointed = (d.appointed_post_keys || []).includes(post.key);
+            const total = sorted.reduce((sum, c) => sum + (c?.votes || 0), 0);
+            const isAppointed = (d.appointed_post_keys || []).includes(postKey);
             
             // Find Captain winner (highest votes who is NOT flagged as Vice)
-            const nonViceCands = sorted.filter(c => !viceCandidateIds.includes(c.candidate_id));
+            const nonViceCands = sorted.filter(c => c && c.candidate_id && !viceCandidateIds.includes(c.candidate_id));
             const captainWinner = nonViceCands[0] || sorted[0];
             
             // Find Vice Captain winner(s) (candidates flagged in vice_candidate_ids under this post)
-            const viceWinners = sorted.filter(c => viceCandidateIds.includes(c.candidate_id));
-            const isSchoolCaptainPost = (post.key || "").toLowerCase() === "school_captain" || 
-                                       (post.key || "").toLowerCase() === "school captain" ||
-                                       (post.title || "").toLowerCase().includes("school captain") ||
-                                       (post.title || "").toLowerCase().includes("head boy") ||
-                                       (post.title || "").toLowerCase().includes("head girl");
+            const viceWinners = sorted.filter(c => c && c.candidate_id && viceCandidateIds.includes(c.candidate_id));
+            const lowerTitle = postTitle.toLowerCase();
+            const lowerKey = postKey.toLowerCase();
+            const isSchoolCaptainPost = lowerKey === "school_captain" || 
+                                       lowerKey === "school captain" ||
+                                       lowerTitle.includes("school captain") ||
+                                       lowerTitle.includes("head boy") ||
+                                       lowerTitle.includes("head girl");
             
             // Compile the list of spotlight winners
             const postWinners = [];
@@ -561,9 +566,9 @@ export default function StudentCouncil() {
             });
             
             compiled.push({
-              id: post.key,
+              id: postKey,
               year: "2026-27",
-              position: post.title,
+              position: postTitle,
               is_appointed: isAppointed,
               all_candidates: sorted,
               total_votes: total,
@@ -571,19 +576,18 @@ export default function StudentCouncil() {
             });
             
             // If there's a winner, add them to dynamic profiles
-            const maxVotes = sorted[0].votes || 0;
-            const winners = maxVotes > 0 ? sorted.filter(c => c.votes === maxVotes) : [];
+            const maxVotes = sorted[0]?.votes || 0;
+            const winners = maxVotes > 0 ? sorted.filter(c => c && c.votes === maxVotes) : [];
             // For appointed posts, the winner is every non-vice candidate
-            const appointedWinners = isAppointed ? sorted.filter(c => !viceCandidateIds.includes(c.candidate_id)) : [];
+            const appointedWinners = isAppointed ? sorted.filter(c => c && !viceCandidateIds.includes(c.candidate_id)) : [];
             const finalWinners = isAppointed ? appointedWinners : winners;
             
             finalWinners.forEach((winner, wIdx) => {
-              // Only add if not flagged as Vice (since Vice will be added separately below)
-              if (!viceCandidateIds.includes(winner.candidate_id)) {
+              if (winner && !viceCandidateIds.includes(winner.candidate_id)) {
                 dynamicProfiles.push({
-                  id: `election-${post.key}-${winner.candidate_id || wIdx}`,
+                  id: `election-${postKey}-${winner.candidate_id || wIdx}`,
                   name: winner.name,
-                  position: post.title,
+                  position: postTitle,
                   photo_url: winner.photo,
                   year: "2026-27",
                   role_type: isAppointed ? "Appointed by School Management" : "Elected",
@@ -596,35 +600,39 @@ export default function StudentCouncil() {
             
             // Add Vice winners to dynamic profiles
             viceWinners.forEach((winner, wIdx) => {
-              const positionTitle = isSchoolCaptainPost 
-                ? (post.title.toLowerCase().startsWith("vice") ? post.title : "Vice " + post.title) 
-                : post.title;
+              if (winner) {
+                const positionTitle = isSchoolCaptainPost 
+                  ? (postTitle.toLowerCase().startsWith("vice") ? postTitle : "Vice " + postTitle) 
+                  : postTitle;
 
-              dynamicProfiles.push({
-                id: `election-${post.key}-vice-${winner.candidate_id || wIdx}`,
-                name: winner.name,
-                position: positionTitle,
-                photo_url: winner.photo,
-                year: "2026-27",
-                role_type: "Appointed by School Management",
-                is_captain: !isSchoolCaptainPost,
-                is_vice: isSchoolCaptainPost,
-                order: (post.order || 0) + 0.5
-              });
+                dynamicProfiles.push({
+                  id: `election-${postKey}-vice-${winner.candidate_id || wIdx}`,
+                  name: winner.name,
+                  position: positionTitle,
+                  photo_url: winner.photo,
+                  year: "2026-27",
+                  role_type: "Appointed by School Management",
+                  is_captain: !isSchoolCaptainPost,
+                  is_vice: isSchoolCaptainPost,
+                  order: (post.order || 0) + 0.5
+                });
+              }
             });
             
             // Collect remaining candidates as prefects (not captain, not vice anywhere)
             sorted.forEach(c => {
-              const lowerName = (c.name || "").toLowerCase().trim();
-              if (!globalWinnerIds.has(c.candidate_id) && !lowerName.includes("vicky")) {
-                prefectsList.push({
-                  id: `prefect-${post.key}-${c.candidate_id}`,
-                  name: c.name,
-                  photo: c.photo,
-                  post_title: post.title,
-                  symbol: c.symbol,
-                  votes: c.votes
-                });
+              if (c) {
+                const lowerName = (c.name || "").toLowerCase().trim();
+                if (!globalWinnerIds.has(c.candidate_id) && !lowerName.includes("vicky")) {
+                  prefectsList.push({
+                    id: `prefect-${postKey}-${c.candidate_id}`,
+                    name: c.name,
+                    photo: c.photo,
+                    post_title: postTitle,
+                    symbol: c.symbol,
+                    votes: c.votes
+                  });
+                }
               }
             });
           }
