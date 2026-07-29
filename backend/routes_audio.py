@@ -92,6 +92,7 @@ class TunnelRegisterPayload(BaseModel):
     tunnel_url: str
     api_key: str
     hostname: Optional[str] = None
+    device_ip: Optional[str] = None
 
 
 class OtpRequestPayload(BaseModel):
@@ -123,7 +124,7 @@ async def register_tunnel(payload: TunnelRegisterPayload):
 
     clean_url = payload.tunnel_url.rstrip("/")
     hostname_clean = (payload.hostname or "UNKNOWN-PC").strip()
-    target_ip = (payload.device_ip or DEFAULT_AUDIO_IP).strip()
+    target_ip = (getattr(payload, "device_ip", None) or DEFAULT_AUDIO_IP).strip()
     now_iso = datetime.now(timezone.utc).isoformat()
 
     from server import db
