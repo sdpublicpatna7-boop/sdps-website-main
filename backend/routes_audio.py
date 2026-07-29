@@ -364,16 +364,19 @@ async def send_login_otp(payload: OtpRequestPayload):
     email = user.get("email")
     if email:
         try:
+            from email_service import render_template
             subject = "🔑 Your SDPS Audio Hub Login OTP"
-            html = f"""
-            <div style="font-family: sans-serif; padding: 20px; max-width: 500px; border: 1px solid #e2e8f0; border-radius: 16px;">
-                <h2 style="color: #0e3b91;">SDPS Audio Command Hub OTP</h2>
-                <p>Your one-time login verification code is:</p>
-                <div style="font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #f87d0e; margin: 20px 0;">{otp_code}</div>
-                <p style="font-size: 12px; color: #64748b;">This code expires in 5 minutes. Do not share it with anyone.</p>
+            inner_body = f"""
+            <div style="text-align: center; padding: 10px 0;">
+                <p style="font-size: 15px; color: #334155; margin-bottom: 8px;">Your one-time login verification code for the Audio & Bell Command Hub is:</p>
+                <div style="font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #f87d0e; margin: 18px 0; background: #fff7ed; padding: 16px; border-radius: 12px; border: 1px inline #ffedd5; display: inline-block;">
+                    {otp_code}
+                </div>
+                <p style="font-size: 12px; color: #64748b; margin-top: 12px;">This code expires in 5 minutes. Do not share it with anyone.</p>
             </div>
             """
-            await send_email(email, subject, html)
+            full_html = render_template("SDPS Audio Command Hub OTP", inner_body)
+            await send_email(email, subject, full_html)
         except Exception as e:
             logger.warning(f"Failed to send OTP email: {e}")
 
