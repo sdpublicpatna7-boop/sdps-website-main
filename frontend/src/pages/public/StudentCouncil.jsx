@@ -355,7 +355,7 @@ const HouseCard = ({ house, profiles }) => {
         <button
           type="button"
           data-no-share="true"
-          onClick={() => shareResultCard(cardRef.current, house.name, houseCaptains[0]?.name)}
+          onClick={() => shareResultCard(cardRef.current, house.name, houseCaptains[0]?.name, houseVices[0]?.name)}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black transition-all shadow-xs active:scale-95 cursor-pointer shrink-0"
           title="Share House Card"
         >
