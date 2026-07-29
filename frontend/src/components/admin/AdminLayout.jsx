@@ -43,6 +43,7 @@ const NAV_CATEGORIES = [
     label: "School & Pages",
     icon: Home,
     items: [
+      { to: "/admin/house-mentors", label: "House Mentors Roster", icon: Shield },
       { to: "/admin/administration-members", label: "Administration Messages", icon: Users, permission: "site-settings" },
       { to: "/admin/testimonials", label: "Testimonials", icon: MessageSquare, permission: "site-settings" },
       { to: "/admin/hostel-gallery", label: "Hostel Gallery", icon: Hotel, permission: "hostel-gallery" },
@@ -58,7 +59,7 @@ const NAV_CATEGORIES = [
       { to: "/admin/elections/results", label: "Live Results Tally", icon: Trophy, permission: "council" },
       { to: "/admin/elections/scheduler", label: "Publish Scheduler", icon: Calendar, permission: "council" },
       { to: "/admin/council-members", label: "Members & Captains", icon: Crown, permission: "council" },
-      { to: "/admin/house-mentors", label: "House Mentors Roster", icon: Shield, permission: "council" },
+      { to: "/admin/house-mentors", label: "House Mentors Roster", icon: Shield },
       { to: "/admin/election-posters", label: "Election Posters", icon: Vote, permission: "council" },
       { to: "/admin/council-results", label: "Results Archive", icon: Trophy, permission: "council" },
     ]

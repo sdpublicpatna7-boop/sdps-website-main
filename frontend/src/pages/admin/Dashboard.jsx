@@ -5,12 +5,13 @@ import { useAuth } from "../../lib/auth";
 import {
   Newspaper, Bell, Image as ImageIcon, Video, MessageSquare,
   GraduationCap, Briefcase, Users, FileText, Fingerprint,
-  Sparkles, Settings, Database
+  Sparkles, Settings, Database, Shield
 } from "lucide-react";
 
 const STAT_ITEMS = [
   { key: "news", label: "News Updates", icon: Newspaper, color: "from-blue-500 to-indigo-600", desc: "School newsfeed articles", badge: "Press", badgeColor: "bg-blue-50/80 text-blue-600 border border-blue-100", link: "/admin/news" },
   { key: "notices", label: "Notices", icon: Bell, color: "from-amber-500 to-orange-600", desc: "Active bulletin board alerts", badge: "Important", badgeColor: "bg-amber-50/80 text-amber-600 border border-amber-100", link: "/admin/notices" },
+  { key: "house_mentors", label: "House Mentors", icon: Shield, color: "from-purple-600 to-pink-600", desc: "Aryabhatta, Ashoka, Chanakya & Gautam Roster", badge: "Staff Roster", badgeColor: "bg-purple-50/80 text-purple-600 border border-purple-100", link: "/admin/house-mentors" },
   { key: "gallery", label: "Gallery Images", icon: ImageIcon, color: "from-pink-500 to-rose-600", desc: "Media asset album files", badge: "Photos", badgeColor: "bg-pink-50/80 text-pink-600 border border-pink-100", link: "/admin/gallery" },
   { key: "videos", label: "Videos", icon: Video, color: "from-rose-500 to-red-600", desc: "Featured YouTube streams", badge: "Video", badgeColor: "bg-red-50/80 text-red-600 border border-red-100", link: "/admin/videos" },
   { key: "enquiries", label: "Enquiries", icon: MessageSquare, color: "from-emerald-500 to-teal-600", desc: "Admission enquiry leads", badge: "CRM", badgeColor: "bg-emerald-50/80 text-emerald-600 border border-emerald-100", link: "/admin/admission-enquiries" },
