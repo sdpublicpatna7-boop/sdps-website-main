@@ -153,6 +153,36 @@ export default function AdminAudioBroadcast() {
       .finally(() => setTunnelLoading(false));
   };
 
+  const handleDeleteNode = (hostname) => {
+    if (!window.confirm(`Delete stale node '${hostname}'?`)) return;
+    setTunnelLoading(true);
+    api.delete(`/admin/audio/tunnel/nodes/${encodeURIComponent(hostname)}`)
+      .then(() => {
+        setLastActionMsg({ type: "success", text: `Deleted stale node '${hostname}'!` });
+        fetchTunnelList();
+        pingDevice();
+      })
+      .catch(err => {
+        setLastActionMsg({ type: "error", text: err.response?.data?.detail || "Failed to delete node." });
+      })
+      .finally(() => setTunnelLoading(false));
+  };
+
+  const handleResetAllNodes = () => {
+    if (!window.confirm("Clear all registered tunnel nodes? Active nodes will re-register automatically.")) return;
+    setTunnelLoading(true);
+    api.post("/admin/audio/tunnel/reset-all")
+      .then(() => {
+        setLastActionMsg({ type: "success", text: "Cleared all old tunnel nodes! Fresh nodes will appear as they ping." });
+        fetchTunnelList();
+        pingDevice();
+      })
+      .catch(err => {
+        setLastActionMsg({ type: "error", text: err.response?.data?.detail || "Failed to clear nodes." });
+      })
+      .finally(() => setTunnelLoading(false));
+  };
+
   useEffect(() => {
     if (!user) return;
     pingDevice();
@@ -1110,13 +1140,23 @@ export default function AdminAudioBroadcast() {
                 </h2>
                 <p className="text-xs text-slate-500">View all active and standby PCs connected to the school audio controller network.</p>
               </div>
-              <button
-                onClick={fetchTunnelList}
-                disabled={tunnelLoading}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-2 transition-all self-start md:self-auto"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${tunnelLoading ? "animate-spin" : ""}`} /> Refresh Nodes List
-              </button>
+              <div className="flex items-center gap-2 self-start md:self-auto">
+                <button
+                  onClick={handleResetAllNodes}
+                  disabled={tunnelLoading}
+                  className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs"
+                  title="Clear all old registered tunnel nodes"
+                >
+                  <XCircle className="w-3.5 h-3.5 text-rose-600" /> Clear All Stale Nodes
+                </button>
+                <button
+                  onClick={fetchTunnelList}
+                  disabled={tunnelLoading}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-2 transition-all"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${tunnelLoading ? "animate-spin" : ""}`} /> Refresh Nodes List
+                </button>
+              </div>
             </div>
 
             <div className="overflow-x-auto rounded-2xl border border-slate-200">
@@ -1160,21 +1200,31 @@ export default function AdminAudioBroadcast() {
                           </span>
                         </td>
                         <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                          {!node.is_primary && node.status !== "OFFLINE" ? (
+                          <div className="inline-flex items-center gap-2">
+                            {!node.is_primary && node.status !== "OFFLINE" ? (
+                              <button
+                                onClick={() => handleSelectPrimary(node.hostname)}
+                                disabled={tunnelLoading}
+                                className="px-3.5 py-1.5 bg-brand-navy hover:bg-brand-blue text-white font-bold rounded-xl text-xs transition-all shadow-xs whitespace-nowrap"
+                              >
+                                Promote to Active
+                              </button>
+                            ) : node.is_primary ? (
+                              <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 whitespace-nowrap">
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Active Primary
+                              </span>
+                            ) : (
+                              <span className="text-xs text-slate-400 whitespace-nowrap">Offline</span>
+                            )}
                             <button
-                              onClick={() => handleSelectPrimary(node.hostname)}
+                              onClick={() => handleDeleteNode(node.hostname)}
                               disabled={tunnelLoading}
-                              className="px-3.5 py-1.5 bg-brand-navy hover:bg-brand-blue text-white font-bold rounded-xl text-xs transition-all shadow-xs whitespace-nowrap"
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                              title={`Delete node '${node.hostname}'`}
                             >
-                              Promote to Active
+                              <XCircle className="w-4 h-4" />
                             </button>
-                          ) : node.is_primary ? (
-                            <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 whitespace-nowrap">
-                              <CheckCircle2 className="w-3.5 h-3.5" /> Active Primary
-                            </span>
-                          ) : (
-                            <span className="text-xs text-slate-400 whitespace-nowrap">Offline</span>
-                          )}
+                          </div>
                         </td>
                       </tr>
                     ))

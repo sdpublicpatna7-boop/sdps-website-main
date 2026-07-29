@@ -316,6 +316,37 @@ async def select_primary_tunnel(payload: SelectPrimaryPayload, current_admin=Dep
     }
 
 
+@audio_router.delete("/tunnel/nodes/{hostname}")
+async def delete_tunnel_node(hostname: str, current_admin=Depends(get_current_admin)):
+    """Delete a specific old/stale registered audio tunnel node."""
+    global _active_tunnel_url
+    from server import db
+    await db.audio_tunnels.delete_many({"hostname": hostname})
+    
+    settings = await db.site_settings.find_one({}, {"_id": 0, "primary_hostname": 1})
+    if settings and settings.get("primary_hostname") == hostname:
+        _active_tunnel_url = None
+        await db.site_settings.update_one(
+            {},
+            {"$unset": {"cloudflare_tunnel_url": "", "primary_hostname": "", "tunnel_hostname": ""}}
+        )
+    return {"success": True, "message": f"Deleted tunnel node '{hostname}'"}
+
+
+@audio_router.post("/tunnel/reset-all")
+async def reset_all_tunnel_nodes(current_admin=Depends(get_current_admin)):
+    """Delete ALL registered tunnel nodes and reset active primary tunnel URL."""
+    global _active_tunnel_url
+    from server import db
+    _active_tunnel_url = None
+    await db.audio_tunnels.delete_many({})
+    await db.site_settings.update_one(
+        {},
+        {"$unset": {"cloudflare_tunnel_url": "", "primary_hostname": "", "tunnel_hostname": ""}}
+    )
+    return {"success": True, "message": "All registered tunnel nodes cleared successfully."}
+
+
 # ─── 2FA OTP & Single-Session Preemption System ───
 
 @audio_router.post("/otp/send")
