@@ -274,6 +274,10 @@ const ConfettiShower = () => {
    WINNER SPOTLIGHT CARD (hero section per post)
    ─────────────────────────────────────────────────────── */
 const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, index, isAppointed }) => {
+  const lowerPos = (position || "").toLowerCase();
+  const isDisciplineHead = lowerPos.includes("discipline");
+  const isAppointedPost = isAppointed || isDisciplineHead;
+
   return (
     <div
       className="animate-card-reveal relative"
@@ -290,15 +294,15 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
               <div className="text-[10px] tracking-[0.3em] uppercase font-bold text-blue-200/80 mb-1">Position</div>
               <h3 className="font-headline text-xl font-black text-white tracking-tight">{position}</h3>
             </div>
-            {!isAppointed && (
+            {!isAppointedPost && (
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur border border-white/20">
                 <Users className="w-3.5 h-3.5 text-white/80" />
                 <span className="text-xs font-bold text-white/90 tabular-nums">{totalVotes} votes cast</span>
               </div>
             )}
-            {isAppointed && (
+            {isAppointedPost && (
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur border border-white/20">
-                <Star className="w-3.5 h-3.5 text-white/80" />
+                <Star className="w-3.5 h-3.5 text-white/80 fill-white" />
                 <span className="text-xs font-bold text-white/90">Appointed</span>
               </div>
             )}
@@ -320,10 +324,10 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
                                      (position || "").toLowerCase().includes("head boy") ||
                                      (position || "").toLowerCase().includes("head girl");
               const lowerWinnerName = (winner?.name || "").toLowerCase();
-              const isExplicitAppointedMember = ["anshika", "simran", "vijaya", "vijaylaxmi"].some(n => lowerWinnerName.includes(n));
-              const isSecondaryCandidate = winner?.is_vice || isExplicitAppointedMember || (wIdx > 0 && !isSchoolCaptain);
+              const isExplicitAppointedMember = ["anshika", "simran", "vijaya", "vijaylaxmi", "harsh"].some(n => lowerWinnerName.includes(n));
+              const isSecondaryCandidate = winner?.is_vice || isExplicitAppointedMember || (wIdx > 0 && !isSchoolCaptain) || isDisciplineHead;
               const isViceSchoolCaptain = isSecondaryCandidate && isSchoolCaptain;
-              const isSecondaryAppointed = isSecondaryCandidate && !isSchoolCaptain;
+              const isSecondaryAppointed = (isSecondaryCandidate || isAppointedPost) && !isSchoolCaptain;
 
               return (
                 <div key={winner?.candidate_id || wIdx} className={`flex items-center gap-6 ${wIdx > 0 ? "pt-6" : ""}`}>
@@ -340,7 +344,7 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
                         isViceSchoolCaptain
                           ? "from-purple-400 to-purple-600"
                           : isSecondaryAppointed
-                            ? "from-blue-400 to-blue-600"
+                            ? "from-blue-500 to-blue-700 shadow-blue-500/30"
                             : "from-[#F4D571] to-[#B9892B]"
                       } flex items-center justify-center shadow-lg border-2 border-white`}>
                         {isViceSchoolCaptain ? <Award className="w-5 h-5 text-white" /> : isSecondaryAppointed ? <Star className="w-5 h-5 text-white fill-white" /> : <Crown className="w-5 h-5 text-white" />}
@@ -395,7 +399,7 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
                     <h4 className="font-headline text-xl font-black text-slate-900 tracking-tight leading-tight break-words">
                       {winner.name}
                     </h4>
-                    {winner.symbol && (
+                    {winner.symbol && !isAppointedPost && (
                       <div className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-0.5">
                         Symbol: {winner.symbol}
                       </div>
@@ -416,7 +420,7 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
                         ) : isSecondaryAppointed ? (
                           <>
                             <Star className="w-3.5 h-3.5 fill-blue-500 text-blue-500" />
-                            {position}
+                            {position} · Appointed by Management
                           </>
                         ) : (
                           <>
@@ -442,7 +446,7 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
         {/* All candidates breakdown */}
         <div className="px-6 py-5">
           <div className="flex items-center gap-2 mb-4">
-            <div className={`w-1 h-4 rounded-full bg-gradient-to-b ${isAppointed ? "from-blue-400 to-blue-600" : "from-amber-400 to-amber-600"}`} />
+            <div className={`w-1 h-4 rounded-full bg-gradient-to-b ${isAppointedPost ? "from-blue-400 to-blue-600" : "from-amber-400 to-amber-600"}`} />
             <span className="text-[10px] tracking-[0.25em] uppercase font-extrabold text-slate-500">All Candidates</span>
             <span className="text-[10px] font-bold text-slate-300 ml-auto">{allCandidates.length} total</span>
           </div>
@@ -450,7 +454,7 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
           <div className="grid grid-cols-2 gap-2">
             {allCandidates.map((c, i) => {
               const pct = totalVotes > 0 ? Math.round((c.votes / totalVotes) * 100) : 0;
-              const isWinner = i === 0 && c.votes > 0;
+              const isWinner = i === 0 && (c.votes > 0 || isAppointedPost);
               const candidatePhoto = c.photo ? (c.photo.startsWith("data:") || c.photo.startsWith("http") ? c.photo : fullUrl(c.photo)) : null;
 
               return (
@@ -458,7 +462,7 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
                   key={c.candidate_id || c.name}
                   className={`flex items-center gap-2 p-2 rounded-xl transition-all duration-300 ${
                     isWinner
-                      ? isAppointed
+                      ? isAppointedPost
                         ? "bg-blue-50/50 border border-blue-200/50"
                         : "bg-amber-50/60 border border-amber-200/50"
                       : "bg-slate-50/60 border border-transparent"
@@ -467,7 +471,7 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
                   {/* Rank badge */}
                   <div className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black shrink-0 ${
                     isWinner
-                      ? isAppointed
+                      ? isAppointedPost
                         ? "bg-blue-500 text-white"
                         : "bg-gradient-to-br from-amber-400 to-amber-500 text-white"
                       : i === 1
@@ -481,14 +485,14 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
 
                   {/* Photo */}
                   <div className={`w-8 h-8 rounded-lg overflow-hidden shrink-0 ${
-                    isWinner ? isAppointed ? "ring-1 ring-blue-300/50" : "ring-1 ring-amber-300/50" : "ring-1 ring-slate-200"
+                    isWinner ? isAppointedPost ? "ring-1 ring-blue-300/50" : "ring-1 ring-amber-300/50" : "ring-1 ring-slate-200"
                   }`}>
                     {candidatePhoto ? (() => {
                       const { style, cleanUrl } = parseCandidateTransform(candidatePhoto);
                       return <img src={cleanUrl} alt={c.name} style={style} className="w-full h-full object-cover" />;
                     })() : (
                       <div className={`w-full h-full flex items-center justify-center text-xs font-bold ${
-                        isWinner ? isAppointed ? "bg-blue-100 text-blue-700" : "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-500"
+                        isWinner ? isAppointedPost ? "bg-blue-100 text-blue-700" : "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-500"
                       }`}>
                         {c.name?.[0]}
                       </div>
@@ -497,11 +501,11 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
 
                   {/* Name + votes */}
                   <div className="flex-1 min-w-0">
-                    <div className={`text-xs font-bold truncate flex items-center gap-1 ${isWinner ? isAppointed ? "text-blue-900" : "text-amber-900" : "text-slate-700"}`}>
+                    <div className={`text-xs font-bold truncate flex items-center gap-1 ${isWinner ? isAppointedPost ? "text-blue-900" : "text-amber-900" : "text-slate-700"}`}>
                       {c.name}
-                      {isWinner && (isAppointed ? <Star className="w-3 h-3 text-blue-500 fill-blue-500 shrink-0" /> : <Crown className="w-3 h-3 text-amber-500 shrink-0" />)}
+                      {isWinner && (isAppointedPost ? <Star className="w-3 h-3 text-blue-500 fill-blue-500 shrink-0" /> : <Crown className="w-3 h-3 text-amber-500 shrink-0" />)}
                     </div>
-                    {!isAppointed && (
+                    {!isAppointedPost && (
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
                           <div
@@ -522,8 +526,10 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
                         </span>
                       </div>
                     )}
-                    {isAppointed && isWinner && (
-                      <span className="text-[8px] font-black text-blue-600 uppercase tracking-wide">Appointed</span>
+                    {isAppointedPost && (
+                      <span className="text-[8px] font-black text-blue-600 uppercase tracking-wide flex items-center gap-1 mt-0.5">
+                        <Star className="w-2.5 h-2.5 fill-blue-500 text-blue-500" /> Appointed by Management
+                      </span>
                     )}
                   </div>
                 </div>
