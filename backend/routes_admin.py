@@ -1192,6 +1192,7 @@ async def create_staff_user(payload: Dict[str, Any] = Body(...), admin: TokenDat
     send_welcome = payload.get("send_welcome", True)
     notification_channel = payload.get("notification_channel", "both")
     portal_target = payload.get("portal_target", "broadcasting")
+    custom_note = (payload.get("custom_note") or "").strip()
 
     portal_url = "https://boardcasting.sdpublic.org" if portal_target == "broadcasting" else "https://sdpublic.org/admin"
     portal_name = "SDPS Audio Broadcast & Smart Bell System" if portal_target == "broadcasting" else "SDPS Main Admin Portal"
@@ -1201,12 +1202,16 @@ async def create_staff_user(payload: Dict[str, Any] = Body(...), admin: TokenDat
     welcome_wa_res = None
 
     if send_welcome:
+        note_email_html = f'<blockquote style="background:#fef3c7;border-left:4px solid #f59e0b;padding:12px;margin:12px 0;border-radius:6px;color:#78350f;font-size:13px;"><strong>📝 Message from Administrator:</strong><br/>{custom_note}</blockquote>' if custom_note else ""
+        note_wa_txt = f"📝 Message from Administrator:\n{custom_note}\n\n" if custom_note else ""
+
         if notification_channel in ("email", "both") and email and "@" in email:
             body = render_template(
                 title=f"Welcome Onboard to {portal_name}",
                 body_html=f"""
                 <p>Hello <strong>{name}</strong>,</p>
                 <p>Your administrator staff account has been created for <strong>S.D. Public School</strong>.</p>
+                {note_email_html}
                 <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:12px;padding:16px;margin:16px 0;font-size:14px;">
                     <p style="margin:4px 0;"><strong>👤 Username / Email:</strong> <code style="background:#e2e8f0;padding:2px 6px;border-radius:4px;color:#0E3B91;">{username}</code></p>
                     <p style="margin:4px 0;"><strong>🔐 Initial Password:</strong> <code style="background:#e2e8f0;padding:2px 6px;border-radius:4px;color:#0E3B91;">{password}</code></p>
@@ -1231,6 +1236,7 @@ async def create_staff_user(payload: Dict[str, Any] = Body(...), admin: TokenDat
                 from whatsapp_service import send_whatsapp_text
                 wa_msg = (
                     f"🎉 Welcome Onboard to S.D. Public School, {name}!\n\n"
+                    f"{note_wa_txt}"
                     f"Your administrator account is ready for {portal_name}.\n\n"
                     f"👤 Username/Email: {username}\n"
                     f"🔐 Password: {password}\n\n"

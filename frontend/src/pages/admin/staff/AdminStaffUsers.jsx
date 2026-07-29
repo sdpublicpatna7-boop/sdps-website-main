@@ -520,6 +520,39 @@ export function AdminStaffUsers() {
                           </div>
                         </div>
                       </div>
+
+                      {/* Custom Personal Note */}
+                      <div>
+                        <label className="text-[11px] font-bold text-amber-800 uppercase tracking-wider block mb-1">
+                          Optional Personal Welcome Note:
+                        </label>
+                        <textarea
+                          rows={2}
+                          placeholder="e.g. Welcome to the SDPS team! Please set your password upon receiving this message."
+                          className="w-full px-3 py-2 border rounded-lg text-xs bg-white border-amber-200 focus:ring-amber-400"
+                          value={form.custom_note || ""}
+                          onChange={(e) => setForm({ ...form, custom_note: e.target.value })}
+                        />
+                      </div>
+
+                      {/* Live Onboarding Message Preview */}
+                      <div className="p-3 rounded-lg bg-amber-100/60 border border-amber-200 text-[11px] space-y-1.5">
+                        <div className="font-bold text-amber-900 flex items-center justify-between">
+                          <span>👁️ Live Onboarding Message Preview:</span>
+                          <span className="text-[10px] bg-amber-200/80 px-2 py-0.5 rounded font-mono">
+                            {form.portal_target === "broadcasting" ? "https://boardcasting.sdpublic.org" : "https://sdpublic.org/admin"}
+                          </span>
+                        </div>
+                        <div className="font-mono bg-white p-2.5 rounded border border-amber-200 text-[10px] text-slate-800 leading-relaxed whitespace-pre-wrap max-h-32 overflow-y-auto">
+                          {`🎉 Welcome Onboard to S.D. Public School, ${form.name || "[User Name]"}!\n\n` +
+                           (form.custom_note ? `📝 Message from Administrator:\n${form.custom_note}\n\n` : "") +
+                           `Your administrator account is ready for ${form.portal_target === "broadcasting" ? "SDPS Audio Broadcast & Smart Bell System" : "SDPS Main Admin Portal"}.\n\n` +
+                           `👤 Username/Email: ${form.username || form.email || "[username]"}\n` +
+                           `🔐 Initial Password: ${form.password || "[password]"}\n\n` +
+                           `🌐 Direct Login Portal:\n${form.portal_target === "broadcasting" ? "https://boardcasting.sdpublic.org" : "https://sdpublic.org/admin"}\n\n` +
+                           `🔑 Set / Change Password Link:\n${form.portal_target === "broadcasting" ? "https://boardcasting.sdpublic.org/admin/forgot-password" : "https://sdpublic.org/admin/forgot-password"}`}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
