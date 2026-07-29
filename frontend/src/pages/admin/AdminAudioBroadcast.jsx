@@ -35,7 +35,7 @@ export default function AdminAudioBroadcast() {
   const [authError, setAuthError] = useState(null);
   const [authSubmitting, setAuthSubmitting] = useState(false);
 
-  const [deviceIp] = useState("192.168.29.71");
+  const [deviceIp, setDeviceIp] = useState(localStorage.getItem("sdps_audio_ip") || "192.168.29.71");
   const [activeTunnelUrl, setActiveTunnelUrl] = useState(null);
   const [tunnelHostname, setTunnelHostname] = useState(null);
   const [deviceStatus, setDeviceStatus] = useState({ online: false, checking: true, error: null });
@@ -599,6 +599,19 @@ export default function AdminAudioBroadcast() {
                     <XCircle className="w-4 h-4 text-rose-400 shrink-0" /> Device Offline
                   </span>
                 )}
+              </div>
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10 text-xs">
+                <span className="text-slate-400 font-medium shrink-0">Broadcasting IP:</span>
+                <input
+                  type="text"
+                  value={deviceIp}
+                  onChange={(e) => {
+                    setDeviceIp(e.target.value);
+                    localStorage.setItem("sdps_audio_ip", e.target.value);
+                  }}
+                  className="bg-black/50 text-amber-300 border border-white/20 px-2.5 py-1 rounded-md font-mono text-xs w-36 focus:outline-none focus:border-amber-400 shadow-inner"
+                  placeholder="192.168.29.71"
+                />
               </div>
             </div>
           </div>
