@@ -16,6 +16,18 @@ const HOUSE_SYSTEM_DATA = [
     badgeBg: "bg-amber-500 text-white",
     borderColor: "border-amber-400/80",
     textColor: "text-amber-700",
+    defaultCaptain: {
+      id: "ashoka-c",
+      name: "Kumar Ashmit",
+      photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785328179/asd_qophbe.png",
+      year: "2026-27"
+    },
+    defaultVice: {
+      id: "ashoka-vc",
+      name: "Sakshi Shree",
+      photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785328179/sakd_yv4y3y.png",
+      year: "2026-27"
+    }
   },
   {
     key: "aryabhatta",
@@ -26,6 +38,18 @@ const HOUSE_SYSTEM_DATA = [
     badgeBg: "bg-red-600 text-white",
     borderColor: "border-red-400/80",
     textColor: "text-red-700",
+    defaultCaptain: {
+      id: "aryabhatta-c",
+      name: "Manjari",
+      photo: "https://res.cloudinary.com/drzb164ge/image/upload/q_auto/f_auto/v1778295843/001_feweo3.jpg",
+      year: "2026-27"
+    },
+    defaultVice: {
+      id: "aryabhatta-vc",
+      name: "Bhavya Kumari",
+      photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785328002/arya_VC_mz1rrs.png",
+      year: "2026-27"
+    }
   },
   {
     key: "chanakya",
@@ -36,6 +60,18 @@ const HOUSE_SYSTEM_DATA = [
     badgeBg: "bg-blue-600 text-white",
     borderColor: "border-blue-400/80",
     textColor: "text-blue-700",
+    defaultCaptain: {
+      id: "chanakya-c",
+      name: "Abhinav Kumar",
+      photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785328003/Chanakya_Captain_xui2ib.png",
+      year: "2026-27"
+    },
+    defaultVice: {
+      id: "chanakya-vc",
+      name: "Prachi",
+      photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785328381/Prachi_zcygd3.png",
+      year: "2026-27"
+    }
   },
   {
     key: "gautam",
@@ -46,6 +82,18 @@ const HOUSE_SYSTEM_DATA = [
     badgeBg: "bg-emerald-600 text-white",
     borderColor: "border-emerald-400/80",
     textColor: "text-emerald-700",
+    defaultCaptain: {
+      id: "gautam-c",
+      name: "Priyanshu Singh",
+      photo: "https://res.cloudinary.com/drzb164ge/image/upload/q_auto/f_auto/v1778296001/005_l9apgk.png",
+      year: "2026-27"
+    },
+    defaultVice: {
+      id: "gautam-vc",
+      name: "Aradhya Gupta",
+      photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785328565/aradhya_ywacsd.png",
+      year: "2026-27"
+    }
   },
 ];
 
@@ -973,17 +1021,20 @@ export default function StudentCouncil() {
             {/* 4 Houses Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {HOUSE_SYSTEM_DATA.map(house => {
-                // Find matching Captain & Vice Captain from profiles or election winners
-                const houseCaptains = (profiles || []).filter(p => {
+                // Find matching Captain & Vice Captain from profiles or fallback to assigned house defaults
+                const dynamicCaptains = (profiles || []).filter(p => {
                   const pos = (p?.position || "").toLowerCase();
                   const hName = (p?.house || "").toLowerCase();
                   return (pos.includes(house.key) || hName.includes(house.key)) && pos.includes("captain") && !pos.includes("vice");
                 });
-                const houseVices = (profiles || []).filter(p => {
+                const dynamicVices = (profiles || []).filter(p => {
                   const pos = (p?.position || "").toLowerCase();
                   const hName = (p?.house || "").toLowerCase();
                   return (pos.includes(house.key) || hName.includes(house.key)) && pos.includes("vice");
                 });
+
+                const houseCaptains = dynamicCaptains.length > 0 ? dynamicCaptains : (house.defaultCaptain ? [house.defaultCaptain] : []);
+                const houseVices = dynamicVices.length > 0 ? dynamicVices : (house.defaultVice ? [house.defaultVice] : []);
 
                 return (
                   <div key={house.key} className={`bg-white rounded-3xl border-2 ${house.borderColor} p-6 shadow-xl relative overflow-hidden transition-all duration-300 hover:shadow-2xl`}>
@@ -1010,19 +1061,24 @@ export default function StudentCouncil() {
                         <div className="text-[9px] uppercase tracking-widest font-black text-amber-600 mb-2 flex items-center gap-1">
                           <Crown className="w-3 h-3 text-amber-500" /> House Captain
                         </div>
-                        {houseCaptains.length > 0 ? houseCaptains.map(c => (
-                          <div key={c.id || c.name} className="w-full text-center">
-                            <div className="w-14 h-14 rounded-full mx-auto overflow-hidden ring-2 ring-amber-400 mb-2 bg-white">
-                              {c.photo_url || c.photo ? (
-                                <img src={fullUrl(c.photo_url || c.photo)} alt={c.name} className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center font-black text-amber-700">{c.name?.[0]}</div>
-                              )}
+                        {houseCaptains.length > 0 ? houseCaptains.map(c => {
+                          const photoSrc = c.photo_url || c.photo;
+                          return (
+                            <div key={c.id || c.name} className="w-full text-center">
+                              <div className="w-16 h-16 rounded-full mx-auto overflow-hidden ring-2 ring-amber-400/80 mb-2 bg-white shadow-sm">
+                                {photoSrc ? (() => {
+                                  const fullImg = fullUrl(photoSrc);
+                                  const { style, cleanUrl } = parseCandidateTransform(fullImg);
+                                  return <img src={cleanUrl} alt={c.name} style={style} className="w-full h-full object-cover" />;
+                                })() : (
+                                  <div className="w-full h-full flex items-center justify-center font-black text-amber-700">{c.name?.[0]}</div>
+                                )}
+                              </div>
+                              <h5 className="font-headline font-extrabold text-xs text-slate-900 leading-tight">{c.name}</h5>
+                              {c.year && <span className="text-[9px] text-slate-400 font-bold block mt-0.5">{c.year}</span>}
                             </div>
-                            <h5 className="font-headline font-bold text-xs text-slate-900 leading-tight">{c.name}</h5>
-                            {c.year && <span className="text-[9px] text-slate-400 font-semibold">{c.year}</span>}
-                          </div>
-                        )) : (
+                          );
+                        }) : (
                           <div className="py-2 text-[11px] text-slate-400 italic">To be announced</div>
                         )}
                       </div>
@@ -1032,19 +1088,24 @@ export default function StudentCouncil() {
                         <div className="text-[9px] uppercase tracking-widest font-black text-purple-600 mb-2 flex items-center gap-1">
                           <Award className="w-3 h-3 text-purple-500" /> Vice Captain
                         </div>
-                        {houseVices.length > 0 ? houseVices.map(v => (
-                          <div key={v.id || v.name} className="w-full text-center">
-                            <div className="w-14 h-14 rounded-full mx-auto overflow-hidden ring-2 ring-purple-400 mb-2 bg-white">
-                              {v.photo_url || v.photo ? (
-                                <img src={fullUrl(v.photo_url || v.photo)} alt={v.name} className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center font-black text-purple-700">{v.name?.[0]}</div>
-                              )}
+                        {houseVices.length > 0 ? houseVices.map(v => {
+                          const photoSrc = v.photo_url || v.photo;
+                          return (
+                            <div key={v.id || v.name} className="w-full text-center">
+                              <div className="w-16 h-16 rounded-full mx-auto overflow-hidden ring-2 ring-purple-400/80 mb-2 bg-white shadow-sm">
+                                {photoSrc ? (() => {
+                                  const fullImg = fullUrl(photoSrc);
+                                  const { style, cleanUrl } = parseCandidateTransform(fullImg);
+                                  return <img src={cleanUrl} alt={v.name} style={style} className="w-full h-full object-cover" />;
+                                })() : (
+                                  <div className="w-full h-full flex items-center justify-center font-black text-purple-700">{v.name?.[0]}</div>
+                                )}
+                              </div>
+                              <h5 className="font-headline font-extrabold text-xs text-slate-900 leading-tight">{v.name}</h5>
+                              {v.year && <span className="text-[9px] text-slate-400 font-bold block mt-0.5">{v.year}</span>}
                             </div>
-                            <h5 className="font-headline font-bold text-xs text-slate-900 leading-tight">{v.name}</h5>
-                            {v.year && <span className="text-[9px] text-slate-400 font-semibold">{v.year}</span>}
-                          </div>
-                        )) : (
+                          );
+                        }) : (
                           <div className="py-2 text-[11px] text-slate-400 italic">To be announced</div>
                         )}
                       </div>
