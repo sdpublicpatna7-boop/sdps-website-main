@@ -206,6 +206,7 @@ function App() {
                 {/* Admin auth (no layout) */}
                 <Route path="/admin/login" element={<Suspense fallback={<AdminLoading />}><AdminLogin /></Suspense>} />
                 <Route path="/admin/forgot-password" element={<Suspense fallback={<AdminLoading />}><AdminForgotPassword /></Suspense>} />
+                <Route path="/forgot-password" element={<Suspense fallback={<AdminLoading />}><AdminForgotPassword /></Suspense>} />
 
                 {/* Admin (protected) */}
                 <Route path="/admin" element={<Suspense fallback={<AdminLoading />}><AdminLayout /></Suspense>}>

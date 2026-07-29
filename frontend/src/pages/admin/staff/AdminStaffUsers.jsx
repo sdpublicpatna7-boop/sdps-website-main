@@ -51,13 +51,35 @@ export function AdminStaffUsers() {
   const { items, loading, reload } = useAdminList("/admin/staff-users");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ name: "", username: "", email: "", phone: "", password: "", role: "staff", permissions: [] });
+  const [form, setForm] = useState({ 
+    name: "", 
+    username: "", 
+    email: "", 
+    phone: "", 
+    password: "", 
+    role: "staff", 
+    permissions: [],
+    send_welcome: true,
+    notification_channel: "both",
+    portal_target: "broadcasting"
+  });
   const [saving, setSaving] = useState(false);
   const [showPw, setShowPw] = useState(false);
 
   const startCreate = () => {
     setEditing(null);
-    setForm({ name: "", username: "", email: "", phone: "", password: "", role: "staff", permissions: [] });
+    setForm({ 
+      name: "", 
+      username: "", 
+      email: "", 
+      phone: "", 
+      password: "", 
+      role: "staff", 
+      permissions: [],
+      send_welcome: true,
+      notification_channel: "both",
+      portal_target: "broadcasting"
+    });
     setOpen(true);
   };
   const startEdit = (u) => {
@@ -398,6 +420,108 @@ export function AdminStaffUsers() {
                       );
                     })}
                   </div>
+                </div>
+              )}
+
+              {/* Welcome Onboarding & Portal Access Link Setup */}
+              {!editing && (
+                <div className="p-4 rounded-xl bg-amber-50/70 border border-amber-200/80 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-2 text-xs font-bold text-amber-900 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form.send_welcome}
+                        onChange={e => setForm({ ...form, send_welcome: e.target.checked })}
+                        className="rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                      />
+                      <span>📩 Send Welcome Onboard Notification & Password Link</span>
+                    </label>
+                  </div>
+
+                  {form.send_welcome && (
+                    <div className="space-y-3 pt-2 border-t border-amber-200/60 text-xs">
+                      {/* Notification Channel */}
+                      <div>
+                        <label className="text-[11px] font-bold text-amber-800 uppercase tracking-wider block mb-1">
+                          Notification Channel:
+                        </label>
+                        <div className="flex gap-2">
+                          {[
+                            { id: "both", label: "✉️💬 Email & WhatsApp" },
+                            { id: "whatsapp", label: "💬 WhatsApp" },
+                            { id: "email", label: "✉️ Email" },
+                          ].map(ch => (
+                            <button
+                              key={ch.id}
+                              type="button"
+                              onClick={() => setForm({ ...form, notification_channel: ch.id })}
+                              className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-semibold transition-all ${
+                                form.notification_channel === ch.id
+                                  ? "bg-amber-600 text-white border-amber-600 shadow-xs font-bold"
+                                  : "bg-white text-amber-900 border-amber-200 hover:bg-amber-100/50"
+                              }`}
+                            >
+                              {ch.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Portal Target Option */}
+                      <div>
+                        <label className="text-[11px] font-bold text-amber-800 uppercase tracking-wider block mb-1">
+                          Select Portal Login Link to Send User:
+                        </label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div
+                            onClick={() => setForm({ ...form, portal_target: "broadcasting" })}
+                            className={`p-2.5 rounded-xl border text-xs cursor-pointer transition-all flex flex-col justify-between ${
+                              form.portal_target === "broadcasting"
+                                ? "bg-amber-100/90 border-amber-500 ring-2 ring-amber-400/30 text-amber-950 font-bold"
+                                : "bg-white border-amber-200 text-slate-700 hover:bg-amber-50/50"
+                            }`}
+                          >
+                            <div className="flex items-center gap-1.5 font-bold">
+                              <input
+                                type="radio"
+                                name="portal_target"
+                                checked={form.portal_target === "broadcasting"}
+                                onChange={() => setForm({ ...form, portal_target: "broadcasting" })}
+                                className="text-amber-600"
+                              />
+                              📻 Audio Broadcast Hub
+                            </div>
+                            <span className="text-[10px] font-mono text-amber-800 mt-1 truncate">
+                              boardcasting.sdpublic.org
+                            </span>
+                          </div>
+
+                          <div
+                            onClick={() => setForm({ ...form, portal_target: "admin" })}
+                            className={`p-2.5 rounded-xl border text-xs cursor-pointer transition-all flex flex-col justify-between ${
+                              form.portal_target === "admin"
+                                ? "bg-amber-100/90 border-amber-500 ring-2 ring-amber-400/30 text-amber-950 font-bold"
+                                : "bg-white border-amber-200 text-slate-700 hover:bg-amber-50/50"
+                            }`}
+                          >
+                            <div className="flex items-center gap-1.5 font-bold">
+                              <input
+                                type="radio"
+                                name="portal_target"
+                                checked={form.portal_target === "admin"}
+                                onChange={() => setForm({ ...form, portal_target: "admin" })}
+                                className="text-amber-600"
+                              />
+                              🏫 Main Admin Portal
+                            </div>
+                            <span className="text-[10px] font-mono text-amber-800 mt-1 truncate">
+                              sdpublic.org/admin
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

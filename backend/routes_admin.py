@@ -1187,6 +1187,63 @@ async def create_staff_user(payload: Dict[str, Any] = Body(...), admin: TokenDat
     await db.admin_users.insert_one(user.copy())
     user.pop("password_hash", None)
     user.pop("_id", None)
+
+    # ── Welcome Onboarding Notification (Email / WhatsApp) ──
+    send_welcome = payload.get("send_welcome", True)
+    notification_channel = payload.get("notification_channel", "both")
+    portal_target = payload.get("portal_target", "broadcasting")
+
+    portal_url = "https://boardcasting.sdpublic.org" if portal_target == "broadcasting" else "https://sdpublic.org/admin"
+    portal_name = "SDPS Audio Broadcast & Smart Bell System" if portal_target == "broadcasting" else "SDPS Main Admin Portal"
+    reset_url = f"{portal_url}/admin/forgot-password" if portal_target == "broadcasting" else "https://sdpublic.org/admin/forgot-password"
+
+    welcome_email_res = None
+    welcome_wa_res = None
+
+    if send_welcome:
+        if notification_channel in ("email", "both") and email and "@" in email:
+            body = render_template(
+                title=f"Welcome Onboard to {portal_name}",
+                body_html=f"""
+                <p>Hello <strong>{name}</strong>,</p>
+                <p>Your administrator staff account has been created for <strong>S.D. Public School</strong>.</p>
+                <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:12px;padding:16px;margin:16px 0;font-size:14px;">
+                    <p style="margin:4px 0;"><strong>👤 Username / Email:</strong> <code style="background:#e2e8f0;padding:2px 6px;border-radius:4px;color:#0E3B91;">{username}</code></p>
+                    <p style="margin:4px 0;"><strong>🔐 Initial Password:</strong> <code style="background:#e2e8f0;padding:2px 6px;border-radius:4px;color:#0E3B91;">{password}</code></p>
+                    <p style="margin:4px 0;"><strong>🌐 Target Portal:</strong> <a href="{portal_url}" style="color:#0E3B91;font-weight:bold;">{portal_url}</a></p>
+                </div>
+                <p style="font-size:14px;">Please click below to log in and set/change your password for security:</p>
+                <div style="text-align:center;margin:24px 0;">
+                    <a href="{portal_url}" style="background:#0E3B91;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block;">🚀 Login to {portal_name}</a>
+                </div>
+                <div style="text-align:center;">
+                    <a href="{reset_url}" style="color:#f97316;font-size:13px;font-weight:bold;">🔑 Set / Change Your Password Anytime</a>
+                </div>
+                """
+            )
+            try:
+                welcome_email_res = await send_email(email, f"Welcome Onboard - {portal_name}", body)
+            except Exception as e:
+                welcome_email_res = {"error": str(e)}
+
+        if notification_channel in ("whatsapp", "both") and phone:
+            try:
+                from whatsapp_service import send_whatsapp_text
+                wa_msg = (
+                    f"🎉 Welcome Onboard to S.D. Public School, {name}!\n\n"
+                    f"Your administrator account is ready for {portal_name}.\n\n"
+                    f"👤 Username/Email: {username}\n"
+                    f"🔐 Password: {password}\n\n"
+                    f"🌐 Direct Login Portal:\n{portal_url}\n\n"
+                    f"🔑 Kindly set / change your password anytime here:\n{reset_url}\n\n"
+                    f"Please log in and set your new password for security."
+                )
+                welcome_wa_res = await send_whatsapp_text(phone, wa_msg, subject="Welcome Onboard Admin Account")
+            except Exception as e:
+                welcome_wa_res = {"error": str(e)}
+
+    user["welcome_email_status"] = welcome_email_res
+    user["welcome_whatsapp_status"] = welcome_wa_res
     return user
 
 @admin_router.put("/staff-users/{user_id}")
