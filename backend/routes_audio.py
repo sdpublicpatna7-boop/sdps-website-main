@@ -599,99 +599,58 @@ async def stream_phone_microphone(payload: MicStreamPayload, current_admin=Depen
 
 
 WIN_SETUP_SCRIPT = r"""# SDPS Audio Tunnel Bridge - Windows Setup
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "SilentlyContinue"
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 $D = "C:\sdps"
-New-Item -ItemType Directory -Path $D -Force | Out-Null
+if (-not (Test-Path $D)) { New-Item -ItemType Directory -Path $D -Force | Out-Null }
 $CF = "C:\sdps\cloudflared.exe"
 
 if (-not (Test-Path $CF)) {
-    Write-Host "[~] Downloading cloudflared..." -ForegroundColor Yellow
+    Write-Host "[~] Downloading cloudflared.exe..." -ForegroundColor Yellow
     Invoke-WebRequest -Uri "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe" -OutFile $CF
     Write-Host "[+] Downloaded cloudflared.exe" -ForegroundColor Green
 }
 
-try {
-    Remove-NetFirewallRule -DisplayName "SDPS Cloudflared Out" -ErrorAction SilentlyContinue
-    Remove-NetFirewallRule -DisplayName "SDPS Cloudflared In" -ErrorAction SilentlyContinue
-} catch {}
-
-New-NetFirewallRule -DisplayName "SDPS Cloudflared Out" -Direction Outbound -Program "C:\sdps\cloudflared.exe" -Action Allow | Out-Null
-New-NetFirewallRule -DisplayName "SDPS Cloudflared In" -Direction Inbound -Program "C:\sdps\cloudflared.exe" -Action Allow | Out-Null
-
 # Stop old background instances
 Get-Process cloudflared -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 Get-Process powershell -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like "*tunnel-bridge*" } | Stop-Process -Force -ErrorAction SilentlyContinue
-Remove-Item "C:\sdps\bridge.log" -Force -ErrorAction SilentlyContinue
-Remove-Item "C:\sdps\tunnel.log" -Force -ErrorAction SilentlyContinue
+Remove-Item "C:\sdps\*.log" -Force -ErrorAction SilentlyContinue
 
 $script = @'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-$D = "C:\sdps"
-$CF = "C:\sdps\cloudflared.exe"
 $LOG = "C:\sdps\tunnel.log"
 $BLOG = "C:\sdps\bridge.log"
 $URL = "https://api.sdpublic.org/api/admin/audio/tunnel/register"
 $KEY = "sdps-tunnel-2026"
 $HN = $env:COMPUTERNAME
+$targetIp = "192.168.29.252"
 
-function Find-DeviceIP {
-    $targets = @("192.168.29.252", "192.168.29.71", "192.168.29.9", "192.168.4.252", "127.0.0.1")
-    foreach ($t in $targets) {
-        try {
-            $r = Invoke-WebRequest -Uri "http://$t/BcastDo" -TimeoutSec 1 -ErrorAction SilentlyContinue
-            if ($r) { return $t }
-        } catch {}
-    }
+if (Test-Path $LOG) { Remove-Item $LOG -Force -ErrorAction SilentlyContinue }
 
-    $ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike "127.*" -and $_.IPAddress -notlike "169.254.*" } | Select-Object -First 1).IPAddress
-    if ($ip) {
-        return $ip
+$p = Start-Process -FilePath "C:\sdps\cloudflared.exe" -ArgumentList "tunnel","--url","http://$targetIp","--logfile",$LOG -PassThru -NoNewWindow
+
+$tunnelUrl = $null
+for ($i = 0; $i -lt 15; $i++) {
+    Start-Sleep -Seconds 1
+    if (Test-Path $LOG) {
+        $match = Select-String -Path $LOG -Pattern "https://[a-z0-9-]+\.trycloudflare\.com" | Select-Object -First 1
+        if ($match) {
+            $tunnelUrl = $match.Matches[0].Value
+            break
+        }
     }
-    return "192.168.29.252"
 }
 
-while ($true) {
-    if (Test-Path $LOG) { Remove-Item $LOG -Force -ErrorAction SilentlyContinue }
-    $targetIp = Find-DeviceIP
-    Add-Content $BLOG "[$(Get-Date -Format 'HH:mm:ss')] Auto-detected Device IP: $targetIp. Starting Cloudflare tunnel..."
-    
-    $p = Start-Process -FilePath $CF -ArgumentList "tunnel","--url","http://$targetIp","--logfile",$LOG -PassThru -NoNewWindow
-
-    $tunnelUrl = $null
-    for ($i = 0; $i -lt 25; $i++) {
-        Start-Sleep -Seconds 1
-        if (Test-Path $LOG) {
-            $c = Get-Content $LOG -Raw -ErrorAction SilentlyContinue
-            if ($c -match '(https://[a-z0-9-]+\.trycloudflare\.com)') {
-                $tunnelUrl = $Matches[1]
-                break
-            }
-        }
+if ($tunnelUrl) {
+    Write-Host "[+] Active Tunnel URL: $tunnelUrl" -ForegroundColor Green
+    $body = @{ tunnel_url = $tunnelUrl; api_key = $KEY; hostname = $HN; device_ip = $targetIp } | ConvertTo-Json
+    try {
+        Invoke-RestMethod -Uri $URL -Method Post -Body $body -ContentType "application/json" -TimeoutSec 10 | Out-Null
+        Write-Host "[+] Registered $tunnelUrl with api.sdpublic.org" -ForegroundColor Green
+    } catch {
+        Write-Host "[-] Registration failed: $_" -ForegroundColor Red
     }
-
-    if ($tunnelUrl) {
-        Add-Content $BLOG "[$(Get-Date -Format 'HH:mm:ss')] Live Tunnel URL: $tunnelUrl (Target: $targetIp)"
-        $body = @{ tunnel_url = $tunnelUrl; api_key = $KEY; hostname = $HN; device_ip = $targetIp } | ConvertTo-Json
-        try {
-            Invoke-RestMethod -Uri $URL -Method Post -Body $body -ContentType "application/json" -TimeoutSec 10 | Out-Null
-            Add-Content $BLOG "[$(Get-Date -Format 'HH:mm:ss')] Registered $tunnelUrl with api.sdpublic.org"
-        } catch {
-            Add-Content $BLOG "[$(Get-Date -Format 'HH:mm:ss')] Registration error: $_"
-        }
-
-        while (-not $p.HasExited) {
-            Start-Sleep -Seconds 180
-            if (-not $p.HasExited) {
-                try { Invoke-RestMethod -Uri $URL -Method Post -Body $body -ContentType "application/json" -TimeoutSec 10 | Out-Null } catch {}
-            }
-        }
-    } else {
-        if (-not $p.HasExited) { $p | Stop-Process -Force -ErrorAction SilentlyContinue }
-    }
-    Add-Content $BLOG "[$(Get-Date -Format 'HH:mm:ss')] Tunnel exited. Restarting in 5s..."
-    Start-Sleep -Seconds 5
 }
 '@
 
@@ -703,13 +662,12 @@ try { Unregister-ScheduledTask -TaskName $TN -Confirm:$false -ErrorAction Silent
 
 $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-WindowStyle Hidden -ExecutionPolicy Bypass -File `"C:\sdps\tunnel-bridge.ps1`""
 $trigger = New-ScheduledTaskTrigger -AtLogon
-$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -RestartCount 9999 -RestartInterval (New-TimeSpan -Minutes 1)
+$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
 
 Register-ScheduledTask -TaskName $TN -Action $action -Trigger $trigger -Settings $settings -RunLevel Highest | Out-Null
 
-# Launch in background right now
-Start-Process -FilePath "powershell.exe" -ArgumentList "-WindowStyle Hidden -ExecutionPolicy Bypass -File `"C:\sdps\tunnel-bridge.ps1`"" -NoNewWindow
-Start-ScheduledTask -TaskName $TN -ErrorAction SilentlyContinue
+# Run directly right now to show output
+powershell.exe -ExecutionPolicy Bypass -File "C:\sdps\tunnel-bridge.ps1"
 
 Write-Host "SETUP COMPLETE! SDPS Audio Tunnel is running and registered." -ForegroundColor Green
 """
