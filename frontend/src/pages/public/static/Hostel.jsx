@@ -130,6 +130,20 @@ export function Hostel() {
                 </tbody>
               </table>
             </div>
+          ) : siteSettings?.hostel_checklist_pdf_url || siteSettings?.hostel_fee_structure ? (
+            <div className="bg-white rounded-3xl p-6 md:p-8 border border-black/10 shadow-sm space-y-6">
+              {siteSettings?.hostel_fee_structure && (
+                <div className="text-brand-ink/90 text-sm md:text-base whitespace-pre-line leading-relaxed font-medium bg-brand-paper p-6 rounded-2xl border border-black/5">
+                  {siteSettings.hostel_fee_structure}
+                </div>
+              )}
+              {siteSettings?.hostel_checklist_pdf_url && (
+                <div>
+                  <h4 className="font-headline font-bold text-sm text-brand-ink mb-3 uppercase tracking-wider">Hostel Fee & Guidelines Document</h4>
+                  <DocEmbed url={siteSettings.hostel_checklist_pdf_url} title="Hostel Fee & Guidelines Document" height="500px" />
+                </div>
+              )}
+            </div>
           ) : (
             <div className="bg-brand-paper rounded-2xl p-8 text-center border border-black/5">
               <p className="text-brand-ink/50 text-sm mb-2">Hostel fee details will be published soon.</p>

@@ -306,6 +306,7 @@ class SiteSettings(BaseDoc):
     prospectus_pdf_url: str = "https://drive.google.com/file/d/1nBbND2dzSEoXHHSiRcB0LSIpoKOZpYfV/preview"
     hostel_food_menu_pdf_url: str = "https://drive.google.com/file/d/1eOuSkdJkV8Ex-T8wJeMayvsM0HhUsX5V/preview"
     hostel_checklist_pdf_url: str = "https://drive.google.com/file/d/179QQRZ9SzD10zPH6qrtI8FHO2AbZkq78/preview"
+    hostel_fee_structure: str = ""
     demystified_image_url: str = "https://sdpublic.org/assets/img/demystified.jpg"
     preschool_banner_image_url: str = "https://sdpublic.org/assets/img/banner.jpg"
     khelo_patna_hero_image_url: str = "/khelo-patna-hero.jpg"

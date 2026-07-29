@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import api from "@/lib/api";
 import { toast, Toaster } from "sonner";
-import { Loader2, Plug, CheckCircle2 } from "lucide-react";
+import { Loader2, Plug, CheckCircle2, Wifi, RefreshCw } from "lucide-react";
 
 const STATUS_META = {
   ok: { label: "Connected", cls: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-500" },
@@ -30,6 +30,33 @@ export function AdminIntegrationKeys() {
   const [wa, setWa] = useState({ connected: false, qr: null, user: null });
   const [waLoading, setWaLoading] = useState(true);
 
+  // Audio Tunnel Nodes
+  const [tunnelNodes, setTunnelNodes] = useState([]);
+  const [tunnelLoading, setTunnelLoading] = useState(false);
+
+  const fetchTunnelList = () => {
+    setTunnelLoading(true);
+    api.get("/admin/audio/tunnel/list")
+      .then(res => {
+        setTunnelNodes(res.data?.tunnels || []);
+      })
+      .catch(() => {})
+      .finally(() => setTunnelLoading(false));
+  };
+
+  const handleSelectPrimary = (hostname) => {
+    setTunnelLoading(true);
+    api.post("/admin/audio/tunnel/select-primary", { hostname })
+      .then(() => {
+        toast.success(`Primary Audio Tunnel switched to PC '${hostname}'!`);
+        fetchTunnelList();
+      })
+      .catch(err => {
+        toast.error(`Failed to promote node: ${err.message}`);
+      })
+      .finally(() => setTunnelLoading(false));
+  };
+
   const loadStatus = async () => {
     setRefreshing(true);
     try {
@@ -57,6 +84,7 @@ export function AdminIntegrationKeys() {
   useEffect(() => {
     loadStatus();
     loadWa();
+    fetchTunnelList();
   }, []);
 
   // Refresh the QR / connection while not yet linked.
@@ -194,6 +222,98 @@ export function AdminIntegrationKeys() {
             )}
           </div>
         ))}
+      </div>
+
+      {/* ── REGISTERED AUDIO TUNNEL NODES & STANDBY REDUNDANCY ── */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 mt-8 space-y-4 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center text-brand-navy">
+              <Wifi className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="font-headline font-semibold text-lg text-slate-900">
+                School Audio Hardware Cloudflare Tunnels
+              </h2>
+              <p className="text-xs text-slate-500">
+                Registered active & standby tunnel nodes connecting school PCs to hardware controller (192.168.29.71).
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={fetchTunnelList}
+            disabled={tunnelLoading}
+            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 self-start sm:self-auto"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${tunnelLoading ? "animate-spin" : ""}`} /> Refresh Nodes
+          </button>
+        </div>
+
+        <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-50 text-slate-700 font-bold uppercase tracking-wider border-b border-slate-200">
+              <tr>
+                <th className="p-3">Node Hostname</th>
+                <th className="p-3">Tunnel URL</th>
+                <th className="p-3">Target IP</th>
+                <th className="p-3">Last Ping</th>
+                <th className="p-3">Status</th>
+                <th className="p-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
+              {tunnelNodes.length > 0 ? (
+                tunnelNodes.map((node, idx) => (
+                  <tr key={idx} className={`hover:bg-slate-50/80 transition-colors ${node.is_primary ? "bg-emerald-50/30" : ""}`}>
+                    <td className="p-3 font-bold text-slate-900 flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${node.is_primary ? "bg-emerald-500" : "bg-amber-500"}`} />
+                      {node.hostname}
+                    </td>
+                    <td className="p-3 font-mono text-slate-600 truncate max-w-[220px]">
+                      {node.tunnel_url}
+                    </td>
+                    <td className="p-3 font-mono text-slate-500">{node.target_ip}</td>
+                    <td className="p-3 text-slate-500">
+                      {node.last_ping ? new Date(node.last_ping).toLocaleTimeString() : "Never"}
+                    </td>
+                    <td className="p-3">
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                        node.status === "ACTIVE"
+                          ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                          : node.status === "STANDBY"
+                          ? "bg-amber-100 text-amber-800 border border-amber-300"
+                          : "bg-rose-100 text-rose-800 border border-rose-300"
+                      }`}>
+                        {node.status_label}
+                      </span>
+                    </td>
+                    <td className="p-3 text-right">
+                      {!node.is_primary && node.status !== "OFFLINE" ? (
+                        <button
+                          onClick={() => handleSelectPrimary(node.hostname)}
+                          disabled={tunnelLoading}
+                          className="px-3 py-1 bg-brand-navy hover:bg-brand-blue text-white font-bold rounded-lg text-xs transition-colors shadow-xs"
+                        >
+                          Promote to Active
+                        </button>
+                      ) : node.is_primary ? (
+                        <span className="text-[11px] font-bold text-emerald-600">Active Primary ✓</span>
+                      ) : (
+                        <span className="text-[11px] text-slate-400">Offline</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} className="p-6 text-center text-slate-400 font-semibold">
+                    No registered tunnel nodes found. Run the setup script on a school PC to add a node!
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800 mt-6">

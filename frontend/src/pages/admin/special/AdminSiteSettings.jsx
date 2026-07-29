@@ -144,16 +144,33 @@ export function AdminSiteSettings() {
           {/* Hostel Student Checklist PDF */}
           <div>
             <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">
-              Hostel Student Checklist PDF
+              Hostel Student Checklist / Guidelines PDF
             </label>
             <p className="text-xs text-brand-ink/40 mb-2">
-              Shown on Hostel page under "What to Bring". Leave blank to hide that section.
+              Shown on Hostel page under Hostel Fee & Guidelines section. Leave blank to hide.
             </p>
             <FileOrUrlField
               value={data.hostel_checklist_pdf_url || ""}
               onChange={(v) => setData({ ...data, hostel_checklist_pdf_url: v })}
               subDir="docs"
               maxMb={10}
+            />
+          </div>
+
+          {/* Hostel Fee Structure Text & Details */}
+          <div>
+            <label className="text-xs font-bold uppercase text-brand-ink/60 block mb-1">
+              Hostel Fee Structure Text & Rates
+            </label>
+            <p className="text-xs text-brand-ink/40 mb-2">
+              Shown directly on the public Hostel page under "Hostel Fee Structure". (e.g. Monthly Room: ₹6,000, Mess: ₹3,500, Security Deposit: ₹5,000).
+            </p>
+            <textarea
+              rows={4}
+              value={data.hostel_fee_structure || ""}
+              onChange={(e) => setData({ ...data, hostel_fee_structure: e.target.value })}
+              placeholder="e.g. Monthly Hostel Fee: ₹6,000 | Admission/Caution Deposit: ₹5,000 | Mess & Laundry included."
+              className="w-full text-xs font-medium border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-brand-blue outline-none"
             />
           </div>
 
