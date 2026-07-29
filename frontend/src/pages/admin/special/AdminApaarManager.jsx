@@ -537,110 +537,121 @@ export default function AdminApaarManager() {
       return;
     }
 
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      toast.error("Please allow popups to export PDF.");
-      return;
+    const rowsHtml = sortedSubmissions.map((s, idx) => {
+      let cls = s.class_name || "";
+      if (cls && !cls.toLowerCase().startsWith("class")) {
+        cls = `Class-${cls}`;
+      }
+      const fullClass = `${cls}${s.section ? ` (${s.section})` : ""}`;
+
+      return `
+        <tr style="font-size: 10px;">
+          <td style="padding: 7px 8px; text-align: center; border: 1px solid #cbd5e1; color: #475569; font-weight: 600;">${idx + 1}</td>
+          <td style="padding: 7px 8px; font-weight: 800; border: 1px solid #cbd5e1; color: #0f172a; font-family: monospace;">${s.admission_no || "—"}</td>
+          <td style="padding: 7px 8px; font-weight: 700; border: 1px solid #cbd5e1; color: #0E3B91;">${s.student_name || "—"}</td>
+          <td style="padding: 7px 8px; border: 1px solid #cbd5e1; color: #334155; font-weight: 600;">${fullClass}</td>
+          <td style="padding: 7px 8px; border: 1px solid #cbd5e1; color: #334155;">${s.student_aadhaar_name || "—"}</td>
+          <td style="padding: 7px 8px; border: 1px solid #cbd5e1; font-family: monospace; color: #0f172a; font-weight: 700;">${s.mobile_no || "—"}</td>
+          <td style="padding: 7px 8px; border: 1px solid #cbd5e1; color: #64748b; text-align: center;">${s.created_at ? new Date(s.created_at).toLocaleDateString() : "—"}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>APAAR_Registry_Submissions_Report_${new Date().toISOString().split("T")[0]}</title>
+  <style>
+    @page { size: A4 portrait; margin: 10mm; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #0f172a; margin: 0; padding: 10px; background: #fff; }
+    .header-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; border-bottom: 3px solid #0E3B91; padding-bottom: 10px; }
+    .logo { width: 68px; height: 68px; object-fit: contain; }
+    .school-info { padding-left: 14px; }
+    .school-title { font-size: 22px; font-weight: 900; color: #0E3B91; margin: 0; letter-spacing: 0.5px; }
+    .school-sub { font-size: 10px; font-weight: 700; color: #f87d0e; text-transform: uppercase; margin: 3px 0 0 0; tracking: 0.5px; }
+    .school-addr { font-size: 10px; color: #475569; margin: 3px 0 0 0; }
+    
+    .doc-banner { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; display: table; width: 100%; box-sizing: border-box; }
+    .doc-banner-left { display: table-cell; vertical-align: middle; }
+    .doc-banner-right { display: table-cell; vertical-align: middle; text-align: right; font-size: 10px; color: #475569; }
+    .doc-title { font-size: 13px; font-weight: 800; color: #0E3B91; margin: 0; text-transform: uppercase; letter-spacing: 0.5px; }
+    .doc-meta { font-size: 10px; color: #64748b; margin: 2px 0 0 0; }
+    
+    .report-table { width: 100%; border-collapse: collapse; text-align: left; margin-top: 6px; }
+    .report-table th { background: #0E3B91; color: #ffffff; font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 9px 8px; border: 1px solid #092763; letter-spacing: 0.5px; }
+    .report-table tr:nth-child(even) { background-color: #f8fafc; }
+    
+    .footer { margin-top: 24px; border-top: 1px solid #cbd5e1; padding-top: 10px; text-align: center; font-size: 9px; color: #64748b; font-weight: 600; }
+    @media print {
+      body { padding: 0; }
     }
+  </style>
+</head>
+<body>
+  <table class="header-table">
+    <tr>
+      <td style="width: 72px; vertical-align: middle;">
+        <img src="https://www.sdpublic.org/logo-real-animated.gif" class="logo" alt="SDPS Logo" />
+      </td>
+      <td class="school-info" style="vertical-align: middle;">
+        <h1 class="school-title">S.D. PUBLIC SCHOOL</h1>
+        <p class="school-sub">Empowering Generations Since 1994 · CBSE Affiliated (No. 330768)</p>
+        <p class="school-addr">Maurya Colony, Near R.O.B Kumhrar, Gulzarbagh Road, Patna, Bihar 800007 | Ph: +91 99551 90262, +91 99551 90162</p>
+      </td>
+    </tr>
+  </table>
 
-    const rowsHtml = sortedSubmissions.map((s, idx) => `
-      <tr style="border-bottom: 1px solid #e2e8f0; font-size: 11px;">
-        <td style="padding: 8px 10px; text-align: center; color: #64748b;">${idx + 1}</td>
-        <td style="padding: 8px 10px; font-weight: 700; color: #0f172a; font-family: monospace;">${s.admission_no || "—"}</td>
-        <td style="padding: 8px 10px; font-weight: 600; color: #0E3B91;">${s.student_name || "—"}</td>
-        <td style="padding: 8px 10px; color: #334155;">Class-${s.class_name || ""} ${s.section ? `(${s.section})` : ""}</td>
-        <td style="padding: 8px 10px; color: #334155;">${s.student_aadhaar_name || "—"}</td>
-        <td style="padding: 8px 10px; font-family: monospace; color: #475569;">${s.mobile_no || "—"}</td>
-        <td style="padding: 8px 10px; color: #64748b;">${s.created_at ? new Date(s.created_at).toLocaleDateString() : "—"}</td>
+  <div class="doc-banner">
+    <div class="doc-banner-left">
+      <h2 class="doc-title">APAAR ID Registry Submissions Report</h2>
+      <p class="doc-meta">Official Student Consent & APAAR Registration Data</p>
+    </div>
+    <div class="doc-banner-right">
+      <strong>Generated Date:</strong> ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}<br/>
+      <strong>Total Records:</strong> <span style="color: #0E3B91; font-weight: 800; font-size: 12px;">${sortedSubmissions.length}</span>
+    </div>
+  </div>
+
+  <table class="report-table">
+    <thead>
+      <tr>
+        <th style="width: 28px; text-align: center;">#</th>
+        <th style="width: 80px;">ADM NO</th>
+        <th>STUDENT (SCHOOL)</th>
+        <th>CLASS / SEC</th>
+        <th>STUDENT (AADHAAR)</th>
+        <th style="width: 100px;">MOBILE NO</th>
+        <th style="width: 75px; text-align: center;">DATE</th>
       </tr>
-    `).join("");
+    </thead>
+    <tbody>
+      ${rowsHtml}
+    </tbody>
+  </table>
 
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>APAAR_Registry_Submissions_Report_${new Date().toISOString().split("T")[0]}</title>
-        <style>
-          @page { size: A4 portrait; margin: 12mm; }
-          body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; background: #fff; }
-          .header-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; border-bottom: 2px solid #0E3B91; padding-bottom: 8px; }
-          .logo { width: 65px; height: 65px; object-fit: contain; }
-          .school-info { padding-left: 12px; }
-          .school-title { font-size: 20px; font-weight: 800; color: #0E3B91; margin: 0; letter-spacing: 0.5px; }
-          .school-sub { font-size: 10px; font-weight: 600; color: #f87d0e; text-transform: uppercase; margin: 2px 0 0 0; }
-          .school-addr { font-size: 10px; color: #475569; margin: 3px 0 0 0; }
-          .doc-banner { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
-          .doc-title { font-size: 13px; font-weight: 800; color: #0E3B91; margin: 0; text-transform: uppercase; tracking: 0.5px; }
-          .doc-meta { font-size: 10px; color: #64748b; margin: 2px 0 0 0; }
-          .report-table { width: 100%; border-collapse: collapse; text-align: left; }
-          .report-table th { background: #0E3B91; color: #ffffff; font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 8px 10px; letter-spacing: 0.5px; }
-          .report-table tr:nth-child(even) { background-color: #f8fafc; }
-          .footer { margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 8px; text-align: center; font-size: 9px; color: #94a3b8; }
-          @media print {
-            .no-print { display: none; }
-          }
-        </style>
-      </head>
-      <body>
-        <table class="header-table">
-          <tr>
-            <td style="width: 70px; vertical-align: middle;">
-              <img src="https://www.sdpublic.org/logo-real-animated.gif" class="logo" alt="SDPS Logo" />
-            </td>
-            <td class="school-info" style="vertical-align: middle;">
-              <h1 class="school-title">S.D. PUBLIC SCHOOL</h1>
-              <p class="school-sub">Empowering Generations Since 1994 · CBSE Affiliated</p>
-              <p class="school-addr">Maurya Colony, Near R.O.B Kumhrar, Gulzarbagh Road, Patna, Bihar 800007 | Ph: +91 99551 90262</p>
-            </td>
-          </tr>
-        </table>
+  <div class="footer">
+    S.D. Public School Patna · Official APAAR Registry Record · Generated via SDPS Admin Portal
+  </div>
 
-        <div class="doc-banner">
-          <div>
-            <h2 class="doc-title">APAAR ID Registry Submissions Report</h2>
-            <p class="doc-meta">Official Student Consent & APAAR Registration Data</p>
-          </div>
-          <div style="text-align: right; font-size: 10px; color: #475569;">
-            <strong>Generated:</strong> ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}<br/>
-            <strong>Total Submissions:</strong> <span style="color: #0E3B91; font-weight: 800;">${sortedSubmissions.length}</span>
-          </div>
-        </div>
+  <script>
+    window.onload = function() {
+      setTimeout(function() {
+        window.print();
+      }, 400);
+    };
+  </script>
+</body>
+</html>`;
 
-        <table class="report-table">
-          <thead>
-            <tr>
-              <th style="width: 30px; text-align: center;">#</th>
-              <th>ADM NO</th>
-              <th>STUDENT (SCHOOL)</th>
-              <th>CLASS / SEC</th>
-              <th>STUDENT (AADHAAR)</th>
-              <th>MOBILE NO</th>
-              <th>DATE</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rowsHtml}
-          </tbody>
-        </table>
-
-        <div class="footer">
-          S.D. Public School Patna · Confidential Official APAAR Record Document · Generated via SDPS Admin Portal
-        </div>
-
-        <script>
-          window.onload = function() {
-            setTimeout(function() {
-              window.print();
-            }, 500);
-          };
-        </script>
-      </body>
-      </html>
-    `;
-
-    printWindow.document.open();
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
+    // Use Blob URL instead of about:blank
+    const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
+    const blobUrl = URL.createObjectURL(blob);
+    const printWindow = window.open(blobUrl, "_blank");
+    
+    if (!printWindow) {
+      toast.error("Please allow popups to open the PDF print view.");
+    }
   };
 
   const classes = ["Nursery", "LKG", "UKG", "KG-I", "KG-II", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
