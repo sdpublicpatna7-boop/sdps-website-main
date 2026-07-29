@@ -825,7 +825,7 @@ async def get_public_ddns_ip():
             return {"ip": settings.get("audio_device_ip")}
     except Exception:
         pass
-    return {"ip": DEFAULT_AUDIO_IP}
+    return {"ip": ""}
 
 
 
@@ -1005,12 +1005,12 @@ async def update_broadcasting_ip(payload: IpUpdatePayload, current_admin=Depends
 
 @audio_router.get("/ddns/get")
 async def get_ddns_ip(current_admin=Depends(get_current_admin)):
-    """Retrieve saved DDNS IP from MongoDB."""
+    """Retrieve saved Broadcasting IP from MongoDB site_settings."""
     from server import db
     settings = await db.site_settings.find_one({}, {"_id": 0, "audio_device_ip": 1})
     saved_ip = settings.get("audio_device_ip") if settings else None
     return {
-        "ip": saved_ip or DEFAULT_AUDIO_IP
+        "ip": saved_ip or ""
     }
 
 
