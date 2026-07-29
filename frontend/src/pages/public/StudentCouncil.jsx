@@ -391,8 +391,8 @@ const IndividualWinnerCard = ({ winner, position, totalVotes, index, wIdx, isApp
   const isSecondaryAppointed = (isSecondaryCandidate || isAppointedPost) && !isSchoolCaptain;
 
   return (
-    <div ref={winnerRef} className={`bg-slate-50/80 p-5 rounded-2xl border border-slate-200/60 shadow-sm flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap ${wIdx > 0 ? "mt-4" : ""}`}>
-      <div className="flex items-center gap-6 min-w-0 flex-1">
+    <div ref={winnerRef} className={`bg-slate-50/80 p-4 sm:p-5 rounded-2xl border border-slate-200/60 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left ${wIdx > 0 ? "mt-4" : ""}`}>
+      <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 w-full sm:w-auto min-w-0 flex-1">
         {/* Winner photo with crown / star */}
         <div className="relative shrink-0">
           <Sparkles className="absolute -top-3 -left-2 w-5 h-5 text-amber-400 animate-sparkle" style={{ animationDelay: "0s" }} />
@@ -410,7 +410,7 @@ const IndividualWinnerCard = ({ winner, position, totalVotes, index, wIdx, isApp
             </div>
           </div>
 
-          <div className={`w-24 h-24 rounded-2xl ring-[3px] ${
+          <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-2xl ring-[3px] ${
             isViceSchoolCaptain
               ? "ring-purple-400/50"
               : isSecondaryAppointed
@@ -429,8 +429,8 @@ const IndividualWinnerCard = ({ winner, position, totalVotes, index, wIdx, isApp
         </div>
 
         {/* Winner info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+        <div className="flex-1 min-w-0 w-full text-center sm:text-left">
+          <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
             {isViceSchoolCaptain ? (
               <>
                 <Award className="w-4 h-4 text-purple-500" />
@@ -454,7 +454,7 @@ const IndividualWinnerCard = ({ winner, position, totalVotes, index, wIdx, isApp
               </>
             )}
           </div>
-          <h4 className="font-headline text-xl font-black text-slate-900 tracking-tight leading-tight break-words">
+          <h4 className="font-headline text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-snug break-words whitespace-normal w-full">
             {winner.name}
           </h4>
           {winner.symbol && !isAppointedPost && (
@@ -462,7 +462,7 @@ const IndividualWinnerCard = ({ winner, position, totalVotes, index, wIdx, isApp
               Symbol: {winner.symbol}
             </div>
           )}
-          <div className="flex items-center gap-3 mt-3">
+          <div className="flex items-center justify-center sm:justify-start gap-3 mt-3">
             <div className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border shadow-sm ${
               isViceSchoolCaptain
                 ? "bg-purple-50 border-purple-200/60 text-purple-700 font-extrabold text-sm"
@@ -499,7 +499,7 @@ const IndividualWinnerCard = ({ winner, position, totalVotes, index, wIdx, isApp
         type="button"
         data-no-share="true"
         onClick={() => shareResultCard(winnerRef.current, position, winner.name)}
-        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-black transition-all shadow-md active:scale-95 cursor-pointer shrink-0"
+        className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-black transition-all shadow-md active:scale-95 cursor-pointer w-full sm:w-auto shrink-0 mt-2 sm:mt-0"
         title="Share Individual Winner Card"
       >
         <Share2 className="w-3.5 h-3.5 text-amber-300" />
@@ -553,7 +553,7 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
         </div>
 
         {/* Winner hero section */}
-        <div className="relative px-6 pt-6 pb-6">
+        <div className="relative px-4 sm:px-6 pt-6 pb-6">
           <div className="grid grid-cols-1 gap-4">
             {(winners || []).filter(Boolean).map((winner, wIdx) => (
               <IndividualWinnerCard
@@ -574,14 +574,14 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
         <div className="mx-6 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
 
         {/* All candidates breakdown */}
-        <div className="px-6 py-5">
+        <div className="px-4 sm:px-6 py-5">
           <div className="flex items-center gap-2 mb-4">
             <div className={`w-1 h-4 rounded-full bg-gradient-to-b ${isAppointedPost ? "from-blue-400 to-blue-600" : "from-amber-400 to-amber-600"}`} />
             <span className="text-[10px] tracking-[0.25em] uppercase font-extrabold text-slate-500">All Candidates</span>
             <span className="text-[10px] font-bold text-slate-300 ml-auto">{allCandidates.length} total</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {allCandidates.map((c, i) => {
               const pct = totalVotes > 0 ? Math.round((c.votes / totalVotes) * 100) : 0;
               const isWinner = i === 0 && (c.votes > 0 || isAppointedPost);
