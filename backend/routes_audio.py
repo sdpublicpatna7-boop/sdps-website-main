@@ -790,16 +790,26 @@ echo "SETUP COMPLETE! SDPS Audio Tunnel service installed."
 """
 
 
+public_audio_router = APIRouter(prefix="/api/audio", tags=["Public Audio Setup"])
+
+@public_audio_router.get("/setup-win.ps1", response_class=PlainTextResponse)
 @audio_router.get("/setup-win.ps1", response_class=PlainTextResponse)
 def get_win_setup_script():
     """Serves the Windows PowerShell setup script directly."""
     return WIN_SETUP_SCRIPT
 
 
+@public_audio_router.get("/setup-mac.sh", response_class=PlainTextResponse)
 @audio_router.get("/setup-mac.sh", response_class=PlainTextResponse)
 def get_mac_setup_script():
     """Serves the macOS bash setup script directly."""
     return MAC_SETUP_SCRIPT
+
+
+@public_audio_router.get("/ddns/get")
+def get_public_ddns_ip():
+    """Public endpoint to fetch master broadcasting IP for school PC setup scripts."""
+    return {"ip": DEFAULT_AUDIO_IP}
 
 
 
