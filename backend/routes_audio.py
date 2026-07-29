@@ -732,6 +732,13 @@ Write-Host "SETUP COMPLETE! SDPS Audio Tunnel is running and registered." -Foreg
 MAC_SETUP_SCRIPT = """#!/bin/bash
 SDPS_DIR="/usr/local/sdps"
 mkdir -p "$SDPS_DIR"
+
+# Aggressively kill old running instances
+killall -9 cloudflared 2>/dev/null || true
+pkill -9 -f tunnel-bridge 2>/dev/null || true
+launchctl unload /Library/LaunchDaemons/com.sdps.audio-tunnel.plist 2>/dev/null || true
+rm -rf "$SDPS_DIR/tunnel.log" "$SDPS_DIR/bridge.log" "$SDPS_DIR/found_ip.txt"
+
 ARCH=$(uname -m)
 if [ "$ARCH" = "arm64" ]; then URL="https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-darwin-arm64.tgz"; else URL="https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-darwin-amd64.tgz"; fi
 curl -sL "$URL" -o /tmp/cf.tgz && tar -xzf /tmp/cf.tgz -C "$SDPS_DIR" && chmod +x "$SDPS_DIR/cloudflared" && rm -f /tmp/cf.tgz
