@@ -628,11 +628,15 @@ $BLOG = "C:\sdps\bridge.log"
 $URL = "https://api.sdpublic.org/api/admin/audio/tunnel/register"
 $KEY = "sdps-tunnel-2026"
 $HN = $env:COMPUTERNAME
-$targetIp = "192.168.29.252"
+$targetIp = "192.168.29.113"
+try {
+    $ipRes = Invoke-RestMethod -Uri "https://api.sdpublic.org/api/audio/ddns/get" -TimeoutSec 5 -ErrorAction SilentlyContinue
+    if ($ipRes -and $ipRes.ip) { $targetIp = $ipRes.ip }
+} catch {}
 
 if (Test-Path $LOG) { Remove-Item $LOG -Force -ErrorAction SilentlyContinue }
 
-$p = Start-Process -FilePath "C:\sdps\cloudflared.exe" -ArgumentList "tunnel","--url","http://$targetIp","--logfile",$LOG -PassThru -NoNewWindow
+$p = Start-Process -FilePath "C:\sdps\cloudflared.exe" -ArgumentList "tunnel","--url","http://$targetIp","--protocol","http2","--logfile",$LOG -PassThru -NoNewWindow
 
 $tunnelUrl = $null
 for ($i = 0; $i -lt 15; $i++) {
@@ -647,7 +651,7 @@ for ($i = 0; $i -lt 15; $i++) {
 }
 
 if ($tunnelUrl) {
-    Write-Host "[+] Active Tunnel URL: $tunnelUrl" -ForegroundColor Green
+    Write-Host "[+] Active Tunnel URL: $tunnelUrl (Target: $targetIp)" -ForegroundColor Green
     $body = @{ tunnel_url = $tunnelUrl; api_key = $KEY; hostname = $HN; device_ip = $targetIp } | ConvertTo-Json
     try {
         Invoke-RestMethod -Uri $URL -Method Post -Body $body -ContentType "application/json" -TimeoutSec 10 | Out-Null
