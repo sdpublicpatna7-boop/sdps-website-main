@@ -545,25 +545,24 @@ async def set_results_publish_time(payload: Dict[str, Any], admin = Depends(get_
 
 
 @elections_router.get("/public-results")
-async def public_results():
-    """Public endpoint: returns results only if publish time has passed, otherwise returns countdown."""
+async def get_public_results(preview: bool = False):
     from datetime import datetime, timezone
     import asyncio
     import json
     await check_supabase()
     async with httpx.AsyncClient() as client:
-        # 1. Check publish time and appointed post keys settings
+        # 1. Fetch settings to check results_publish_time
         r_settings = await client.get(
             f"{SUPABASE_URL}/rest/v1/election_settings",
             headers=headers
         )
-        publish_time_str = ""
+        publish_time_str = None
         appointed_post_keys = []
         vice_candidate_ids = []
-        if r_settings.status_code == 200 and r_settings.json():
+        if r_settings.status_code == 200:
             for s in r_settings.json():
                 if s.get("key") == "results_publish_time":
-                    publish_time_str = s.get("value", "")
+                    publish_time_str = s.get("value")
                 elif s.get("key") == "appointed_post_keys":
                     try:
                         appointed_post_keys = json.loads(s.get("value", "[]"))
@@ -575,13 +574,8 @@ async def public_results():
                     except Exception:
                         pass
 
-        if not publish_time_str:
+        if not publish_time_str and not preview:
             return {"status": "sealed", "message": "Results have not been scheduled for release yet."}
-
-        try:
-            publish_dt = datetime.fromisoformat(publish_time_str.replace("Z", "+00:00"))
-        except Exception:
-            return {"status": "sealed", "message": "Invalid publish time configured."}
 
         now = datetime.now(timezone.utc)
         if now < publish_dt:

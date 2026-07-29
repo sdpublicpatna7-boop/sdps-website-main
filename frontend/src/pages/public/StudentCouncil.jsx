@@ -490,7 +490,8 @@ export default function StudentCouncil() {
     api.get("/council/results").then(r => setResults(r.data || [])).catch(() => {});
 
     // Check live results countdown
-    api.get("/elections/public-results").then(r => {
+    const resultsEndpoint = isPreview ? "/elections/public-results?preview=true" : "/elections/public-results";
+    api.get(resultsEndpoint).then(r => {
       const d = r.data;
       if (d.status === "countdown" && !isPreview) {
         setElectionStatus("countdown");
