@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import api from "@/lib/api";
 import { 
   Radio, 
   Volume2, 
@@ -22,11 +23,102 @@ import {
   Lock,
   User,
   LogOut,
-  ShieldCheck
+  ShieldCheck,
+  Search,
+  Music
 } from "lucide-react";
-import api from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import SEO from "../../components/layout/SEO";
+
+export const HARDWARE_AUDIO_CATALOG = [
+  { id: "1", code: "F01", title: "1ST. PERIOD GONG BELL", category: "Gong Bells" },
+  { id: "2", code: "F02", title: "2ND PERIOD GONG BELL", category: "Gong Bells" },
+  { id: "3", code: "F03", title: "3RD PERIOD GONG BELL", category: "Gong Bells" },
+  { id: "4", code: "F04", title: "4TH PERIOD GONG BELL", category: "Gong Bells" },
+  { id: "5", code: "F05", title: "5TH PERIOD GONG BELL", category: "Gong Bells" },
+  { id: "6", code: "F06", title: "6TH PERIOD GONG BELL", category: "Gong Bells" },
+  { id: "7", code: "F07", title: "7TH PERIOD GONG BELL", category: "Gong Bells" },
+  { id: "8", code: "F08", title: "8th PERIOD GONG BELL", category: "Gong Bells" },
+  { id: "9", code: "F09", title: "9th PERIOD GONG BELL", category: "Gong Bells" },
+  { id: "10", code: "F10", title: "10th PERIOD GONG BELL", category: "Gong Bells" },
+  { id: "11", code: "F11", title: "11th PERIOD GONG BELL", category: "Gong Bells" },
+  { id: "12", code: "F12", title: "12th PERIOD GONG BELL", category: "Gong Bells" },
+  { id: "13", code: "F13", title: "13th PERIOD GONG BELL", category: "Gong Bells" },
+  { id: "14", code: "F14", title: "14th PERIOD GONG BELL", category: "Gong Bells" },
+  { id: "15", code: "F15", title: "15th PERIOD GONG BELL", category: "Gong Bells" },
+  { id: "16", code: "F16", title: "GONG BELL", category: "Gong Bells" },
+  { id: "17", code: "F17", title: "1ST. PERIOD TAN BELL", category: "Tan Bells" },
+  { id: "18", code: "F18", title: "2ND PERIOD TAN BELL", category: "Tan Bells" },
+  { id: "19", code: "F19", title: "3RD PERIOD TAN BELL", category: "Tan Bells" },
+  { id: "20", code: "F20", title: "4TH PERIOD TAN BELL", category: "Tan Bells" },
+  { id: "21", code: "F21", title: "5TH PERIOD TAN BELL", category: "Tan Bells" },
+  { id: "22", code: "F22", title: "6TH PERIOD TAN BELL", category: "Tan Bells" },
+  { id: "23", code: "F23", title: "7TH PERIOD TAN BELL", category: "Tan Bells" },
+  { id: "24", code: "F24", title: "8th PERIOD TAN BELL", category: "Tan Bells" },
+  { id: "25", code: "F25", title: "9th PERIOD TAN BELL", category: "Tan Bells" },
+  { id: "26", code: "F26", title: "10th PERIOD TAN BELL", category: "Tan Bells" },
+  { id: "27", code: "F27", title: "11th PERIOD TAN BELL", category: "Tan Bells" },
+  { id: "28", code: "F28", title: "12th PERIOD TAN BELL", category: "Tan Bells" },
+  { id: "29", code: "F29", title: "13th PERIOD TAN BELL", category: "Tan Bells" },
+  { id: "30", code: "F30", title: "14th PERIOD TAN BELL", category: "Tan Bells" },
+  { id: "31", code: "F31", title: "15th PERIOD TAN BELL", category: "Tan Bells" },
+  { id: "32", code: "F32", title: "Welcome student enjoy your day", category: "Announcements" },
+  { id: "33", code: "F33", title: "Almanac checking", category: "Announcements" },
+  { id: "34", code: "F34", title: "Pls. Transport Quiet", category: "Announcements" },
+  { id: "35", code: "F35", title: "Assembly sound with bell", category: "Announcements" },
+  { id: "36", code: "F36", title: "Lunch time with prayer", category: "Announcements" },
+  { id: "37", code: "F37", title: "School over 1", category: "Announcements" },
+  { id: "38", code: "F38", title: "School over 2", category: "Announcements" },
+  { id: "39", code: "F39", title: "GONG BELL long", category: "Gong Bells" },
+  { id: "40", code: "F40", title: "Ton Ton Long", category: "Chimes & Sounds" },
+  { id: "41", code: "F41", title: "Visal", category: "Chimes & Sounds" },
+  { id: "42", code: "F42", title: "Om Bhur Bhav Shavey", category: "Devotional & Prayers" },
+  { id: "43", code: "F43", title: "Brake Bell", category: "Period Bells" },
+  { id: "44", code: "F44", title: "Attendance Period", category: "Announcements" },
+  { id: "45", code: "F45", title: "Test Start Bell", category: "Exams & Tests" },
+  { id: "46", code: "F46", title: "Test half time bell", category: "Exams & Tests" },
+  { id: "47", code: "F47", title: "Test over bell", category: "Exams & Tests" },
+  { id: "48", code: "F48", title: "Exam start Bell", category: "Exams & Tests" },
+  { id: "49", code: "F49", title: "Exam half time", category: "Exams & Tests" },
+  { id: "50", code: "F50", title: "Exam over time", category: "Exams & Tests" },
+  { id: "51", code: "F51", title: "Drinking water please", category: "Announcements" },
+  { id: "52", code: "F52", title: "Teri Aradhna Prabhu", category: "Devotional & Prayers" },
+  { id: "53", code: "F53", title: "Panah Mai Hame Rakh", category: "Devotional & Prayers" },
+  { id: "54", code: "F54", title: "Melody Sound", category: "Melodies" },
+  { id: "55", code: "F55", title: "Vande Matram", category: "Patriotic & Anthems" },
+  { id: "56", code: "F56", title: "Ho Mata Pitah Tum Hi", category: "Devotional & Prayers" },
+  { id: "57", code: "F57", title: "Achutum Keshavam", category: "Devotional & Prayers" },
+  { id: "58", code: "F58", title: "Tero Naam Ishwar Tero", category: "Devotional & Prayers" },
+  { id: "59", code: "F59", title: "Ae Malik Tere Bnde Hum", category: "Devotional & Prayers" },
+  { id: "60", code: "F60", title: "Saraswati Vandana", category: "Devotional & Prayers" },
+  { id: "63", code: "F63", title: "Vaisnav Jan To", category: "Devotional & Prayers" },
+  { id: "64", code: "F64", title: "Saraswati Vandana 2", category: "Devotional & Prayers" },
+  { id: "65", code: "F65", title: "Hey Maa Sharda", category: "Devotional & Prayers" },
+  { id: "66", code: "F66", title: "Guru Vaani", category: "Devotional & Prayers" },
+  { id: "67", code: "F67", title: "Guru Re Brahma", category: "Devotional & Prayers" },
+  { id: "68", code: "F68", title: "Ye Devi Sarvbhuteshu", category: "Devotional & Prayers" },
+  { id: "69", code: "F69", title: "Manki Shakti Dena", category: "Devotional & Prayers" },
+  { id: "70", code: "F70", title: "Jan Gan Man", category: "Patriotic & Anthems" },
+  { id: "71", code: "F71", title: "Melody Sound 2", category: "Melodies" },
+  { id: "72", code: "F72", title: "Melody Sound 3", category: "Melodies" },
+  { id: "73", code: "F73", title: "Melody Sound 4", category: "Melodies" },
+  { id: "74", code: "F74", title: "Allah Tero Naam Naya", category: "Devotional & Prayers" },
+  { id: "75", code: "F75", title: "Jan Gan Man Instrument", category: "Patriotic & Anthems" },
+  { id: "76", code: "F76", title: "Jan Gan Man Instrument 2", category: "Patriotic & Anthems" },
+  { id: "77", code: "F77", title: "Aakash Pe Rehne Wale", category: "Devotional & Prayers" },
+  { id: "78", code: "F78", title: "Raghav Raja Ram", category: "Devotional & Prayers" },
+  { id: "79", code: "F79", title: "Ki Garmise Jalte Hue", category: "Devotional & Prayers" },
+  { id: "80", code: "F80", title: "Jan Gan Man 2", category: "Patriotic & Anthems" },
+  { id: "81", code: "F81", title: "Vande Matram 2", category: "Patriotic & Anthems" },
+  { id: "82", code: "F82", title: "Jan Gan Man 52 sec", category: "Patriotic & Anthems" },
+  { id: "98", code: "F98", title: "Gong Bell Long (F98)", category: "Gong Bells" },
+  { id: "99", code: "F99", title: "Gong Bell Long (F99)", category: "Gong Bells" },
+  { id: "100", code: "F100", title: "Gong Bell Long (F100)", category: "Gong Bells" },
+  { id: "101", code: "F101", title: "Gong Bell Long (F101)", category: "Gong Bells" },
+  { id: "200", code: "F200", title: "Gong Bell Long (F200)", category: "Gong Bells" },
+  { id: "201", code: "F201", title: "Novelty Sound Service (F201)", category: "Chimes & Sounds" },
+  { id: "202", code: "F202", title: "Novelty Sound Service (F202)", category: "Chimes & Sounds" },
+];
 
 export default function AdminAudioBroadcast() {
   const { user, login, logout, loading: authLoading } = useAuth();
@@ -42,6 +134,10 @@ export default function AdminAudioBroadcast() {
   const [activeTab, setActiveTab] = useState("broadcast");
   const [tunnelNodes, setTunnelNodes] = useState([]);
   const [tunnelLoading, setTunnelLoading] = useState(false);
+
+  // Catalog State
+  const [catalogSearch, setCatalogSearch] = useState("");
+  const [catalogFilter, setCatalogFilter] = useState("All Categories");
 
   // Broadcast Form State
   const [source, setSource] = useState("sMic"); // sMic, sFile, sAux
@@ -666,6 +762,7 @@ export default function AdminAudioBroadcast() {
         <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-3">
           {[
             { id: "broadcast", label: "Live Broadcast & PA", icon: Mic },
+            { id: "catalog", label: "Audio Catalog (F01–F202)", icon: Music },
             { id: "groups", label: "Broadcast Groups", icon: Layers },
             { id: "schedule", label: "Bell Schedule Timings", icon: Calendar },
             { id: "clock", label: "Real-Time Clock", icon: Clock },
@@ -722,14 +819,21 @@ export default function AdminAudioBroadcast() {
               {/* File Select (if sFile) */}
               {source === "sFile" && (
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Select Pre-recorded File (1-100)</label>
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Select Pre-recorded Audio File (F01–F202)</label>
+                    <button onClick={() => setActiveTab("catalog")} className="text-[11px] font-bold text-brand-navy hover:underline">
+                      View Full Catalog →
+                    </button>
+                  </div>
                   <select
                     value={fileNumber}
                     onChange={e => setFileNumber(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl p-3 font-semibold text-sm focus:outline-none focus:border-brand-navy"
                   >
-                    {Array.from({ length: 100 }, (_, i) => i + 1).map(n => (
-                      <option key={n} value={n}>Chime / Announcement Track {n < 10 ? `0${n}` : n}</option>
+                    {HARDWARE_AUDIO_CATALOG.map(t => (
+                      <option key={t.id} value={t.id}>
+                        Track #{t.id} ({t.code}) — {t.title} ({t.category})
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -904,6 +1008,92 @@ export default function AdminAudioBroadcast() {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── TAB: AUDIO FILE CATALOG (F01–F202) ── */}
+        {activeTab === "catalog" && (
+          <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+              <div>
+                <h2 className="font-headline text-lg font-bold text-slate-800 flex items-center gap-2">
+                  <Music className="w-5 h-5 text-brand-navy" /> Hardware Audio File Catalog (F01 – F202)
+                </h2>
+                <p className="text-xs text-slate-500">Official lookup library of all pre-stored audio tracks on the Audislave hardware SD card.</p>
+              </div>
+
+              {/* Search Input */}
+              <div className="relative min-w-[260px]">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={catalogSearch}
+                  onChange={e => setCatalogSearch(e.target.value)}
+                  placeholder="Search track name or F-code..."
+                  className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-brand-navy"
+                />
+              </div>
+            </div>
+
+            {/* Category Pill Filters */}
+            <div className="flex flex-wrap gap-2">
+              {["All Categories", "Gong Bells", "Tan Bells", "Announcements", "Exams & Tests", "Devotional & Prayers", "Patriotic & Anthems", "Melodies", "Chimes & Sounds"].map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setCatalogFilter(cat)}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${
+                    catalogFilter === cat
+                      ? "bg-brand-navy text-white shadow-xs"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            {/* Catalog Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-[600px] overflow-y-auto pr-1">
+              {HARDWARE_AUDIO_CATALOG
+                .filter(t => {
+                  const matchesCat = catalogFilter === "All Categories" || t.category === catalogFilter;
+                  const matchesSearch = !catalogSearch || t.title.toLowerCase().includes(catalogSearch.toLowerCase()) || t.code.toLowerCase().includes(catalogSearch.toLowerCase()) || t.id.includes(catalogSearch);
+                  return matchesCat && matchesSearch;
+                })
+                .map(track => (
+                  <div key={track.id} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-slate-300 transition-all flex flex-col justify-between space-y-3">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 font-mono text-[11px] font-extrabold">
+                          {track.code}
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                          Track #{track.id}
+                        </span>
+                      </div>
+                      <div className="font-headline font-bold text-xs text-slate-900 mt-2 leading-snug">
+                        {track.title}
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-medium mt-1">
+                        {track.category}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setSource("sFile");
+                        setFileNumber(track.id);
+                        setActiveTab("broadcast");
+                        handleBroadcastAction("connect");
+                      }}
+                      disabled={broadcastLoading}
+                      className="w-full py-2 rounded-xl bg-brand-navy hover:bg-brand-blue text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition-colors"
+                    >
+                      <Play className="w-3 h-3 fill-white" /> Play Track Now
+                    </button>
+                  </div>
+                ))}
             </div>
           </div>
         )}
