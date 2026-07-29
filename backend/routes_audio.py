@@ -6,10 +6,13 @@ Communicates directly with the IP Audio Hardware Controller (Default IP: 192.168
 import os
 import logging
 import urllib.parse
+import random
+import secrets
+from datetime import datetime, timezone, timedelta
+from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
 import requests
 
 from auth import get_current_admin, get_current_admin_optional
@@ -211,22 +214,30 @@ async def send_login_otp(payload: OtpRequestPayload):
     # Send via Email
     email = user.get("email")
     if email:
-        subject = "🔑 Your SDPS Audio Hub Login OTP"
-        html = f"""
-        <div style="font-family: sans-serif; padding: 20px; max-width: 500px; border: 1px solid #e2e8f0; border-radius: 16px;">
-            <h2 style="color: #0e3b91;">SDPS Audio Command Hub OTP</h2>
-            <p>Your one-time login verification code is:</p>
-            <div style="font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #f87d0e; margin: 20px 0;">{otp_code}</div>
-            <p style="font-size: 12px; color: #64748b;">This code expires in 5 minutes. Do not share it with anyone.</p>
-        </div>
-        """
-        await send_email(email, subject, html)
+        try:
+            subject = "🔑 Your SDPS Audio Hub Login OTP"
+            html = f"""
+            <div style="font-family: sans-serif; padding: 20px; max-width: 500px; border: 1px solid #e2e8f0; border-radius: 16px;">
+                <h2 style="color: #0e3b91;">SDPS Audio Command Hub OTP</h2>
+                <p>Your one-time login verification code is:</p>
+                <div style="font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #f87d0e; margin: 20px 0;">{otp_code}</div>
+                <p style="font-size: 12px; color: #64748b;">This code expires in 5 minutes. Do not share it with anyone.</p>
+            </div>
+            """
+            await send_email(email, subject, html)
+        except Exception as e:
+            logger.warning(f"Failed to send OTP email: {e}")
 
     # Send via WhatsApp if phone available
     phone = user.get("phone")
     if phone:
-        msg = f"🔑 *SDPS Audio Command Hub OTP*: Your login code is *{otp_code}*. Expires in 5 minutes."
-        await send_whatsapp_text(phone, msg, "Audio Hub OTP")
+        try:
+            msg = f"🔑 *SDPS Audio Command Hub OTP*: Your login code is *{otp_code}*. Expires in 5 minutes."
+            await send_whatsapp_text(phone, msg, "Audio Hub OTP")
+        except Exception as e:
+            logger.warning(f"Failed to send OTP whatsapp: {e}")
+
+    logger.info(f"[AUDIO OTP GENERATED] For user {target_username}: OTP={otp_code}")
 
     dest_hint = email or phone or "registered contact"
     return {
