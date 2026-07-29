@@ -143,10 +143,10 @@ async def register_tunnel(payload: TunnelRegisterPayload):
     )
 
     # 2. Check current active primary tunnel in db.site_settings
-    settings = await db.site_settings.find_one({}, {"_id": 0, "cloudflare_tunnel_url": 1, "primary_hostname": 1, "tunnel_updated_at": 1})
+    settings = await db.site_settings.find_one({}, {"_id": 0, "cloudflare_tunnel_url": 1, "primary_hostname": 1, "tunnel_updated_at": 1, "audio_device_ip": 1})
     current_primary_host = settings.get("primary_hostname") if settings else None
 
-    # If no primary set or primary is this host or primary stale (> 10 mins), auto-promote
+    # If no primary set or primary is this host or primary stale (> 180s = 3 mins), auto-promote active host!
     should_promote = False
     if not _active_tunnel_url or not current_primary_host or current_primary_host == hostname_clean:
         should_promote = True
@@ -155,10 +155,13 @@ async def register_tunnel(payload: TunnelRegisterPayload):
         if last_up:
             try:
                 dt = datetime.fromisoformat(last_up)
-                if (datetime.now(timezone.utc) - dt).total_seconds() > 600:
+                if (datetime.now(timezone.utc) - dt).total_seconds() > 180: # 3 mins
                     should_promote = True
             except Exception:
                 should_promote = True
+
+    existing_ip = settings.get("audio_device_ip") if settings else None
+    ip_to_save = existing_ip or target_ip or DEFAULT_AUDIO_IP
 
     if should_promote:
         _active_tunnel_url = clean_url
@@ -166,7 +169,7 @@ async def register_tunnel(payload: TunnelRegisterPayload):
             {},
             {"$set": {
                 "cloudflare_tunnel_url": clean_url,
-                "audio_device_ip": target_ip,
+                "audio_device_ip": ip_to_save,
                 "primary_hostname": hostname_clean,
                 "tunnel_hostname": hostname_clean,
                 "tunnel_updated_at": now_iso
@@ -174,8 +177,8 @@ async def register_tunnel(payload: TunnelRegisterPayload):
             upsert=True
         )
 
-    logger.info(f"Tunnel node pinged: {clean_url} from [{hostname_clean}] (Device IP: {target_ip}, Promoted: {should_promote})")
-    return {"success": True, "tunnel_url": clean_url, "device_ip": target_ip, "promoted": should_promote}
+    logger.info(f"Tunnel node pinged: {clean_url} from [{hostname_clean}] (Device IP: {ip_to_save}, Promoted: {should_promote})")
+    return {"success": True, "tunnel_url": clean_url, "device_ip": ip_to_save, "promoted": should_promote}
 
 
 @audio_router.get("/tunnel/status")
@@ -836,8 +839,36 @@ def format_device_url(ip_str: str, endpoint: str = "", tunnel_url: Optional[str]
     return f"http://{ip_str}{endpoint}"
 
 
+async def get_all_active_tunnels_async():
+    """Get all recent active/standby tunnel URLs pinged within the last 5 minutes."""
+    from server import db
+    tunnels = []
+    now_dt = datetime.now(timezone.utc)
+    try:
+        cursor = db.audio_tunnels.find({}, {"_id": 0, "tunnel_url": 1, "last_ping": 1, "hostname": 1})
+        docs = await cursor.to_list(length=50)
+        docs.sort(key=lambda d: d.get("last_ping", ""), reverse=True)
+        for d in docs:
+            url = d.get("tunnel_url")
+            last_p = d.get("last_ping")
+            if url and last_p:
+                try:
+                    dt = datetime.fromisoformat(last_p)
+                    if (now_dt - dt).total_seconds() < 300:
+                        if url not in tunnels:
+                            tunnels.append(url)
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+    if _active_tunnel_url and _active_tunnel_url not in tunnels:
+        tunnels.insert(0, _active_tunnel_url)
+    return tunnels
+
+
 async def send_device_post_async(ip: str, endpoint: str, data: dict, username: Optional[str] = None, password: Optional[str] = None):
-    tunnel = await _get_tunnel_url_async()
+    tunnels = await get_all_active_tunnels_async()
     user_to_use = username or DEFAULT_HARDWARE_USER
     pass_to_use = password or DEFAULT_HARDWARE_PASS
 
@@ -854,8 +885,8 @@ async def send_device_post_async(ip: str, endpoint: str, data: dict, username: O
     }
 
     urls_to_try = []
-    if tunnel:
-        urls_to_try.append(f"{tunnel.rstrip('/')}{endpoint}")
+    for t_url in tunnels:
+        urls_to_try.append(f"{t_url.rstrip('/')}{endpoint}")
 
     clean_ip = (ip or DEFAULT_AUDIO_IP).strip()
     if clean_ip.startswith("http"):
@@ -870,13 +901,18 @@ async def send_device_post_async(ip: str, endpoint: str, data: dict, username: O
     for url in urls_to_try:
         try:
             response = requests.post(url, **kwargs)
+            # Auto-promote working tunnel
+            for t_url in tunnels:
+                if url.startswith(t_url):
+                    global _active_tunnel_url
+                    _active_tunnel_url = t_url
+                    break
             return response.text
         except requests.exceptions.RequestException as e:
             logger.warning(f"Error connecting to Audio Controller device at {url}: {e}")
             last_error = str(e)
 
     raise HTTPException(status_code=504, detail=f"Audio Controller device is unreachable: {last_error}")
-
 
 
 from datetime import datetime, timezone
@@ -891,7 +927,6 @@ async def sync_ddns_ip(request: Request, current_admin=Depends(get_current_admin
     else:
         client_ip = request.client.host if request.client else DEFAULT_AUDIO_IP
 
-    # If incoming client is IPv6 (contains colons), fallback to Jio Public IPv4 for hardware port forwarding
     if ":" in client_ip:
         client_ip = DEFAULT_AUDIO_IP
         
@@ -928,6 +963,13 @@ async def update_broadcasting_ip(payload: IpUpdatePayload, current_admin=Depends
         }},
         upsert=True
     )
+    await db.audio_tunnels.update_many(
+        {},
+        {"$set": {
+            "target_ip": clean_ip,
+            "updated_at": now_iso
+        }}
+    )
     return {
         "success": True,
         "ip": clean_ip,
@@ -953,16 +995,19 @@ async def get_audio_status(
     password: Optional[str] = Query(None),
     current_admin=Depends(get_current_admin_optional)
 ):
-    """Ping Audio Controller device to verify hardware connectivity."""
+    """Ping Audio Controller device to verify hardware connectivity with automatic failover."""
     from server import db
-    tunnel = await _get_tunnel_url_async()
+    tunnels = await get_all_active_tunnels_async()
 
-    # Prepare fallback targets: try direct user-specified IP first, then tunnel, then defaults
     ips_to_try = []
-    if ip and ip.strip():
+    # Add active tunnels first
+    for t_url in tunnels:
+        if t_url.startswith("http") and t_url not in ips_to_try:
+            ips_to_try.append(t_url)
+
+    if ip and ip.strip() and ip.strip() not in ips_to_try:
         ips_to_try.append(ip.strip())
-    if tunnel and tunnel.startswith("http") and tunnel not in ips_to_try:
-        ips_to_try.append(tunnel)
+
     if "192.168.29.252" not in ips_to_try:
         ips_to_try.append("192.168.29.252")
     if "192.168.29.71" not in ips_to_try:
@@ -988,6 +1033,14 @@ async def get_audio_status(
                 body = res.text
                 online = res.status_code in (200, 204, 302, 401, 403, 404) or "sMsg" in body or "Page Not Found" in body
                 if online:
+                    if attempt_ip.startswith("http"):
+                        global _active_tunnel_url
+                        _active_tunnel_url = attempt_ip
+                        await db.site_settings.update_one(
+                            {},
+                            {"$set": {"cloudflare_tunnel_url": attempt_ip, "tunnel_updated_at": datetime.now(timezone.utc).isoformat()}},
+                            upsert=True
+                        )
                     return {
                         "success": True,
                         "online": True,
@@ -1004,7 +1057,7 @@ async def get_audio_status(
         "online": False,
         "ip": ip or DEFAULT_AUDIO_IP,
         "device": "SDPS Audio Controller",
-        "error": last_error
+        "error": f"Audio Controller unreachable: {last_error or 'Connection timed out'}"
     }
 
 
