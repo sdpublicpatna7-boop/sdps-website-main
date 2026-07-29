@@ -123,6 +123,7 @@ async def register_tunnel(payload: TunnelRegisterPayload):
 
     clean_url = payload.tunnel_url.rstrip("/")
     hostname_clean = (payload.hostname or "UNKNOWN-PC").strip()
+    target_ip = (payload.device_ip or DEFAULT_AUDIO_IP).strip()
     now_iso = datetime.now(timezone.utc).isoformat()
 
     from server import db
@@ -133,7 +134,7 @@ async def register_tunnel(payload: TunnelRegisterPayload):
         {"$set": {
             "hostname": hostname_clean,
             "tunnel_url": clean_url,
-            "target_ip": DEFAULT_AUDIO_IP,
+            "target_ip": target_ip,
             "last_ping": now_iso,
             "updated_at": now_iso
         }},
@@ -164,6 +165,7 @@ async def register_tunnel(payload: TunnelRegisterPayload):
             {},
             {"$set": {
                 "cloudflare_tunnel_url": clean_url,
+                "audio_device_ip": target_ip,
                 "primary_hostname": hostname_clean,
                 "tunnel_hostname": hostname_clean,
                 "tunnel_updated_at": now_iso
@@ -171,8 +173,8 @@ async def register_tunnel(payload: TunnelRegisterPayload):
             upsert=True
         )
 
-    logger.info(f"Tunnel node pinged: {clean_url} from [{hostname_clean}] (Promoted: {should_promote})")
-    return {"success": True, "tunnel_url": clean_url, "promoted": should_promote}
+    logger.info(f"Tunnel node pinged: {clean_url} from [{hostname_clean}] (Device IP: {target_ip}, Promoted: {should_promote})")
+    return {"success": True, "tunnel_url": clean_url, "device_ip": target_ip, "promoted": should_promote}
 
 
 @audio_router.get("/tunnel/status")
@@ -603,11 +605,43 @@ $URL = "https://api.sdpublic.org/api/admin/audio/tunnel/register"
 $KEY = "sdps-tunnel-2026"
 $HN = $env:COMPUTERNAME
 
+function Find-DeviceIP {
+    try {
+        $r = Invoke-WebRequest -Uri "http://192.168.29.71/BcastDo" -TimeoutSec 1 -ErrorAction SilentlyContinue
+        if ($r) { return "192.168.29.71" }
+    } catch {}
+
+    try {
+        $r = Invoke-WebRequest -Uri "http://127.0.0.1/BcastDo" -TimeoutSec 1 -ErrorAction SilentlyContinue
+        if ($r) { return "127.0.0.1" }
+    } catch {}
+
+    $ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike "127.*" -and $_.IPAddress -notlike "169.254.*" } | Select-Object -First 1).IPAddress
+    if ($ip) {
+        $prefix = $ip.Substring(0, $ip.LastIndexOf('.'))
+        $jobs = 1..254 | ForEach-Object {
+            Start-Job -ScriptBlock {
+                param($target)
+                try {
+                    $res = Invoke-WebRequest -Uri "http://$target/BcastDo" -TimeoutSec 1 -ErrorAction SilentlyContinue
+                    if ($res) { return $target }
+                } catch {}
+            } -ArgumentList "$prefix.$_"
+        }
+        $found = $jobs | Wait-Job -Timeout 3 | Receive-Job | Select-Object -First 1
+        $jobs | Remove-Job -Force -ErrorAction SilentlyContinue
+        if ($found) { return $found }
+        return $ip
+    }
+    return "192.168.29.71"
+}
+
 while ($true) {
     if (Test-Path $LOG) { Remove-Item $LOG -Force -ErrorAction SilentlyContinue }
-    Add-Content $BLOG "[$(Get-Date -Format 'HH:mm:ss')] Starting Cloudflare tunnel..."
+    $targetIp = Find-DeviceIP
+    Add-Content $BLOG "[$(Get-Date -Format 'HH:mm:ss')] Auto-detected Device IP: $targetIp. Starting Cloudflare tunnel..."
     
-    $p = Start-Process -FilePath $CF -ArgumentList "tunnel","--url","http://192.168.29.71","--logfile",$LOG -PassThru -NoNewWindow
+    $p = Start-Process -FilePath $CF -ArgumentList "tunnel","--url","http://$targetIp","--logfile",$LOG -PassThru -NoNewWindow
 
     $tunnelUrl = $null
     for ($i = 0; $i -lt 25; $i++) {
@@ -622,8 +656,8 @@ while ($true) {
     }
 
     if ($tunnelUrl) {
-        Add-Content $BLOG "[$(Get-Date -Format 'HH:mm:ss')] Live Tunnel URL: $tunnelUrl"
-        $body = @{ tunnel_url = $tunnelUrl; api_key = $KEY; hostname = $HN } | ConvertTo-Json
+        Add-Content $BLOG "[$(Get-Date -Format 'HH:mm:ss')] Live Tunnel URL: $tunnelUrl (Target: $targetIp)"
+        $body = @{ tunnel_url = $tunnelUrl; api_key = $KEY; hostname = $HN; device_ip = $targetIp } | ConvertTo-Json
         try {
             Invoke-RestMethod -Uri $URL -Method Post -Body $body -ContentType "application/json" -TimeoutSec 10 | Out-Null
             Add-Content $BLOG "[$(Get-Date -Format 'HH:mm:ss')] Registered $tunnelUrl with api.sdpublic.org"
@@ -677,12 +711,48 @@ SDPS_DIR="/usr/local/sdps"
 CF="$SDPS_DIR/cloudflared"
 LOG="$SDPS_DIR/tunnel.log"
 BLOG="$SDPS_DIR/bridge.log"
-IP="192.168.29.71"
 URL="https://api.sdpublic.org/api/admin/audio/tunnel/register"
 KEY="sdps-tunnel-2026"
 HN=$(hostname -s)
 
+find_device_ip() {
+    # 1. Test last known standard IP
+    if curl -s -m 1 "http://192.168.29.71/BcastDo" >/dev/null 2>&1 || curl -s -m 1 "http://192.168.29.71" >/dev/null 2>&1; then
+        echo "192.168.29.71"
+        return
+    fi
+    # 2. Test localhost if running on same broadcasting machine
+    if curl -s -m 1 "http://127.0.0.1/BcastDo" >/dev/null 2>&1 || curl -s -m 1 "http://127.0.0.1:8000" >/dev/null 2>&1; then
+        echo "127.0.0.1"
+        return
+    fi
+    # 3. Auto-detect machine LAN IP & fast-scan subnet for /BcastDo response
+    LOCAL_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || route get default 2>/dev/null | grep gateway | awk '{print $2}')
+    if [ -n "$LOCAL_IP" ]; then
+        SUBNET=$(echo "$LOCAL_IP" | cut -d. -f1-3)
+        rm -f "$SDPS_DIR/found_ip.txt"
+        for i in $(seq 1 254); do
+            TEST_IP="${SUBNET}.${i}"
+            (curl -s -m 0.2 "http://${TEST_IP}/BcastDo" >/dev/null 2>&1 && echo "$TEST_IP" > "$SDPS_DIR/found_ip.txt") &
+        done
+        wait
+        if [ -f "$SDPS_DIR/found_ip.txt" ]; then
+            FOUND=$(head -n 1 "$SDPS_DIR/found_ip.txt")
+            rm -f "$SDPS_DIR/found_ip.txt"
+            if [ -n "$FOUND" ]; then
+                echo "$FOUND"
+                return
+            fi
+        fi
+        echo "$LOCAL_IP"
+        return
+    fi
+    echo "192.168.29.71"
+}
+
 while true; do
+    IP=$(find_device_ip)
+    echo "[$(date "+%H:%M:%S")] Target Device IP auto-detected: $IP" >> "$BLOG"
     > "$LOG"
     "$CF" tunnel --url "http://${IP}" 2>"$LOG" &
     PID=$!
@@ -697,11 +767,11 @@ while true; do
     done
 
     if [ -n "$TUNNEL_URL" ]; then
-        curl -s -X POST "$URL" -H "Content-Type: application/json" -d "{\\"tunnel_url\\":\\"$TUNNEL_URL\\",\\"api_key\\":\\"$KEY\\",\\"hostname\\":\\"$HN\\"}" >/dev/null
-        echo "[$(date "+%H:%M:%S")] Registered: $TUNNEL_URL" >> "$BLOG"
+        curl -s -X POST "$URL" -H "Content-Type: application/json" -d "{\"tunnel_url\":\"$TUNNEL_URL\",\"api_key\":\"$KEY\",\"hostname\":\"$HN\",\"device_ip\":\"$IP\"}" >/dev/null
+        echo "[$(date "+%H:%M:%S")] Registered: $TUNNEL_URL (Target: $IP)" >> "$BLOG"
         while kill -0 "$PID" 2>/dev/null; do
             sleep 300
-            kill -0 "$PID" 2>/dev/null && curl -s -X POST "$URL" -H "Content-Type: application/json" -d "{\\"tunnel_url\\":\\"$TUNNEL_URL\\",\\"api_key\\":\\"$KEY\\",\\"hostname\\":\\"$HN\\"}" >/dev/null
+            kill -0 "$PID" 2>/dev/null && curl -s -X POST "$URL" -H "Content-Type: application/json" -d "{\"tunnel_url\":\"$TUNNEL_URL\",\"api_key\":\"$KEY\",\"hostname\":\"$HN\",\"device_ip\":\"$IP\"}" >/dev/null
         done
     else
         kill "$PID" 2>/dev/null
