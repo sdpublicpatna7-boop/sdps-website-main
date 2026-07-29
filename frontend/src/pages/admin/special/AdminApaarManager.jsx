@@ -96,9 +96,35 @@ export default function AdminApaarManager() {
     }
   };
 
+  const CLASS_ORDER = {
+    nursery: 1, lkg: 2, ukg: 3, "kg-i": 2, "kg-ii": 3,
+    i: 4, 1: 4, ii: 5, 2: 5, iii: 6, 3: 6, iv: 7, 4: 7,
+    v: 8, 5: 8, vi: 9, 6: 9, vii: 10, 7: 10, viii: 11, 8: 11,
+    ix: 12, 9: 12, x: 13, 10: 13, xi: 14, 11: 14, xii: 15, 12: 15
+  };
+
+  const getClassSortKey = (item) => {
+    let clsRaw = (item.class_name || "").toString().toLowerCase().replace("class-", "").replace("class", "").trim();
+    let rank = CLASS_ORDER[clsRaw] || 99;
+    let sec = (item.section || "").toString().toUpperCase().trim();
+    return { rank, sec };
+  };
+
   const sortedSubmissions = useMemo(() => {
     if (!subSortField) return submissions;
     return [...submissions].sort((a, b) => {
+      if (subSortField === "class_name" || subSortField === "section") {
+        const keyA = getClassSortKey(a);
+        const keyB = getClassSortKey(b);
+        if (keyA.rank !== keyB.rank) {
+          return subSortAsc ? keyA.rank - keyB.rank : keyB.rank - keyA.rank;
+        }
+        if (keyA.sec !== keyB.sec) {
+          return subSortAsc ? keyA.sec.localeCompare(keyB.sec) : keyB.sec.localeCompare(keyA.sec);
+        }
+        return 0;
+      }
+
       let valA = a[subSortField] || "";
       let valB = b[subSortField] || "";
       if (typeof valA === "string") valA = valA.toLowerCase();
@@ -112,6 +138,18 @@ export default function AdminApaarManager() {
   const sortedRoster = useMemo(() => {
     if (!rosterSortField) return roster;
     return [...roster].sort((a, b) => {
+      if (rosterSortField === "class_name" || rosterSortField === "section") {
+        const keyA = getClassSortKey(a);
+        const keyB = getClassSortKey(b);
+        if (keyA.rank !== keyB.rank) {
+          return rosterSortAsc ? keyA.rank - keyB.rank : keyB.rank - keyA.rank;
+        }
+        if (keyA.sec !== keyB.sec) {
+          return rosterSortAsc ? keyA.sec.localeCompare(keyB.sec) : keyB.sec.localeCompare(keyA.sec);
+        }
+        return 0;
+      }
+
       let valA = a[rosterSortField] || "";
       let valB = b[rosterSortField] || "";
       if (typeof valA === "string") valA = valA.toLowerCase();
