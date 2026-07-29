@@ -271,6 +271,48 @@ const ConfettiShower = () => {
   );
 };
 
+const IndividualCaptainCard = ({ role, houseName, person, roleColor, isVice }) => {
+  const itemRef = useRef(null);
+  const photoSrc = person?.photo_url || person?.photo;
+
+  return (
+    <div ref={itemRef} className="bg-slate-50/90 rounded-2xl p-3.5 border border-slate-200/80 text-center flex flex-col items-center relative group">
+      <div className={`text-[9px] uppercase tracking-widest font-black ${roleColor} mb-2 flex items-center gap-1`}>
+        {isVice ? <Award className="w-3 h-3 text-purple-500" /> : <Crown className="w-3 h-3 text-amber-500" />} {role}
+      </div>
+      {person ? (
+        <div className="w-full text-center">
+          <div className={`w-16 h-16 rounded-full mx-auto overflow-hidden ring-2 ${isVice ? 'ring-purple-400/80' : 'ring-amber-400/80'} mb-2 bg-white shadow-sm`}>
+            {photoSrc ? (() => {
+              const fullImg = fullUrl(photoSrc);
+              const { style, cleanUrl } = parseCandidateTransform(fullImg);
+              return <img src={cleanUrl} alt={person.name} style={style} className="w-full h-full object-cover" />;
+            })() : (
+              <div className={`w-full h-full flex items-center justify-center font-black ${isVice ? 'text-purple-700' : 'text-amber-700'}`}>{person.name?.[0]}</div>
+            )}
+          </div>
+          <h5 className="font-headline font-extrabold text-xs text-slate-900 leading-tight">{person.name}</h5>
+          {person.year && <span className="text-[9px] text-slate-400 font-bold block mt-0.5">{person.year}</span>}
+          <div className="mt-2.5 flex justify-center">
+            <button
+              type="button"
+              data-no-share="true"
+              onClick={() => shareResultCard(itemRef.current, `${houseName} ${role}`, person.name)}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white hover:bg-slate-100 text-slate-700 text-[10px] font-black border border-slate-200/80 shadow-xs transition-all active:scale-95 cursor-pointer"
+              title="Share Card Image"
+            >
+              <Share2 className="w-3 h-3 text-slate-500" />
+              <span>Share Card</span>
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="py-2 text-[11px] text-slate-400 italic">To be announced</div>
+      )}
+    </div>
+  );
+};
+
 /* ───────────────────────────────────────────────────────
    HOUSE CARD COMPONENT WITH SHARE BUTTON
    ─────────────────────────────────────────────────────── */
@@ -309,7 +351,7 @@ const HouseCard = ({ house, profiles }) => {
           </div>
         </div>
 
-        {/* Share Button */}
+        {/* Share Whole House Button */}
         <button
           type="button"
           data-no-share="true"
@@ -318,66 +360,151 @@ const HouseCard = ({ house, profiles }) => {
           title="Share House Card"
         >
           <Share2 className="w-3.5 h-3.5 text-slate-600" />
-          <span className="hidden sm:inline">Share Card</span>
+          <span className="hidden sm:inline">Share House</span>
         </button>
       </div>
 
       {/* Captains Breakdown */}
       <div className="grid grid-cols-2 gap-4">
-        {/* House Captain */}
-        <div className="bg-slate-50/80 rounded-2xl p-3.5 border border-slate-200/60 text-center flex flex-col items-center">
-          <div className="text-[9px] uppercase tracking-widest font-black text-amber-600 mb-2 flex items-center gap-1">
-            <Crown className="w-3 h-3 text-amber-500" /> House Captain
+        <IndividualCaptainCard role="House Captain" houseName={house.name} person={houseCaptains[0]} roleColor="text-amber-600" isVice={false} />
+        <IndividualCaptainCard role="Vice Captain" houseName={house.name} person={houseVices[0]} roleColor="text-purple-600" isVice={true} />
+      </div>
+    </div>
+  );
+};
+
+/* ───────────────────────────────────────────────────────
+   INDIVIDUAL WINNER CARD (card-wise standalone card)
+   ─────────────────────────────────────────────────────── */
+const IndividualWinnerCard = ({ winner, position, totalVotes, index, wIdx, isAppointedPost, isDisciplineHead }) => {
+  const winnerRef = useRef(null);
+  if (!winner) return null;
+  const winnerPhoto = winner?.photo ? (winner.photo.startsWith("data:") || winner.photo.startsWith("http") ? winner.photo : fullUrl(winner.photo)) : null;
+  const winnerPct = totalVotes > 0 ? Math.round(((winner?.votes || 0) / totalVotes) * 100) : 0;
+  const isSchoolCaptain = (position || "").toLowerCase().includes("school captain") ||
+                         (position || "").toLowerCase().includes("head boy") ||
+                         (position || "").toLowerCase().includes("head girl");
+  const lowerWinnerName = (winner?.name || "").toLowerCase();
+  const isExplicitAppointedMember = ["anshika", "simran", "vijaya", "vijaylaxmi", "harsh"].some(n => lowerWinnerName.includes(n));
+  const isSecondaryCandidate = winner?.is_vice || isExplicitAppointedMember || (wIdx > 0 && !isSchoolCaptain) || isDisciplineHead;
+  const isViceSchoolCaptain = isSecondaryCandidate && isSchoolCaptain;
+  const isSecondaryAppointed = (isSecondaryCandidate || isAppointedPost) && !isSchoolCaptain;
+
+  return (
+    <div ref={winnerRef} className={`bg-slate-50/80 p-5 rounded-2xl border border-slate-200/60 shadow-sm flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap ${wIdx > 0 ? "mt-4" : ""}`}>
+      <div className="flex items-center gap-6 min-w-0 flex-1">
+        {/* Winner photo with crown / star */}
+        <div className="relative shrink-0">
+          <Sparkles className="absolute -top-3 -left-2 w-5 h-5 text-amber-400 animate-sparkle" style={{ animationDelay: "0s" }} />
+          <Star className="absolute -top-1 -right-3 w-4 h-4 text-amber-300 animate-sparkle" style={{ animationDelay: "0.8s" }} />
+
+          <div className="absolute -top-5 left-1/2 -translate-x-1/2 z-20 animate-crown-float">
+            <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${
+              isViceSchoolCaptain
+                ? "from-purple-400 to-purple-600"
+                : isSecondaryAppointed
+                  ? "from-blue-500 to-blue-700 shadow-blue-500/30"
+                  : "from-[#F4D571] to-[#B9892B]"
+            } flex items-center justify-center shadow-lg border-2 border-white`}>
+              {isViceSchoolCaptain ? <Award className="w-5 h-5 text-white" /> : isSecondaryAppointed ? <Star className="w-5 h-5 text-white fill-white" /> : <Crown className="w-5 h-5 text-white" />}
+            </div>
           </div>
-          {houseCaptains.length > 0 ? houseCaptains.map(c => {
-            const photoSrc = c.photo_url || c.photo;
-            return (
-              <div key={c.id || c.name} className="w-full text-center">
-                <div className="w-16 h-16 rounded-full mx-auto overflow-hidden ring-2 ring-amber-400/80 mb-2 bg-white shadow-sm">
-                  {photoSrc ? (() => {
-                    const fullImg = fullUrl(photoSrc);
-                    const { style, cleanUrl } = parseCandidateTransform(fullImg);
-                    return <img src={cleanUrl} alt={c.name} style={style} className="w-full h-full object-cover" />;
-                  })() : (
-                    <div className="w-full h-full flex items-center justify-center font-black text-amber-700">{c.name?.[0]}</div>
-                  )}
-                </div>
-                <h5 className="font-headline font-extrabold text-xs text-slate-900 leading-tight">{c.name}</h5>
-                {c.year && <span className="text-[9px] text-slate-400 font-bold block mt-0.5">{c.year}</span>}
+
+          <div className={`w-24 h-24 rounded-2xl ring-[3px] ${
+            isViceSchoolCaptain
+              ? "ring-purple-400/50"
+              : isSecondaryAppointed
+                ? "ring-blue-400/50"
+                : "ring-amber-400/50"
+          } overflow-hidden bg-white shadow-lg animate-pulse-ring`}>
+            {winnerPhoto ? (() => {
+              const { style, cleanUrl } = parseCandidateTransform(winnerPhoto);
+              return <img src={cleanUrl} alt={winner.name} style={style} className="w-full h-full object-cover" />;
+            })() : (
+              <div className="w-full h-full flex items-center justify-center text-3xl font-headline font-black text-amber-600">
+                {winner.name?.[0]}
               </div>
-            );
-          }) : (
-            <div className="py-2 text-[11px] text-slate-400 italic">To be announced</div>
-          )}
+            )}
+          </div>
         </div>
 
-        {/* Vice Captain */}
-        <div className="bg-slate-50/80 rounded-2xl p-3.5 border border-slate-200/60 text-center flex flex-col items-center">
-          <div className="text-[9px] uppercase tracking-widest font-black text-purple-600 mb-2 flex items-center gap-1">
-            <Award className="w-3 h-3 text-purple-500" /> Vice Captain
+        {/* Winner info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            {isViceSchoolCaptain ? (
+              <>
+                <Award className="w-4 h-4 text-purple-500" />
+                <span className="text-[10px] tracking-[0.3em] uppercase font-extrabold text-purple-600">
+                  Appointed Vice
+                </span>
+              </>
+            ) : isSecondaryAppointed ? (
+              <>
+                <Star className="w-4 h-4 text-blue-500 fill-blue-500" />
+                <span className="text-[10px] tracking-[0.3em] uppercase font-extrabold text-blue-600">
+                  Appointed by School Management
+                </span>
+              </>
+            ) : (
+              <>
+                <Trophy className="w-4 h-4 text-amber-500" />
+                <span className="text-[10px] tracking-[0.3em] uppercase font-extrabold text-amber-600">
+                  Winner
+                </span>
+              </>
+            )}
           </div>
-          {houseVices.length > 0 ? houseVices.map(v => {
-            const photoSrc = v.photo_url || v.photo;
-            return (
-              <div key={v.id || v.name} className="w-full text-center">
-                <div className="w-16 h-16 rounded-full mx-auto overflow-hidden ring-2 ring-purple-400/80 mb-2 bg-white shadow-sm">
-                  {photoSrc ? (() => {
-                    const fullImg = fullUrl(photoSrc);
-                    const { style, cleanUrl } = parseCandidateTransform(fullImg);
-                    return <img src={cleanUrl} alt={v.name} style={style} className="w-full h-full object-cover" />;
-                  })() : (
-                    <div className="w-full h-full flex items-center justify-center font-black text-purple-700">{v.name?.[0]}</div>
-                  )}
-                </div>
-                <h5 className="font-headline font-extrabold text-xs text-slate-900 leading-tight">{v.name}</h5>
-                {v.year && <span className="text-[9px] text-slate-400 font-bold block mt-0.5">{v.year}</span>}
-              </div>
-            );
-          }) : (
-            <div className="py-2 text-[11px] text-slate-400 italic">To be announced</div>
+          <h4 className="font-headline text-xl font-black text-slate-900 tracking-tight leading-tight break-words">
+            {winner.name}
+          </h4>
+          {winner.symbol && !isAppointedPost && (
+            <div className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-0.5">
+              Symbol: {winner.symbol}
+            </div>
           )}
+          <div className="flex items-center gap-3 mt-3">
+            <div className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border shadow-sm ${
+              isViceSchoolCaptain
+                ? "bg-purple-50 border-purple-200/60 text-purple-700 font-extrabold text-sm"
+                : isSecondaryAppointed
+                  ? "bg-blue-50 border-blue-200/60 text-blue-700 font-extrabold text-sm"
+                  : "bg-gradient-to-r from-emerald-50 to-emerald-100/80 border border-emerald-200/60 text-emerald-700 text-sm font-extrabold"
+            }`}>
+              {isViceSchoolCaptain ? (
+                <>
+                  <Award className="w-3.5 h-3.5 text-purple-500" />
+                  Vice Captain
+                </>
+              ) : isSecondaryAppointed ? (
+                <>
+                  <Star className="w-3.5 h-3.5 fill-blue-500 text-blue-500" />
+                  {position} · Appointed by Management
+                </>
+              ) : (
+                <>
+                  <Award className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="tabular-nums animate-count-pop" style={{ animationDelay: `${index * 0.2 + 0.4}s` }}>
+                    {winner.votes} votes
+                  </span>
+                  <span className="text-xs font-bold text-emerald-500">({winnerPct}%)</span>
+                </>
+              )}
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Card Share Button */}
+      <button
+        type="button"
+        data-no-share="true"
+        onClick={() => shareResultCard(winnerRef.current, position, winner.name)}
+        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-black transition-all shadow-md active:scale-95 cursor-pointer shrink-0"
+        title="Share Individual Winner Card"
+      >
+        <Share2 className="w-3.5 h-3.5 text-amber-300" />
+        <span>Share Card</span>
+      </button>
     </div>
   );
 };
@@ -390,7 +517,6 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
   const lowerPos = (position || "").toLowerCase();
   const isDisciplineHead = lowerPos.includes("discipline");
   const isAppointedPost = isAppointed || isDisciplineHead;
-  const primaryWinnerName = winners?.[0]?.name || "";
 
   return (
     <div
@@ -422,150 +548,25 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
                   <span className="text-xs font-bold text-white/90">Appointed</span>
                 </div>
               )}
-
-              {/* Share Card / Save Image Button */}
-              <button
-                type="button"
-                data-no-share="true"
-                onClick={() => shareResultCard(cardRef.current, position, primaryWinnerName)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/35 backdrop-blur border border-white/30 text-white text-xs font-black transition-all shadow-sm active:scale-95 cursor-pointer shrink-0"
-                title="Share or Save Card Image"
-              >
-                <Share2 className="w-3.5 h-3.5 text-amber-300" />
-                <span>Share Card</span>
-              </button>
             </div>
           </div>
         </div>
 
         {/* Winner hero section */}
-        <div className="relative px-6 pt-8 pb-6">
-          {/* Popper burst decoration */}
-          <div className="absolute top-4 left-6 w-16 h-16 rounded-full bg-amber-400/10 animate-popper" style={{ animationDelay: `${index * 0.2 + 0.5}s` }} />
-          <div className="absolute top-8 right-10 w-12 h-12 rounded-full bg-blue-400/10 animate-popper" style={{ animationDelay: `${index * 0.2 + 0.8}s` }} />
-          
-          <div className="grid grid-cols-1 divide-y divide-slate-100 gap-6">
-            {(winners || []).filter(Boolean).map((winner, wIdx) => {
-              if (!winner) return null;
-              const winnerPhoto = winner?.photo ? (winner.photo.startsWith("data:") || winner.photo.startsWith("http") ? winner.photo : fullUrl(winner.photo)) : null;
-              const winnerPct = totalVotes > 0 ? Math.round(((winner?.votes || 0) / totalVotes) * 100) : 0;
-              const isSchoolCaptain = (position || "").toLowerCase().includes("school captain") ||
-                                     (position || "").toLowerCase().includes("head boy") ||
-                                     (position || "").toLowerCase().includes("head girl");
-              const lowerWinnerName = (winner?.name || "").toLowerCase();
-              const isExplicitAppointedMember = ["anshika", "simran", "vijaya", "vijaylaxmi", "harsh"].some(n => lowerWinnerName.includes(n));
-              const isSecondaryCandidate = winner?.is_vice || isExplicitAppointedMember || (wIdx > 0 && !isSchoolCaptain) || isDisciplineHead;
-              const isViceSchoolCaptain = isSecondaryCandidate && isSchoolCaptain;
-              const isSecondaryAppointed = (isSecondaryCandidate || isAppointedPost) && !isSchoolCaptain;
-
-              return (
-                <div key={winner?.candidate_id || wIdx} className={`flex items-center gap-6 ${wIdx > 0 ? "pt-6" : ""}`}>
-                  {/* Winner photo with crown / star */}
-                  <div className="relative shrink-0">
-                    {/* Sparkles around photo */}
-                    <Sparkles className="absolute -top-3 -left-2 w-5 h-5 text-amber-400 animate-sparkle" style={{ animationDelay: "0s" }} />
-                    <Star className="absolute -top-1 -right-3 w-4 h-4 text-amber-300 animate-sparkle" style={{ animationDelay: "0.8s" }} />
-                    <Sparkles className="absolute -bottom-2 -left-3 w-4 h-4 text-amber-400/70 animate-sparkle" style={{ animationDelay: "1.6s" }} />
-
-                    {/* Crown / Star / Award */}
-                    <div className="absolute -top-5 left-1/2 -translate-x-1/2 z-20 animate-crown-float">
-                      <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${
-                        isViceSchoolCaptain
-                          ? "from-purple-400 to-purple-600"
-                          : isSecondaryAppointed
-                            ? "from-blue-500 to-blue-700 shadow-blue-500/30"
-                            : "from-[#F4D571] to-[#B9892B]"
-                      } flex items-center justify-center shadow-lg border-2 border-white`}>
-                        {isViceSchoolCaptain ? <Award className="w-5 h-5 text-white" /> : isSecondaryAppointed ? <Star className="w-5 h-5 text-white fill-white" /> : <Crown className="w-5 h-5 text-white" />}
-                      </div>
-                    </div>
-
-                    {/* Photo */}
-                    <div className={`w-24 h-24 rounded-2xl ring-[3px] ${
-                      isViceSchoolCaptain
-                        ? "ring-purple-400/50"
-                        : isSecondaryAppointed
-                          ? "ring-blue-400/50"
-                          : "ring-amber-400/50"
-                    } overflow-hidden bg-slate-50/80 shadow-lg animate-pulse-ring`}>
-                      {winnerPhoto ? (() => {
-                        const { style, cleanUrl } = parseCandidateTransform(winnerPhoto);
-                        return <img src={cleanUrl} alt={winner.name} style={style} className="w-full h-full object-cover" />;
-                      })() : (
-                        <div className="w-full h-full flex items-center justify-center text-3xl font-headline font-black text-amber-600">
-                          {winner.name?.[0]}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Winner info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      {isViceSchoolCaptain ? (
-                        <>
-                          <Award className="w-4 h-4 text-purple-500" />
-                          <span className="text-[10px] tracking-[0.3em] uppercase font-extrabold text-purple-600">
-                            Appointed Vice
-                          </span>
-                        </>
-                      ) : isSecondaryAppointed ? (
-                        <>
-                          <Star className="w-4 h-4 text-blue-500 fill-blue-500" />
-                          <span className="text-[10px] tracking-[0.3em] uppercase font-extrabold text-blue-600">
-                            Appointed by School Management
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <Trophy className="w-4 h-4 text-amber-500" />
-                          <span className="text-[10px] tracking-[0.3em] uppercase font-extrabold text-amber-600">
-                            Winner
-                          </span>
-                        </>
-                      )}
-                    </div>
-                    <h4 className="font-headline text-xl font-black text-slate-900 tracking-tight leading-tight break-words">
-                      {winner.name}
-                    </h4>
-                    {winner.symbol && !isAppointedPost && (
-                      <div className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-0.5">
-                        Symbol: {winner.symbol}
-                      </div>
-                    )}
-                    <div className="flex items-center gap-3 mt-3">
-                      <div className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border shadow-sm ${
-                        isViceSchoolCaptain
-                          ? "bg-purple-50 border-purple-200/60 text-purple-700 font-extrabold text-sm"
-                          : isSecondaryAppointed
-                            ? "bg-blue-50 border-blue-200/60 text-blue-700 font-extrabold text-sm"
-                            : "bg-gradient-to-r from-emerald-50 to-emerald-100/80 border border-emerald-200/60 text-emerald-700 text-sm font-extrabold"
-                      }`}>
-                        {isViceSchoolCaptain ? (
-                          <>
-                            <Award className="w-3.5 h-3.5 text-purple-500" />
-                            Vice Captain
-                          </>
-                        ) : isSecondaryAppointed ? (
-                          <>
-                            <Star className="w-3.5 h-3.5 fill-blue-500 text-blue-500" />
-                            {position} · Appointed by Management
-                          </>
-                        ) : (
-                          <>
-                            <Award className="w-3.5 h-3.5 text-emerald-600" />
-                            <span className="tabular-nums animate-count-pop" style={{ animationDelay: `${index * 0.2 + 0.4}s` }}>
-                              {winner.votes} votes
-                            </span>
-                            <span className="text-xs font-bold text-emerald-500">({winnerPct}%)</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+        <div className="relative px-6 pt-6 pb-6">
+          <div className="grid grid-cols-1 gap-4">
+            {(winners || []).filter(Boolean).map((winner, wIdx) => (
+              <IndividualWinnerCard
+                key={winner?.candidate_id || wIdx}
+                winner={winner}
+                position={position}
+                totalVotes={totalVotes}
+                index={index}
+                wIdx={wIdx}
+                isAppointedPost={isAppointedPost}
+                isDisciplineHead={isDisciplineHead}
+              />
+            ))}
           </div>
         </div>
 
