@@ -486,11 +486,39 @@ export default function AdminAudioBroadcast() {
   const [micStreaming, setMicStreaming] = useState(false);
   const [micVolumeLevel, setMicVolumeLevel] = useState(0);
 
+  // Helper to convert WebAudio Float32 samples to 16-bit PCM WAV ArrayBuffer
+  const encodePcmWav = (samples, sampleRate = 16000) => {
+    const buffer = new ArrayBuffer(44 + samples.length * 2);
+    const view = new DataView(buffer);
+    const writeString = (v, offset, str) => {
+      for (let i = 0; i < str.length; i++) v.setUint8(offset + i, str.charCodeAt(i));
+    };
+    writeString(view, 0, 'RIFF');
+    view.setUint32(4, 36 + samples.length * 2, true);
+    writeString(view, 8, 'WAVE');
+    writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeString(view, 36, 'data');
+    view.setUint32(40, samples.length * 2, true);
+
+    let offset = 44;
+    for (let i = 0; i < samples.length; i++, offset += 2) {
+      const s = Math.max(-1, Math.min(1, samples[i]));
+      view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    }
+    return buffer;
+  };
+
   // Phone / Browser Mic Live Stream Handlers
   const handleStartMicStream = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
       setMicStreaming(true);
 
       const targetRooms = roomsInput || "1-200";
@@ -508,46 +536,56 @@ export default function AdminAudioBroadcast() {
       })
       .catch(() => {});
 
-      // 2. Real-time WebAudio level visualizer
-      try {
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const sourceNode = audioContext.createMediaStreamSource(stream);
-        const analyser = audioContext.createAnalyser();
-        analyser.fftSize = 64;
-        sourceNode.connect(analyser);
+      // 2. Real-time WebAudio level visualizer & PCM WAV Processor
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+      if (audioContext.state === "suspended") {
+        await audioContext.resume();
+      }
 
-        const dataArray = new Uint8Array(analyser.frequencyBinCount);
-        const updateLevel = () => {
-          if (!window._audioMicStream) return;
-          analyser.getByteFrequencyData(dataArray);
-          let sum = 0;
-          for (let i = 0; i < dataArray.length; i++) {
-            sum += dataArray[i];
+      const sourceNode = audioContext.createMediaStreamSource(stream);
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 64;
+
+      const scriptNode = audioContext.createScriptProcessor(2048, 1, 1);
+      sourceNode.connect(analyser);
+      analyser.connect(scriptNode);
+      scriptNode.connect(audioContext.destination);
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      let lastSendTime = Date.now();
+
+      scriptNode.onaudioprocess = (audioProcessingEvent) => {
+        if (!window._audioMicStream) return;
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          sum += dataArray[i];
+        }
+        const average = sum / dataArray.length;
+        const volumePercent = Math.min(100, Math.round((average / 128) * 100));
+        setMicVolumeLevel(volumePercent);
+
+        // Stream PCM WAV audio chunk to backend every 300ms
+        const now = Date.now();
+        if (now - lastSendTime >= 300) {
+          lastSendTime = now;
+          const inputData = audioProcessingEvent.inputBuffer.getChannelData(0);
+          const wavBuffer = encodePcmWav(inputData, 16000);
+          let binary = '';
+          const bytes = new Uint8Array(wavBuffer);
+          for (let i = 0; i < bytes.byteLength; i++) {
+            binary += String.fromCharCode(bytes[i]);
           }
-          const average = sum / dataArray.length;
-          const volumePercent = Math.min(100, Math.round((average / 128) * 100));
-          setMicVolumeLevel(volumePercent);
-          window._micAnimFrame = requestAnimationFrame(updateLevel);
-        };
-        updateLevel();
-        window._audioContext = audioContext;
-      } catch {}
-
-      recorder.ondataavailable = async (e) => {
-        if (e.data.size > 0) {
-          const reader = new FileReader();
-          reader.readAsDataURL(e.data);
-          reader.onloadend = () => {
-            const base64Audio = reader.result.split(',')[1];
-            api.post("/admin/audio/stream-mic", {
-              audio_base64: base64Audio,
-              rooms: targetRooms
-            }).catch(() => {});
-          };
+          const base64Audio = btoa(binary);
+          api.post("/admin/audio/stream-mic", {
+            audio_base64: base64Audio,
+            rooms: targetRooms
+          }).catch(() => {});
         }
       };
-      recorder.start(500);
-      window._audioMicRecorder = recorder;
+
+      window._audioContext = audioContext;
+      window._scriptNode = scriptNode;
       window._audioMicStream = stream;
     } catch (err) {
       setLastActionMsg({ type: "error", text: "Microphone Access Denied: " + err.message });
@@ -555,12 +593,12 @@ export default function AdminAudioBroadcast() {
   };
 
   const handleStopMicStream = () => {
-    if (window._micAnimFrame) cancelAnimationFrame(window._micAnimFrame);
+    if (window._scriptNode) { try { window._scriptNode.disconnect(); } catch {} }
     if (window._audioContext) { try { window._audioContext.close(); } catch {} }
-    if (window._audioMicRecorder) { try { window._audioMicRecorder.stop(); } catch {} }
     if (window._audioMicStream) { try { window._audioMicStream.getTracks().forEach(t => t.stop()); } catch {} }
 
-    window._audioMicRecorder = null;
+    window._scriptNode = null;
+    window._audioContext = null;
     window._audioMicStream = null;
     setMicStreaming(false);
     setMicVolumeLevel(0);
