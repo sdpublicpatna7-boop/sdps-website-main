@@ -73,6 +73,11 @@ const ROUTE_META_MAP = {
     desc: "Meet the elected Student Council members, Head Boy, Head Girl, Sports Captains, and House Prefects at SDPS Patna.",
     keywords: "sdps student council, house captains sd public school"
   },
+  "/student-council/preview": {
+    title: "Student Council Preview | S.D. Public School, Patna",
+    desc: "Preview of elected Student Council members and election results at SDPS Patna.",
+    keywords: "sdps student council preview, election results sdps"
+  },
   "/admissions": {
     title: "Admissions Open 2026-27 | Best School in Patna | SDPS",
     desc: "Admissions open for 2026-27 academic session at S.D. Public School Patna (Playgroup to Class 8). Apply online or visit our campus at Maurya Colony, Patna.",
@@ -228,10 +233,11 @@ export default function RouteSEOManager() {
     if (path.startsWith("/admin")) {
       meta = { title: "Admin Portal | SDPS Admin" };
     } else {
+      meta = { title: "S.D. Public School, Patna", desc: "S.D. Public School (Suryamuni Devi Public School), Patna — Among the best schools in Patna, Bihar.", keywords: "sd public school patna" };
     }
   }
 
-  return <SEO title={meta.title} description={meta.desc} keywords={meta.keywords} ogUrl={`https://sdpublic.org${path === "/" ? "" : path}`} />;
+  return <SEO title={meta?.title || "S.D. Public School, Patna"} description={meta?.desc} keywords={meta?.keywords} ogUrl={`https://sdpublic.org${path === "/" ? "" : path}`} />;
 }
 
 
