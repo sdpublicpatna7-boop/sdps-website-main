@@ -6,6 +6,49 @@ import { Crown, Vote, Trophy, X, Clock, Sparkles, Star, Award, Users } from "luc
 const BACKEND = process.env.REACT_APP_BACKEND_URL;
 function fullUrl(u) { return u?.startsWith("http") || u?.startsWith("data:") ? u : `${BACKEND}${u}`; }
 
+const HOUSE_SYSTEM_DATA = [
+  {
+    key: "ashoka",
+    name: "Ashoka House",
+    army: "Yellow Army",
+    motto: "Strength · Courage · Compassion",
+    logo: "/images/houses/ashoka.jpg",
+    badgeBg: "bg-amber-500 text-white",
+    borderColor: "border-amber-400/80",
+    textColor: "text-amber-700",
+  },
+  {
+    key: "aryabhatta",
+    name: "Aryabhatta House",
+    army: "Red Army",
+    motto: "Knowledge · Wisdom · Discovery",
+    logo: "/images/houses/aryabhatta.jpg",
+    badgeBg: "bg-red-600 text-white",
+    borderColor: "border-red-400/80",
+    textColor: "text-red-700",
+  },
+  {
+    key: "chanakya",
+    name: "Chanakya House",
+    army: "Blue Army",
+    motto: "Wisdom · Strategy · Integrity",
+    logo: "/images/houses/chanakya.jpg",
+    badgeBg: "bg-blue-600 text-white",
+    borderColor: "border-blue-400/80",
+    textColor: "text-blue-700",
+  },
+  {
+    key: "gautam",
+    name: "Gautam House",
+    army: "Green Army",
+    motto: "Kindness · Mindfulness · Compassion",
+    logo: "/images/houses/gautam.jpg",
+    badgeBg: "bg-emerald-600 text-white",
+    borderColor: "border-emerald-400/80",
+    textColor: "text-emerald-700",
+  },
+];
+
 /* ───────────────────────────────────────────────────────
    COUNTDOWN CARD (small timer digit box)
    ─────────────────────────────────────────────────────── */
@@ -914,6 +957,103 @@ export default function StudentCouncil() {
               </div>
             </div>
           )}
+
+          {/* ── HOUSE CAPTAINS & VICE CAPTAINS SECTION (With Official House Logos) ── */}
+          <div className="mt-16 pt-12 border-t border-slate-200/80">
+            {/* Section Header */}
+            <div className="text-center mb-10">
+              <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-[#0E3B91] via-[#1a55b6] to-[#0E3B91] rounded-2xl shadow-xl">
+                <Crown className="w-5 h-5 text-amber-300 animate-pulse" />
+                <h3 className="font-headline text-xl md:text-2xl font-black text-white tracking-tight">House Captains & Vice Captains</h3>
+                <Crown className="w-5 h-5 text-amber-300 animate-pulse" />
+              </div>
+              <p className="text-xs text-slate-500 font-bold mt-3 tracking-widest uppercase">Official School Houses · 2026-27 Leadership</p>
+            </div>
+
+            {/* 4 Houses Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {HOUSE_SYSTEM_DATA.map(house => {
+                // Find matching Captain & Vice Captain from profiles or election winners
+                const houseCaptains = (profiles || []).filter(p => {
+                  const pos = (p?.position || "").toLowerCase();
+                  const hName = (p?.house || "").toLowerCase();
+                  return (pos.includes(house.key) || hName.includes(house.key)) && pos.includes("captain") && !pos.includes("vice");
+                });
+                const houseVices = (profiles || []).filter(p => {
+                  const pos = (p?.position || "").toLowerCase();
+                  const hName = (p?.house || "").toLowerCase();
+                  return (pos.includes(house.key) || hName.includes(house.key)) && pos.includes("vice");
+                });
+
+                return (
+                  <div key={house.key} className={`bg-white rounded-3xl border-2 ${house.borderColor} p-6 shadow-xl relative overflow-hidden transition-all duration-300 hover:shadow-2xl`}>
+                    {/* Header Banner with Crest Logo */}
+                    <div className="flex items-center gap-4 mb-6 pb-4 border-b border-slate-100">
+                      <div className={`w-20 h-20 rounded-2xl p-1 shadow-md bg-white border ${house.borderColor} shrink-0 overflow-hidden`}>
+                        <img src={house.logo} alt={house.name} className="w-full h-full object-contain rounded-xl" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black tracking-wider ${house.badgeBg}`}>
+                            {house.army}
+                          </span>
+                        </div>
+                        <h4 className="font-headline text-2xl font-black text-slate-900 mt-1">{house.name}</h4>
+                        <p className={`text-xs font-bold ${house.textColor} mt-0.5`}>{house.motto}</p>
+                      </div>
+                    </div>
+
+                    {/* Captains Breakdown */}
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* House Captain */}
+                      <div className="bg-slate-50/80 rounded-2xl p-3.5 border border-slate-200/60 text-center flex flex-col items-center">
+                        <div className="text-[9px] uppercase tracking-widest font-black text-amber-600 mb-2 flex items-center gap-1">
+                          <Crown className="w-3 h-3 text-amber-500" /> House Captain
+                        </div>
+                        {houseCaptains.length > 0 ? houseCaptains.map(c => (
+                          <div key={c.id || c.name} className="w-full text-center">
+                            <div className="w-14 h-14 rounded-full mx-auto overflow-hidden ring-2 ring-amber-400 mb-2 bg-white">
+                              {c.photo_url || c.photo ? (
+                                <img src={fullUrl(c.photo_url || c.photo)} alt={c.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center font-black text-amber-700">{c.name?.[0]}</div>
+                              )}
+                            </div>
+                            <h5 className="font-headline font-bold text-xs text-slate-900 leading-tight">{c.name}</h5>
+                            {c.year && <span className="text-[9px] text-slate-400 font-semibold">{c.year}</span>}
+                          </div>
+                        )) : (
+                          <div className="py-2 text-[11px] text-slate-400 italic">To be announced</div>
+                        )}
+                      </div>
+
+                      {/* Vice Captain */}
+                      <div className="bg-slate-50/80 rounded-2xl p-3.5 border border-slate-200/60 text-center flex flex-col items-center">
+                        <div className="text-[9px] uppercase tracking-widest font-black text-purple-600 mb-2 flex items-center gap-1">
+                          <Award className="w-3 h-3 text-purple-500" /> Vice Captain
+                        </div>
+                        {houseVices.length > 0 ? houseVices.map(v => (
+                          <div key={v.id || v.name} className="w-full text-center">
+                            <div className="w-14 h-14 rounded-full mx-auto overflow-hidden ring-2 ring-purple-400 mb-2 bg-white">
+                              {v.photo_url || v.photo ? (
+                                <img src={fullUrl(v.photo_url || v.photo)} alt={v.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center font-black text-purple-700">{v.name?.[0]}</div>
+                              )}
+                            </div>
+                            <h5 className="font-headline font-bold text-xs text-slate-900 leading-tight">{v.name}</h5>
+                            {v.year && <span className="text-[9px] text-slate-400 font-semibold">{v.year}</span>}
+                          </div>
+                        )) : (
+                          <div className="py-2 text-[11px] text-slate-400 italic">To be announced</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
           </>
         )}
 

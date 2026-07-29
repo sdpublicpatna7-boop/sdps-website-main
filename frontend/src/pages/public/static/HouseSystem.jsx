@@ -6,30 +6,30 @@ export function HouseSystem() {
     {
       name: "Aryabhatta House", army: "Red Army", color: "from-red-500 to-rose-700", border: "border-red-200",
       bg: "bg-red-50", text: "text-red-700",
-      motto: "In Pursuit of Knowledge and Brilliance",
+      motto: "Knowledge · Wisdom · Discovery",
       desc: "Named after the legendary mathematician and astronomer Aryabhatta, this House represents curiosity, intellectual strength, and the relentless quest for learning. Students are encouraged to think innovatively, question intelligently, and lead with knowledge.",
-      img: "https://sdpublic.org/assets/img/Artboard%203@1.25x.jpg",
+      img: "/images/houses/aryabhatta.jpg",
     },
     {
       name: "Ashoka House", army: "Yellow Army", color: "from-amber-400 to-yellow-600", border: "border-amber-200",
       bg: "bg-amber-50", text: "text-amber-700",
-      motto: "Strength in Peace, Pride in Character",
+      motto: "Strength · Courage · Compassion",
       desc: "Inspired by Emperor Ashoka, known for his journey from conquest to compassion, Ashoka House symbolises leadership with humility, peace, and moral courage. Students are taught to lead with wisdom, promote harmony, and uphold strong ethical values.",
-      img: "https://sdpublic.org/assets/img/Artboard%202@1.25x.jpg",
+      img: "/images/houses/ashoka.jpg",
     },
     {
       name: "Chanakya House", army: "Blue Army", color: "from-sky-500 to-blue-700", border: "border-sky-200",
       bg: "bg-sky-50", text: "text-sky-700",
-      motto: "Wisdom, Strategy, and Vision",
+      motto: "Wisdom · Strategy · Integrity",
       desc: "Named after Chanakya, the ancient strategist and scholar, Chanakya House stands for sharp intellect, strategic thinking, and decisive leadership. Students are motivated to think critically, act wisely, and plan ahead with vision and purpose.",
-      img: "https://sdpublic.org/assets/img/Artboard%205@1.25x.jpg",
+      img: "/images/houses/chanakya.jpg",
     },
     {
       name: "Gautam House", army: "Green Army", color: "from-emerald-500 to-green-700", border: "border-emerald-200",
       bg: "bg-emerald-50", text: "text-emerald-700",
-      motto: "Compassion, Harmony, and Inner Strength",
+      motto: "Kindness · Mindfulness · Compassion",
       desc: "Guided by the teachings of Gautam Buddha, Gautam House reflects compassion, inner peace, and respect for all living beings. Students are encouraged to cultivate kindness, emotional resilience, and contribute to a peaceful environment.",
-      img: "https://sdpublic.org/assets/img/Artboard%204@1.25x.jpg",
+      img: "/images/houses/gautam.jpg",
     },
   ];
 
