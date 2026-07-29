@@ -210,10 +210,13 @@ export function AdminHouseMentors() {
                 <h1 className="font-serif text-2xl md:text-3xl font-extrabold text-slate-900 tracking-wide uppercase">
                   S.D. PUBLIC SCHOOL
                 </h1>
-                <p className="text-xs font-semibold text-brand-blue uppercase tracking-widest mt-0.5">
-                  Affiliated to CBSE, New Delhi | Senior Secondary School
+                <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mt-0.5">
+                  Maurya Colony, Biscoman Golambar, Patna — 800007 | Helpline: +91 9955190162, 9955190262
                 </p>
-                <div className="inline-flex items-center gap-2 mt-1 px-3 py-0.5 rounded-full bg-amber-100/80 text-amber-900 text-[11px] font-bold">
+                <p className="text-[11px] font-bold text-brand-orange italic tracking-wide mt-0.5">
+                  (Empowering Generation Since 1994...)
+                </p>
+                <div className="inline-flex items-center gap-2 mt-2 px-3 py-0.5 rounded-full bg-amber-100/80 text-amber-900 text-[11px] font-bold">
                   <Sparkles className="w-3.5 h-3.5 text-amber-600" />
                   <span>HOUSE WISE MENTORS & TEACHERS ROSTER (2025–2026)</span>
                 </div>
