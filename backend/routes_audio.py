@@ -907,6 +907,34 @@ async def sync_ddns_ip(request: Request, current_admin=Depends(get_current_admin
     }
 
 
+class IpUpdatePayload(BaseModel):
+    ip: str
+
+
+@audio_router.post("/ip/update")
+async def update_broadcasting_ip(payload: IpUpdatePayload, current_admin=Depends(get_current_admin)):
+    """Save updated hardware broadcasting IP to MongoDB site_settings."""
+    from server import db
+    clean_ip = payload.ip.strip()
+    if not clean_ip:
+        raise HTTPException(status_code=400, detail="IP address cannot be empty.")
+        
+    now_iso = datetime.now(timezone.utc).isoformat()
+    await db.site_settings.update_one(
+        {},
+        {"$set": {
+            "audio_device_ip": clean_ip,
+            "audio_ip_updated_at": now_iso
+        }},
+        upsert=True
+    )
+    return {
+        "success": True,
+        "ip": clean_ip,
+        "message": f"Broadcasting IP updated to {clean_ip}"
+    }
+
+
 @audio_router.get("/ddns/get")
 async def get_ddns_ip(current_admin=Depends(get_current_admin)):
     """Retrieve saved DDNS IP from MongoDB."""

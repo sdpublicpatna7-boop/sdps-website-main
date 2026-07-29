@@ -191,7 +191,8 @@ export default function AdminAudioBroadcast() {
   const [clockLoading, setClockLoading] = useState(false);
 
   // Fetch registered tunnel URL & status
-  const pingDevice = () => {
+  const pingDevice = (targetIpOverride) => {
+    const targetIp = targetIpOverride || deviceIp;
     setDeviceStatus(prev => ({ ...prev, checking: true, error: null }));
 
     // First fetch registered tunnel details
@@ -205,7 +206,7 @@ export default function AdminAudioBroadcast() {
       .catch(() => {});
 
     // Then ping status
-    api.get(`/admin/audio/status?ip=${encodeURIComponent(deviceIp)}`)
+    api.get(`/admin/audio/status?ip=${encodeURIComponent(targetIp)}`)
       .then(res => {
         if (res.data?.ip && res.data.ip.startsWith("http")) {
           setActiveTunnelUrl(res.data.ip);
@@ -222,6 +223,21 @@ export default function AdminAudioBroadcast() {
           checking: false,
           error: err.response?.data?.detail || err.message
         });
+      });
+  };
+
+  const saveAndConnectIp = (newIp) => {
+    const cleanIp = (newIp || "").trim();
+    if (!cleanIp) return;
+    setDeviceIp(cleanIp);
+    localStorage.setItem("sdps_audio_ip", cleanIp);
+    setLastActionMsg({ type: "success", text: `Broadcasting IP set to ${cleanIp}. Connecting via Tunnel...` });
+    api.post("/admin/audio/ip/update", { ip: cleanIp })
+      .then(() => {
+        pingDevice(cleanIp);
+      })
+      .catch(() => {
+        pingDevice(cleanIp);
       });
   };
 
@@ -728,16 +744,31 @@ export default function AdminAudioBroadcast() {
               </div>
               <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10 text-xs">
                 <span className="text-slate-400 font-medium shrink-0">Broadcasting IP:</span>
-                <input
-                  type="text"
-                  value={deviceIp}
-                  onChange={(e) => {
-                    setDeviceIp(e.target.value);
-                    localStorage.setItem("sdps_audio_ip", e.target.value);
-                  }}
-                  className="bg-black/50 text-amber-300 border border-white/20 px-2.5 py-1 rounded-md font-mono text-xs w-36 focus:outline-none focus:border-amber-400 shadow-inner"
-                  placeholder="192.168.29.71"
-                />
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    value={deviceIp}
+                    onChange={(e) => {
+                      setDeviceIp(e.target.value);
+                      localStorage.setItem("sdps_audio_ip", e.target.value);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        saveAndConnectIp(deviceIp);
+                      }
+                    }}
+                    className="bg-black/50 text-amber-300 border border-white/20 px-2.5 py-1 rounded-md font-mono text-xs w-36 focus:outline-none focus:border-amber-400 shadow-inner"
+                    placeholder="192.168.29.113"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => saveAndConnectIp(deviceIp)}
+                    className="px-2.5 py-1 rounded bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-[11px] transition-all shrink-0 cursor-pointer shadow-sm active:scale-95"
+                    title="Save IP & Connect via Cloudflare Tunnel"
+                  >
+                    Connect
+                  </button>
+                </div>
               </div>
             </div>
           </div>
