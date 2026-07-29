@@ -97,6 +97,7 @@ export default function AdminApaarManager() {
   };
 
   const CLASS_ORDER = {
+    playgroup: 0, play: 0, "play group": 0, "play-group": 0,
     nursery: 1, lkg: 2, ukg: 3, "kg-i": 2, "kg-ii": 3,
     i: 4, 1: 4, ii: 5, 2: 5, iii: 6, 3: 6, iv: 7, 4: 7,
     v: 8, 5: 8, vi: 9, 6: 9, vii: 10, 7: 10, viii: 11, 8: 11,
@@ -692,7 +693,7 @@ export default function AdminApaarManager() {
     }
   };
 
-  const classes = ["Nursery", "LKG", "UKG", "KG-I", "KG-II", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+  const classes = ["Playgroup", "Nursery", "LKG", "UKG", "KG-I", "KG-II", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
