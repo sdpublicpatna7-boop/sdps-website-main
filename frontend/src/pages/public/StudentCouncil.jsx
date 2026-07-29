@@ -221,20 +221,21 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
           <div className="absolute top-8 right-10 w-12 h-12 rounded-full bg-blue-400/10 animate-popper" style={{ animationDelay: `${index * 0.2 + 0.8}s` }} />
           
           <div className="grid grid-cols-1 divide-y divide-slate-100 gap-6">
-            {winners.map((winner, wIdx) => {
+            {(winners || []).filter(Boolean).map((winner, wIdx) => {
+              if (!winner) return null;
               const winnerPhoto = winner?.photo ? (winner.photo.startsWith("data:") || winner.photo.startsWith("http") ? winner.photo : fullUrl(winner.photo)) : null;
-              const winnerPct = totalVotes > 0 ? Math.round((winner.votes / totalVotes) * 100) : 0;
+              const winnerPct = totalVotes > 0 ? Math.round(((winner?.votes || 0) / totalVotes) * 100) : 0;
               const isSchoolCaptain = (position || "").toLowerCase().includes("school captain") ||
                                      (position || "").toLowerCase().includes("head boy") ||
                                      (position || "").toLowerCase().includes("head girl");
               const lowerWinnerName = (winner?.name || "").toLowerCase();
               const isExplicitAppointedMember = ["anshika", "simran", "vijaya", "vijaylaxmi"].some(n => lowerWinnerName.includes(n));
-              const isSecondaryCandidate = winner.is_vice || isExplicitAppointedMember || (wIdx > 0 && !isSchoolCaptain);
+              const isSecondaryCandidate = winner?.is_vice || isExplicitAppointedMember || (wIdx > 0 && !isSchoolCaptain);
               const isViceSchoolCaptain = isSecondaryCandidate && isSchoolCaptain;
               const isSecondaryAppointed = isSecondaryCandidate && !isSchoolCaptain;
 
               return (
-                <div key={winner.candidate_id || wIdx} className={`flex items-center gap-6 ${wIdx > 0 ? "pt-6" : ""}`}>
+                <div key={winner?.candidate_id || wIdx} className={`flex items-center gap-6 ${wIdx > 0 ? "pt-6" : ""}`}>
                   {/* Winner photo with crown / star */}
                   <div className="relative shrink-0">
                     {/* Sparkles around photo */}
@@ -544,15 +545,19 @@ export default function StudentCouncil() {
             
             // Compile the list of spotlight winners
             const postWinners = [];
-            postWinners.push({
-              ...captainWinner,
-              is_vice: false
-            });
-            viceWinners.forEach(vw => {
+            if (captainWinner) {
               postWinners.push({
-                ...vw,
-                is_vice: isSchoolCaptainPost
+                ...captainWinner,
+                is_vice: false
               });
+            }
+            viceWinners.forEach(vw => {
+              if (vw) {
+                postWinners.push({
+                  ...vw,
+                  is_vice: isSchoolCaptainPost
+                });
+              }
             });
             
             compiled.push({
