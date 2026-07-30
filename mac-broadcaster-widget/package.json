@@ -1,0 +1,23 @@
+{
+  "name": "sdps-mac-broadcaster-widget",
+  "version": "1.0.0",
+  "description": "Native macOS Desktop Widget for S.D. Public School Audio Broadcasting & Smart Bell System (Local LAN Direct Control)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:mac": "electron-builder --mac --x64 --arm64"
+  },
+  "keywords": [
+    "sdps",
+    "macOS",
+    "widget",
+    "audio-broadcasting",
+    "audislave"
+  ],
+  "author": "S.D. Public School Tech Team",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.2.0",
+    "electron-builder": "^24.9.0"
+  }
+}

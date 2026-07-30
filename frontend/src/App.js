@@ -66,6 +66,7 @@ const LinksPage = lazy(() => import("@/pages/public/LinksPage"));
 const AdminLinktree = lazy(() => import("@/pages/admin/AdminLinktree"));
 const NoticePreview = lazy(() => import("@/pages/public/NoticePreview"));
 const AdminAudioBroadcast = lazy(() => import("@/pages/admin/AdminAudioBroadcast"));
+const MacWidgetPage = lazy(() => import("@/pages/admin/special/MacWidgetPage"));
 
 
 
@@ -197,6 +198,7 @@ function App() {
                   <Route path="/contact" element={<Contact />} />
                   <Route path="/terms" element={<TermsPrivacy />} />
                   <Route path="/privacy" element={<TermsPrivacy />} />
+                  <Route path="/mac-widget" element={<Suspense fallback={<PublicLoading />}><MacWidgetPage /></Suspense>} />
                   <Route path="/khelo-patna" element={<KheloPatna />} />
                   <Route path="/campus-tour" element={<CampusTour />} />
                   <Route path="*" element={<NotFound />} />
@@ -260,6 +262,7 @@ function App() {
                   <Route path="omr-checker" element={<Suspense fallback={<AdminLoading />}><AdminOmrChecker /></Suspense>} />
                   <Route path="apaar" element={<Suspense fallback={<AdminLoading />}><AdminApaarManager /></Suspense>} />
                   <Route path="audio-broadcast" element={<Suspense fallback={<AdminLoading />}><AdminAudioBroadcast /></Suspense>} />
+                  <Route path="mac-widget" element={<Suspense fallback={<AdminLoading />}><MacWidgetPage /></Suspense>} />
                   <Route path="site-settings" element={<AdminSiteSettings />} />
                   <Route path="integration-keys" element={<AdminIntegrationKeys />} />
                   <Route path="khelo-patna-gallery" element={<AdminKheloPatna />} />
