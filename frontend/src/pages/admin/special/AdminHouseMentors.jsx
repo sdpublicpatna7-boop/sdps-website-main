@@ -621,24 +621,44 @@ export function AdminHouseMentors() {
             })}
           </div>
 
-          {/* ── OFFICIAL PRINT SIGNATURE FOOTER (SINGLE MANAGEMENT SIGNATURE) ── */}
-          <div className="pt-3 mt-3 border-t border-slate-300">
-            <div className="flex flex-col items-center justify-center text-center space-y-1">
-              <div className="h-12 flex items-center justify-center">
+          {/* ── OFFICIAL PRINT FOOTER: LEFT QUOTE & RIGHT SDPS MANAGEMENT SIGNATURE ── */}
+          <div className="pt-2 mt-2 border-t border-slate-300 flex items-end justify-between px-2">
+            {/* Left Side: School Quote */}
+            <div className="text-left space-y-0.5 max-w-[50%] pb-1">
+              <div className="flex items-center gap-1 text-amber-700">
+                <Sparkles className="w-3 h-3 shrink-0 text-amber-600" />
+                <span className="text-[9.5px] font-black uppercase tracking-widest text-slate-600">School Motto</span>
+              </div>
+              <p className="font-serif italic font-bold text-[12px] text-slate-900 tracking-wide leading-tight">
+                “Together we inspire, together we achieve”
+              </p>
+              <p className="text-[9px] font-bold text-amber-800 uppercase tracking-wider">
+                S.D. Public School, Patna
+              </p>
+            </div>
+
+            {/* Right Side: SDPS Management Signature */}
+            <div className="text-right flex flex-col items-end space-y-0.5">
+              <div className="h-10 flex items-center justify-end">
                 {signatureData.principalSig || signatureData.inchargeSig ? (
                   <img
                     src={fullUrl(signatureData.principalSig || signatureData.inchargeSig)}
-                    alt="Management Signature"
-                    className="max-h-11 max-w-[180px] object-contain mx-auto"
+                    alt="SDPS Management Signature"
+                    className="max-h-10 max-w-[160px] object-contain ml-auto"
                     onError={(e) => { e.target.style.display = 'none'; }}
                   />
                 ) : (
-                  <div className="h-8 border-b-2 border-dashed border-slate-400 w-48 mx-auto"></div>
+                  <div className="h-6 border-b-2 border-dashed border-slate-400 w-40 ml-auto"></div>
                 )}
               </div>
-              <p className="text-slate-900 font-black text-xs uppercase tracking-wider">Management Signature</p>
-              <p className="text-[9.5px] text-slate-500 font-medium">S.D. Public School, Patna | Academic Session 2026–2027</p>
+              <p className="text-slate-900 font-black text-[11px] uppercase tracking-wider">
+                SDPS MANAGEMENT
+              </p>
+              <p className="text-[9px] text-slate-500 font-medium">
+                Academic Session 2026–2027
+              </p>
             </div>
+          </div>
 
             <div className="text-center mt-3 print:hidden pdf-hide">
               <button
@@ -650,7 +670,6 @@ export function AdminHouseMentors() {
               </button>
             </div>
           </div>
-        </div>
 
         {/* ── 4. ADD / EDIT MENTOR MODAL ── */}
         {modalOpen && (
