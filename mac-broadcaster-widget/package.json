@@ -4,8 +4,8 @@
   "description": "Native macOS Desktop Widget for S.D. Public School Audio Broadcasting & Smart Bell System (Local LAN Direct Control)",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
-    "build:mac": "electron-builder --mac --x64 --arm64"
+    "start": "npx electron .",
+    "build:mac": "npx electron-builder --mac --x64 --arm64"
   },
   "keywords": [
     "sdps",
