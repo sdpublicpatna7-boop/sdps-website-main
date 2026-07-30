@@ -107,6 +107,15 @@ class OtpVerifyPayload(BaseModel):
     otp: str
 
 
+class LoginResponsePayload(BaseModel):
+    request_id: str
+    action: str  # "deny" or "approve_and_logout"
+
+
+class LoginCheckPayload(BaseModel):
+    request_id: str
+
+
 class MicStreamPayload(BaseModel):
     ip: Optional[str] = DEFAULT_AUDIO_IP
     audio_base64: str
@@ -521,15 +530,24 @@ async def verify_login_otp(payload: OtpVerifyPayload):
 
     user_role = user.get("role", "staff")
     user_id = str(user["_id"])
+    u_name = user.get("username") or user.get("email") or identifier
 
-    # ── Single Active Session Check & Preemption ──
+    # ── Single Active Session Check & Preemption with 30s Stale Auto-Purge ──
+    now_dt = datetime.now(timezone.utc)
+    cutoff_30s = (now_dt - timedelta(seconds=30)).isoformat()
+
+    # Automatically purge/deactivate stale sessions (inactive for >30 seconds)
+    await db.active_audio_sessions.update_many(
+        {"active": True, "last_activity_at": {"$lt": cutoff_30s}},
+        {"$set": {"active": False, "stale": True}}
+    )
+
     existing_session = await db.active_audio_sessions.find_one({"active": True})
 
     if existing_session and existing_session.get("user_id") != user_id:
         active_role = existing_session.get("role", "staff")
-        active_username = existing_session.get("username", "Another User")
+        active_username = existing_session.get("username", "Admin")
 
-        u_name = user.get("username") or user.get("email") or identifier
         if user_role in ["superadmin", "admin"]:
             # Superadmin takes over! Preempt existing non-superadmin session
             await db.active_audio_sessions.update_many(
@@ -543,16 +561,44 @@ async def verify_login_otp(payload: OtpVerifyPayload):
             )
             logger.info(f"[AUDIO SESSION PREEMPTION] Superadmin {u_name} logged in. Evicted user {active_username}.")
         else:
-            # Non-superadmin blocked if someone else is online
-            raise HTTPException(
-                status_code=409,
-                detail=f"Access Denied: User '{active_username}' ({active_role}) is currently logged in. Only one user can manage the Audio System at a time."
-            )
+            # Staff Login Attempt when Admin is active — Initiate 10-Second Admin Approval Workflow!
+            request_id = f"req_{secrets.token_urlsafe(12)}"
+            now_iso = now_dt.isoformat()
+            exp_iso = (now_dt + timedelta(seconds=10)).isoformat()
+
+            await db.staff_login_requests.delete_many({"staff_username": u_name})
+            await db.staff_login_requests.insert_one({
+                "request_id": request_id,
+                "staff_id": user_id,
+                "staff_name": user.get("name", u_name),
+                "staff_username": u_name,
+                "staff_role": user_role,
+                "admin_username": active_username,
+                "status": "pending",  # "pending", "approved", "denied"
+                "created_at": now_iso,
+                "expires_at": exp_iso,
+                "user_data": {
+                    "user_id": user_id,
+                    "username": u_name,
+                    "name": user.get("name", u_name),
+                    "role": user_role,
+                    "email": user.get("email", "")
+                }
+            })
+
+            return {
+                "success": False,
+                "requires_admin_approval": True,
+                "request_id": request_id,
+                "admin_username": active_username,
+                "staff_name": user.get("name", u_name),
+                "countdown_seconds": 10,
+                "message": f"Admin ({active_username}) is currently logged in. Checking with Admin for login approval..."
+            }
 
     # Create new single active session token
     session_token = secrets.token_urlsafe(32)
     now_iso = datetime.now(timezone.utc).isoformat()
-    u_name = user.get("username") or user.get("email") or identifier
 
     await db.active_audio_sessions.delete_many({}) # clear old sessions
     await db.active_audio_sessions.insert_one({
@@ -591,7 +637,7 @@ async def verify_login_otp(payload: OtpVerifyPayload):
 
 @audio_router.get("/session/heartbeat")
 async def session_heartbeat(token: str = Query(...)):
-    """Heartbeat endpoint called by frontend. Returns session validity and eviction status."""
+    """Heartbeat endpoint called by frontend. Returns session validity, eviction status, and pending staff login requests."""
     from server import db
     session = await db.active_audio_sessions.find_one({"session_token": token})
 
@@ -603,16 +649,168 @@ async def session_heartbeat(token: str = Query(...)):
         raise HTTPException(status_code=401, detail=f"LOGOUT_PREEMPTED: {reason}")
 
     # Update last activity
-    now_iso = datetime.now(timezone.utc).isoformat()
+    now_dt = datetime.now(timezone.utc)
+    now_iso = now_dt.isoformat()
     await db.active_audio_sessions.update_one(
         {"session_token": token},
         {"$set": {"last_activity_at": now_iso}}
     )
 
+    # Check for pending staff login requests requiring admin approval
+    pending_req = None
+    if session.get("role") in ["admin", "superadmin"]:
+        req_doc = await db.staff_login_requests.find_one({
+            "status": "pending",
+            "expires_at": {"$gt": now_iso}
+        })
+        if req_doc:
+            pending_req = {
+                "request_id": req_doc.get("request_id"),
+                "staff_name": req_doc.get("staff_name"),
+                "staff_username": req_doc.get("staff_username"),
+                "expires_at": req_doc.get("expires_at")
+            }
+
     return {
         "active": True,
         "username": session.get("username"),
-        "role": session.get("role")
+        "role": session.get("role"),
+        "pending_login_request": pending_req
+    }
+
+
+@audio_router.post("/session/login-request/respond")
+async def respond_to_staff_login_request(payload: LoginResponsePayload, current_admin=Depends(get_current_admin)):
+    """Admin responds to staff login prompt: either 'deny' or 'approve_and_logout'."""
+    from server import db
+    req_doc = await db.staff_login_requests.find_one({"request_id": payload.request_id})
+    if not req_doc:
+        raise HTTPException(status_code=404, detail="Login request not found or expired.")
+
+    if payload.action == "deny":
+        await db.staff_login_requests.update_one(
+            {"request_id": payload.request_id},
+            {"$set": {"status": "denied"}}
+        )
+        return {"success": True, "status": "denied", "message": "Staff login request prohibited."}
+
+    elif payload.action == "approve_and_logout":
+        await db.staff_login_requests.update_one(
+            {"request_id": payload.request_id},
+            {"$set": {"status": "approved"}}
+        )
+        # Evict Admin session
+        admin_uname = current_admin.get("username", "Admin")
+        await db.active_audio_sessions.update_many(
+            {"active": True},
+            {"$set": {
+                "active": False,
+                "evicted": True,
+                "evicted_by": req_doc.get("staff_username"),
+                "eviction_reason": "Admin approved staff login and signed out."
+            }}
+        )
+        return {"success": True, "status": "approved", "message": "Admin logged out and staff login approved."}
+
+    raise HTTPException(status_code=400, detail="Invalid action parameter.")
+
+
+@audio_router.post("/session/login-request/check")
+async def check_staff_login_request(payload: LoginCheckPayload):
+    """Staff login polling endpoint. Checks 10s countdown status and finalizes JWT session upon approval or 10s timeout."""
+    from server import db
+    from auth import create_access_token
+    import secrets
+
+    req_doc = await db.staff_login_requests.find_one({"request_id": payload.request_id})
+    if not req_doc:
+        raise HTTPException(status_code=404, detail="Login request not found or expired.")
+
+    status = req_doc.get("status")
+    now_dt = datetime.now(timezone.utc)
+    exp_dt = datetime.fromisoformat(req_doc.get("expires_at"))
+
+    # Auto-approve if 10 seconds have elapsed with no response from Admin!
+    if status == "pending" and now_dt >= exp_dt:
+        status = "approved"
+        await db.staff_login_requests.update_one(
+            {"request_id": payload.request_id},
+            {"$set": {"status": "approved", "auto_approved_timeout": True}}
+        )
+
+    if status == "denied":
+        return {
+            "success": False,
+            "status": "denied",
+            "message": f"Admin ({req_doc.get('admin_username')}) prohibited staff login at this time."
+        }
+
+    if status == "approved":
+        # Finalize Staff Session & Generate Token
+        user_data = req_doc.get("user_data", {})
+        user_id = user_data.get("user_id")
+        u_name = user_data.get("username")
+        user_role = user_data.get("role", "staff")
+
+        # Evict any existing admin sessions
+        await db.active_audio_sessions.update_many(
+            {"active": True},
+            {"$set": {
+                "active": False,
+                "evicted": True,
+                "evicted_by": u_name,
+                "eviction_reason": "Staff login approved."
+            }}
+        )
+
+        session_token = secrets.token_urlsafe(32)
+        now_iso = now_dt.isoformat()
+
+        await db.active_audio_sessions.delete_many({})  # Clear old sessions
+        await db.active_audio_sessions.insert_one({
+            "session_token": session_token,
+            "user_id": user_id,
+            "username": u_name,
+            "name": user_data.get("name", u_name),
+            "role": user_role,
+            "active": True,
+            "evicted": False,
+            "login_at": now_iso,
+            "last_activity_at": now_iso
+        })
+
+        jwt_token = create_access_token({
+            "sub": user_id,
+            "email": user_data.get("email", ""),
+            "role": user_role,
+            "permissions": [],
+            "audio_session": session_token
+        })
+
+        # Cleanup login request
+        await db.staff_login_requests.delete_one({"request_id": payload.request_id})
+
+        return {
+            "success": True,
+            "status": "approved",
+            "token": jwt_token,
+            "session_token": session_token,
+            "user": {
+                "id": user_id,
+                "username": u_name,
+                "name": user_data.get("name", u_name),
+                "role": user_role,
+                "email": user_data.get("email", "")
+            }
+        }
+
+    # Still pending
+    seconds_left = max(0, int((exp_dt - now_dt).total_seconds()))
+    return {
+        "success": False,
+        "status": "pending",
+        "seconds_left": seconds_left,
+        "message": f"Checking with Admin ({req_doc.get('admin_username')})... {seconds_left}s left."
     }
 
 

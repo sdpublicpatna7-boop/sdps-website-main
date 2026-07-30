@@ -135,6 +135,11 @@ export default function AdminAudioBroadcast() {
   const [tunnelNodes, setTunnelNodes] = useState([]);
   const [tunnelLoading, setTunnelLoading] = useState(false);
 
+  // 10-Second Admin Approval Workflow States
+  const [pendingApprovalReq, setPendingApprovalReq] = useState(null); // Staff state: { requestId, adminUsername, secondsLeft }
+  const [approvalModalOpen, setApprovalModalOpen] = useState(false); // Staff login screen modal
+  const [adminRequestPrompt, setAdminRequestPrompt] = useState(null); // Admin screen pop-up state: { requestId, staffName, staffUsername }
+
   // Catalog State
   const [catalogSearch, setCatalogSearch] = useState("");
   const [catalogFilter, setCatalogFilter] = useState("All Categories");
@@ -425,18 +430,25 @@ export default function AdminAudioBroadcast() {
     };
   }, [user, sessionToken, logout]);
 
-  // 2. Session Heartbeat & Superadmin Preemption Listener
+  // 2. Session Heartbeat & Admin Preemption / Staff Login Request Listener
   useEffect(() => {
     if (!user || !sessionToken) return;
     const interval = setInterval(() => {
       api.get(`/admin/audio/session/heartbeat?token=${sessionToken}`)
+        .then(res => {
+          if (res.data?.pending_login_request) {
+            setAdminRequestPrompt(res.data.pending_login_request);
+          } else {
+            setAdminRequestPrompt(null);
+          }
+        })
         .catch(err => {
           if (err.response?.status === 401 || err.response?.data?.detail?.includes("LOGOUT_PREEMPTED")) {
             logout();
-            alert("⚠️ Session Terminated: A Superadmin logged in from another device. You have been signed out.");
+            alert("⚠️ Session Terminated: " + (err.response?.data?.detail?.replace("LOGOUT_PREEMPTED: ", "") || "You have been signed out."));
           }
         });
-    }, 10000);
+    }, 3000); // 3-second heartbeat poll for real-time prompts
     return () => clearInterval(interval);
   }, [user, sessionToken, logout]);
 
@@ -460,6 +472,48 @@ export default function AdminAudioBroadcast() {
     .finally(() => setAuthSubmitting(false));
   };
 
+  const startApprovalPolling = (reqId) => {
+    const pollInterval = setInterval(() => {
+      api.post("/admin/audio/session/login-request/check", { request_id: reqId })
+        .then(res => {
+          if (res.data?.status === "approved" && res.data?.session_token) {
+            clearInterval(pollInterval);
+            setApprovalModalOpen(false);
+            setSessionToken(res.data.session_token);
+            localStorage.setItem("sdps_audio_session", res.data.session_token);
+            login(loginEmail, loginPass).catch(() => {});
+          } else if (res.data?.status === "denied") {
+            clearInterval(pollInterval);
+            setApprovalModalOpen(false);
+            setAuthError(res.data?.message || "Admin prohibited staff login at this time.");
+          } else if (res.data?.status === "pending") {
+            setPendingApprovalReq(prev => prev ? { ...prev, secondsLeft: res.data.seconds_left } : null);
+          }
+        })
+        .catch(() => {
+          clearInterval(pollInterval);
+          setApprovalModalOpen(false);
+        });
+    }, 1000);
+  };
+
+  const handleAdminRespondToStaff = (action) => {
+    if (!adminRequestPrompt) return;
+    api.post("/admin/audio/session/login-request/respond", {
+      request_id: adminRequestPrompt.request_id,
+      action: action
+    })
+    .then(() => {
+      setAdminRequestPrompt(null);
+      if (action === "approve_and_logout") {
+        logout();
+      }
+    })
+    .catch(err => {
+      alert(err.response?.data?.detail || "Failed to submit response.");
+    });
+  };
+
   const handleOtpVerify = (e) => {
     e.preventDefault();
     setAuthError(null);
@@ -470,12 +524,25 @@ export default function AdminAudioBroadcast() {
       otp: otpCode
     })
     .then(res => {
-      const sToken = res.data?.session_token;
-      if (sToken) {
-        setSessionToken(sToken);
-        localStorage.setItem("sdps_audio_session", sToken);
+      if (res.data?.requires_admin_approval) {
+        // Staff Login requires 10s Admin Approval!
+        const reqId = res.data.request_id;
+        const adminName = res.data.admin_username || "Admin";
+        setPendingApprovalReq({
+          requestId: reqId,
+          adminUsername: adminName,
+          secondsLeft: 10
+        });
+        setApprovalModalOpen(true);
+        startApprovalPolling(reqId);
+      } else {
+        const sToken = res.data?.session_token;
+        if (sToken) {
+          setSessionToken(sToken);
+          localStorage.setItem("sdps_audio_session", sToken);
+        }
+        login(loginEmail, loginPass).catch(() => {});
       }
-      login(loginEmail, loginPass).catch(() => {});
     })
     .catch(err => {
       setAuthError(err.response?.data?.detail || "Invalid or expired OTP code.");
@@ -1646,6 +1713,80 @@ export default function AdminAudioBroadcast() {
           </div>
         )}
       </div>
+
+      {/* ── 1. STAFF 10-SECOND ADMIN APPROVAL COUNTDOWN MODAL ── */}
+      {approvalModalOpen && pendingApprovalReq && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-5 text-center animate-in fade-in zoom-in-95">
+            <div className="w-16 h-16 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto animate-pulse">
+              <Clock className="w-8 h-8" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-headline text-lg font-extrabold text-slate-900">
+                Checking with Admin to Login
+              </h3>
+              <p className="text-xs text-slate-600">
+                Admin <strong className="text-slate-900 font-bold">{pendingApprovalReq.adminUsername}</strong> is currently logged in.
+              </p>
+              <p className="text-xs text-slate-500">
+                Requesting permission from Admin. If no response, you will automatically log in in <strong>{pendingApprovalReq.secondsLeft}s</strong>.
+              </p>
+            </div>
+
+            {/* Progress countdown bar */}
+            <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+              <div
+                className="bg-amber-500 h-full transition-all duration-1000 ease-linear rounded-full"
+                style={{ width: `${(pendingApprovalReq.secondsLeft / 10) * 100}%` }}
+              ></div>
+            </div>
+
+            <div className="pt-2 text-xs font-mono font-bold text-amber-700 bg-amber-50 p-2.5 rounded-xl border border-amber-200">
+              ⏳ Auto-logging in in {pendingApprovalReq.secondsLeft} seconds...
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 2. ADMIN HIGH-PRIORITY STAFF LOGIN PROMPT POP-UP ── */}
+      {adminRequestPrompt && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-sm w-full bg-slate-900 text-white rounded-3xl p-5 shadow-2xl border-2 border-amber-500 space-y-4 animate-in slide-in-from-bottom-5">
+          <div className="flex items-start gap-3">
+            <div className="p-2.5 rounded-2xl bg-amber-500/20 text-amber-400 shrink-0">
+              <ShieldAlert className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="text-[10px] font-black uppercase tracking-widest text-amber-400">
+                Staff Login Request
+              </div>
+              <h4 className="font-bold text-sm text-white">
+                {adminRequestPrompt.staff_name || adminRequestPrompt.staff_username} is logging in
+              </h4>
+              <p className="text-xs text-slate-300 mt-1">
+                Staff member is requesting access. Choose an action:
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            <button
+              onClick={() => handleAdminRespondToStaff("deny")}
+              className="py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              <XCircle className="w-4 h-4" />
+              <span>Prohibit Login</span>
+            </button>
+
+            <button
+              onClick={() => handleAdminRespondToStaff("approve_and_logout")}
+              className="py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Log Me Out & Allow</span>
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
