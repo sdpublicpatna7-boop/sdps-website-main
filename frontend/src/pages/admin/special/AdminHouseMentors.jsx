@@ -338,42 +338,51 @@ export function AdminHouseMentors() {
         </div>
 
         {/* ── 2. A4 PRINTABLE DOCUMENT CONTAINER SHEET ── */}
-        <div id="a4-printable-roster" className="max-w-[1020px] mx-auto bg-white border border-slate-200/90 shadow-2xl rounded-3xl p-6 md:p-8 space-y-6 print:m-0 print:p-0 print:border-none print:shadow-none print:max-w-none">
-          {/* Official Letterhead Header for Print/A4 */}
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 border-b border-slate-200 pb-6 print:pb-4">
-            <div className="flex items-center gap-4 text-center md:text-left">
+        <div id="a4-printable-roster" className="max-w-[1040px] mx-auto bg-white border border-slate-300/90 shadow-2xl rounded-3xl p-6 md:p-9 space-y-6 print:m-0 print:p-0 print:border-none print:shadow-none print:max-w-none">
+          {/* Official SDPS Premium Letterhead Header for Print/A4 */}
+          <div className="border-b-2 border-amber-500/80 pb-5 text-center relative space-y-2">
+            <div className="flex items-center justify-between gap-4">
+              {/* Left School Crest Logo */}
               <img
-                src="/sdps_logo.png"
-                alt="SDPS Crest Logo"
-                className="w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow-sm"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                }}
+                src="/logo-real-original.png"
+                alt="SDPS Official Crest Logo"
+                className="w-18 h-18 md:w-22 md:h-22 object-contain drop-shadow-md shrink-0"
+                onError={(e) => { e.target.src = '/logo-original.png'; }}
               />
-              <div>
-                <h1 className="font-serif text-2xl md:text-3xl font-extrabold text-slate-900 tracking-wide uppercase">
+
+              {/* Center Letterhead Text */}
+              <div className="flex-1 text-center space-y-1">
+                <h1 className="font-serif text-3xl md:text-4xl font-black text-slate-900 tracking-wider uppercase drop-shadow-2xs">
                   S.D. PUBLIC SCHOOL
                 </h1>
-                <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mt-0.5">
+                <p className="text-[11px] font-extrabold text-slate-700 uppercase tracking-widest">
                   Maurya Colony, Biscoman Golambar, Patna — 800007 | Helpline: +91 9955190162, 9955190262
                 </p>
-                <p className="text-[11px] font-bold text-brand-orange italic tracking-wide mt-0.5">
+                <p className="text-[11px] font-bold text-amber-700 italic tracking-wider">
                   (Empowering Generation Since 1994...)
                 </p>
-                <div className="inline-flex items-center gap-2 mt-2 px-3 py-0.5 rounded-full bg-amber-100/80 text-amber-900 text-[11px] font-bold">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                  <span>HOUSE WISE MENTORS ROSTER — ACADEMIC YEAR 2025–2026</span>
-                </div>
               </div>
+
+              {/* Right School Crest Logo for Symmetric Official Letterhead */}
+              <img
+                src="/logo-real-original.png"
+                alt="SDPS Official Crest Logo"
+                className="w-18 h-18 md:w-22 md:h-22 object-contain drop-shadow-md shrink-0 hidden md:block print:block"
+                onError={(e) => { e.target.src = '/logo-original.png'; }}
+              />
             </div>
-            <div className="text-right text-xs font-bold text-slate-500 hidden md:block print:block">
-              <div>OFFICIAL NOTICE BOARD</div>
-              <div className="text-[10px] text-slate-400 font-medium">Sorted Alphabetically (A to Z)</div>
+
+            {/* Central Official Title Badge */}
+            <div className="pt-2">
+              <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 text-white text-xs font-black shadow-sm uppercase tracking-widest">
+                <Sparkles className="w-3.5 h-3.5 text-amber-200" />
+                <span>HOUSE WISE MENTORS ROSTER — ACADEMIC YEAR 2025–2026</span>
+              </div>
             </div>
           </div>
 
           {/* ── HOUSE WISE ALPHABETICAL COLUMNS ── */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 print:grid-cols-4 print:gap-2.5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5 print:grid-cols-4 print:gap-2">
             {DEFAULT_HOUSES.map((house) => {
               const houseMentors = mentors.filter(
                 m => (m.house || "").toLowerCase().includes(house.id) ||
@@ -388,58 +397,58 @@ export function AdminHouseMentors() {
               return (
                 <div
                   key={house.id}
-                  className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col justify-between print:rounded-lg print:border-slate-300"
+                  className={`bg-white rounded-2xl border ${house.badgeBorder} shadow-2xs overflow-hidden flex flex-col justify-between print:rounded-lg print:border-slate-300`}
                 >
                   <div>
                     {/* House Column Header */}
-                    <div className={`p-3.5 bg-gradient-to-r ${house.headerBg} text-white space-y-0.5 relative`}>
+                    <div className={`p-3 bg-gradient-to-r ${house.headerBg} text-white space-y-0.5 relative`}>
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
+                        <div className="flex items-center gap-2">
                           <img
                             src={house.logoImg}
                             alt={house.name}
-                            className="w-9 h-9 rounded-full object-cover border-2 border-white/80 shadow-md shrink-0 bg-white"
+                            className="w-8 h-8 rounded-full object-cover border-2 border-white/90 shadow-md shrink-0 bg-white"
                             onError={(e) => { e.target.style.display = 'none'; }}
                           />
                           <div>
-                            <div className="text-[9px] font-extrabold uppercase tracking-widest text-white/80">
+                            <div className="text-[8.5px] font-black uppercase tracking-widest text-white/80">
                               {house.army}
                             </div>
-                            <h3 className="font-headline font-bold text-sm tracking-wide uppercase leading-tight">
+                            <h3 className="font-headline font-bold text-xs tracking-wide uppercase leading-tight">
                               {house.name}
                             </h3>
                           </div>
                         </div>
-                        <span className="px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-white text-[10px] font-bold shrink-0">
+                        <span className="px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-white text-[9.5px] font-black shrink-0">
                           {sortedMentors.length}
                         </span>
                       </div>
                     </div>
 
                     {/* Table Heading */}
-                    <div className="px-3 py-1.5 bg-slate-100 text-[10px] font-bold uppercase tracking-wider text-slate-600 flex justify-between items-center border-b border-slate-200">
+                    <div className="px-3 py-1.5 bg-slate-100 text-[9.5px] font-black uppercase tracking-wider text-slate-700 flex justify-between items-center border-b border-slate-200">
                       <span># Teacher Name</span>
                       <span>Role</span>
                     </div>
 
-                    {/* List of Teachers (Alphabetical A to Z) */}
-                    <div className="divide-y divide-slate-100 min-h-[260px]">
+                    {/* List of Teachers (Alphabetical A to Z with Zebra Striping) */}
+                    <div className="divide-y divide-slate-100 min-h-[270px]">
                       {sortedMentors.length > 0 ? (
                         sortedMentors.map((mentor, index) => (
                           <div
                             key={mentor.id || index}
-                            className="px-3 py-2 hover:bg-slate-50/80 transition-colors flex items-center justify-between group text-xs"
+                            className="px-2.5 py-1.5 even:bg-slate-50/70 hover:bg-slate-100/80 transition-colors flex items-center justify-between group text-xs"
                           >
-                            <div className="flex items-center gap-2 min-w-0 pr-1">
-                              <span className="text-[10px] font-mono font-bold text-slate-400 w-4 shrink-0">
+                            <div className="flex items-center gap-1.5 min-w-0 pr-1">
+                              <span className="text-[10px] font-mono font-black text-slate-400 w-4 shrink-0 text-right">
                                 {index + 1}.
                               </span>
                               <div className="min-w-0">
-                                <div className="font-bold text-slate-900 truncate text-[11.5px]">
+                                <div className="font-bold text-slate-900 truncate text-[11px] tracking-tight">
                                   {mentor.name}
                                 </div>
                                 {mentor.subject && (
-                                  <div className="text-[9.5px] text-slate-400 truncate">
+                                  <div className="text-[9px] text-slate-400 truncate">
                                     {mentor.subject}
                                   </div>
                                 )}
@@ -447,7 +456,7 @@ export function AdminHouseMentors() {
                             </div>
 
                             <div className="flex items-center gap-1 shrink-0">
-                              <span className="text-[9px] bg-slate-100 px-1.5 py-0.5 rounded font-semibold text-slate-600 border border-slate-200/60">
+                              <span className="text-[8.5px] bg-slate-100 px-1.5 py-0.5 rounded font-bold text-slate-600 border border-slate-200/80">
                                 Mentor
                               </span>
 
@@ -479,10 +488,10 @@ export function AdminHouseMentors() {
                   </div>
 
                   {/* Add Button per Column */}
-                  <div className="p-2.5 bg-slate-50 border-t border-slate-200 print:hidden">
+                  <div className="p-2 bg-slate-50 border-t border-slate-200 print:hidden">
                     <button
                       onClick={() => handleOpenAdd(house.name)}
-                      className={`w-full py-1.5 px-2.5 rounded-xl border border-dashed ${house.badgeBorder} ${house.badgeBg} hover:brightness-95 ${house.accentColor} text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer`}
+                      className={`w-full py-1.5 px-2 rounded-xl border border-dashed ${house.badgeBorder} ${house.badgeBg} hover:brightness-95 ${house.accentColor} text-[10.5px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer`}
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>Add Teacher</span>
@@ -493,8 +502,8 @@ export function AdminHouseMentors() {
             })}
           </div>
 
-          {/* ── OFFICIAL PRINT SIGNATURE FOOTER WITH PNG PREVIEWS ── */}
-          <div className="pt-6 mt-6 border-t border-slate-300">
+          {/* ── OFFICIAL PRINT SIGNATURE FOOTER WITH OFFICIAL REAL SEAL ── */}
+          <div className="pt-5 mt-5 border-t border-slate-300">
             <div className="grid grid-cols-3 gap-4 items-end text-center text-xs font-bold text-slate-800">
               <div className="space-y-1">
                 <div className="h-16 flex items-center justify-center">
@@ -511,9 +520,14 @@ export function AdminHouseMentors() {
               <div className="space-y-1">
                 <div className="h-16 flex items-center justify-center">
                   {signatureData.sealImg ? (
-                    <img src={signatureData.sealImg} alt="School Seal" className="max-h-16 max-w-full object-contain" />
+                    <img src={signatureData.sealImg} alt="School Seal" className="max-h-16 max-w-full object-contain mx-auto" />
                   ) : (
-                    <img src="/sdps_logo.png" alt="SDPS Seal" className="max-h-12 opacity-85 object-contain" />
+                    <img
+                      src="/logo-real-original.png"
+                      alt="SDPS Official Seal"
+                      className="max-h-14 object-contain mx-auto drop-shadow-xs"
+                      onError={(e) => { e.target.src = '/logo-original.png'; }}
+                    />
                   )}
                 </div>
                 <p className="text-slate-900 font-extrabold">School Seal</p>
