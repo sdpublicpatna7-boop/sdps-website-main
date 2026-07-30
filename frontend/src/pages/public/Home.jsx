@@ -3,7 +3,7 @@ import { Link, useOutletContext } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   GraduationCap, Sparkles, Building2, ShieldCheck, Heart, Trophy,
-  Calendar, Newspaper, ArrowRight, Play, Star, Smartphone
+  Calendar, Newspaper, ArrowRight, Play, Star, Smartphone, Award, Users
 } from "lucide-react";
 import api, { parseImageTransform } from "../../lib/api";
 import SEO from "../../components/layout/SEO";
@@ -95,6 +95,23 @@ export default function Home() {
   const [calendar, setCalendar] = useState([]);
   const [testimonials, setTestimonials] = useState([]);
   const [playingVideoId, setPlayingVideoId] = useState(null);
+  const [councilPreview, setCouncilPreview] = useState([
+    {
+      name: "Adarsh Kumar",
+      role: "School Prefect",
+      photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/aadarsh_nyhpfq.png"
+    },
+    {
+      name: "Ankush Anand",
+      role: "School Prefect",
+      photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434282/ankush_anad_sjrqqt.png"
+    },
+    {
+      name: "Ishika Kumari",
+      role: "School Prefect",
+      photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434417/ishika_spfj5r.png"
+    }
+  ]);
 
   useEffect(() => {
     api.get("/news?limit=4").then((r) => setNews(r.data || [])).catch(() => {});
@@ -102,6 +119,29 @@ export default function Home() {
     api.get("/testimonials")
       .then((r) => setTestimonials(r.data || []))
       .catch((e) => console.error("Error loading testimonials:", e));
+
+    api.get("/council/profiles")
+      .then(r => {
+        if (r.data && r.data.length > 0) {
+          const formatted = r.data.map(p => ({
+            name: p.name,
+            role: p.position || p.role_type || "Council Member",
+            photo: p.photo_url || p.photo
+          })).filter(p => p.name);
+          if (formatted.length > 0) {
+            setCouncilPreview(prev => {
+              const merged = [...formatted.slice(0, 3)];
+              prev.forEach(item => {
+                if (!merged.some(m => m.name.toLowerCase() === item.name.toLowerCase())) {
+                  merged.push(item);
+                }
+              });
+              return merged.slice(0, 6);
+            });
+          }
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const stats = settings?.stats || { years: "30+", educators: "75+", students: "50000+", alumni: "5000+" };
@@ -519,18 +559,67 @@ export default function Home() {
         </div>
       </section>
 
-      {/* STUDENT COUNCIL teaser */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <div className="overline mb-3 text-brand-orange font-bold">Leadership & Governance</div>
-          <h2 className="section-title mb-4">Student Council</h2>
-          <p className="text-slate-500 max-w-xl mx-auto mb-8 leading-relaxed">
-            Our Student Council empowers students with leadership skills, responsibility, and pride.
-            Elections, campaigns, and activities will soon be launched. Stay tuned!
-          </p>
-          <Link to="/student-council" className="px-7 py-3 rounded-2xl bg-gradient-to-r from-brand-blue to-brand-blue-light text-white font-bold hover:scale-[1.02] hover:shadow-lg transition duration-200 inline-flex items-center gap-2">
-            Program Details <ArrowRight className="w-4 h-4" />
-          </Link>
+      {/* STUDENT COUNCIL TEASER WITH RICH VISUAL GLIMPSE */}
+      <section className="py-20 bg-gradient-to-b from-slate-50 via-white to-slate-50 relative overflow-hidden border-y border-slate-200/60">
+        <div className="max-w-7xl mx-auto px-6 text-center space-y-8">
+          <div className="max-w-2xl mx-auto space-y-3">
+            <div className="overline text-brand-orange font-bold flex items-center justify-center gap-1.5 uppercase tracking-widest text-xs">
+              <Award className="w-4 h-4 text-amber-500" /> Leadership & Governance
+            </div>
+            <h2 className="section-title text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
+              Student Council & Leaders
+            </h2>
+            <p className="text-slate-600 text-sm md:text-base leading-relaxed">
+              Empowering student leaders with responsibility, integrity, and democratic governance. Meet our elected Head Council, House Captains, and School Prefects.
+            </p>
+          </div>
+
+          {/* Student Council Glimpse Cards Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 pt-2">
+            {councilPreview.map((member, idx) => (
+              <motion.div
+                key={member.name + idx}
+                whileHover={{ y: -5 }}
+                className="bg-white rounded-3xl p-4 border border-slate-200/90 shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col items-center text-center space-y-2.5 group"
+              >
+                <div className="w-16 h-16 rounded-full p-0.5 bg-gradient-to-tr from-amber-400 via-brand-orange to-brand-blue shadow-md relative">
+                  <div className="w-full h-full rounded-full overflow-hidden bg-white">
+                    {member.photo ? (
+                      <img
+                        src={member.photo}
+                        alt={member.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-lg">
+                        {member.name?.[0]}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-headline font-bold text-xs text-slate-900 line-clamp-1">
+                    {member.name}
+                  </h4>
+                  <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-[9.5px] font-extrabold text-amber-800 uppercase tracking-wide">
+                    {member.role}
+                  </span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="pt-4 flex flex-wrap items-center justify-center gap-4">
+            <Link
+              to="/student-council"
+              className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-brand-navy via-brand-blue to-brand-blue-light text-white font-bold hover:scale-[1.02] hover:shadow-xl transition-all duration-200 inline-flex items-center gap-2 text-sm shadow-md"
+            >
+              <Users className="w-4 h-4 text-amber-300" />
+              <span>View Full Student Council & Election Results</span>
+              <ArrowRight className="w-4 h-4 ml-1" />
+            </Link>
+          </div>
         </div>
       </section>
 
