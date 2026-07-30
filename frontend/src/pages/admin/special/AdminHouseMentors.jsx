@@ -624,15 +624,11 @@ export function AdminHouseMentors() {
           {/* ── OFFICIAL PRINT FOOTER: LEFT QUOTE & RIGHT SDPS MANAGEMENT SIGNATURE ── */}
           <div className="pt-2 mt-2 border-t border-slate-300 flex items-end justify-between px-2">
             {/* Left Side: School Quote */}
-            <div className="text-left space-y-0.5 max-w-[50%] pb-1">
-              <div className="flex items-center gap-1 text-amber-700">
-                <Sparkles className="w-3 h-3 shrink-0 text-amber-600" />
-                <span className="text-[9.5px] font-black uppercase tracking-widest text-slate-600">School Motto</span>
-              </div>
-              <p className="font-serif italic font-bold text-[12px] text-slate-900 tracking-wide leading-tight">
+            <div className="text-left space-y-1 max-w-[52%] pb-1">
+              <p className="font-serif italic font-extrabold text-sm md:text-[15px] text-slate-900 tracking-wide leading-tight">
                 “Together we inspire, together we achieve”
               </p>
-              <p className="text-[9px] font-bold text-amber-800 uppercase tracking-wider">
+              <p className="text-[9.5px] font-extrabold text-amber-800 uppercase tracking-widest">
                 S.D. Public School, Patna
               </p>
             </div>
