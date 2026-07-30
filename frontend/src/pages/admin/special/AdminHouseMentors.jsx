@@ -319,203 +319,180 @@ export function AdminHouseMentors() {
           </div>
         </div>
 
-        {/* ── 2. HOUSE WISE COLUMNS TABLE LAYOUT ── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 print:grid-cols-4 print:gap-3">
-          {DEFAULT_HOUSES.map((house) => {
-            const houseMentors = mentors.filter(
-              m => (m.house || "").toLowerCase().includes(house.id) ||
-                   (m.house || "").toLowerCase().includes(house.name.toLowerCase())
-            );
+         {/* ── 2. A4 PRINTABLE DOCUMENT CONTAINER SHEET ── */}
+        <div id="a4-printable-roster" className="max-w-[1020px] mx-auto bg-white border border-slate-200/90 shadow-xl rounded-3xl p-6 md:p-8 space-y-6 print:m-0 print:p-0 print:border-none print:shadow-none print:max-w-none">
+          {/* Official Letterhead Header for Print/A4 */}
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 border-b border-slate-200 pb-6 print:pb-4">
+            <div className="flex items-center gap-4 text-center md:text-left">
+              <img
+                src="/sdps_logo.png"
+                alt="SDPS Crest Logo"
+                className="w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow-sm"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                }}
+              />
+              <div>
+                <h1 className="font-serif text-2xl md:text-3xl font-extrabold text-slate-900 tracking-wide uppercase">
+                  S.D. PUBLIC SCHOOL
+                </h1>
+                <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mt-0.5">
+                  Maurya Colony, Biscoman Golambar, Patna — 800007 | Helpline: +91 9955190162, 9955190262
+                </p>
+                <p className="text-[11px] font-bold text-brand-orange italic tracking-wide mt-0.5">
+                  (Empowering Generation Since 1994...)
+                </p>
+                <div className="inline-flex items-center gap-2 mt-2 px-3 py-0.5 rounded-full bg-amber-100/80 text-amber-900 text-[11px] font-bold">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                  <span>HOUSE WISE MENTORS ROSTER — ACADEMIC YEAR 2025–2026</span>
+                </div>
+              </div>
+            </div>
+            <div className="text-right text-xs font-bold text-slate-500 hidden md:block print:block">
+              <div>OFFICIAL NOTICE BOARD</div>
+              <div className="text-[10px] text-slate-400 font-medium">Sorted Alphabetically (A to Z)</div>
+            </div>
+          </div>
 
-            // Separate House Master from other mentors
-            const houseMaster = houseMentors.find(m => m.is_house_master || (m.designation || "").toLowerCase().includes("house master"));
-            const otherMentors = houseMentors.filter(m => m !== houseMaster);
+          {/* ── HOUSE WISE ALPHABETICAL COLUMNS ── */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 print:grid-cols-4 print:gap-2.5">
+            {DEFAULT_HOUSES.map((house) => {
+              const houseMentors = mentors.filter(
+                m => (m.house || "").toLowerCase().includes(house.id) ||
+                     (m.house || "").toLowerCase().includes(house.name.toLowerCase())
+              );
 
-            return (
-              <div
-                key={house.id}
-                className="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden flex flex-col justify-between print:rounded-xl print:shadow-none"
-              >
-                <div>
-                  {/* House Column Header */}
-                  <div className={`p-4 bg-gradient-to-r ${house.headerBg} text-white space-y-1 relative`}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={house.logoImg}
-                          alt={house.name}
-                          className="w-10 h-10 rounded-full object-cover border-2 border-white/80 shadow-md shrink-0 bg-white"
-                          onError={(e) => { e.target.style.display = 'none'; }}
-                        />
-                        <div>
-                          <div className="text-[9px] font-extrabold uppercase tracking-widest text-white/80">
-                            {house.army}
-                          </div>
-                          <h3 className="font-headline font-bold text-base tracking-wide uppercase drop-shadow-xs leading-tight">
-                            {house.name}
-                          </h3>
-                          <span className="text-[10px] uppercase font-semibold text-white/90 tracking-wider block">
-                            {house.motto}
-                          </span>
-                        </div>
-                      </div>
-                      <span className="px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-white text-[11px] font-bold shrink-0">
-                        {houseMentors.length} Mentors
-                      </span>
-                    </div>
-                  </div>
+              // Sort all teachers strictly alphabetically (A to Z)
+              const sortedMentors = [...houseMentors].sort((a, b) =>
+                (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" })
+              );
 
-                  {/* House Master Highlight Card */}
-                  <div className="p-3.5 bg-slate-50 border-b border-slate-200">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 flex items-center gap-1">
-                      <Crown className="w-3.5 h-3.5 text-amber-500" />
-                      <span>House Master In-Charge</span>
-                    </div>
-                    {houseMaster ? (
-                      <div className="flex items-center justify-between bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs group">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          {houseMaster.photo_url ? (
-                            <img
-                              src={fullUrl(houseMaster.photo_url)}
-                              alt={houseMaster.name}
-                              className="w-9 h-9 rounded-full object-cover border border-slate-200 shrink-0"
-                            />
-                          ) : (
-                            <div className={`w-9 h-9 rounded-full ${house.badgeBg} ${house.accentColor} font-bold text-xs flex items-center justify-center border ${house.badgeBorder} shrink-0`}>
-                              {houseMaster.name.charAt(0)}
+              return (
+                <div
+                  key={house.id}
+                  className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col justify-between print:rounded-lg print:border-slate-300"
+                >
+                  <div>
+                    {/* House Column Header */}
+                    <div className={`p-3.5 bg-gradient-to-r ${house.headerBg} text-white space-y-0.5 relative`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <img
+                            src={house.logoImg}
+                            alt={house.name}
+                            className="w-9 h-9 rounded-full object-cover border-2 border-white/80 shadow-md shrink-0 bg-white"
+                            onError={(e) => { e.target.style.display = 'none'; }}
+                          />
+                          <div>
+                            <div className="text-[9px] font-extrabold uppercase tracking-widest text-white/80">
+                              {house.army}
                             </div>
-                          )}
-                          <div className="min-w-0">
-                            <div className="font-bold text-xs text-slate-900 truncate">{houseMaster.name}</div>
-                            <div className="text-[10px] text-slate-500 font-medium truncate">
-                              {houseMaster.subject || houseMaster.designation}
-                            </div>
+                            <h3 className="font-headline font-bold text-sm tracking-wide uppercase leading-tight">
+                              {house.name}
+                            </h3>
                           </div>
                         </div>
-
-                        <div className="flex items-center gap-1 opacity-90 group-hover:opacity-100 print:hidden">
-                          <button
-                            onClick={() => handleOpenEdit(houseMaster)}
-                            className="p-1 hover:bg-slate-100 rounded text-slate-500 hover:text-brand-blue"
-                            title="Edit"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(houseMaster.id, houseMaster.name)}
-                            className="p-1 hover:bg-slate-100 rounded text-slate-500 hover:text-rose-600"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                        <span className="px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-white text-[10px] font-bold shrink-0">
+                          {sortedMentors.length}
+                        </span>
                       </div>
-                    ) : (
-                      <div className="text-[11px] text-slate-400 italic bg-white p-2.5 rounded-xl border border-dashed border-slate-200 text-center">
-                        No House Master assigned
-                      </div>
-                    )}
-                  </div>
+                    </div>
 
-                  {/* Mentors Table Column Header */}
-                  <div className="px-4 py-2 bg-slate-100 text-[10px] font-bold uppercase tracking-wider text-slate-600 flex justify-between items-center border-b border-slate-200">
-                    <span>Teacher Name</span>
-                    <span>Role / Subject</span>
-                  </div>
+                    {/* Table Heading */}
+                    <div className="px-3 py-1.5 bg-slate-100 text-[10px] font-bold uppercase tracking-wider text-slate-600 flex justify-between items-center border-b border-slate-200">
+                      <span># Teacher Name</span>
+                      <span>Role</span>
+                    </div>
 
-                  {/* List of Teachers in Column */}
-                  <div className="divide-y divide-slate-100 min-h-[220px]">
-                    {otherMentors.length > 0 ? (
-                      otherMentors.map((mentor, index) => (
-                        <div
-                          key={mentor.id || index}
-                          className="p-3 hover:bg-slate-50/80 transition-colors flex items-center justify-between group"
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                            {mentor.photo_url ? (
-                              <img
-                                src={fullUrl(mentor.photo_url)}
-                                alt={mentor.name}
-                                className="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0"
-                              />
-                            ) : (
-                              <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 font-bold text-xs flex items-center justify-center border border-slate-200 shrink-0">
-                                {mentor.name.charAt(0)}
-                              </div>
-                            )}
-                            <div className="min-w-0">
-                              <div className="font-bold text-xs text-slate-900 truncate">
-                                {mentor.name}
-                              </div>
-                              <div className="text-[10px] text-slate-500 flex items-center gap-1 truncate">
-                                <span>{mentor.subject || "Teacher"}</span>
-                                {mentor.designation && (
-                                  <span className="text-[9px] bg-slate-100 px-1.5 py-0.2 rounded font-semibold text-slate-600">
-                                    {mentor.designation}
-                                  </span>
+                    {/* List of Teachers (Alphabetical A to Z) */}
+                    <div className="divide-y divide-slate-100 min-h-[260px]">
+                      {sortedMentors.length > 0 ? (
+                        sortedMentors.map((mentor, index) => (
+                          <div
+                            key={mentor.id || index}
+                            className="px-3 py-2 hover:bg-slate-50/80 transition-colors flex items-center justify-between group text-xs"
+                          >
+                            <div className="flex items-center gap-2 min-w-0 pr-1">
+                              <span className="text-[10px] font-mono font-bold text-slate-400 w-4 shrink-0">
+                                {index + 1}.
+                              </span>
+                              <div className="min-w-0">
+                                <div className="font-bold text-slate-900 truncate text-[11.5px]">
+                                  {mentor.name}
+                                </div>
+                                {mentor.subject && (
+                                  <div className="text-[9.5px] text-slate-400 truncate">
+                                    {mentor.subject}
+                                  </div>
                                 )}
                               </div>
                             </div>
-                          </div>
 
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 print:hidden">
-                            <button
-                              onClick={() => handleOpenEdit(mentor)}
-                              className="p-1 hover:bg-slate-200 rounded text-slate-600 hover:text-brand-blue"
-                              title="Edit"
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(mentor.id, mentor.name)}
-                              className="p-1 hover:bg-slate-200 rounded text-slate-600 hover:text-rose-600"
-                              title="Delete"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <span className="text-[9px] bg-slate-100 px-1.5 py-0.5 rounded font-semibold text-slate-600 border border-slate-200/60">
+                                Mentor
+                              </span>
+
+                              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity print:hidden">
+                                <button
+                                  onClick={() => handleOpenEdit(mentor)}
+                                  className="p-1 hover:bg-slate-200 rounded text-slate-600 hover:text-brand-blue"
+                                  title="Edit"
+                                >
+                                  <Edit2 className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(mentor.id, mentor.name)}
+                                  className="p-1 hover:bg-slate-200 rounded text-slate-600 hover:text-rose-600"
+                                  title="Delete"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
                           </div>
+                        ))
+                      ) : (
+                        <div className="p-6 text-center text-xs text-slate-400 italic">
+                          No mentors added yet
                         </div>
-                      ))
-                    ) : (
-                      <div className="p-6 text-center text-xs text-slate-400 italic">
-                        No additional mentors added
-                      </div>
-                    )}
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Add Button per Column */}
+                  <div className="p-2.5 bg-slate-50 border-t border-slate-200 print:hidden">
+                    <button
+                      onClick={() => handleOpenAdd(house.name)}
+                      className={`w-full py-1.5 px-2.5 rounded-xl border border-dashed ${house.badgeBorder} ${house.badgeBg} hover:brightness-95 ${house.accentColor} text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer`}
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Teacher</span>
+                    </button>
                   </div>
                 </div>
+              );
+            })}
+          </div>
 
-                {/* Add Button per Column */}
-                <div className="p-3 bg-slate-50 border-t border-slate-200 print:hidden">
-                  <button
-                    onClick={() => handleOpenAdd(house.name)}
-                    className={`w-full py-2 px-3 rounded-xl border border-dashed ${house.badgeBorder} ${house.badgeBg} hover:brightness-95 ${house.accentColor} text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer`}
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add to {house.name}</span>
-                  </button>
-                </div>
+          {/* ── OFFICIAL PRINT SIGNATURE FOOTER ── */}
+          <div className="hidden print:block pt-8 mt-6 border-t border-slate-300">
+            <div className="flex justify-between items-end text-xs font-bold text-slate-800">
+              <div>
+                <p>House In-Charge Signature</p>
+                <div className="h-10"></div>
+                <p className="text-[10px] text-slate-500 font-normal">Date: ____/____/2026</p>
               </div>
-            );
-          })}
-        </div>
-
-        {/* ── 3. OFFICIAL PRINT SIGNATURE FOOTER ── */}
-        <div className="hidden print:block pt-8 mt-6 border-t border-slate-300">
-          <div className="flex justify-between items-end text-xs font-bold text-slate-800">
-            <div>
-              <p>House In-Charge Signature</p>
-              <div className="h-10"></div>
-              <p className="text-[10px] text-slate-500 font-normal">Date: ____/____/2026</p>
-            </div>
-            <div className="text-center">
-              <p>School Seal</p>
-              <div className="h-10"></div>
-              <p className="text-[10px] text-slate-500 font-normal">S.D. Public School, Patna</p>
-            </div>
-            <div className="text-right">
-              <p>Principal's Signature</p>
-              <div className="h-10"></div>
-              <p className="text-[10px] text-slate-500 font-normal">Approved & Authorized</p>
+              <div className="text-center">
+                <p>School Seal</p>
+                <div className="h-10"></div>
+                <p className="text-[10px] text-slate-500 font-normal">S.D. Public School, Patna</p>
+              </div>
+              <div className="text-right">
+                <p>Principal's Signature</p>
+                <div className="h-10"></div>
+                <p className="text-[10px] text-slate-500 font-normal">Approved & Authorized</p>
+              </div>
             </div>
           </div>
         </div>
