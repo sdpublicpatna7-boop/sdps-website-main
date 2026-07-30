@@ -557,49 +557,22 @@ export function AdminHouseMentors() {
             })}
           </div>
 
-          {/* ── OFFICIAL PRINT SIGNATURE FOOTER WITH COMPACT PADDING ── */}
+          {/* ── OFFICIAL PRINT SIGNATURE FOOTER (SINGLE MANAGEMENT SIGNATURE) ── */}
           <div className="pt-3 mt-3 border-t border-slate-300">
-            <div className="grid grid-cols-3 gap-4 items-end text-center text-xs font-bold text-slate-800">
-              <div className="space-y-0.5">
-                <div className="h-10 flex items-center justify-center">
-                  {signatureData.inchargeSig ? (
-                    <img src={signatureData.inchargeSig} alt="Incharge Signature" className="max-h-9 max-w-full object-contain" />
-                  ) : (
-                    <div className="h-8 border-b border-dashed border-slate-300 w-32 mx-auto"></div>
-                  )}
-                </div>
-                <p className="text-slate-900 font-extrabold text-[11px]">House In-Charge Signature</p>
-                <p className="text-[9.5px] text-slate-500 font-normal">Academic Session: 2026–2027</p>
+            <div className="flex flex-col items-center justify-center text-center space-y-1">
+              <div className="h-12 flex items-center justify-center">
+                {signatureData.principalSig || signatureData.inchargeSig ? (
+                  <img
+                    src={signatureData.principalSig || signatureData.inchargeSig}
+                    alt="Management Signature"
+                    className="max-h-11 max-w-[180px] object-contain mx-auto"
+                  />
+                ) : (
+                  <div className="h-8 border-b-2 border-dashed border-slate-400 w-48 mx-auto"></div>
+                )}
               </div>
-
-              <div className="space-y-0.5">
-                <div className="h-10 flex items-center justify-center">
-                  {signatureData.sealImg ? (
-                    <img src={signatureData.sealImg} alt="School Seal" className="max-h-11 max-w-full object-contain mx-auto" />
-                  ) : (
-                    <img
-                      src="/logo-real-original.png"
-                      alt="SDPS Official Seal"
-                      className="max-h-10 object-contain mx-auto drop-shadow-xs"
-                      onError={(e) => { e.target.src = '/logo-original.png'; }}
-                    />
-                  )}
-                </div>
-                <p className="text-slate-900 font-extrabold text-[11px]">School Seal</p>
-                <p className="text-[9.5px] text-slate-500 font-normal">S.D. Public School, Patna</p>
-              </div>
-
-              <div className="space-y-0.5">
-                <div className="h-10 flex items-center justify-center">
-                  {signatureData.principalSig ? (
-                    <img src={signatureData.principalSig} alt="Principal Signature" className="max-h-9 max-w-full object-contain" />
-                  ) : (
-                    <div className="h-8 border-b border-dashed border-slate-300 w-32 mx-auto"></div>
-                  )}
-                </div>
-                <p className="text-slate-900 font-extrabold text-[11px]">Principal's Signature</p>
-                <p className="text-[9.5px] text-slate-500 font-normal">Approved & Authorized</p>
-              </div>
+              <p className="text-slate-900 font-black text-xs uppercase tracking-wider">Management Signature</p>
+              <p className="text-[9.5px] text-slate-500 font-medium">S.D. Public School, Patna | Academic Session 2026–2027</p>
             </div>
 
             <div className="text-center mt-3 print:hidden pdf-hide">
@@ -608,7 +581,7 @@ export function AdminHouseMentors() {
                 className="px-3.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-bold inline-flex items-center gap-1.5 transition-all cursor-pointer"
               >
                 <Upload className="w-3.5 h-3.5 text-brand-navy" />
-                <span>Upload / Set Signatures & Seal PNG</span>
+                <span>Upload / Set Management Signature PNG</span>
               </button>
             </div>
           </div>
