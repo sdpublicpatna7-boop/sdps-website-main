@@ -247,10 +247,31 @@ export function AdminHouseMentors() {
 
     const executeExport = () => {
       const opt = {
-        margin:       [3, 3, 3, 3],
+        margin:       [0, 0, 0, 0],
         filename:     'SDPS_House_Wise_Mentors_Roster_2026-2027.pdf',
         image:        { type: 'jpeg', quality: 1.0 },
-        html2canvas:  { scale: 3, useCORS: true, logging: false, scrollY: 0, windowWidth: 1020 },
+        html2canvas:  {
+          scale: 3,
+          useCORS: true,
+          logging: false,
+          scrollX: 0,
+          scrollY: 0,
+          windowWidth: 800,
+          onclone: (clonedDoc) => {
+            const clonedEl = clonedDoc.getElementById("a4-printable-roster");
+            if (clonedEl) {
+              clonedEl.style.margin = "0 auto";
+              clonedEl.style.padding = "24px 20px";
+              clonedEl.style.width = "794px";
+              clonedEl.style.maxWidth = "794px";
+              clonedEl.style.boxSizing = "border-box";
+              clonedEl.style.transform = "none";
+              clonedEl.style.position = "relative";
+              clonedEl.style.left = "0";
+              clonedEl.style.top = "0";
+            }
+          }
+        },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
         pagebreak:    { mode: 'avoid-all' }
       };
