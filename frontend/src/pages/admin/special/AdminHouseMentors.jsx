@@ -108,6 +108,13 @@ export function AdminHouseMentors() {
   const [bulkNamesText, setBulkNamesText] = useState("");
   const [bulkSaving, setBulkSaving] = useState(false);
 
+  const [signatureData, setSignatureData] = useState({
+    inchargeSig: "",
+    sealImg: "",
+    principalSig: ""
+  });
+  const [sigModalOpen, setSigModalOpen] = useState(false);
+
   const handleBulkSave = async (e) => {
     e.preventDefault();
     const names = bulkNamesText
@@ -233,94 +240,105 @@ export function AdminHouseMentors() {
     <>
       <SEO title="House Wise Mentors Roster | S.D. Public School Admin" />
 
-      <div className="space-y-6 print:space-y-4">
-        {/* ── 1. OFFICIAL SCHOOL HEADER (PRINTS BEAUTIFULLY) ── */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm print:shadow-none print:border-none print:p-0">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 border-b border-slate-100 pb-6 print:pb-4">
-            <div className="flex items-center gap-4 text-center md:text-left">
-              <img
-                src="/sdps_logo.png"
-                alt="SDPS Crest Logo"
-                className="w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow-sm"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                }}
-              />
-              <div>
-                <h1 className="font-serif text-2xl md:text-3xl font-extrabold text-slate-900 tracking-wide uppercase">
-                  S.D. PUBLIC SCHOOL
-                </h1>
-                <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mt-0.5">
-                  Maurya Colony, Biscoman Golambar, Patna — 800007 | Helpline: +91 9955190162, 9955190262
-                </p>
-                <p className="text-[11px] font-bold text-brand-orange italic tracking-wide mt-0.5">
-                  (Empowering Generation Since 1994...)
-                </p>
-                <div className="inline-flex items-center gap-2 mt-2 px-3 py-0.5 rounded-full bg-amber-100/80 text-amber-900 text-[11px] font-bold">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                  <span>HOUSE WISE MENTORS & TEACHERS ROSTER (2025–2026)</span>
-                </div>
-              </div>
-            </div>
+      {/* ── STRICT PRINT ISOLATION STYLES ── */}
+      <style>{`
+        @media print {
+          /* Hide all page chrome, sidebars, headers, and backgrounds */
+          body * {
+            visibility: hidden !important;
+          }
+          aside, nav, header, [class*="AdminLayout"], .print\\:hidden, #admin-sidebar {
+            display: none !important;
+          }
+          
+          /* Isolate ONLY the A4 Printable Sheet */
+          #a4-printable-roster, #a4-printable-roster * {
+            visibility: visible !important;
+          }
+          
+          #a4-printable-roster {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 15mm 10mm !important;
+            border: none !important;
+            box-shadow: none !important;
+            background: white !important;
+            border-radius: 0 !important;
+          }
 
-            {/* Print & Action Controls */}
-            <div className="flex items-center gap-2.5 print:hidden">
-              <button
-                onClick={fetchMentors}
-                disabled={loading}
-                className="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-                <span>Refresh</span>
-              </button>
-              <button
-                onClick={() => setBulkModalOpen(true)}
-                className="px-3.5 py-2.5 rounded-xl border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
-              >
-                <Upload className="w-3.5 h-3.5 text-purple-600" />
-                <span>Bulk Paste Names</span>
-              </button>
-              <button
-                onClick={handlePrint}
-                className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-2 shadow-md transition-all cursor-pointer"
-              >
-                <Printer className="w-4 h-4 text-amber-400" />
-                <span>Print A4 Roster</span>
-              </button>
-              <button
-                onClick={() => handleOpenAdd("Aryabhatta House")}
-                className="px-4 py-2.5 rounded-xl bg-brand-navy hover:bg-brand-blue text-white text-xs font-bold flex items-center gap-2 shadow-md transition-all cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Add Teacher</span>
-              </button>
+          @page {
+            size: A4 portrait;
+            margin: 0;
+          }
+        }
+      `}</style>
+
+      <div className="space-y-6 print:space-y-0">
+        {/* ── 1. ACTION & CONTROL BAR ── */}
+        <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4 print:hidden">
+          <div className="flex items-center gap-3">
+            <img
+              src="/sdps_logo.png"
+              alt="SDPS Crest Logo"
+              className="w-12 h-12 object-contain"
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+            <div>
+              <h1 className="font-headline text-lg font-bold text-slate-900 tracking-wide uppercase">
+                House Wise Mentors Roster (2025–2026)
+              </h1>
+              <p className="text-xs text-slate-500 font-medium">
+                Official S.D. Public School A4 Printable Sheet Generator
+              </p>
             </div>
           </div>
 
-          {/* Roster Overview Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 print:hidden">
-            {DEFAULT_HOUSES.map((h) => {
-              const count = mentors.filter(m => (m.house || "").toLowerCase().includes(h.id) || (m.house || "").toLowerCase().includes(h.name.toLowerCase())).length;
-              return (
-                <div key={h.id} className={`p-3 rounded-2xl ${h.badgeBg} border ${h.badgeBorder} flex items-center justify-between`}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">{h.icon}</span>
-                    <div>
-                      <div className="text-xs font-bold text-slate-900">{h.name}</div>
-                      <div className="text-[10px] text-slate-500 font-medium">{h.motto}</div>
-                    </div>
-                  </div>
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-black bg-white ${h.accentColor} shadow-2xs border ${h.badgeBorder}`}>
-                    {count}
-                  </span>
-                </div>
-              );
-            })}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={fetchMentors}
+              disabled={loading}
+              className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+              <span>Refresh</span>
+            </button>
+            <button
+              onClick={() => setSigModalOpen(true)}
+              className="px-3 py-2 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <Upload className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Signatures & Seal PNG</span>
+            </button>
+            <button
+              onClick={() => setBulkModalOpen(true)}
+              className="px-3 py-2 rounded-xl border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <Upload className="w-3.5 h-3.5 text-purple-600" />
+              <span>Bulk Paste Names</span>
+            </button>
+            <button
+              onClick={handlePrint}
+              className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-2 shadow-md transition-all cursor-pointer"
+            >
+              <Printer className="w-4 h-4 text-amber-400" />
+              <span>Print A4 Sheet</span>
+            </button>
+            <button
+              onClick={() => handleOpenAdd("Aryabhatta House")}
+              className="px-4 py-2.5 rounded-xl bg-brand-navy hover:bg-brand-blue text-white text-xs font-bold flex items-center gap-2 shadow-md transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Teacher</span>
+            </button>
           </div>
         </div>
 
-         {/* ── 2. A4 PRINTABLE DOCUMENT CONTAINER SHEET ── */}
-        <div id="a4-printable-roster" className="max-w-[1020px] mx-auto bg-white border border-slate-200/90 shadow-xl rounded-3xl p-6 md:p-8 space-y-6 print:m-0 print:p-0 print:border-none print:shadow-none print:max-w-none">
+        {/* ── 2. A4 PRINTABLE DOCUMENT CONTAINER SHEET ── */}
+        <div id="a4-printable-roster" className="max-w-[1020px] mx-auto bg-white border border-slate-200/90 shadow-2xl rounded-3xl p-6 md:p-8 space-y-6 print:m-0 print:p-0 print:border-none print:shadow-none print:max-w-none">
           {/* Official Letterhead Header for Print/A4 */}
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 border-b border-slate-200 pb-6 print:pb-4">
             <div className="flex items-center gap-4 text-center md:text-left">
@@ -475,24 +493,54 @@ export function AdminHouseMentors() {
             })}
           </div>
 
-          {/* ── OFFICIAL PRINT SIGNATURE FOOTER ── */}
-          <div className="hidden print:block pt-8 mt-6 border-t border-slate-300">
-            <div className="flex justify-between items-end text-xs font-bold text-slate-800">
-              <div>
-                <p>House In-Charge Signature</p>
-                <div className="h-10"></div>
-                <p className="text-[10px] text-slate-500 font-normal">Date: ____/____/2026</p>
+          {/* ── OFFICIAL PRINT SIGNATURE FOOTER WITH PNG PREVIEWS ── */}
+          <div className="pt-6 mt-6 border-t border-slate-300">
+            <div className="grid grid-cols-3 gap-4 items-end text-center text-xs font-bold text-slate-800">
+              <div className="space-y-1">
+                <div className="h-16 flex items-center justify-center">
+                  {signatureData.inchargeSig ? (
+                    <img src={signatureData.inchargeSig} alt="Incharge Signature" className="max-h-14 max-w-full object-contain" />
+                  ) : (
+                    <div className="h-10 border-b border-dashed border-slate-300 w-36 mx-auto"></div>
+                  )}
+                </div>
+                <p className="text-slate-900 font-extrabold">House In-Charge Signature</p>
+                <p className="text-[10px] text-slate-500 font-normal">Date: {new Date().toLocaleDateString('en-IN')}</p>
               </div>
-              <div className="text-center">
-                <p>School Seal</p>
-                <div className="h-10"></div>
+
+              <div className="space-y-1">
+                <div className="h-16 flex items-center justify-center">
+                  {signatureData.sealImg ? (
+                    <img src={signatureData.sealImg} alt="School Seal" className="max-h-16 max-w-full object-contain" />
+                  ) : (
+                    <img src="/sdps_logo.png" alt="SDPS Seal" className="max-h-12 opacity-85 object-contain" />
+                  )}
+                </div>
+                <p className="text-slate-900 font-extrabold">School Seal</p>
                 <p className="text-[10px] text-slate-500 font-normal">S.D. Public School, Patna</p>
               </div>
-              <div className="text-right">
-                <p>Principal's Signature</p>
-                <div className="h-10"></div>
+
+              <div className="space-y-1">
+                <div className="h-16 flex items-center justify-center">
+                  {signatureData.principalSig ? (
+                    <img src={signatureData.principalSig} alt="Principal Signature" className="max-h-14 max-w-full object-contain" />
+                  ) : (
+                    <div className="h-10 border-b border-dashed border-slate-300 w-36 mx-auto"></div>
+                  )}
+                </div>
+                <p className="text-slate-900 font-extrabold">Principal's Signature</p>
                 <p className="text-[10px] text-slate-500 font-normal">Approved & Authorized</p>
               </div>
+            </div>
+
+            <div className="text-center mt-4 print:hidden">
+              <button
+                onClick={() => setSigModalOpen(true)}
+                className="px-3.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-bold inline-flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <Upload className="w-3.5 h-3.5 text-brand-navy" />
+                <span>Upload / Set Signatures & Seal PNG</span>
+              </button>
             </div>
           </div>
         </div>
@@ -741,6 +789,88 @@ export function AdminHouseMentors() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* ── 6. UPLOAD / EDIT SIGNATURES & SEAL MODAL ── */}
+        {sigModalOpen && (
+          <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-5 animate-in fade-in zoom-in-95">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-emerald-100 text-emerald-700">
+                    <Upload className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-headline font-bold text-base text-slate-900">
+                      Signatures & School Seal (PNG)
+                    </h3>
+                    <p className="text-xs text-slate-500">Upload signature images or paste PNG image URLs</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSigModalOpen(false)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-bold text-slate-600 uppercase block mb-1">
+                    House In-Charge Signature PNG URL
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="https://... (or leave blank for dotted line)"
+                    className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-emerald-600"
+                    value={signatureData.inchargeSig}
+                    onChange={(e) => setSignatureData({ ...signatureData, inchargeSig: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-600 uppercase block mb-1">
+                    School Seal PNG / Crest Logo URL
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="https://... (or leave blank for default SDPS logo)"
+                    className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-emerald-600"
+                    value={signatureData.sealImg}
+                    onChange={(e) => setSignatureData({ ...signatureData, sealImg: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-600 uppercase block mb-1">
+                    Principal's Signature PNG URL
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="https://... (or leave blank for dotted line)"
+                    className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-emerald-600"
+                    value={signatureData.principalSig}
+                    onChange={(e) => setSignatureData({ ...signatureData, principalSig: e.target.value })}
+                  />
+                </div>
+
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-500">
+                  💡 <strong>Tip:</strong> Transparent PNG images work best for authentic signatures on white A4 notice board sheets!
+                </div>
+
+                <div className="pt-2 flex justify-end gap-2 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setSigModalOpen(false)}
+                    className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-md transition-all cursor-pointer"
+                  >
+                    Save & Close
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
