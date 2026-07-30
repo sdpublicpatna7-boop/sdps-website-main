@@ -906,13 +906,6 @@ async def send_device_post_async(ip: str, endpoint: str, data: dict, username: O
     if "sPass" not in data:
         data["sPass"] = pass_to_use
 
-    kwargs = {
-        "data": data,
-        "headers": {"Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"},
-        "auth": (user_to_use, pass_to_use),
-        "timeout": 4.0
-    }
-
     urls_to_try = []
     for t_url in tunnels:
         urls_to_try.append(f"{t_url.rstrip('/')}{endpoint}")
@@ -927,19 +920,22 @@ async def send_device_post_async(ip: str, endpoint: str, data: dict, username: O
         urls_to_try.append(f"http://192.168.29.252{endpoint}")
 
     last_error = None
-    for url in urls_to_try:
-        try:
-            response = requests.post(url, **kwargs)
-            # Auto-promote working tunnel
-            for t_url in tunnels:
-                if url.startswith(t_url):
-                    global _active_tunnel_url
-                    _active_tunnel_url = t_url
-                    break
-            return response.text
-        except requests.exceptions.RequestException as e:
-            logger.warning(f"Error connecting to Audio Controller device at {url}: {e}")
-            last_error = str(e)
+    headers = {"Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"}
+    
+    async with httpx.AsyncClient(timeout=3.5) as client:
+        for url in urls_to_try:
+            try:
+                response = await client.post(url, data=data, headers=headers, auth=(user_to_use, pass_to_use))
+                # Auto-promote working tunnel
+                for t_url in tunnels:
+                    if url.startswith(t_url):
+                        global _active_tunnel_url
+                        _active_tunnel_url = t_url
+                        break
+                return response.text
+            except Exception as e:
+                logger.warning(f"Error connecting to Audio Controller device at {url}: {e}")
+                last_error = str(e)
 
     raise HTTPException(status_code=504, detail=f"Audio Controller device is unreachable: {last_error}")
 
@@ -1046,40 +1042,40 @@ async def get_audio_status(
     pass_to_use = password or DEFAULT_HARDWARE_PASS
     
     last_error = None
-    for attempt_ip in ips_to_try:
-        urls_for_ip = []
-        if attempt_ip.startswith("http"):
-            urls_for_ip.append(attempt_ip.rstrip('/') + "/")
-            urls_for_ip.append(attempt_ip.rstrip('/') + "/BcastDo")
-        else:
-            urls_for_ip.append(f"http://{attempt_ip}/")
-            urls_for_ip.append(f"http://{attempt_ip}/BcastDo")
+    async with httpx.AsyncClient(timeout=2.5) as client:
+        for attempt_ip in ips_to_try:
+            urls_for_ip = []
+            if attempt_ip.startswith("http"):
+                urls_for_ip.append(attempt_ip.rstrip('/') + "/")
+                urls_for_ip.append(attempt_ip.rstrip('/') + "/BcastDo")
+            else:
+                urls_for_ip.append(f"http://{attempt_ip}/")
+                urls_for_ip.append(f"http://{attempt_ip}/BcastDo")
 
-        for url in urls_for_ip:
-            kwargs = {"timeout": 3.0, "auth": (user_to_use, pass_to_use)}
-            try:
-                res = requests.get(url, **kwargs)
-                body = res.text
-                online = res.status_code in (200, 204, 302, 401, 403, 404) or "sMsg" in body or "Page Not Found" in body
-                if online:
-                    if attempt_ip.startswith("http"):
-                        global _active_tunnel_url
-                        _active_tunnel_url = attempt_ip
-                        await db.site_settings.update_one(
-                            {},
-                            {"$set": {"cloudflare_tunnel_url": attempt_ip, "tunnel_updated_at": datetime.now(timezone.utc).isoformat()}},
-                            upsert=True
-                        )
-                    return {
-                        "success": True,
-                        "online": True,
-                        "requires_auth": res.status_code in (401, 403),
-                        "ip": attempt_ip,
-                        "device": "SDPS Audio Controller",
-                        "statusCode": res.status_code
-                    }
-            except Exception as e:
-                last_error = str(e)
+            for url in urls_for_ip:
+                try:
+                    res = await client.get(url, auth=(user_to_use, pass_to_use))
+                    body = res.text
+                    online = res.status_code in (200, 204, 302, 401, 403, 404) or "sMsg" in body or "Page Not Found" in body
+                    if online:
+                        if attempt_ip.startswith("http"):
+                            global _active_tunnel_url
+                            _active_tunnel_url = attempt_ip
+                            await db.site_settings.update_one(
+                                {},
+                                {"$set": {"cloudflare_tunnel_url": attempt_ip, "tunnel_updated_at": datetime.now(timezone.utc).isoformat()}},
+                                upsert=True
+                            )
+                        return {
+                            "success": True,
+                            "online": True,
+                            "requires_auth": res.status_code in (401, 403),
+                            "ip": attempt_ip,
+                            "device": "SDPS Audio Controller",
+                            "statusCode": res.status_code
+                        }
+                except Exception as e:
+                    last_error = str(e)
 
     return {
         "success": False,
