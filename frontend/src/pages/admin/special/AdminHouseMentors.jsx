@@ -241,25 +241,33 @@ export function AdminHouseMentors() {
 
     setPdfExporting(true);
 
+    // Hide web-only buttons (edit/delete icons, add teacher buttons) during PDF snapshot
+    const pdfHideElements = element.querySelectorAll(".pdf-hide");
+    pdfHideElements.forEach(el => el.style.display = "none");
+
     const executeExport = () => {
       const opt = {
-        margin:       [4, 4, 4, 4],
+        margin:       [3, 3, 3, 3],
         filename:     'SDPS_House_Wise_Mentors_Roster_2026-2027.pdf',
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, logging: false },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        image:        { type: 'jpeg', quality: 1.0 },
+        html2canvas:  { scale: 3, useCORS: true, logging: false, scrollY: 0, windowWidth: 1020 },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+        pagebreak:    { mode: 'avoid-all' }
       };
 
       if (window.html2pdf) {
         window.html2pdf().set(opt).from(element).save().then(() => {
+          pdfHideElements.forEach(el => el.style.display = "");
           setPdfExporting(false);
         }).catch((err) => {
           console.error("PDF generation failed:", err);
+          pdfHideElements.forEach(el => el.style.display = "");
           setPdfExporting(false);
           alert("PDF export error. Using print mode fallback.");
           window.print();
         });
       } else {
+        pdfHideElements.forEach(el => el.style.display = "");
         setPdfExporting(false);
         window.print();
       }
@@ -270,6 +278,7 @@ export function AdminHouseMentors() {
       script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
       script.onload = executeExport;
       script.onerror = () => {
+        pdfHideElements.forEach(el => el.style.display = "");
         setPdfExporting(false);
         alert("Failed to load PDF library. Falling back to print.");
         window.print();
@@ -478,13 +487,12 @@ export function AdminHouseMentors() {
                       </div>
                     </div>
 
-                    {/* Table Heading */}
-                    <div className="px-3 py-1 bg-slate-100/90 text-[9px] font-black uppercase tracking-wider text-slate-700 flex justify-between items-center border-b border-slate-200">
-                      <span># Teacher Name</span>
-                      <span>Designation / Role</span>
+                    {/* Clean Table Heading */}
+                    <div className="px-3 py-1 bg-slate-100/90 text-[9.5px] font-black uppercase tracking-wider text-slate-700 border-b border-slate-200">
+                      # TEACHER NAME
                     </div>
 
-                    {/* List of Teachers (Alphabetical A to Z with Compact Row Padding) */}
+                    {/* List of Teachers (Alphabetical A to Z with Full Width Names) */}
                     <div className="divide-y divide-slate-100">
                       {sortedMentors.length > 0 ? (
                         sortedMentors.map((mentor, index) => (
@@ -496,39 +504,33 @@ export function AdminHouseMentors() {
                               <span className="text-[10px] font-mono font-black text-slate-400 w-4 shrink-0 text-right">
                                 {index + 1}.
                               </span>
-                              <div className="min-w-0">
-                                <div className="font-bold text-slate-900 truncate text-[11px] tracking-tight leading-tight">
+                              <div className="min-w-0 flex items-center gap-1.5">
+                                <span className="font-bold text-slate-900 truncate text-[11.5px] tracking-tight">
                                   {mentor.name}
-                                </div>
+                                </span>
                                 {mentor.subject && (
-                                  <div className="text-[8.5px] text-slate-500 truncate leading-none">
-                                    {mentor.subject}
-                                  </div>
+                                  <span className="text-[9px] text-slate-500 font-normal shrink-0">
+                                    ({mentor.subject})
+                                  </span>
                                 )}
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-1 shrink-0">
-                              <span className="text-[8.5px] bg-slate-100 px-1.5 py-0.2 rounded font-bold text-slate-700 border border-slate-200">
-                                Mentor
-                              </span>
-
-                              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity print:hidden">
-                                <button
-                                  onClick={() => handleOpenEdit(mentor)}
-                                  className="p-0.5 hover:bg-slate-200 rounded text-slate-600 hover:text-brand-blue"
-                                  title="Edit"
-                                >
-                                  <Edit2 className="w-3 h-3" />
-                                </button>
-                                <button
-                                  onClick={() => handleDelete(mentor.id, mentor.name)}
-                                  className="p-0.5 hover:bg-slate-200 rounded text-slate-600 hover:text-rose-600"
-                                  title="Delete"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </button>
-                              </div>
+                            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity print:hidden pdf-hide">
+                              <button
+                                onClick={() => handleOpenEdit(mentor)}
+                                className="p-0.5 hover:bg-slate-200 rounded text-slate-600 hover:text-brand-blue"
+                                title="Edit"
+                              >
+                                <Edit2 className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(mentor.id, mentor.name)}
+                                className="p-0.5 hover:bg-slate-200 rounded text-slate-600 hover:text-rose-600"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
                             </div>
                           </div>
                         ))
@@ -540,8 +542,8 @@ export function AdminHouseMentors() {
                     </div>
                   </div>
 
-                  {/* Add Button per Column */}
-                  <div className="p-1.5 bg-slate-50 border-t border-slate-200 print:hidden">
+                  {/* Add Button per Column (Strictly hidden in Print & PDF Export) */}
+                  <div className="p-1.5 bg-slate-50 border-t border-slate-200 print:hidden pdf-hide">
                     <button
                       onClick={() => handleOpenAdd(house.name)}
                       className={`w-full py-1 px-2 rounded-lg border border-dashed ${house.badgeBorder} ${house.badgeBg} hover:brightness-95 ${house.accentColor} text-[10.5px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer`}
@@ -600,7 +602,7 @@ export function AdminHouseMentors() {
               </div>
             </div>
 
-            <div className="text-center mt-3 print:hidden">
+            <div className="text-center mt-3 print:hidden pdf-hide">
               <button
                 onClick={() => setSigModalOpen(true)}
                 className="px-3.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-bold inline-flex items-center gap-1.5 transition-all cursor-pointer"
