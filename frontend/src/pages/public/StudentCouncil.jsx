@@ -1048,7 +1048,7 @@ export default function StudentCouncil() {
                           </div>
                         )}
 
-                        <div className={`w-24 h-24 rounded-full mx-auto overflow-hidden p-0.5 bg-slate-50/80 border-2 ${
+                        <div className={`w-24 h-24 rounded-full mx-auto overflow-hidden p-0.5 bg-transparent border-2 ${
                           p.is_captain
                             ? "border-brand-gold shadow-md"
                             : isVice
@@ -1106,13 +1106,13 @@ export default function StudentCouncil() {
                     key={pf.id}
                     className="relative bg-white rounded-2xl p-3 border border-slate-200/80 text-center transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 group w-28 sm:w-36 md:w-40 shrink-0"
                   >
-                    <div className="w-16 h-16 rounded-full mx-auto overflow-hidden p-0.5 bg-gradient-to-br from-slate-300 to-slate-400">
+                    <div className="w-16 h-16 rounded-full mx-auto overflow-hidden bg-transparent">
                       {pf.photo ? (() => {
                         const photoSrc = pf.photo.startsWith("data:") || pf.photo.startsWith("http") ? pf.photo : fullUrl(pf.photo);
                         const { style, cleanUrl } = parseCandidateTransform(photoSrc);
-                        return <img src={cleanUrl} alt={pf.name} style={style} className="w-full h-full rounded-full object-cover" />;
+                        return <img src={cleanUrl} alt={pf.name} style={{ ...style, backgroundColor: 'transparent' }} className="w-full h-full rounded-full object-cover bg-transparent" />;
                       })() : (
-                        <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-lg font-headline font-bold text-slate-500">
+                        <div className="w-full h-full rounded-full bg-transparent flex items-center justify-center text-lg font-headline font-bold text-slate-500">
                           {pf.name?.[0]}
                         </div>
                       )}
