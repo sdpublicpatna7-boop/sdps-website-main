@@ -471,10 +471,12 @@ export function AdminHouseMentors() {
             </div>
 
             {/* Central Official Title Badge */}
-            <div className="pt-1">
-              <div className="inline-flex items-center gap-1.5 px-4 py-0.5 rounded-full bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 text-white text-[10.5px] font-black shadow-xs uppercase tracking-widest">
-                <Sparkles className="w-3 h-3 text-amber-200" />
-                <span>HOUSE WISE MENTORS ROSTER — ACADEMIC YEAR 2026–2027</span>
+            <div className="pt-1.5 flex justify-center">
+              <div
+                className="px-5 py-1 rounded-full bg-amber-600 text-white text-[11px] font-black shadow-xs uppercase tracking-widest text-center"
+                style={{ background: "#d97706", color: "#ffffff", position: "relative", zIndex: 10 }}
+              >
+                ✨ HOUSE WISE MENTORS ROSTER — ACADEMIC YEAR 2026–2027 ✨
               </div>
             </div>
           </div>
