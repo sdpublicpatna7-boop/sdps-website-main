@@ -165,6 +165,32 @@ export function AdminHouseMentors() {
 
   useEffect(() => {
     fetchMentors();
+
+    // Automatically load digital signature presets saved in Notice Maker (site-settings & localStorage)
+    try {
+      const localPresets = localStorage.getItem("sdps_signature_presets");
+      if (localPresets) {
+        const parsed = JSON.parse(localPresets);
+        const sig = parsed.management || parsed.principal || parsed.director || "";
+        if (sig) {
+          setSignatureData(prev => ({ ...prev, principalSig: fullUrl(sig) }));
+        }
+      }
+    } catch (e) {
+      console.error("Failed loading local signature presets:", e);
+    }
+
+    api.get("/admin/site-settings")
+      .then(r => {
+        const s = r.data || {};
+        const sig = s.signature_management || s.signature_principal || s.signature_director || "";
+        if (sig) {
+          setSignatureData(prev => ({ ...prev, principalSig: fullUrl(sig) }));
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to fetch signature presets from database:", err);
+      });
   }, []);
 
   const handleOpenAdd = (houseName = "Aryabhatta House") => {
@@ -601,9 +627,10 @@ export function AdminHouseMentors() {
               <div className="h-12 flex items-center justify-center">
                 {signatureData.principalSig || signatureData.inchargeSig ? (
                   <img
-                    src={signatureData.principalSig || signatureData.inchargeSig}
+                    src={fullUrl(signatureData.principalSig || signatureData.inchargeSig)}
                     alt="Management Signature"
                     className="max-h-11 max-w-[180px] object-contain mx-auto"
+                    onError={(e) => { e.target.style.display = 'none'; }}
                   />
                 ) : (
                   <div className="h-8 border-b-2 border-dashed border-slate-400 w-48 mx-auto"></div>
