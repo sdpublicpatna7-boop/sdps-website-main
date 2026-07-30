@@ -120,28 +120,80 @@ export default function Home() {
       .then((r) => setTestimonials(r.data || []))
       .catch((e) => console.error("Error loading testimonials:", e));
 
-    api.get("/council/profiles")
-      .then(r => {
-        if (r.data && r.data.length > 0) {
-          const formatted = r.data.map(p => ({
-            name: p.name,
-            role: p.position || p.role_type || "Council Member",
-            photo: p.photo_url || p.photo
-          })).filter(p => p.name);
-          if (formatted.length > 0) {
-            setCouncilPreview(prev => {
-              const merged = [...formatted.slice(0, 3)];
-              prev.forEach(item => {
-                if (!merged.some(m => m.name.toLowerCase() === item.name.toLowerCase())) {
-                  merged.push(item);
-                }
-              });
-              return merged.slice(0, 6);
-            });
-          }
+    const fetchCouncilMembers = async () => {
+      let defaultLeaders = [
+        {
+          name: "Adarsh Kumar",
+          role: "School Prefect",
+          photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/aadarsh_nyhpfq.png"
+        },
+        {
+          name: "Ankush Anand",
+          role: "School Prefect",
+          photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434282/ankush_anad_sjrqqt.png"
+        },
+        {
+          name: "Ishika Kumari",
+          role: "School Prefect",
+          photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434417/ishika_spfj5r.png"
         }
-      })
-      .catch(() => {});
+      ];
+
+      try {
+        const [profRes, electRes] = await Promise.allSettled([
+          api.get("/council/profiles"),
+          api.get("/elections/public-results")
+        ]);
+
+        const fetched = [];
+
+        // 1. Add static / custom profiles if available
+        if (profRes.status === "fulfilled" && profRes.value.data) {
+          profRes.value.data.forEach(p => {
+            if (p.name) {
+              fetched.push({
+                name: p.name,
+                role: p.position || p.role_type || "Council Member",
+                photo: p.photo_url || p.photo
+              });
+            }
+          });
+        }
+
+        // 2. Add top election winners per post
+        if (electRes.status === "fulfilled" && electRes.value.data?.by_post) {
+          const byPost = electRes.value.data.by_post;
+          const posts = electRes.value.data.posts || [];
+          posts.forEach(post => {
+            const cands = byPost[post.key] || [];
+            const topCand = [...cands].sort((a, b) => (b.votes || 0) - (a.votes || 0))[0];
+            if (topCand && topCand.name) {
+              fetched.push({
+                name: topCand.name,
+                role: post.title || "Council Leader",
+                photo: topCand.photo
+              });
+            }
+          });
+        }
+
+        if (fetched.length > 0) {
+          const merged = [...fetched];
+          defaultLeaders.forEach(item => {
+            if (!merged.some(m => m.name.toLowerCase().trim() === item.name.toLowerCase().trim())) {
+              merged.push(item);
+            }
+          });
+          setCouncilPreview(merged.slice(0, 6));
+        } else {
+          setCouncilPreview(defaultLeaders);
+        }
+      } catch (err) {
+        console.error("Error loading council preview:", err);
+      }
+    };
+
+    fetchCouncilMembers();
   }, []);
 
   const stats = settings?.stats || { years: "30+", educators: "75+", students: "50000+", alumni: "5000+" };
@@ -574,13 +626,13 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Student Council Glimpse Cards Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 pt-2">
+          {/* Student Council Glimpse Cards Grid (Perfectly Centered) */}
+          <div className="flex flex-wrap justify-center items-center gap-5 pt-2">
             {councilPreview.map((member, idx) => (
               <motion.div
                 key={member.name + idx}
                 whileHover={{ y: -5 }}
-                className="bg-white rounded-3xl p-4 border border-slate-200/90 shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col items-center text-center space-y-2.5 group"
+                className="bg-white rounded-3xl p-4 border border-slate-200/90 shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col items-center text-center space-y-2.5 group w-40 sm:w-44 shrink-0"
               >
                 <div className="w-16 h-16 rounded-full p-0.5 bg-gradient-to-tr from-amber-400 via-brand-orange to-brand-blue shadow-md relative">
                   <div className="w-full h-full rounded-full overflow-hidden bg-white">
