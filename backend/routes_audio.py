@@ -147,20 +147,31 @@ async def register_tunnel(payload: TunnelRegisterPayload):
     # 2. Check current active primary tunnel in db.site_settings
     settings = await db.site_settings.find_one({}, {"_id": 0, "cloudflare_tunnel_url": 1, "primary_hostname": 1, "tunnel_updated_at": 1, "audio_device_ip": 1})
     current_primary_host = settings.get("primary_hostname") if settings else None
+    current_primary_url = _active_tunnel_url or (settings.get("cloudflare_tunnel_url") if settings else None)
 
-    # If no primary set or primary is this host or primary stale (> 180s = 3 mins), auto-promote active host!
+    # STRICT STABILITY LOCK: Keep active primary node stable. Do not flip-flop between machines!
     should_promote = False
-    if not _active_tunnel_url or not current_primary_host or current_primary_host == hostname_clean:
+    if not current_primary_host or not current_primary_url:
+        should_promote = True
+    elif current_primary_host == hostname_clean:
         should_promote = True
     else:
-        last_up = settings.get("tunnel_updated_at")
-        if last_up:
+        # Check if current primary host is stale (> 300s / 5 mins)
+        primary_node = await db.audio_tunnels.find_one({"hostname": current_primary_host})
+        primary_last_p = primary_node.get("last_ping") if primary_node else None
+        is_primary_stale = True
+        if primary_last_p:
             try:
-                dt = datetime.fromisoformat(last_up)
-                if (datetime.now(timezone.utc) - dt).total_seconds() > 180: # 3 mins
-                    should_promote = True
+                p_dt = datetime.fromisoformat(primary_last_p)
+                if p_dt.tzinfo is None:
+                    p_dt = p_dt.replace(tzinfo=timezone.utc)
+                if abs((datetime.now(timezone.utc) - p_dt).total_seconds()) <= 300:
+                    is_primary_stale = False
             except Exception:
-                should_promote = True
+                is_primary_stale = True
+
+        if is_primary_stale:
+            should_promote = True
 
     existing_ip = settings.get("audio_device_ip") if settings else None
     ip_to_save = existing_ip or target_ip or DEFAULT_AUDIO_IP
