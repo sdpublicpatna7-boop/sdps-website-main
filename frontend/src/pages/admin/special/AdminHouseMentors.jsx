@@ -514,7 +514,7 @@ export function AdminHouseMentors() {
                   )}
                 </div>
                 <p className="text-slate-900 font-extrabold">House In-Charge Signature</p>
-                <p className="text-[10px] text-slate-500 font-normal">Date: {new Date().toLocaleDateString('en-IN')}</p>
+                <p className="text-[10px] text-slate-500 font-normal">Academic Session: 2025–2026</p>
               </div>
 
               <div className="space-y-1">
