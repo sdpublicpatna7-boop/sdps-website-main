@@ -244,12 +244,15 @@ async def list_all_tunnels(current_admin=Depends(get_current_admin_optional)):
         if last_p:
             try:
                 dt = datetime.fromisoformat(last_p)
-                if (now_dt - dt).total_seconds() < 300: # pinged within 5 mins
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                diff = abs((now_dt - dt).total_seconds())
+                if diff < 1800: # pinged within 30 mins
                     is_recent = True
             except Exception:
                 pass
 
-        if is_active_primary and is_recent:
+        if is_active_primary:
             status = "ACTIVE"
             status_label = "PRIMARY ACTIVE 🟢"
         elif is_recent:
