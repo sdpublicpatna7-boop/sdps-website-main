@@ -241,9 +241,39 @@ export function AdminHouseMentors() {
 
     setPdfExporting(true);
 
-    // Hide web-only buttons (edit/delete icons, add teacher buttons) during PDF snapshot
-    const pdfHideElements = element.querySelectorAll(".pdf-hide");
+    // Create a temporary offscreen wrapper fixed at left:0, top:0 with exact A4 pixel width (794px)
+    const tempWrapper = document.createElement("div");
+    tempWrapper.style.position = "fixed";
+    tempWrapper.style.left = "0px";
+    tempWrapper.style.top = "0px";
+    tempWrapper.style.width = "794px";
+    tempWrapper.style.zIndex = "-99999";
+    tempWrapper.style.background = "#ffffff";
+    tempWrapper.style.overflow = "hidden";
+
+    // Clone the A4 roster element into the offscreen container
+    const clonedEl = element.cloneNode(true);
+    clonedEl.style.margin = "0";
+    clonedEl.style.padding = "20px";
+    clonedEl.style.width = "794px";
+    clonedEl.style.maxWidth = "794px";
+    clonedEl.style.boxSizing = "border-box";
+    clonedEl.style.boxShadow = "none";
+    clonedEl.style.border = "none";
+
+    // Remove all web-only buttons (edit/delete icons, add teacher buttons) in clone
+    const pdfHideElements = clonedEl.querySelectorAll(".pdf-hide");
     pdfHideElements.forEach(el => el.style.display = "none");
+
+    tempWrapper.appendChild(clonedEl);
+    document.body.appendChild(tempWrapper);
+
+    const cleanup = () => {
+      if (document.body.contains(tempWrapper)) {
+        document.body.removeChild(tempWrapper);
+      }
+      setPdfExporting(false);
+    };
 
     const executeExport = () => {
       const opt = {
@@ -256,40 +286,26 @@ export function AdminHouseMentors() {
           logging: false,
           scrollX: 0,
           scrollY: 0,
-          windowWidth: 800,
-          onclone: (clonedDoc) => {
-            const clonedEl = clonedDoc.getElementById("a4-printable-roster");
-            if (clonedEl) {
-              clonedEl.style.margin = "0 auto";
-              clonedEl.style.padding = "24px 20px";
-              clonedEl.style.width = "794px";
-              clonedEl.style.maxWidth = "794px";
-              clonedEl.style.boxSizing = "border-box";
-              clonedEl.style.transform = "none";
-              clonedEl.style.position = "relative";
-              clonedEl.style.left = "0";
-              clonedEl.style.top = "0";
-            }
-          }
+          x: 0,
+          y: 0,
+          width: 794,
+          windowWidth: 794
         },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
         pagebreak:    { mode: 'avoid-all' }
       };
 
       if (window.html2pdf) {
-        window.html2pdf().set(opt).from(element).save().then(() => {
-          pdfHideElements.forEach(el => el.style.display = "");
-          setPdfExporting(false);
+        window.html2pdf().set(opt).from(clonedEl).save().then(() => {
+          cleanup();
         }).catch((err) => {
           console.error("PDF generation failed:", err);
-          pdfHideElements.forEach(el => el.style.display = "");
-          setPdfExporting(false);
+          cleanup();
           alert("PDF export error. Using print mode fallback.");
           window.print();
         });
       } else {
-        pdfHideElements.forEach(el => el.style.display = "");
-        setPdfExporting(false);
+        cleanup();
         window.print();
       }
     };
@@ -299,8 +315,7 @@ export function AdminHouseMentors() {
       script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
       script.onload = executeExport;
       script.onerror = () => {
-        pdfHideElements.forEach(el => el.style.display = "");
-        setPdfExporting(false);
+        cleanup();
         alert("Failed to load PDF library. Falling back to print.");
         window.print();
       };
