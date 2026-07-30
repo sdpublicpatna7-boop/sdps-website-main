@@ -397,38 +397,41 @@ async def send_login_otp(payload: OtpRequestPayload):
         upsert=True
     )
 
-    # Send via Email
-    email = user.get("email")
-    if email:
-        try:
-            from email_service import render_template
-            subject = "🔑 Your SDPS Audio Hub Login OTP"
-            inner_body = f"""
-            <div style="text-align: center; padding: 10px 0;">
-                <p style="font-size: 15px; color: #334155; margin-bottom: 8px;">Your one-time login verification code for the Audio & Bell Command Hub is:</p>
-                <div style="font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #f87d0e; margin: 18px 0; background: #fff7ed; padding: 16px; border-radius: 12px; border: 1px inline #ffedd5; display: inline-block;">
-                    {otp_code}
+    # Dispatch Email & WhatsApp asynchronously in background to make login response instant
+    async def _async_dispatch_otp():
+        email = user.get("email")
+        if email:
+            try:
+                from email_service import render_template, send_email
+                subject = "🔑 Your SDPS Audio Hub Login OTP"
+                inner_body = f"""
+                <div style="text-align: center; padding: 10px 0;">
+                    <p style="font-size: 15px; color: #334155; margin-bottom: 8px;">Your one-time login verification code for the Audio & Bell Command Hub is:</p>
+                    <div style="font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #f87d0e; margin: 18px 0; background: #fff7ed; padding: 16px; border-radius: 12px; border: 1px inline #ffedd5; display: inline-block;">
+                        {otp_code}
+                    </div>
+                    <p style="font-size: 12px; color: #64748b; margin-top: 12px;">This code expires in 5 minutes. Do not share it with anyone.</p>
                 </div>
-                <p style="font-size: 12px; color: #64748b; margin-top: 12px;">This code expires in 5 minutes. Do not share it with anyone.</p>
-            </div>
-            """
-            full_html = render_template("SDPS Audio Command Hub OTP", inner_body)
-            await send_email(email, subject, full_html)
-        except Exception as e:
-            logger.warning(f"Failed to send OTP email: {e}")
+                """
+                full_html = render_template("SDPS Audio Command Hub OTP", inner_body)
+                await send_email(email, subject, full_html)
+            except Exception as e:
+                logger.warning(f"Failed to send OTP email: {e}")
 
-    # Send via WhatsApp if phone available
-    phone = user.get("phone")
-    if phone:
-        try:
-            msg = f"🔑 *SDPS Audio Command Hub OTP*: Your login code is *{otp_code}*. Expires in 5 minutes."
-            await send_whatsapp_text(phone, msg, "Audio Hub OTP")
-        except Exception as e:
-            logger.warning(f"Failed to send OTP whatsapp: {e}")
+        phone = user.get("phone")
+        if phone:
+            try:
+                from whatsapp_service import send_whatsapp_text
+                msg = f"🔑 *SDPS Audio Command Hub OTP*: Your login code is *{otp_code}*. Expires in 5 minutes."
+                await send_whatsapp_text(phone, msg, "Audio Hub OTP")
+            except Exception as e:
+                logger.warning(f"Failed to send OTP whatsapp: {e}")
+
+    asyncio.create_task(_async_dispatch_otp())
 
     logger.info(f"[AUDIO OTP GENERATED] For user {target_username}: OTP={otp_code}")
 
-    dest_hint = email or phone or "registered contact"
+    dest_hint = user.get("email") or user.get("phone") or "registered contact"
     return {
         "success": True,
         "otp_required": True,
