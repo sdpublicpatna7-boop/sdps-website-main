@@ -244,7 +244,7 @@ export function AdminHouseMentors() {
     const executeExport = () => {
       const opt = {
         margin:       [4, 4, 4, 4],
-        filename:     'SDPS_House_Wise_Mentors_Roster_2025-2026.pdf',
+        filename:     'SDPS_House_Wise_Mentors_Roster_2026-2027.pdf',
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { scale: 2, useCORS: true, logging: false },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
@@ -338,7 +338,7 @@ export function AdminHouseMentors() {
             />
             <div>
               <h1 className="font-headline text-base font-bold text-slate-900 tracking-wide uppercase">
-                House Wise Mentors Roster (2025–2026)
+                House Wise Mentors Roster (2026–2027)
               </h1>
               <p className="text-xs text-slate-500 font-medium">
                 Official S.D. Public School A4 1-Page Printable Sheet
@@ -429,7 +429,7 @@ export function AdminHouseMentors() {
             <div className="pt-1">
               <div className="inline-flex items-center gap-1.5 px-4 py-0.5 rounded-full bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 text-white text-[10.5px] font-black shadow-xs uppercase tracking-widest">
                 <Sparkles className="w-3 h-3 text-amber-200" />
-                <span>HOUSE WISE MENTORS ROSTER — ACADEMIC YEAR 2025–2026</span>
+                <span>HOUSE WISE MENTORS ROSTER — ACADEMIC YEAR 2026–2027</span>
               </div>
             </div>
           </div>
@@ -567,7 +567,7 @@ export function AdminHouseMentors() {
                   )}
                 </div>
                 <p className="text-slate-900 font-extrabold text-[11px]">House In-Charge Signature</p>
-                <p className="text-[9.5px] text-slate-500 font-normal">Academic Session: 2025–2026</p>
+                <p className="text-[9.5px] text-slate-500 font-normal">Academic Session: 2026–2027</p>
               </div>
 
               <div className="space-y-0.5">
