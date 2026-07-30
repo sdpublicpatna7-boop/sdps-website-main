@@ -338,51 +338,43 @@ export function AdminHouseMentors() {
         </div>
 
         {/* ── 2. A4 PRINTABLE DOCUMENT CONTAINER SHEET ── */}
-        <div id="a4-printable-roster" className="max-w-[1040px] mx-auto bg-white border border-slate-300/90 shadow-2xl rounded-3xl p-6 md:p-9 space-y-6 print:m-0 print:p-0 print:border-none print:shadow-none print:max-w-none">
-          {/* Official SDPS Premium Letterhead Header for Print/A4 */}
+        <div id="a4-printable-roster" className="max-w-[1040px] mx-auto bg-white border border-slate-300 shadow-2xl rounded-3xl p-6 md:p-9 space-y-6 print:m-0 print:p-0 print:border-none print:shadow-none print:max-w-none">
+          {/* Official SDPS Premium Letterhead Header with 1 Centered Logo */}
           <div className="border-b-2 border-amber-500/80 pb-5 text-center relative space-y-2">
-            <div className="flex items-center justify-between gap-4">
-              {/* Left School Crest Logo */}
+            <div className="flex flex-col items-center justify-center text-center space-y-2">
+              {/* Single Centered School Crest Logo */}
               <img
                 src="/logo-real-original.png"
                 alt="SDPS Official Crest Logo"
-                className="h-16 md:h-20 w-auto max-w-[100px] object-contain drop-shadow-sm shrink-0"
+                className="h-20 md:h-24 w-auto object-contain drop-shadow-md mx-auto"
                 onError={(e) => { e.target.src = '/logo-original.png'; }}
               />
 
-              {/* Center Letterhead Text */}
-              <div className="flex-1 text-center space-y-1">
-                <h1 className="font-serif text-2xl md:text-3xl font-black text-slate-900 tracking-wider uppercase drop-shadow-2xs">
+              {/* Letterhead School Name & Address */}
+              <div className="text-center space-y-1">
+                <h1 className="font-serif text-3xl md:text-4xl font-black text-slate-900 tracking-wider uppercase drop-shadow-2xs">
                   S.D. PUBLIC SCHOOL
                 </h1>
-                <p className="text-[10.5px] font-extrabold text-slate-700 uppercase tracking-wider">
+                <p className="text-[11px] font-extrabold text-slate-700 uppercase tracking-widest">
                   Maurya Colony, Biscoman Golambar, Patna — 800007 | Helpline: +91 9955190162, 9955190262
                 </p>
-                <p className="text-[10.5px] font-bold text-amber-700 italic tracking-wider">
+                <p className="text-[11px] font-bold text-amber-700 italic tracking-wider">
                   (Empowering Generation Since 1994...)
                 </p>
               </div>
-
-              {/* Right School Crest Logo for Symmetric Official Letterhead */}
-              <img
-                src="/logo-real-original.png"
-                alt="SDPS Official Crest Logo"
-                className="h-16 md:h-20 w-auto max-w-[100px] object-contain drop-shadow-sm shrink-0 hidden md:block print:block"
-                onError={(e) => { e.target.src = '/logo-original.png'; }}
-              />
             </div>
 
             {/* Central Official Title Badge */}
             <div className="pt-2">
-              <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 text-white text-xs font-black shadow-sm uppercase tracking-widest">
+              <div className="inline-flex items-center gap-2 px-5 py-1.5 rounded-full bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 text-white text-xs font-black shadow-sm uppercase tracking-widest">
                 <Sparkles className="w-3.5 h-3.5 text-amber-200" />
                 <span>HOUSE WISE MENTORS ROSTER — ACADEMIC YEAR 2025–2026</span>
               </div>
             </div>
           </div>
 
-          {/* ── HOUSE WISE ALPHABETICAL COLUMNS ── */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5 print:grid-cols-4 print:gap-2">
+          {/* ── 2x2 GRID FOR THE 4 HOUSE TABLES ── */}
+          <div className="grid grid-cols-2 gap-5 print:grid-cols-2 print:gap-4">
             {DEFAULT_HOUSES.map((house) => {
               const houseMentors = mentors.filter(
                 m => (m.house || "").toLowerCase().includes(house.id) ||
@@ -397,66 +389,66 @@ export function AdminHouseMentors() {
               return (
                 <div
                   key={house.id}
-                  className={`bg-white rounded-2xl border ${house.badgeBorder} shadow-2xs overflow-hidden flex flex-col justify-between print:rounded-lg print:border-slate-300`}
+                  className={`bg-white rounded-2xl border-2 ${house.badgeBorder} shadow-sm overflow-hidden flex flex-col justify-between print:rounded-xl print:border-slate-300`}
                 >
                   <div>
-                    {/* House Column Header */}
-                    <div className={`p-3 bg-gradient-to-r ${house.headerBg} text-white space-y-0.5 relative`}>
+                    {/* Rich House Column Header */}
+                    <div className={`p-3.5 bg-gradient-to-r ${house.headerBg} text-white space-y-0.5 relative shadow-xs`}>
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
                           <img
                             src={house.logoImg}
                             alt={house.name}
-                            className="w-8 h-8 rounded-full object-cover border-2 border-white/90 shadow-md shrink-0 bg-white"
+                            className="w-9 h-9 rounded-full object-cover border-2 border-white/90 shadow-md shrink-0 bg-white"
                             onError={(e) => { e.target.style.display = 'none'; }}
                           />
                           <div>
-                            <div className="text-[8.5px] font-black uppercase tracking-widest text-white/80">
+                            <div className="text-[9px] font-black uppercase tracking-widest text-white/80">
                               {house.army}
                             </div>
-                            <h3 className="font-headline font-bold text-xs tracking-wide uppercase leading-tight">
+                            <h3 className="font-headline font-black text-sm tracking-wide uppercase leading-tight">
                               {house.name}
                             </h3>
                           </div>
                         </div>
-                        <span className="px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-white text-[9.5px] font-black shrink-0">
-                          {sortedMentors.length}
+                        <span className="px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-white text-[10px] font-black shrink-0 border border-white/30">
+                          {sortedMentors.length} Mentors
                         </span>
                       </div>
                     </div>
 
                     {/* Table Heading */}
-                    <div className="px-3 py-1.5 bg-slate-100 text-[9.5px] font-black uppercase tracking-wider text-slate-700 flex justify-between items-center border-b border-slate-200">
+                    <div className="px-4 py-2 bg-slate-100/90 text-[10px] font-black uppercase tracking-wider text-slate-700 flex justify-between items-center border-b border-slate-200">
                       <span># Teacher Name</span>
-                      <span>Role</span>
+                      <span>Designation / Role</span>
                     </div>
 
                     {/* List of Teachers (Alphabetical A to Z with Zebra Striping) */}
-                    <div className="divide-y divide-slate-100 min-h-[270px]">
+                    <div className="divide-y divide-slate-100 min-h-[220px]">
                       {sortedMentors.length > 0 ? (
                         sortedMentors.map((mentor, index) => (
                           <div
                             key={mentor.id || index}
-                            className="px-2.5 py-1.5 even:bg-slate-50/70 hover:bg-slate-100/80 transition-colors flex items-center justify-between group text-xs"
+                            className="px-3.5 py-2 even:bg-slate-50/70 hover:bg-slate-100/80 transition-colors flex items-center justify-between group text-xs"
                           >
-                            <div className="flex items-center gap-1.5 min-w-0 pr-1">
-                              <span className="text-[10px] font-mono font-black text-slate-400 w-4 shrink-0 text-right">
+                            <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                              <span className="text-[11px] font-mono font-black text-slate-400 w-5 shrink-0 text-right">
                                 {index + 1}.
                               </span>
                               <div className="min-w-0">
-                                <div className="font-bold text-slate-900 truncate text-[11px] tracking-tight">
+                                <div className="font-bold text-slate-900 truncate text-[12px] tracking-tight">
                                   {mentor.name}
                                 </div>
                                 {mentor.subject && (
-                                  <div className="text-[9px] text-slate-400 truncate">
+                                  <div className="text-[9.5px] text-slate-500 truncate">
                                     {mentor.subject}
                                   </div>
                                 )}
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-1 shrink-0">
-                              <span className="text-[8.5px] bg-slate-100 px-1.5 py-0.5 rounded font-bold text-slate-600 border border-slate-200/80">
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span className="text-[9px] bg-slate-100 px-2 py-0.5 rounded-md font-bold text-slate-700 border border-slate-200">
                                 Mentor
                               </span>
 
@@ -466,14 +458,14 @@ export function AdminHouseMentors() {
                                   className="p-1 hover:bg-slate-200 rounded text-slate-600 hover:text-brand-blue"
                                   title="Edit"
                                 >
-                                  <Edit2 className="w-3 h-3" />
+                                  <Edit2 className="w-3.5 h-3.5" />
                                 </button>
                                 <button
                                   onClick={() => handleDelete(mentor.id, mentor.name)}
                                   className="p-1 hover:bg-slate-200 rounded text-slate-600 hover:text-rose-600"
                                   title="Delete"
                                 >
-                                  <Trash2 className="w-3 h-3" />
+                                  <Trash2 className="w-3.5 h-3.5" />
                                 </button>
                               </div>
                             </div>
@@ -491,10 +483,10 @@ export function AdminHouseMentors() {
                   <div className="p-2 bg-slate-50 border-t border-slate-200 print:hidden">
                     <button
                       onClick={() => handleOpenAdd(house.name)}
-                      className={`w-full py-1.5 px-2 rounded-xl border border-dashed ${house.badgeBorder} ${house.badgeBg} hover:brightness-95 ${house.accentColor} text-[10.5px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer`}
+                      className={`w-full py-1.5 px-3 rounded-xl border border-dashed ${house.badgeBorder} ${house.badgeBg} hover:brightness-95 ${house.accentColor} text-xs font-bold flex items-center justify-center gap-1 transition-all cursor-pointer`}
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      <span>Add Teacher</span>
+                      <span>Add Teacher to {house.name}</span>
                     </button>
                   </div>
                 </div>
