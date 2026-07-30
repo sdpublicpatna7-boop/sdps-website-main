@@ -282,10 +282,10 @@ export function AdminHouseMentors() {
         <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4 print:hidden">
           <div className="flex items-center gap-3">
             <img
-              src="/sdps_logo.png"
+              src="/logo-real-original.png"
               alt="SDPS Crest Logo"
-              className="w-12 h-12 object-contain"
-              onError={(e) => { e.target.style.display = 'none'; }}
+              className="h-10 w-auto max-w-[50px] object-contain shrink-0"
+              onError={(e) => { e.target.src = '/logo-original.png'; }}
             />
             <div>
               <h1 className="font-headline text-lg font-bold text-slate-900 tracking-wide uppercase">
@@ -346,19 +346,19 @@ export function AdminHouseMentors() {
               <img
                 src="/logo-real-original.png"
                 alt="SDPS Official Crest Logo"
-                className="w-18 h-18 md:w-22 md:h-22 object-contain drop-shadow-md shrink-0"
+                className="h-16 md:h-20 w-auto max-w-[100px] object-contain drop-shadow-sm shrink-0"
                 onError={(e) => { e.target.src = '/logo-original.png'; }}
               />
 
               {/* Center Letterhead Text */}
               <div className="flex-1 text-center space-y-1">
-                <h1 className="font-serif text-3xl md:text-4xl font-black text-slate-900 tracking-wider uppercase drop-shadow-2xs">
+                <h1 className="font-serif text-2xl md:text-3xl font-black text-slate-900 tracking-wider uppercase drop-shadow-2xs">
                   S.D. PUBLIC SCHOOL
                 </h1>
-                <p className="text-[11px] font-extrabold text-slate-700 uppercase tracking-widest">
+                <p className="text-[10.5px] font-extrabold text-slate-700 uppercase tracking-wider">
                   Maurya Colony, Biscoman Golambar, Patna — 800007 | Helpline: +91 9955190162, 9955190262
                 </p>
-                <p className="text-[11px] font-bold text-amber-700 italic tracking-wider">
+                <p className="text-[10.5px] font-bold text-amber-700 italic tracking-wider">
                   (Empowering Generation Since 1994...)
                 </p>
               </div>
@@ -367,7 +367,7 @@ export function AdminHouseMentors() {
               <img
                 src="/logo-real-original.png"
                 alt="SDPS Official Crest Logo"
-                className="w-18 h-18 md:w-22 md:h-22 object-contain drop-shadow-md shrink-0 hidden md:block print:block"
+                className="h-16 md:h-20 w-auto max-w-[100px] object-contain drop-shadow-sm shrink-0 hidden md:block print:block"
                 onError={(e) => { e.target.src = '/logo-original.png'; }}
               />
             </div>
