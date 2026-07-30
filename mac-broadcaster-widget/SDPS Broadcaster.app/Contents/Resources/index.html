@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SDPS Audio Broadcaster Widget</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div className="widget-container" id="widgetApp">
+    <!-- macOS Frameless Window Header Bar -->
+    <div className="mac-header">
+      <div className="traffic-lights">
+        <div className="traffic-dot dot-close" id="btnClose" title="Close"></div>
+        <div className="traffic-dot dot-minimize" id="btnMinimize" title="Minimize"></div>
+        <div className="traffic-dot dot-maximize" id="btnExpand" title="Expand"></div>
+      </div>
+      <div className="header-title">
+        <span>🎙️ SDPS Broadcaster</span>
+      </div>
+      <div className="status-badge status-offline" id="statusBadge">
+        <div className="pulse-dot offline" id="pulseDot"></div>
+        <span id="statusText">CHECKING...</span>
+      </div>
+    </div>
+
+    <!-- Toast Notification Banner -->
+    <div className="toast-bar" id="toastBar"></div>
+
+    <!-- Main Widget Controls -->
+    <div className="widget-content">
+      
+      <!-- 1. BROADCASTER LOCAL IP SETTINGS -->
+      <div className="mac-card">
+        <div className="card-title">
+          <span>Broadcaster Local IP (LAN)</span>
+          <span id="pingMs" style="font-family: monospace; font-size: 9px; color: #94a3b8;">-- ms</span>
+        </div>
+        <div className="ip-input-group">
+          <input 
+            type="text" 
+            id="ipInput" 
+            className="mac-input" 
+            placeholder="e.g. 192.168.29.252 or 192.168.1.100" 
+            value="192.168.29.252"
+          />
+          <button className="btn-primary" id="btnSaveIp">
+            <span>Save IP</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. PUSH TO TALK LIVE MIC BROADCAST -->
+      <div className="mac-card" style="text-align: center;">
+        <div className="card-title">
+          <span>Live Mic Broadcast (Push-to-Talk)</span>
+          <span id="micStatusText" style="color: #34d399; font-size: 9px;">Ready</span>
+        </div>
+
+        <div className="mic-btn-container">
+          <button className="mic-toggle-btn" id="btnMic">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="22"/>
+            </svg>
+            <span className="mic-label" id="micBtnLabel">SPEAK NOW</span>
+          </button>
+          
+          <div className="volume-bar-bg">
+            <div className="volume-bar-fill" id="volumeFill"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. EMERGENCY CANCEL ALL -->
+      <button className="btn-emergency" id="btnEmergencyCancel">
+        <span>🛑 CANCEL ALL BROADCASTS</span>
+      </button>
+
+      <!-- 4. INSTANT BELL CHIMES SHORTCUTS -->
+      <div className="mac-card">
+        <div className="card-title">
+          <span>Instant Bell Chimes</span>
+          <span style="font-size: 9px; color: #94a3b8;">1-Click Trigger</span>
+        </div>
+        <div className="chime-grid">
+          <button className="chime-btn" data-track="1" data-name="Assembly Bell">
+            <span className="chime-icon">🔔</span>
+            <span>Assembly Bell</span>
+          </button>
+          <button className="chime-btn" data-track="2" data-name="Period Bell">
+            <span className="chime-icon">⏰</span>
+            <span>Period Bell</span>
+          </button>
+          <button className="chime-btn" data-track="3" data-name="Lunch Chime">
+            <span className="chime-icon">🍽️</span>
+            <span>Lunch Chime</span>
+          </button>
+          <button className="chime-btn" data-track="4" data-name="Dispersal Bell">
+            <span className="chime-icon">🎓</span>
+            <span>Dispersal Bell</span>
+          </button>
+          <button className="chime-btn" data-track="5" data-name="Emergency Siren">
+            <span className="chime-icon">🚨</span>
+            <span>Emergency Siren</span>
+          </button>
+          <button className="chime-btn" data-track="6" data-name="National Anthem">
+            <span className="chime-icon">🇮🇳</span>
+            <span>National Anthem</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 5. AUDIO SOURCE & ZONE SELECTION -->
+      <div className="mac-card">
+        <div className="card-title">
+          <span>Target Zone & Audio Source</span>
+        </div>
+        <div className="selector-row">
+          <select id="sourceSelect" className="mac-select">
+            <option value="sMic">🎙️ Live Mic (sMic)</option>
+            <option value="sFile">📻 MP3 Track (sFile)</option>
+            <option value="sAux">🔌 Line-In Aux (sAux)</option>
+          </select>
+          <select id="zonePreset" className="mac-select">
+            <option value="1-200">🏫 All Rooms (1-200)</option>
+            <option value="1-50">👶 Primary (1-50)</option>
+            <option value="51-120">🎓 Senior (51-120)</option>
+            <option value="121-150">⚽ Playground (121-150)</option>
+            <option value="151-200">🏢 Admin (151-200)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 6. BELL SCHEDULE & TIME SYNC -->
+      <div className="mac-card">
+        <div className="card-title">
+          <span>Schedule Profile & Time Sync</span>
+        </div>
+        <div className="selector-row">
+          <select id="scheduleSelect" className="mac-select">
+            <option value="0">☀️ Summer Bell Schedule</option>
+            <option value="1">❄️ Winter Bell Schedule</option>
+            <option value="2">📝 Exam Schedule</option>
+            <option value="4">🔴 Bells Paused (Off)</option>
+          </select>
+          <button className="btn-primary" id="btnSyncTime" style="padding: 6px 10px; font-size: 10px;">
+            <span>⏱️ Sync Time</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="widget.js"></script>
+</body>
+</html>

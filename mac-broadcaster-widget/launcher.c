@@ -11,7 +11,7 @@ int main() {
     if (_NSGetExecutablePath(path, &size) == 0) {
         char *dir = dirname(path); // Contents/MacOS
         char indexPath[2048];
-        snprintf(indexPath, sizeof(indexPath), "file://%s/../../index.html", dir);
+        snprintf(indexPath, sizeof(indexPath), "file://%s/../Resources/index.html", dir);
 
         char cmd[4096];
         if (access("/Applications/Google Chrome.app", F_OK) == 0) {
