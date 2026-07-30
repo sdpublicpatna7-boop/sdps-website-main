@@ -635,6 +635,27 @@ const WinnerSpotlight = ({ winners = [], position, totalVotes, allCandidates, in
   );
 };
 
+const OFFICIAL_SCHOOL_PREFECTS = [
+  {
+    id: "prefect-adarsh-kumar",
+    name: "Adarsh Kumar",
+    photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/aadarsh_nyhpfq.png",
+    role: "School Prefect"
+  },
+  {
+    id: "prefect-ankush-anand",
+    name: "Ankush Anand",
+    photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434282/ankush_anad_sjrqqt.png",
+    role: "School Prefect"
+  },
+  {
+    id: "prefect-ishika-kumari",
+    name: "Ishika Kumari",
+    photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434417/ishika_spfj5r.png",
+    role: "School Prefect"
+  }
+];
+
 /* ───────────────────────────────────────────────────────
    MAIN COMPONENT
    ─────────────────────────────────────────────────────── */
@@ -653,7 +674,7 @@ export default function StudentCouncil() {
   const [publishAt, setPublishAt] = useState(null);
   const [showPopup, setShowPopup] = useState(true);
   const [totalVoted, setTotalVoted] = useState(0);
-  const [prefects, setPrefects] = useState([]);
+  const [prefects, setPrefects] = useState(OFFICIAL_SCHOOL_PREFECTS);
 
   const cleanProfilePosition = (p) => {
     if (!p) return p;
@@ -842,9 +863,9 @@ export default function StudentCouncil() {
             return merged.sort((a, b) => (b.is_captain ? 1 : 0) - (a.is_captain ? 1 : 0));
           });
         }
+        const uniquePrefects = [...OFFICIAL_SCHOOL_PREFECTS];
+        const seenNames = new Set(OFFICIAL_SCHOOL_PREFECTS.map(p => (p.name || "").toLowerCase().trim()));
         if (prefectsList.length > 0) {
-          const uniquePrefects = [];
-          const seenNames = new Set();
           prefectsList.forEach(p => {
             const lowerName = (p.name || "").toLowerCase().trim();
             if (!seenNames.has(lowerName) && !lowerName.includes("vicky")) {
@@ -852,8 +873,8 @@ export default function StudentCouncil() {
               uniquePrefects.push(p);
             }
           });
-          setPrefects(uniquePrefects);
         }
+        setPrefects(uniquePrefects);
       } else {
         setElectionStatus("sealed");
       }
