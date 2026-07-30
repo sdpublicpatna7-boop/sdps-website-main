@@ -874,6 +874,7 @@ export default function StudentCouncil() {
             }
           });
         }
+        uniquePrefects.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
         setPrefects(uniquePrefects);
       } else {
         setElectionStatus("sealed");
@@ -1100,7 +1101,7 @@ export default function StudentCouncil() {
 
               {/* Prefects grid */}
               <div className="flex flex-wrap justify-center gap-4">
-                {prefects.map(pf => (
+                {[...prefects].sort((a, b) => (a.name || "").localeCompare(b.name || "")).map(pf => (
                   <div
                     key={pf.id}
                     className="relative bg-white rounded-2xl p-3 border border-slate-200/80 text-center transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 group w-28 sm:w-36 md:w-40 shrink-0"
