@@ -15,7 +15,7 @@ int main() {
 
         char cmd[4096];
         if (access("/Applications/Google Chrome.app", F_OK) == 0) {
-            snprintf(cmd, sizeof(cmd), "open -na \"Google Chrome\" --args --app=\"%s\" --window-size=420,720", indexPath);
+            snprintf(cmd, sizeof(cmd), "open -na \"Google Chrome\" --args --app=\"%s\" --window-position=30,50 --window-size=320,360", indexPath);
         } else {
             snprintf(cmd, sizeof(cmd), "open -a Safari \"%s\"", indexPath);
         }
