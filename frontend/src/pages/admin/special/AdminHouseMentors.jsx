@@ -17,7 +17,8 @@ import {
   Sparkles,
   X,
   Upload,
-  ChevronDown
+  ChevronDown,
+  Download
 } from "lucide-react";
 
 const DEFAULT_HOUSES = [
@@ -232,6 +233,53 @@ export function AdminHouseMentors() {
     }
   };
 
+  const [pdfExporting, setPdfExporting] = useState(false);
+
+  const handleExportPDF = () => {
+    const element = document.getElementById("a4-printable-roster");
+    if (!element) return;
+
+    setPdfExporting(true);
+
+    const executeExport = () => {
+      const opt = {
+        margin:       [4, 4, 4, 4],
+        filename:     'SDPS_House_Wise_Mentors_Roster_2025-2026.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, logging: false },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      if (window.html2pdf) {
+        window.html2pdf().set(opt).from(element).save().then(() => {
+          setPdfExporting(false);
+        }).catch((err) => {
+          console.error("PDF generation failed:", err);
+          setPdfExporting(false);
+          alert("PDF export error. Using print mode fallback.");
+          window.print();
+        });
+      } else {
+        setPdfExporting(false);
+        window.print();
+      }
+    };
+
+    if (!window.html2pdf) {
+      const script = document.createElement("script");
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+      script.onload = executeExport;
+      script.onerror = () => {
+        setPdfExporting(false);
+        alert("Failed to load PDF library. Falling back to print.");
+        window.print();
+      };
+      document.head.appendChild(script);
+    } else {
+      executeExport();
+    }
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -320,6 +368,18 @@ export function AdminHouseMentors() {
             >
               <Upload className="w-3.5 h-3.5 text-purple-600" />
               <span>Bulk Paste Names</span>
+            </button>
+            <button
+              onClick={handleExportPDF}
+              disabled={pdfExporting}
+              className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold flex items-center gap-2 shadow-md transition-all cursor-pointer disabled:opacity-50"
+            >
+              {pdfExporting ? (
+                <RefreshCw className="w-4 h-4 animate-spin text-white" />
+              ) : (
+                <Download className="w-4 h-4 text-white" />
+              )}
+              <span>{pdfExporting ? "Exporting PDF..." : "Export PDF"}</span>
             </button>
             <button
               onClick={handlePrint}
