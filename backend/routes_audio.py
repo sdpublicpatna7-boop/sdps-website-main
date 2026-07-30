@@ -14,6 +14,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 import requests
+import asyncio
+import httpx
 
 from auth import get_current_admin, get_current_admin_optional
 
@@ -229,6 +231,29 @@ async def list_all_tunnels(current_admin=Depends(get_current_admin_optional)):
 
     tunnels_cursor = db.audio_tunnels.find({}, {"_id": 0})
     tunnel_docs = await tunnels_cursor.to_list(length=50)
+
+    # Active parallel HTTP probing of all registered tunnel nodes
+    async def _probe_tunnel(doc):
+        t_url = doc.get("tunnel_url", "")
+        host = doc.get("hostname", "")
+        if not t_url:
+            return doc
+        try:
+            async with httpx.AsyncClient(timeout=2.0) as client:
+                res = await client.get(t_url, follow_redirects=True)
+                if res.status_code < 600:
+                    now_iso = datetime.now(timezone.utc).isoformat()
+                    await db.audio_tunnels.update_one(
+                        {"hostname": host},
+                        {"$set": {"last_ping": now_iso}}
+                    )
+                    doc["last_ping"] = now_iso
+        except Exception:
+            pass
+        return doc
+
+    if tunnel_docs:
+        tunnel_docs = list(await asyncio.gather(*[_probe_tunnel(d) for d in tunnel_docs]))
 
     nodes = []
     now_dt = datetime.now(timezone.utc)
