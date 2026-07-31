@@ -7,7 +7,7 @@ import {
 
 const CHANNEL_NAME = "sdps_obs_stream_channel";
 
-const PRESET_CARDS = [
+const BASE_PRESET_CARDS = [
   {
     category: "🏆 Executive Head Cabinet & Appointed Leaders",
     items: [
@@ -15,63 +15,63 @@ const PRESET_CARDS = [
         name: "Soumit Kumar",
         role: "School Captain",
         subtitle: "Executive Council 2026-27 • S.D. Public School",
-        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/aadarsh_nyhpfq.png",
+        photo: "",
         badge: "SCHOOL CAPTAIN"
       },
       {
         name: "Aniket Raj",
         role: "Vice School Captain",
         subtitle: "Appointed by School Management • 2026-27",
-        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434282/ankush_anad_sjrqqt.png",
+        photo: "",
         badge: "VICE CAPTAIN"
       },
       {
         name: "Aadhya Jha",
         role: "Vice School Captain",
         subtitle: "Appointed by School Management • 2026-27",
-        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434417/ishika_spfj5r.png",
+        photo: "",
         badge: "VICE CAPTAIN"
       },
       {
         name: "Vicky Singh",
         role: "Sports Skipper",
         subtitle: "Sports Head • S.D. Public School, Patna",
-        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/aadarsh_nyhpfq.png",
+        photo: "",
         badge: "SPORTS SKIPPER"
       },
       {
         name: "Vijaya Laxmi",
         role: "Sports Skipper",
         subtitle: "Appointed by School Management • 2026-27",
-        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434417/ishika_spfj5r.png",
+        photo: "",
         badge: "SPORTS SKIPPER"
       },
       {
         name: "Abhishek Kumar",
         role: "Cultural Head",
         subtitle: "Cultural Affairs • S.D. Public School, Patna",
-        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434282/ankush_anad_sjrqqt.png",
+        photo: "",
         badge: "CULTURAL HEAD"
       },
       {
         name: "Anshika",
         role: "Cultural Head",
         subtitle: "Appointed by School Management • 2026-27",
-        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434417/ishika_spfj5r.png",
+        photo: "",
         badge: "CULTURAL HEAD"
       },
       {
         name: "Harsh Raj Cesodia",
         role: "Discipline Head",
         subtitle: "Appointed by School Management • 2026-27",
-        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/aadarsh_nyhpfq.png",
+        photo: "",
         badge: "DISCIPLINE HEAD"
       },
       {
         name: "Simran Kumari",
         role: "Discipline Head",
         subtitle: "Appointed by School Management • 2026-27",
-        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434417/ishika_spfj5r.png",
+        photo: "",
         badge: "DISCIPLINE HEAD"
       }
     ]
@@ -158,7 +158,7 @@ const PRESET_CARDS = [
         name: "Daya Anand Singh",
         role: "School Prefect",
         subtitle: "S.D. Public School, Patna",
-        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/aadarsh_nyhpfq.png",
+        photo: "",
         badge: "SCHOOL PREFECT"
       },
       {
@@ -193,42 +193,42 @@ const PRESET_CARDS = [
         name: "Rudra Sinha",
         role: "School Prefect",
         subtitle: "S.D. Public School, Patna",
-        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434282/ankush_anad_sjrqqt.png",
+        photo: "",
         badge: "SCHOOL PREFECT"
       },
       {
         name: "Sakshi Pandit",
         role: "School Prefect",
         subtitle: "S.D. Public School, Patna",
-        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434417/ishika_spfj5r.png",
+        photo: "",
         badge: "SCHOOL PREFECT"
       },
       {
         name: "Sarthak Singh",
         role: "School Prefect",
         subtitle: "S.D. Public School, Patna",
-        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/aadarsh_nyhpfq.png",
+        photo: "",
         badge: "SCHOOL PREFECT"
       },
       {
         name: "Shadan Ahmed Haidry",
         role: "School Prefect",
         subtitle: "S.D. Public School, Patna",
-        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434282/ankush_anad_sjrqqt.png",
+        photo: "",
         badge: "SCHOOL PREFECT"
       },
       {
         name: "Surya Singh",
         role: "School Prefect",
         subtitle: "S.D. Public School, Patna",
-        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/aadarsh_nyhpfq.png",
+        photo: "",
         badge: "SCHOOL PREFECT"
       },
       {
         name: "Twinkle Sinha",
         role: "School Prefect",
         subtitle: "S.D. Public School, Patna",
-        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434417/ishika_spfj5r.png",
+        photo: "",
         badge: "SCHOOL PREFECT"
       }
     ]
@@ -256,6 +256,7 @@ const PRESET_CARDS = [
 
 export default function StreamControl() {
   const [bc, setBc] = useState(null);
+  const [presetCards, setPresetCards] = useState(BASE_PRESET_CARDS);
 
   // Overlay state
   const [lowerThirdVisible, setLowerThirdVisible] = useState(true);
@@ -267,13 +268,57 @@ export default function StreamControl() {
   const [cardName, setCardName] = useState("Soumit Kumar");
   const [cardRole, setCardRole] = useState("School Captain");
   const [cardSubtitle, setCardSubtitle] = useState("Executive Council 2026-27 • S.D. Public School");
-  const [cardPhoto, setCardPhoto] = useState("https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/aadarsh_nyhpfq.png");
+  const [cardPhoto, setCardPhoto] = useState("");
   const [cardBadge, setCardBadge] = useState("SCHOOL CAPTAIN");
 
   const [bannerTitle, setBannerTitle] = useState("INVESTITURE CEREMONY 2026-27");
   const [bannerSubtitle, setBannerSubtitle] = useState("S.D. PUBLIC SCHOOL, PATNA • OFFICIAL LIVE STREAM");
 
   const [tickerText, setTickerText] = useState("Welcome Parents, Teachers and Students to the Investiture Ceremony 2026-27 | Oath Taking Ceremony in Progress | S.D. Public School, Patna");
+
+  // Fetch live photos from database for candidates if available
+  useEffect(() => {
+    const photoMap = {};
+
+    const loadDbPhotos = async () => {
+      try {
+        const [elecRes, profRes] = await Promise.all([
+          api.get("/elections/public-results").catch(() => ({ data: {} })),
+          api.get("/council/profiles").catch(() => ({ data: [] }))
+        ]);
+
+        const elecData = elecRes.data || {};
+        const posts = elecData.posts || [];
+        (posts || []).forEach(post => {
+          const candidates = elecData.by_post?.[post.key] || [];
+          candidates.forEach(c => {
+            if (c?.name && c?.photo) {
+              photoMap[c.name.toLowerCase().trim()] = c.photo;
+            }
+          });
+        });
+
+        const profiles = profRes.data || [];
+        (profiles || []).forEach(p => {
+          if (p?.name && p?.photo_url) {
+            photoMap[p.name.toLowerCase().trim()] = p.photo_url;
+          }
+        });
+
+        if (Object.keys(photoMap).length > 0) {
+          setPresetCards(prev => prev.map(cat => ({
+            ...cat,
+            items: cat.items.map(item => {
+              const dbPhoto = photoMap[item.name.toLowerCase().trim()];
+              return dbPhoto ? { ...item, photo: dbPhoto } : item;
+            })
+          })));
+        }
+      } catch (err) {}
+    };
+
+    loadDbPhotos();
+  }, []);
 
   // Init BroadcastChannel
   useEffect(() => {
@@ -503,7 +548,7 @@ export default function StreamControl() {
           <span className="text-[10px] text-slate-400 font-bold uppercase">Click any card to show seamlessly on stream</span>
         </div>
 
-        {PRESET_CARDS.map((cat, idx) => (
+        {presetCards.map((cat, idx) => (
           <div key={idx} className="space-y-3">
             <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5 border-l-4 border-brand-orange pl-2">
               {cat.category}
@@ -519,7 +564,7 @@ export default function StreamControl() {
                   {card.photo ? (
                     <img src={card.photo} alt={card.name} className="w-12 h-12 rounded-xl object-cover border border-slate-300 bg-white shrink-0" />
                   ) : (
-                    <div className="w-12 h-12 rounded-xl bg-slate-800 text-white font-black text-lg flex items-center justify-center shrink-0">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0B1E40] to-[#0E3B91] text-[#F4D571] font-black text-lg flex items-center justify-center border border-[#F4D571]/40 shrink-0 shadow-inner">
                       {card.name.charAt(0)}
                     </div>
                   )}
@@ -570,7 +615,7 @@ export default function StreamControl() {
                 value={cardRole}
                 onChange={(e) => setCardRole(e.target.value)}
                 className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-600 font-bold"
-                placeholder="e.g. School Prefect | Class XI"
+                placeholder="e.g. School Prefect"
               />
             </div>
 
