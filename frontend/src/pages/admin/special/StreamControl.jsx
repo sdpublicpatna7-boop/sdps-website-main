@@ -284,10 +284,10 @@ export default function StreamControl() {
   const [cardBadge, setCardBadge] = useState("SCHOOL CAPTAIN");
   const [cardPerformers, setCardPerformers] = useState(""); // Comma separated performers list
 
-  // Overlay Visibility State
+  // Overlay Visibility State (News Ticker set to false by default)
   const [lowerThirdVisible, setLowerThirdVisible] = useState(true);
   const [bannerVisible, setBannerVisible] = useState(true);
-  const [tickerVisible, setTickerVisible] = useState(true);
+  const [tickerVisible, setTickerVisible] = useState(false);
   const [logoBugVisible, setLogoBugVisible] = useState(true);
   const [startingSoonVisible, setStartingSoonVisible] = useState(false);
   const [soonShowTimer, setSoonShowTimer] = useState(true);

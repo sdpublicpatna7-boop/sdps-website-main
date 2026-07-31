@@ -106,7 +106,7 @@ export default function StreamOverlay() {
   });
 
   const [ticker, setTicker] = useState({
-    visible: true,
+    visible: false,
     text: "Welcome Parents, Teachers and Students to the Investiture Ceremony 2026-27 | Oath Taking Ceremony in Progress | S.D. Public School, Patna"
   });
 
