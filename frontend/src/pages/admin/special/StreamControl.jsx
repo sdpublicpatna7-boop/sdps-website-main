@@ -9,6 +9,46 @@ const CHANNEL_NAME = "sdps_obs_stream_channel";
 
 const BASE_PRESET_CARDS = [
   {
+    category: "🎵 Dance, Music & Cultural Performance Groups",
+    items: [
+      {
+        name: "Classical Dance Troupe",
+        role: "Ganesh Vandana • Welcome Dance",
+        subtitle: "Investiture Ceremony 2026-27 • S.D. Public School",
+        badge: "CULTURAL DANCE",
+        performers: ["Ananya Sharma", "Aditi Roy", "Rhea Sen", "Kavya Singh", "Sneha Kumari"]
+      },
+      {
+        name: "SDPS School Choir",
+        role: "School Anthem & Patriotic Medley",
+        subtitle: "Investiture Ceremony 2026-27 • S.D. Public School",
+        badge: "MUSIC CHOIR",
+        performers: ["Aarav Raj", "Nitin Kumar", "Aadhya Jha", "Rohan Verma", "Shadan Ahmed", "Twinkle Sinha"]
+      },
+      {
+        name: "Instrumental Band",
+        role: "Vande Mataram • Fusion Performance",
+        subtitle: "Investiture Ceremony 2026-27 • S.D. Public School",
+        badge: "MUSIC BAND",
+        performers: ["Soumit Kumar", "Ankush Anand", "Ishika Kumari", "Priyanshu Singh"]
+      },
+      {
+        name: "Folk Dance Group",
+        role: "Festive Folk Dance Performance",
+        subtitle: "Investiture Ceremony 2026-27 • S.D. Public School",
+        badge: "FOLK DANCE",
+        performers: ["Manjari", "Bhavya Kumari", "Sakshi Shree", "Aradhya Gupta", "Simran Kumari"]
+      },
+      {
+        name: "SDPS Theatre & Drama",
+        role: "Nukkad Natak • Student Leadership Skit",
+        subtitle: "Investiture Ceremony 2026-27 • S.D. Public School",
+        badge: "THEATRE DRAMA",
+        performers: ["Abhinav Kumar", "Vicky Singh", "Abhishek Kumar", "Harsh Raj Cesodia"]
+      }
+    ]
+  },
+  {
     category: "🏆 Executive Head Cabinet & Appointed Leaders",
     items: [
       {
@@ -277,12 +317,12 @@ export default function StreamControl() {
   });
 
   // Manual Card Maker Inputs (Supports Persons, Music Groups & Multi-Performers)
-  const [cardName, setCardName] = useState("Soumit Kumar");
-  const [cardRole, setCardRole] = useState("School Captain");
-  const [cardSubtitle, setCardSubtitle] = useState("Executive Council 2026-27 • S.D. Public School");
+  const [cardName, setCardName] = useState("Classical Dance Troupe");
+  const [cardRole, setCardRole] = useState("Ganesh Vandana • Welcome Dance");
+  const [cardSubtitle, setCardSubtitle] = useState("Investiture Ceremony 2026-27 • S.D. Public School");
   const [cardPhoto, setCardPhoto] = useState("");
-  const [cardBadge, setCardBadge] = useState("SCHOOL CAPTAIN");
-  const [cardPerformers, setCardPerformers] = useState(""); // Comma separated performers list
+  const [cardBadge, setCardBadge] = useState("CULTURAL DANCE");
+  const [cardPerformers, setCardPerformers] = useState("Ananya Sharma, Aditi Roy, Rhea Sen, Kavya Singh, Sneha Kumari");
 
   // Overlay Visibility State (News Ticker set to false by default)
   const [lowerThirdVisible, setLowerThirdVisible] = useState(true);
@@ -886,7 +926,7 @@ export default function StreamControl() {
                     <img src={card.houseLogo} alt="" className="w-12 h-12 rounded-xl object-contain border border-amber-400 bg-white shrink-0" />
                   ) : (
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0B1E40] to-[#0E3B91] text-[#F4D571] font-black text-lg flex items-center justify-center border border-[#F4D571]/40 shrink-0 shadow-inner">
-                      {card.name.charAt(0)}
+                      {card.performers && card.performers.length > 0 ? <Music className="w-5 h-5 text-[#F4D571]" /> : card.name.charAt(0)}
                     </div>
                   )}
 
@@ -903,6 +943,11 @@ export default function StreamControl() {
                       {card.name}
                     </h4>
                     <p className="text-[10px] text-slate-500 truncate">{card.role}</p>
+                    {card.performers && card.performers.length > 0 && (
+                      <span className="text-[9px] font-extrabold text-blue-600 block truncate">
+                        👥 {card.performers.length} Performers
+                      </span>
+                    )}
                   </div>
 
                   <Send className="w-4 h-4 text-slate-300 group-hover:text-brand-orange group-hover:translate-x-0.5 transition shrink-0" />
@@ -920,7 +965,7 @@ export default function StreamControl() {
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-2">
             <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
-              <User className="w-4 h-4 text-blue-600" /> Manual Lower-Third & Music Group Builder
+              <User className="w-4 h-4 text-blue-600" /> Manual Lower-Third & Music/Dance Group Builder
             </h2>
             <button
               onClick={createNewBlankCardForm}
@@ -932,13 +977,13 @@ export default function StreamControl() {
 
           <div className="space-y-3">
             <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Person Name OR Music Group / Choir Title</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase">Person Name OR Music / Dance Group Title</label>
               <input
                 type="text"
                 value={cardName}
                 onChange={(e) => setCardName(e.target.value)}
                 className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-600 font-bold"
-                placeholder="e.g. Classical Fusion Band OR Nitin Raj"
+                placeholder="e.g. Classical Dance Troupe OR School Choir"
               />
             </div>
 
@@ -949,7 +994,7 @@ export default function StreamControl() {
                 value={cardRole}
                 onChange={(e) => setCardRole(e.target.value)}
                 className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-600 font-bold"
-                placeholder="e.g. Vande Mataram Instrumental OR School Prefect"
+                placeholder="e.g. Ganesh Vandana Welcome Dance OR School Anthem"
               />
             </div>
 
@@ -962,7 +1007,7 @@ export default function StreamControl() {
                 onChange={(e) => setCardPerformers(e.target.value)}
                 rows={2}
                 className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-600 font-semibold"
-                placeholder="e.g. Soumit Kumar, Nitin Raj, Sakshi Pandit, Priyanshu Singh, Aadhya Jha"
+                placeholder="e.g. Ananya Sharma, Aditi Roy, Rhea Sen, Kavya Singh, Sneha Kumari"
               />
             </div>
 
@@ -973,7 +1018,7 @@ export default function StreamControl() {
                 value={cardSubtitle}
                 onChange={(e) => setCardSubtitle(e.target.value)}
                 className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-600"
-                placeholder="e.g. S.D. Public School, Patna"
+                placeholder="e.g. Investiture Ceremony 2026-27 • S.D. Public School"
               />
             </div>
 
@@ -985,7 +1030,7 @@ export default function StreamControl() {
                   value={cardBadge}
                   onChange={(e) => setCardBadge(e.target.value)}
                   className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-600"
-                  placeholder="e.g. CULTURAL PERFORMANCE"
+                  placeholder="e.g. CULTURAL DANCE"
                 />
               </div>
 
