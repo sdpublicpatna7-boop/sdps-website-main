@@ -218,6 +218,11 @@ export default function StreamOverlay() {
         const incomingPerfStr = Array.isArray(lt.performers) ? lt.performers.join(",") : "";
         const prevPerfStr = Array.isArray(prev.performers) ? prev.performers.join(",") : "";
 
+        // Automatically dismiss Pre-Show Starting Soon slate whenever a candidate card is pushed live!
+        if (lt.visible) {
+          setStartingSoon(ss => ({ ...ss, visible: false }));
+        }
+
         if (
           prev.name !== lt.name ||
           prev.role !== lt.role ||

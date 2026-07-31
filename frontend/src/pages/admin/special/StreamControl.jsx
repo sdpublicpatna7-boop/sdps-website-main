@@ -440,6 +440,10 @@ export default function StreamControl() {
     setCardBadge(card.badge || "SDPS");
     setCardPerformers(card.performers ? card.performers.join(", ") : "");
 
+    // Automatically hide Pre-Show Starting Soon Slate when candidate card is clicked
+    setStartingSoonVisible(false);
+    sendBroadcast("STARTING_SOON", { visible: false });
+
     sendBroadcast("LOWER_THIRD", {
       visible: true,
       name: card.name,
@@ -456,6 +460,11 @@ export default function StreamControl() {
 
   const handleCustomPushCard = () => {
     const performersList = cardPerformers ? cardPerformers.split(",").map(s => s.trim()).filter(Boolean) : [];
+
+    // Automatically hide Pre-Show Starting Soon Slate when custom card is pushed
+    setStartingSoonVisible(false);
+    sendBroadcast("STARTING_SOON", { visible: false });
+
     sendBroadcast("LOWER_THIRD", {
       visible: true,
       name: cardName,
