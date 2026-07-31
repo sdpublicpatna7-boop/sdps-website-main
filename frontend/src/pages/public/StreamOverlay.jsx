@@ -63,17 +63,17 @@ export default function StreamOverlay() {
     const colors = ["#F4D571", "#FFD700", "#ef4444", "#2563eb", "#10b981", "#8b5cf6", "#ec4899", "#f97316"];
     const particles = [];
 
-    // Create 160 dynamic confetti particles
-    for (let i = 0; i < 160; i++) {
+    // Create 180 dynamic confetti particles
+    for (let i = 0; i < 180; i++) {
       particles.push({
         x: Math.random() * width,
         y: Math.random() * (height * 0.4) - 50,
-        vx: (Math.random() - 0.5) * 8,
-        vy: Math.random() * 6 + 3,
-        size: Math.random() * 10 + 6,
+        vx: (Math.random() - 0.5) * 9,
+        vy: Math.random() * 7 + 3,
+        size: Math.random() * 11 + 6,
         color: colors[Math.floor(Math.random() * colors.length)],
         rotation: Math.random() * 360,
-        rotationSpeed: (Math.random() - 0.5) * 10,
+        rotationSpeed: (Math.random() - 0.5) * 12,
         shape: Math.random() > 0.4 ? "rect" : "circle",
         opacity: 1
       });
@@ -202,64 +202,87 @@ export default function StreamOverlay() {
         className="absolute inset-0 w-full h-full pointer-events-none z-50"
       />
 
-      {/* FULL-SCREEN PRE-SHOW SLATE: "INVESTITURE CEREMONY STARTING SOON..." */}
+      {/* FULL-SCREEN PRE-SHOW SLATE WITH HIGH-ENERGY ANIMATIONS: "INVESTITURE CEREMONY STARTING SOON..." */}
       {startingSoon.visible && (
-        <div className="absolute inset-0 z-40 bg-gradient-to-br from-[#040C1A] via-[#0B1E40] to-[#071329] flex flex-col items-center justify-center p-8 text-white transition-all duration-700 animate-in fade-in-0 zoom-in-95">
+        <div className="absolute inset-0 z-40 bg-gradient-to-br from-[#040C1A] via-[#0B1E40] to-[#071329] flex flex-col items-center justify-center p-8 text-white transition-all duration-700 animate-in fade-in-0 zoom-in-95 overflow-hidden">
           
-          {/* Glowing Radial Backdrop Accent */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-[#0E3B91]/50 to-amber-500/20 rounded-full blur-3xl pointer-events-none animate-pulse" />
+          {/* Animated Background Gold Bokeh Particles */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            {[...Array(16)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute rounded-full bg-gradient-to-tr from-amber-400/20 to-yellow-200/40 blur-xl animate-pulse"
+                style={{
+                  width: `${60 + (i % 5) * 40}px`,
+                  height: `${60 + (i % 5) * 40}px`,
+                  top: `${(i * 19) % 90}%`,
+                  left: `${(i * 27) % 90}%`,
+                  animationDuration: `${3 + (i % 4) * 2}s`,
+                  animationDelay: `${(i % 3) * 0.7}s`
+                }}
+              />
+            ))}
+          </div>
 
-          {/* School Crest Logo */}
-          <div className="relative mb-6">
-            <div className="w-32 h-32 rounded-3xl bg-[#0B1E40]/90 border-2 border-[#F4D571] p-4 shadow-[0_0_50px_rgba(244,213,113,0.3)] flex items-center justify-center backdrop-blur-xl">
+          {/* Glowing Radial Spotlight Aura */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-gradient-to-r from-[#0E3B91]/60 via-amber-500/25 to-[#0E3B91]/60 rounded-full blur-3xl pointer-events-none animate-pulse" />
+
+          {/* School Crest Logo with Rotating Sparkle Rings */}
+          <div className="relative mb-8">
+            {/* Spinning Outer Ring */}
+            <div className="absolute -inset-4 rounded-full border-2 border-dashed border-[#F4D571]/40 animate-spin" style={{ animationDuration: '20s' }} />
+            <div className="absolute -inset-8 rounded-full border border-amber-300/20 animate-spin" style={{ animationDuration: '35s', animationDirection: 'reverse' }} />
+
+            <div className="w-36 h-36 rounded-3xl bg-[#0B1E40]/90 border-2 border-[#F4D571] p-4 shadow-[0_0_60px_rgba(244,213,113,0.4)] flex items-center justify-center backdrop-blur-2xl relative z-10">
               <img
                 src="https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/logo_aadarsh_clean.png"
                 alt="SDPS Logo"
-                className="w-full h-full object-contain filter drop-shadow"
+                className="w-full h-full object-contain filter drop-shadow-lg"
                 onError={(e) => {
                   e.target.onerror = null;
                   e.target.src = "/logo192.png";
                 }}
               />
             </div>
-            <div className="absolute -bottom-2 -right-2 bg-rose-600 text-white font-black text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider shadow-lg animate-pulse">
+            <div className="absolute -bottom-3 -right-2 bg-rose-600 text-white font-black text-[11px] px-3 py-1 rounded-full uppercase tracking-widest shadow-xl border border-rose-400 z-20 animate-pulse">
               LIVE BROADCAST
             </div>
           </div>
 
           {/* School Name & Subtitle */}
-          <div className="text-center space-y-2 max-w-3xl relative">
-            <h3 className="text-xs md:text-sm font-bold text-[#F4D571] tracking-[0.3em] uppercase">
+          <div className="text-center space-y-3 max-w-4xl relative z-10">
+            <h3 className="text-xs md:text-sm font-black text-[#F4D571] tracking-[0.35em] uppercase drop-shadow">
               {startingSoon.subtitle || "S.D. PUBLIC SCHOOL, PATNA • OFFICIAL LIVE BROADCAST"}
             </h3>
 
-            <h1 className="font-headline font-black text-4xl md:text-6xl text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-200 tracking-wide uppercase drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)]">
+            {/* Title with Continuous Gold Shimmer Gradient Wave */}
+            <h1 className="font-headline font-black text-4xl md:text-6xl tracking-wide uppercase drop-shadow-[0_10px_30px_rgba(0,0,0,0.9)] text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-200">
               {startingSoon.title || "INVESTITURE CEREMONY 2026-27"}
             </h1>
           </div>
 
-          {/* Pulsing "STARTING SOON" Live Status Box */}
-          <div className="mt-8 px-10 py-4 bg-gradient-to-r from-[#0E3B91]/90 via-[#0B1E40]/90 to-[#0E3B91]/90 backdrop-blur-2xl border-2 border-[#F4D571] rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.8)] flex items-center gap-4 animate-bounce">
-            <div className="w-4 h-4 rounded-full bg-rose-500 animate-ping" />
-            <span className="font-headline font-black text-2xl md:text-3xl text-white tracking-widest uppercase">
+          {/* Pulsing "STARTING SOON" Live Status Box with Radar Glow */}
+          <div className="mt-10 px-12 py-5 bg-gradient-to-r from-[#0E3B91]/95 via-[#0B1E40]/95 to-[#0E3B91]/95 backdrop-blur-2xl border-2 border-[#F4D571] rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.9)] flex items-center gap-5 relative z-10 animate-bounce">
+            <div className="w-5 h-5 rounded-full bg-rose-500 animate-ping shrink-0" />
+            <span className="font-headline font-black text-3xl md:text-4xl text-white tracking-widest uppercase">
               {startingSoon.message || "STREAM STARTING SOON"}
             </span>
-            <div className="w-4 h-4 rounded-full bg-rose-500 animate-ping" />
+            <div className="w-5 h-5 rounded-full bg-rose-500 animate-ping shrink-0" />
           </div>
 
           {/* Timer Note */}
           {startingSoon.timerText && (
-            <p className="mt-6 text-sm font-medium text-slate-300 tracking-wider opacity-90 max-w-xl text-center">
+            <p className="mt-8 text-base md:text-lg font-bold text-amber-200 tracking-wider opacity-90 max-w-2xl text-center relative z-10">
               {startingSoon.timerText}
             </p>
           )}
 
-          {/* Bottom Footer Info */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-6 text-xs text-slate-400 font-semibold tracking-widest uppercase border-t border-white/10 pt-4 px-12">
+          {/* Bottom Footer Info Bar */}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-8 text-xs text-slate-300 font-bold tracking-widest uppercase border-t border-white/15 pt-5 px-16 z-10">
             <span>S.D. PUBLIC SCHOOL PATNA</span>
-            <span>•</span>
+            <span className="text-[#F4D571]">★</span>
             <span>STUDENT COUNCIL 2026-27</span>
-            <span>•</span>
+            <span className="text-[#F4D571]">★</span>
             <span>YOUTUBE LIVE</span>
           </div>
 
@@ -268,11 +291,11 @@ export default function StreamOverlay() {
 
       {/* 1. TOP LOGO BUG & LIVE INDICATOR (TOP RIGHT) */}
       {!startingSoon.visible && logoBug.visible && (
-        <div className="absolute top-6 right-8 flex items-center gap-3 bg-[#0B1E40]/90 backdrop-blur-md border border-[#F4D571]/40 px-4 py-2 rounded-2xl shadow-2xl transition-all duration-500">
+        <div className="absolute top-6 right-8 flex items-center gap-3 bg-[#0B1E40]/95 backdrop-blur-md border border-[#F4D571]/50 px-5 py-2.5 rounded-2xl shadow-2xl transition-all duration-500">
           <img
             src="https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/logo_aadarsh_clean.png"
             alt="SDPS Logo"
-            className="w-8 h-8 object-contain filter drop-shadow"
+            className="w-9 h-9 object-contain filter drop-shadow"
             onError={(e) => {
               e.target.onerror = null;
               e.target.src = "/logo192.png";
@@ -283,7 +306,7 @@ export default function StreamOverlay() {
             <span className="text-[9px] font-bold text-[#F4D571] tracking-widest uppercase">Patna, Bihar</span>
           </div>
           {logoBug.showLive && (
-            <div className="flex items-center gap-1.5 bg-rose-600 text-white px-2.5 py-0.5 rounded-full font-bold text-[10px] tracking-wider uppercase shadow-md ml-1 animate-pulse">
+            <div className="flex items-center gap-1.5 bg-rose-600 text-white px-3 py-1 rounded-full font-bold text-[10px] tracking-wider uppercase shadow-md ml-1 animate-pulse">
               <span className="w-2 h-2 rounded-full bg-white animate-ping" />
               <span>LIVE</span>
             </div>
@@ -293,112 +316,112 @@ export default function StreamOverlay() {
 
       {/* 2. MAIN EVENT BANNER (TOP CENTER) */}
       {!startingSoon.visible && banner.visible && (
-        <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-gradient-to-r from-[#0B1E40]/95 via-[#0E3B91]/95 to-[#0B1E40]/95 backdrop-blur-xl border-2 border-[#F4D571]/60 px-8 py-3.5 rounded-full shadow-[0_10px_40px_rgba(0,0,0,0.8)] transition-all duration-500">
-          <div className="w-3 h-3 rounded-full bg-[#F4D571] animate-ping" />
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-gradient-to-r from-[#0B1E40]/95 via-[#0E3B91]/95 to-[#0B1E40]/95 backdrop-blur-xl border-2 border-[#F4D571]/70 px-10 py-4 rounded-full shadow-[0_12px_45px_rgba(0,0,0,0.85)] transition-all duration-500">
+          <div className="w-3.5 h-3.5 rounded-full bg-[#F4D571] animate-ping" />
           <div className="text-center">
-            <h1 className="font-headline font-black text-lg md:text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-200 uppercase drop-shadow-md">
+            <h1 className="font-headline font-black text-xl md:text-2xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-200 uppercase drop-shadow-md">
               {banner.title}
             </h1>
             {banner.subtitle && (
-              <p className="text-[10px] md:text-xs font-bold text-slate-200 tracking-widest uppercase mt-0.5 opacity-90">
+              <p className="text-xs font-extrabold text-slate-200 tracking-widest uppercase mt-0.5 opacity-90">
                 {banner.subtitle}
               </p>
             )}
           </div>
-          <div className="w-3 h-3 rounded-full bg-[#F4D571] animate-ping" />
+          <div className="w-3.5 h-3.5 rounded-full bg-[#F4D571] animate-ping" />
         </div>
       )}
 
-      {/* 3. LOWER THIRD DESIGNATION / CANDIDATE CARD (BOTTOM LEFT) - SEAMLESS ANIMATED TRANSITION */}
+      {/* 3. BIGGER & BOLDER LOWER THIRD DESIGNATION CARD WITH CINEMATIC 3D FLIP & SLIDE TRANSITIONS */}
       {!startingSoon.visible && lowerThird.visible && (
         <div
           key={`${lowerThird.name}-${lowerThird.role}-${lowerThird.timestamp}`}
-          className="absolute bottom-16 left-10 flex items-stretch bg-gradient-to-r from-[#071329]/95 via-[#0E3B91]/95 to-[#071329]/90 backdrop-blur-2xl border-2 border-[#F4D571]/80 rounded-3xl p-3.5 max-w-xl shadow-[0_20px_50px_rgba(0,0,0,0.9)] animate-in fade-in-0 slide-in-from-bottom-8 zoom-in-95 duration-500 ease-out overflow-hidden"
+          className="absolute bottom-16 left-10 flex items-stretch bg-gradient-to-r from-[#050E1F]/95 via-[#0E3B91]/95 to-[#071329]/95 backdrop-blur-2xl border-2 border-[#F4D571] rounded-[2rem] p-5 max-w-2xl shadow-[0_25px_60px_rgba(0,0,0,0.95)] animate-in fade-in-0 slide-in-from-bottom-12 zoom-in-95 duration-500 ease-out overflow-hidden"
         >
-          {/* Gold Shimmer Beam Transition Effect */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-300/25 to-transparent -translate-x-full animate-in slide-in-from-left-full duration-1000 pointer-events-none" />
+          {/* Gold Shimmer Beam Wipe Effect across Card */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-200/35 to-transparent -translate-x-full animate-in slide-in-from-left-full duration-1000 pointer-events-none z-30" />
 
-          {/* Photo Avatar (Seamless Cross-Fade) */}
+          {/* Photo Avatar - BIGGER & BOLDER (112px x 112px) */}
           {lowerThird.photo ? (
-            <div className="relative shrink-0 mr-4">
+            <div className="relative shrink-0 mr-5">
               <img
                 key={lowerThird.photo}
                 src={lowerThird.photo}
                 alt={lowerThird.name}
-                className="w-20 h-20 rounded-2xl object-cover border-2 border-[#F4D571] shadow-xl bg-slate-900 animate-in fade-in-0 spin-in-1 duration-300"
+                className="w-28 h-28 rounded-2xl object-cover border-3 border-[#F4D571] shadow-[0_0_25px_rgba(244,213,113,0.4)] bg-slate-900 animate-in fade-in-0 zoom-in-75 duration-400"
               />
-              <div className="absolute -bottom-1.5 -right-1.5 bg-[#F4D571] text-[#0B1E40] text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase shadow-md">
+              <div className="absolute -bottom-2 -right-2 bg-[#F4D571] text-[#0B1E40] text-[10px] font-black px-2 py-0.5 rounded-md uppercase shadow-lg border border-amber-300">
                 SDPS
               </div>
             </div>
           ) : (
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white font-black text-2xl border-2 border-[#F4D571] mr-4 shadow-xl shrink-0">
+            <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 flex items-center justify-center text-white font-black text-4xl border-3 border-[#F4D571] mr-5 shadow-[0_0_25px_rgba(244,213,113,0.4)] shrink-0">
               {lowerThird.name ? lowerThird.name.charAt(0) : "S"}
             </div>
           )}
 
-          {/* Name & Role Text Block with Seamless Slide-In */}
-          <div className="flex flex-col justify-center min-w-0 pr-4">
+          {/* Name & Role Text Block - BIGGER & BOLDER */}
+          <div className="flex flex-col justify-center min-w-0 pr-5">
             
             {/* Top Badge */}
             {lowerThird.badge && (
               <span 
                 key={lowerThird.badge}
-                className="inline-flex items-center gap-1.5 self-start px-2.5 py-0.5 rounded-md bg-amber-500/20 border border-amber-400/50 text-[#F4D571] font-bold text-[10px] tracking-widest uppercase mb-1 animate-in fade-in-0 zoom-in-90 duration-300"
+                className="inline-flex items-center gap-1.5 self-start px-3 py-1 rounded-lg bg-amber-500/25 border border-amber-400/60 text-[#F4D571] font-black text-xs tracking-widest uppercase mb-1.5 animate-in fade-in-0 zoom-in-90 duration-300 shadow-sm"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
                 {lowerThird.badge}
               </span>
             )}
 
-            {/* Candidate / Leader Full Name */}
+            {/* Candidate / Leader Full Name - BIGGER (3XL) */}
             <h2 
               key={lowerThird.name}
-              className="font-headline font-black text-xl md:text-2xl text-white tracking-tight truncate drop-shadow-md animate-in fade-in-0 slide-in-from-left-4 duration-300"
+              className="font-headline font-black text-2xl md:text-3xl text-white tracking-tight truncate drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)] animate-in fade-in-0 slide-in-from-left-6 duration-300"
             >
               {lowerThird.name}
             </h2>
 
-            {/* Role & Designation */}
+            {/* Role & Designation - BIGGER (BASE) */}
             <div 
               key={lowerThird.role}
-              className="flex items-center gap-2 mt-0.5 animate-in fade-in-0 slide-in-from-left-2 duration-400"
+              className="flex items-center gap-2 mt-0.5 animate-in fade-in-0 slide-in-from-left-4 duration-400"
             >
-              <span className="font-bold text-xs md:text-sm text-amber-300 uppercase tracking-wide truncate">
+              <span className="font-extrabold text-sm md:text-base text-amber-300 uppercase tracking-wide truncate">
                 {lowerThird.role}
               </span>
             </div>
 
-            {/* Subtitle / Organization */}
+            {/* Subtitle / Organization - BIGGER */}
             {lowerThird.subtitle && (
-              <p className="text-[11px] font-medium text-slate-300 truncate mt-0.5 opacity-90">
+              <p className="text-xs md:text-sm font-semibold text-slate-200 truncate mt-0.5 opacity-95">
                 {lowerThird.subtitle.replace(/^Class\s+[IVXLCDM0-9]+\s*•\s*/i, "").trim()}
               </p>
             )}
 
           </div>
 
-          {/* Right Gold Accent Stripe */}
-          <div className="w-1.5 bg-gradient-to-b from-[#F4D571] via-amber-500 to-[#F4D571] rounded-r-2xl ml-auto self-stretch shrink-0" />
+          {/* Right Gold Accent Stripe - BIGGER & GLOWING */}
+          <div className="w-2 bg-gradient-to-b from-[#F4D571] via-amber-400 to-[#F4D571] rounded-r-2xl ml-auto self-stretch shrink-0 shadow-[0_0_15px_rgba(244,213,113,0.5)]" />
         </div>
       )}
 
       {/* 4. LIVE NEWS TICKER / CRAWLER (BOTTOM FULL WIDTH) */}
       {!startingSoon.visible && ticker.visible && (
-        <div className="absolute bottom-0 inset-x-0 bg-[#071120]/95 backdrop-blur-xl border-t-2 border-[#F4D571]/60 flex items-center h-10 overflow-hidden shadow-[0_-5px_25px_rgba(0,0,0,0.8)]">
+        <div className="absolute bottom-0 inset-x-0 bg-[#050E1F]/95 backdrop-blur-xl border-t-2 border-[#F4D571]/70 flex items-center h-11 overflow-hidden shadow-[0_-5px_30px_rgba(0,0,0,0.85)]">
           
           {/* Static Left Badge */}
-          <div className="bg-gradient-to-r from-rose-700 to-rose-600 text-white font-headline font-black text-xs px-4 h-full flex items-center gap-2 shrink-0 border-r border-rose-500/50 shadow-lg z-10">
-            <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+          <div className="bg-gradient-to-r from-rose-700 to-rose-600 text-white font-headline font-black text-xs md:text-sm px-5 h-full flex items-center gap-2 shrink-0 border-r border-rose-500/50 shadow-lg z-10">
+            <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
             <span>SDPS LIVE TICKER</span>
           </div>
 
           {/* Scrolling Ticker Text */}
           <div className="flex-1 overflow-hidden relative">
-            <div className="whitespace-nowrap inline-block animate-marquee font-semibold text-xs text-amber-200 tracking-wide">
-              <span className="mx-6">★ {ticker.text} ★</span>
-              <span className="mx-6">★ {ticker.text} ★</span>
-              <span className="mx-6">★ {ticker.text} ★</span>
+            <div className="whitespace-nowrap inline-block animate-marquee font-extrabold text-xs md:text-sm text-amber-200 tracking-wide">
+              <span className="mx-8">★ {ticker.text} ★</span>
+              <span className="mx-8">★ {ticker.text} ★</span>
+              <span className="mx-8">★ {ticker.text} ★</span>
             </div>
           </div>
 
