@@ -1738,6 +1738,13 @@ STREAM_OVERLAY_STATE = {
         "visible": True,
         "showLive": True
     },
+    "startingSoon": {
+        "visible": False,
+        "title": "INVESTITURE CEREMONY 2026-27",
+        "subtitle": "S.D. PUBLIC SCHOOL, PATNA • OFFICIAL LIVE BROADCAST",
+        "message": "STREAM STARTING SOON",
+        "timerText": "Please stay tuned. The ceremony will begin shortly."
+    },
     "confetti_trigger_id": 0
 }
 
@@ -1760,6 +1767,8 @@ async def update_stream_overlay_state(payload: Dict[Any, Any] = Body(...)):
         STREAM_OVERLAY_STATE["ticker"].update(data)
     elif msg_type == "LOGO":
         STREAM_OVERLAY_STATE["logoBug"].update(data)
+    elif msg_type == "STARTING_SOON":
+        STREAM_OVERLAY_STATE["startingSoon"].update(data)
     elif msg_type == "CONFETTI":
         STREAM_OVERLAY_STATE["confetti_trigger_id"] = int(datetime.now(timezone.utc).timestamp() * 1000)
         

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { 
-  Tv, Eye, EyeOff, Copy, ExternalLink, Sparkles, CheckCircle2, User, RefreshCw, Send, Radio, Award, Flag, Building, HelpCircle, Layers, ShieldCheck
+  Tv, Eye, EyeOff, Copy, ExternalLink, Sparkles, CheckCircle2, User, RefreshCw, Send, Radio, Award, Flag, Building, HelpCircle, Layers, ShieldCheck, PlayCircle
 } from "lucide-react";
 
 const CHANNEL_NAME = "sdps_obs_stream_channel";
@@ -263,6 +263,7 @@ export default function StreamControl() {
   const [bannerVisible, setBannerVisible] = useState(true);
   const [tickerVisible, setTickerVisible] = useState(true);
   const [logoBugVisible, setLogoBugVisible] = useState(true);
+  const [startingSoonVisible, setStartingSoonVisible] = useState(false);
 
   // Active inputs
   const [cardName, setCardName] = useState("Soumit Kumar");
@@ -275,6 +276,12 @@ export default function StreamControl() {
   const [bannerSubtitle, setBannerSubtitle] = useState("S.D. PUBLIC SCHOOL, PATNA • OFFICIAL LIVE STREAM");
 
   const [tickerText, setTickerText] = useState("Welcome Parents, Teachers and Students to the Investiture Ceremony 2026-27 | Oath Taking Ceremony in Progress | S.D. Public School, Patna");
+
+  // Full screen starting soon inputs
+  const [soonTitle, setSoonTitle] = useState("INVESTITURE CEREMONY 2026-27");
+  const [soonSubtitle, setSoonSubtitle] = useState("S.D. PUBLIC SCHOOL, PATNA • OFFICIAL LIVE BROADCAST");
+  const [soonMessage, setSoonMessage] = useState("STREAM STARTING SOON");
+  const [soonNote, setSoonNote] = useState("Please stay tuned. The ceremony will begin shortly.");
 
   // Fetch live photos from database for candidates if available
   useEffect(() => {
@@ -350,6 +357,7 @@ export default function StreamControl() {
       if (type === "BANNER") currentState.banner = { ...currentState.banner, ...payload };
       if (type === "TICKER") currentState.ticker = { ...currentState.ticker, ...payload };
       if (type === "LOGO") currentState.logoBug = { ...currentState.logoBug, ...payload };
+      if (type === "STARTING_SOON") currentState.startingSoon = { ...currentState.startingSoon, ...payload };
 
       localStorage.setItem("sdps_stream_overlay_state", JSON.stringify(currentState));
     } catch (e) {}
@@ -426,6 +434,29 @@ export default function StreamControl() {
     sendBroadcast("LOGO", { visible: next });
   };
 
+  const toggleStartingSoon = () => {
+    const next = !startingSoonVisible;
+    setStartingSoonVisible(next);
+    sendBroadcast("STARTING_SOON", { 
+      visible: next,
+      title: soonTitle,
+      subtitle: soonSubtitle,
+      message: soonMessage,
+      timerText: soonNote
+    });
+  };
+
+  const pushStartingSoon = () => {
+    sendBroadcast("STARTING_SOON", {
+      visible: true,
+      title: soonTitle,
+      subtitle: soonSubtitle,
+      message: soonMessage,
+      timerText: soonNote
+    });
+    setStartingSoonVisible(true);
+  };
+
   const pushBanner = () => {
     sendBroadcast("BANNER", {
       visible: true,
@@ -489,14 +520,24 @@ export default function StreamControl() {
           <Layers className="w-4 h-4 text-brand-orange" /> Scene Element Visibility Switches
         </h2>
 
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
+          <button
+            onClick={toggleStartingSoon}
+            className={`p-3 rounded-2xl border font-bold text-xs flex items-center justify-between transition col-span-2 sm:col-span-1 ${
+              startingSoonVisible ? "bg-rose-600 border-rose-700 text-white shadow-md animate-pulse" : "bg-slate-100 border-slate-200 text-slate-700"
+            }`}
+          >
+            <span className="truncate">Starting Soon Slate</span>
+            {startingSoonVisible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+          </button>
+
           <button
             onClick={toggleLowerThird}
             className={`p-3 rounded-2xl border font-bold text-xs flex items-center justify-between transition ${
               lowerThirdVisible ? "bg-emerald-500 border-emerald-600 text-white shadow-md" : "bg-slate-100 border-slate-200 text-slate-500"
             }`}
           >
-            <span>Lower Third Card</span>
+            <span>Lower Third</span>
             {lowerThirdVisible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
           </button>
 
@@ -526,17 +567,90 @@ export default function StreamControl() {
               logoBugVisible ? "bg-emerald-500 border-emerald-600 text-white shadow-md" : "bg-slate-100 border-slate-200 text-slate-500"
             }`}
           >
-            <span>SDPS Logo Bug</span>
+            <span>Logo Bug</span>
             {logoBugVisible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
           </button>
 
           <button
             onClick={triggerConfetti}
-            className="p-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:brightness-110 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md transition cursor-pointer"
+            className="p-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:brightness-110 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md transition cursor-pointer col-span-2 sm:col-span-1"
           >
-            <Sparkles className="w-4 h-4 text-yellow-300" /> Trigger Confetti
+            <Sparkles className="w-4 h-4 text-yellow-300" /> Confetti Burst
           </button>
         </div>
+      </div>
+
+      {/* Full-Screen "Starting Soon" Pre-Show Slate Editor */}
+      <div className="bg-gradient-to-br from-[#0B1E40] via-[#0E3B91] to-[#0B1E40] text-white p-6 rounded-3xl border-2 border-[#F4D571]/60 shadow-xl space-y-4">
+        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+          <div className="flex items-center gap-2">
+            <PlayCircle className="w-5 h-5 text-[#F4D571]" />
+            <h2 className="text-sm font-headline font-black uppercase tracking-wider text-[#F4D571]">
+              Full-Screen "Starting Soon" Pre-Show Scene Controller
+            </h2>
+          </div>
+          <button
+            onClick={toggleStartingSoon}
+            className={`px-4 py-1.5 rounded-xl font-bold text-xs shadow transition flex items-center gap-2 cursor-pointer ${
+              startingSoonVisible ? "bg-rose-600 text-white hover:bg-rose-700" : "bg-[#F4D571] text-[#0B1E40] hover:bg-yellow-400"
+            }`}
+          >
+            {startingSoonVisible ? "🛑 Hide Pre-Show Slate" : "▶ Show Pre-Show Slate Live"}
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-slate-800">
+          <div>
+            <label className="text-[10px] font-bold text-slate-300 uppercase">Pre-Show Main Header Title</label>
+            <input
+              type="text"
+              value={soonTitle}
+              onChange={(e) => setSoonTitle(e.target.value)}
+              className="w-full px-3 py-2 text-xs rounded-xl border border-white/20 bg-white font-bold"
+              placeholder="e.g. INVESTITURE CEREMONY 2026-27"
+            />
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold text-slate-300 uppercase">Pre-Show Subtitle / School Name</label>
+            <input
+              type="text"
+              value={soonSubtitle}
+              onChange={(e) => setSoonSubtitle(e.target.value)}
+              className="w-full px-3 py-2 text-xs rounded-xl border border-white/20 bg-white"
+              placeholder="e.g. S.D. PUBLIC SCHOOL, PATNA • OFFICIAL LIVE BROADCAST"
+            />
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold text-slate-300 uppercase">Center Pulsing Message</label>
+            <input
+              type="text"
+              value={soonMessage}
+              onChange={(e) => setSoonMessage(e.target.value)}
+              className="w-full px-3 py-2 text-xs rounded-xl border border-white/20 bg-white font-black text-rose-600"
+              placeholder="e.g. STREAM STARTING SOON"
+            />
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold text-slate-300 uppercase">Bottom Announcement Note</label>
+            <input
+              type="text"
+              value={soonNote}
+              onChange={(e) => setSoonNote(e.target.value)}
+              className="w-full px-3 py-2 text-xs rounded-xl border border-white/20 bg-white"
+              placeholder="e.g. Please stay tuned. The ceremony will begin shortly."
+            />
+          </div>
+        </div>
+
+        <button
+          onClick={pushStartingSoon}
+          className="w-full py-3 bg-[#F4D571] hover:bg-yellow-400 text-[#0B1E40] font-headline font-black text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
+        >
+          <Send className="w-4 h-4" /> Push Pre-Show "Starting Soon" Slate Live
+        </button>
       </div>
 
       {/* Preset Designation Cards */}

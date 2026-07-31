@@ -38,6 +38,14 @@ export default function StreamOverlay() {
     showLive: true
   });
 
+  const [startingSoon, setStartingSoon] = useState({
+    visible: false,
+    title: "INVESTITURE CEREMONY 2026-27",
+    subtitle: "S.D. PUBLIC SCHOOL, PATNA • OFFICIAL LIVE BROADCAST",
+    message: "STREAM STARTING SOON",
+    timerText: "Please stay tuned. The ceremony will begin shortly."
+  });
+
   const lastConfettiTriggerRef = useRef(0);
   const canvasRef = useRef(null);
   const [confettiActive, setConfettiActive] = useState(false);
@@ -135,6 +143,7 @@ export default function StreamOverlay() {
       if (state.banner) setBanner(prev => ({ ...prev, ...state.banner }));
       if (state.ticker) setTicker(prev => ({ ...prev, ...state.ticker }));
       if (state.logoBug) setLogoBug(prev => ({ ...prev, ...state.logoBug }));
+      if (state.startingSoon) setStartingSoon(prev => ({ ...prev, ...state.startingSoon }));
 
       if (state.confetti_trigger_id && state.confetti_trigger_id > lastConfettiTriggerRef.current) {
         lastConfettiTriggerRef.current = state.confetti_trigger_id;
@@ -158,6 +167,8 @@ export default function StreamOverlay() {
             setTicker(prev => ({ ...prev, ...e.data.payload }));
           } else if (e.data?.type === "LOGO") {
             setLogoBug(prev => ({ ...prev, ...e.data.payload }));
+          } else if (e.data?.type === "STARTING_SOON") {
+            setStartingSoon(prev => ({ ...prev, ...e.data.payload }));
           }
         };
       }
@@ -191,8 +202,72 @@ export default function StreamOverlay() {
         className="absolute inset-0 w-full h-full pointer-events-none z-50"
       />
 
+      {/* FULL-SCREEN PRE-SHOW SLATE: "INVESTITURE CEREMONY STARTING SOON..." */}
+      {startingSoon.visible && (
+        <div className="absolute inset-0 z-40 bg-gradient-to-br from-[#040C1A] via-[#0B1E40] to-[#071329] flex flex-col items-center justify-center p-8 text-white transition-all duration-700 animate-in fade-in-0 zoom-in-95">
+          
+          {/* Glowing Radial Backdrop Accent */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-[#0E3B91]/50 to-amber-500/20 rounded-full blur-3xl pointer-events-none animate-pulse" />
+
+          {/* School Crest Logo */}
+          <div className="relative mb-6">
+            <div className="w-32 h-32 rounded-3xl bg-[#0B1E40]/90 border-2 border-[#F4D571] p-4 shadow-[0_0_50px_rgba(244,213,113,0.3)] flex items-center justify-center backdrop-blur-xl">
+              <img
+                src="https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/logo_aadarsh_clean.png"
+                alt="SDPS Logo"
+                className="w-full h-full object-contain filter drop-shadow"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = "/logo192.png";
+                }}
+              />
+            </div>
+            <div className="absolute -bottom-2 -right-2 bg-rose-600 text-white font-black text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider shadow-lg animate-pulse">
+              LIVE BROADCAST
+            </div>
+          </div>
+
+          {/* School Name & Subtitle */}
+          <div className="text-center space-y-2 max-w-3xl relative">
+            <h3 className="text-xs md:text-sm font-bold text-[#F4D571] tracking-[0.3em] uppercase">
+              {startingSoon.subtitle || "S.D. PUBLIC SCHOOL, PATNA • OFFICIAL LIVE BROADCAST"}
+            </h3>
+
+            <h1 className="font-headline font-black text-4xl md:text-6xl text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-200 tracking-wide uppercase drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)]">
+              {startingSoon.title || "INVESTITURE CEREMONY 2026-27"}
+            </h1>
+          </div>
+
+          {/* Pulsing "STARTING SOON" Live Status Box */}
+          <div className="mt-8 px-10 py-4 bg-gradient-to-r from-[#0E3B91]/90 via-[#0B1E40]/90 to-[#0E3B91]/90 backdrop-blur-2xl border-2 border-[#F4D571] rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.8)] flex items-center gap-4 animate-bounce">
+            <div className="w-4 h-4 rounded-full bg-rose-500 animate-ping" />
+            <span className="font-headline font-black text-2xl md:text-3xl text-white tracking-widest uppercase">
+              {startingSoon.message || "STREAM STARTING SOON"}
+            </span>
+            <div className="w-4 h-4 rounded-full bg-rose-500 animate-ping" />
+          </div>
+
+          {/* Timer Note */}
+          {startingSoon.timerText && (
+            <p className="mt-6 text-sm font-medium text-slate-300 tracking-wider opacity-90 max-w-xl text-center">
+              {startingSoon.timerText}
+            </p>
+          )}
+
+          {/* Bottom Footer Info */}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-6 text-xs text-slate-400 font-semibold tracking-widest uppercase border-t border-white/10 pt-4 px-12">
+            <span>S.D. PUBLIC SCHOOL PATNA</span>
+            <span>•</span>
+            <span>STUDENT COUNCIL 2026-27</span>
+            <span>•</span>
+            <span>YOUTUBE LIVE</span>
+          </div>
+
+        </div>
+      )}
+
       {/* 1. TOP LOGO BUG & LIVE INDICATOR (TOP RIGHT) */}
-      {logoBug.visible && (
+      {!startingSoon.visible && logoBug.visible && (
         <div className="absolute top-6 right-8 flex items-center gap-3 bg-[#0B1E40]/90 backdrop-blur-md border border-[#F4D571]/40 px-4 py-2 rounded-2xl shadow-2xl transition-all duration-500">
           <img
             src="https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/logo_aadarsh_clean.png"
@@ -217,7 +292,7 @@ export default function StreamOverlay() {
       )}
 
       {/* 2. MAIN EVENT BANNER (TOP CENTER) */}
-      {banner.visible && (
+      {!startingSoon.visible && banner.visible && (
         <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-gradient-to-r from-[#0B1E40]/95 via-[#0E3B91]/95 to-[#0B1E40]/95 backdrop-blur-xl border-2 border-[#F4D571]/60 px-8 py-3.5 rounded-full shadow-[0_10px_40px_rgba(0,0,0,0.8)] transition-all duration-500">
           <div className="w-3 h-3 rounded-full bg-[#F4D571] animate-ping" />
           <div className="text-center">
@@ -235,7 +310,7 @@ export default function StreamOverlay() {
       )}
 
       {/* 3. LOWER THIRD DESIGNATION / CANDIDATE CARD (BOTTOM LEFT) - SEAMLESS ANIMATED TRANSITION */}
-      {lowerThird.visible && (
+      {!startingSoon.visible && lowerThird.visible && (
         <div
           key={`${lowerThird.name}-${lowerThird.role}-${lowerThird.timestamp}`}
           className="absolute bottom-16 left-10 flex items-stretch bg-gradient-to-r from-[#071329]/95 via-[#0E3B91]/95 to-[#071329]/90 backdrop-blur-2xl border-2 border-[#F4D571]/80 rounded-3xl p-3.5 max-w-xl shadow-[0_20px_50px_rgba(0,0,0,0.9)] animate-in fade-in-0 slide-in-from-bottom-8 zoom-in-95 duration-500 ease-out overflow-hidden"
@@ -309,7 +384,7 @@ export default function StreamOverlay() {
       )}
 
       {/* 4. LIVE NEWS TICKER / CRAWLER (BOTTOM FULL WIDTH) */}
-      {ticker.visible && (
+      {!startingSoon.visible && ticker.visible && (
         <div className="absolute bottom-0 inset-x-0 bg-[#071120]/95 backdrop-blur-xl border-t-2 border-[#F4D571]/60 flex items-center h-10 overflow-hidden shadow-[0_-5px_25px_rgba(0,0,0,0.8)]">
           
           {/* Static Left Badge */}
