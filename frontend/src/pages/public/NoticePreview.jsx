@@ -263,11 +263,20 @@ export function NoticePreview() {
   );
 }
 
-// Markdown parser helper for rendering inline bolds and table tags in React
+// Rich text parser for rendering MS Word-like inline word colors, sizes, background highlights, and tables
 function renderMarkdown(text) {
   if (!text) return null;
 
-  const lines = text.split("\n");
+  // Pre-process BBCode and Markdown to HTML
+  let processed = text
+    .replace(/\[color=(.*?)\](.*?)\[\/color\]/gi, '<span style="color:$1">$2</span>')
+    .replace(/\[bg=(.*?)\](.*?)\[\/bg\]/gi, '<mark style="background-color:$1;padding:1px 4px;border-radius:3px">$2</mark>')
+    .replace(/\[size=(.*?)\](.*?)\[\/size\]/gi, '<span style="font-size:$1">$2</span>')
+    .replace(/\[font=(.*?)\](.*?)\[\/font\]/gi, '<span style="font-family:$1">$2</span>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+  const lines = processed.split("\n");
   const rendered = [];
   let inTable = false;
   let tableHeaders = [];
@@ -309,19 +318,23 @@ function renderMarkdown(text) {
       continue;
     }
 
-    // Bold text formatting: split by **
-    const splitParts = line.split(/\*\*/g);
-    if (splitParts.length > 1) {
-      const elements = splitParts.map((part, idx) => {
-        if (idx % 2 === 1) {
-          return <strong key={idx} className="font-extrabold text-slate-950">{part}</strong>;
-        }
-        return part;
-      });
-      rendered.push(<p key={i} className="text-justify">{elements}</p>);
-    } else {
-      rendered.push(<p key={i} className="text-justify">{line}</p>);
+    if (line.startsWith("* ") || line.startsWith("- ")) {
+      rendered.push(
+        <li key={i} className="ml-5 list-disc text-slate-800" dangerouslySetInnerHTML={{ __html: line.substring(2) }} />
+      );
+      continue;
     }
+
+    if (/^\d+\.\s/.test(line)) {
+      rendered.push(
+        <li key={i} className="ml-5 list-decimal text-slate-800" dangerouslySetInnerHTML={{ __html: line.replace(/^\d+\.\s/, '') }} />
+      );
+      continue;
+    }
+
+    rendered.push(
+      <div key={i} className="text-justify text-slate-800 leading-relaxed" dangerouslySetInnerHTML={{ __html: line }} />
+    );
   }
 
   if (inTable) {

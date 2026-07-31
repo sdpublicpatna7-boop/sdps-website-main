@@ -1,8 +1,40 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useOutletContext } from "react-router-dom";
 import api, { getBackendUrl } from "@/lib/api";
 import { toast } from "sonner";
-import { Printer, FileText, Save, Send, Trash, Plus, RotateCcw, AlertTriangle, Shield, FileUp, PenTool, Table, Lightbulb } from "lucide-react";
+import { 
+  Printer, FileText, Save, Send, Trash, Plus, RotateCcw, AlertTriangle, Shield, FileUp, PenTool, Table, Lightbulb,
+  Type, Palette, Highlighter, Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ListOrdered, Sparkles
+} from "lucide-react";
+
+function formatNoticeTextToHtml(rawText) {
+  if (!rawText) return "";
+
+  let text = rawText
+    .replace(/\[color=(.*?)\](.*?)\[\/color\]/gi, '<span style="color:$1">$2</span>')
+    .replace(/\[bg=(.*?)\](.*?)\[\/bg\]/gi, '<mark style="background-color:$1;padding:1px 4px;border-radius:3px">$2</mark>')
+    .replace(/\[size=(.*?)\](.*?)\[\/size\]/gi, '<span style="font-size:$1">$2</span>')
+    .replace(/\[font=(.*?)\](.*?)\[\/font\]/gi, '<span style="font-family:$1">$2</span>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+  const lines = text.split("\n");
+  const processed = lines.map((line) => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("* ") || trimmed.startsWith("- ")) {
+      return `<li style="margin-left: 1.25rem; list-style-type: disc;">${trimmed.substring(2)}</li>`;
+    }
+    if (/^\d+\.\s/.test(trimmed)) {
+      return `<li style="margin-left: 1.25rem; list-style-type: decimal;">${trimmed.replace(/^\d+\.\s/, '')}</li>`;
+    }
+    if (!trimmed) {
+      return `<div style="height: 0.4rem;"></div>`;
+    }
+    return `<div>${line}</div>`;
+  });
+
+  return processed.join("");
+}
 
 export function AdminNoticeMaker() {
   const { settings } = useOutletContext() || {};
@@ -57,6 +89,30 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
   const [tableStyle, setTableStyle] = useState("dividers"); // "dividers", "boxed"
   const [tableHeaderBg, setTableHeaderBg] = useState("none"); // "none", "light-grey", "brand-blue", "brand-orange"
   const [tableAlign, setTableAlign] = useState("left"); // "left", "center", "right"
+
+  // Ref & MS Word Formatting Helpers for Notice Body Description
+  const bodyTextareaRef = useRef(null);
+
+  const applyFormat = (prefix, suffix = "", defaultPlaceholder = "") => {
+    const textarea = bodyTextareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const sel = bodyText.substring(start, end);
+    const textToWrap = sel || defaultPlaceholder || "word";
+
+    const replacement = `${prefix}${textToWrap}${suffix}`;
+    const updated = bodyText.substring(0, start) + replacement + bodyText.substring(end);
+    setBodyText(updated);
+
+    setTimeout(() => {
+      textarea.focus();
+      const newStart = start + prefix.length;
+      const newEnd = newStart + textToWrap.length;
+      textarea.setSelectionRange(newStart, newEnd);
+    }, 30);
+  };
 
   // Signature Presets & Configuration
   const [selectedRolePreset, setSelectedRolePreset] = useState("principal"); // principal, director, management, custom
@@ -622,17 +678,212 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
               />
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex justify-between items-center">
-                <span>Notice Body Description</span>
+                <span className="flex items-center gap-1.5 font-bold text-slate-700">
+                  <Type className="w-3.5 h-3.5 text-brand-orange" />
+                  Notice Body Description (MS Word Formatting Bar)
+                </span>
                 {showTable && <span className="text-[9px] text-brand-orange font-bold normal-case">Type {"{{table}}"} to place table here</span>}
               </label>
+
+              {/* MS Word Rich Text Formatting Toolbar */}
+              <div className="bg-slate-100 border border-slate-250 rounded-xl p-2 space-y-2 text-xs shadow-sm">
+                
+                {/* Row 1: Font Size, Font Family, Color Swatches & Highlighting */}
+                <div className="flex flex-wrap items-center gap-2 pb-1.5 border-b border-slate-200/80">
+                  
+                  {/* Font Size for Selected Words */}
+                  <div className="flex items-center gap-1 bg-white border border-slate-250 px-2 py-1 rounded-lg">
+                    <Type className="w-3 h-3 text-slate-400 shrink-0" />
+                    <select
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          applyFormat(`<span style="font-size:${e.target.value}">`, `</span>`, "custom size text");
+                          e.target.value = "";
+                        }
+                      }}
+                      defaultValue=""
+                      className="bg-transparent text-[11px] font-bold text-slate-700 outline-none cursor-pointer"
+                    >
+                      <option value="" disabled>Word Size...</option>
+                      <option value="11px">11px (Small)</option>
+                      <option value="13px">13px (Body)</option>
+                      <option value="16px">16px (Medium)</option>
+                      <option value="18px">18px (Large)</option>
+                      <option value="22px">22px (Heading)</option>
+                      <option value="28px">28px (Title)</option>
+                    </select>
+                  </div>
+
+                  {/* Font Family for Selected Words */}
+                  <div className="flex items-center gap-1 bg-white border border-slate-250 px-2 py-1 rounded-lg">
+                    <select
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          applyFormat(`<span style="font-family:${e.target.value}">`, `</span>`, "custom font text");
+                          e.target.value = "";
+                        }
+                      }}
+                      defaultValue=""
+                      className="bg-transparent text-[11px] font-bold text-slate-700 outline-none cursor-pointer"
+                    >
+                      <option value="" disabled>Word Font...</option>
+                      <option value="system-ui, sans-serif">Sans-Serif (Default)</option>
+                      <option value="Georgia, serif">Georgia (Serif)</option>
+                      <option value="'Courier New', monospace">Monospace</option>
+                      <option value="'Outfit', sans-serif">Outfit Headline</option>
+                      <option value="'DM Sans', sans-serif">DM Sans Body</option>
+                    </select>
+                  </div>
+
+                  {/* Word Color Swatches */}
+                  <div className="flex items-center gap-1 bg-white border border-slate-250 px-2 py-1 rounded-lg">
+                    <Palette className="w-3 h-3 text-slate-400 shrink-0" />
+                    <span className="text-[10px] font-bold text-slate-500 mr-0.5">Color:</span>
+                    <button type="button" onClick={() => applyFormat('<span style="color:#ef4444">', '</span>')} className="w-4 h-4 rounded-full bg-red-500 border border-black/10 hover:scale-110 transition shadow-xs" title="Red Text" />
+                    <button type="button" onClick={() => applyFormat('<span style="color:#2563eb">', '</span>')} className="w-4 h-4 rounded-full bg-blue-600 border border-black/10 hover:scale-110 transition shadow-xs" title="Blue Text" />
+                    <button type="button" onClick={() => applyFormat('<span style="color:#d97706">', '</span>')} className="w-4 h-4 rounded-full bg-amber-500 border border-black/10 hover:scale-110 transition shadow-xs" title="Amber Gold Text" />
+                    <button type="button" onClick={() => applyFormat('<span style="color:#10b981">', '</span>')} className="w-4 h-4 rounded-full bg-emerald-500 border border-black/10 hover:scale-110 transition shadow-xs" title="Green Text" />
+                    <button type="button" onClick={() => applyFormat('<span style="color:#8b5cf6">', '</span>')} className="w-4 h-4 rounded-full bg-purple-500 border border-black/10 hover:scale-110 transition shadow-xs" title="Purple Text" />
+                    <button type="button" onClick={() => applyFormat('<span style="color:#0f172a">', '</span>')} className="w-4 h-4 rounded-full bg-slate-900 border border-black/10 hover:scale-110 transition shadow-xs" title="Dark Slate Text" />
+                    <input
+                      type="color"
+                      onChange={(e) => applyFormat(`<span style="color:${e.target.value}">`, `</span>`)}
+                      className="w-4 h-4 rounded cursor-pointer border-0 bg-transparent p-0"
+                      title="Choose Custom Color"
+                    />
+                  </div>
+
+                  {/* Highlight Swatches */}
+                  <div className="flex items-center gap-1 bg-white border border-slate-250 px-2 py-1 rounded-lg">
+                    <Highlighter className="w-3 h-3 text-slate-400 shrink-0" />
+                    <span className="text-[10px] font-bold text-slate-500 mr-0.5">Highlight:</span>
+                    <button type="button" onClick={() => applyFormat('<mark style="background-color:#fef08a;padding:1px 4px;border-radius:3px">', '</mark>')} className="w-4 h-4 rounded bg-yellow-200 border border-yellow-400 hover:scale-110 transition shadow-xs" title="Yellow Highlight" />
+                    <button type="button" onClick={() => applyFormat('<mark style="background-color:#bfdbfe;padding:1px 4px;border-radius:3px">', '</mark>')} className="w-4 h-4 rounded bg-blue-200 border border-blue-400 hover:scale-110 transition shadow-xs" title="Blue Highlight" />
+                    <button type="button" onClick={() => applyFormat('<mark style="background-color:#bbf7d0;padding:1px 4px;border-radius:3px">', '</mark>')} className="w-4 h-4 rounded bg-emerald-200 border border-emerald-400 hover:scale-110 transition shadow-xs" title="Green Highlight" />
+                    <button type="button" onClick={() => applyFormat('<mark style="background-color:#fbcfe8;padding:1px 4px;border-radius:3px">', '</mark>')} className="w-4 h-4 rounded bg-pink-200 border border-pink-400 hover:scale-110 transition shadow-xs" title="Pink Highlight" />
+                  </div>
+
+                </div>
+
+                {/* Row 2: Bold, Italic, Underline, Strikethrough, Alignment & List Items */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => applyFormat("<b>", "</b>", "bold word")}
+                    className="p-1.5 bg-white hover:bg-slate-200 border border-slate-250 rounded-lg text-slate-800 font-bold transition shadow-2xs"
+                    title="Bold"
+                  >
+                    <Bold className="w-3.5 h-3.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => applyFormat("<i>", "</i>", "italic word")}
+                    className="p-1.5 bg-white hover:bg-slate-200 border border-slate-250 rounded-lg text-slate-800 transition shadow-2xs"
+                    title="Italic"
+                  >
+                    <Italic className="w-3.5 h-3.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => applyFormat("<u>", "</u>", "underlined word")}
+                    className="p-1.5 bg-white hover:bg-slate-200 border border-slate-250 rounded-lg text-slate-800 transition shadow-2xs"
+                    title="Underline"
+                  >
+                    <Underline className="w-3.5 h-3.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => applyFormat("<s>", "</s>", "strikethrough word")}
+                    className="p-1.5 bg-white hover:bg-slate-200 border border-slate-250 rounded-lg text-slate-800 transition shadow-2xs"
+                    title="Strikethrough"
+                  >
+                    <Strikethrough className="w-3.5 h-3.5" />
+                  </button>
+
+                  <div className="h-4 w-px bg-slate-300 mx-0.5" />
+
+                  {/* Paragraph Alignment */}
+                  <button
+                    type="button"
+                    onClick={() => applyFormat('<div style="text-align:left">', '</div>', "Left aligned text")}
+                    className="p-1.5 bg-white hover:bg-slate-200 border border-slate-250 rounded-lg text-slate-700 transition shadow-2xs"
+                    title="Align Left"
+                  >
+                    <AlignLeft className="w-3.5 h-3.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => applyFormat('<div style="text-align:center">', '</div>', "Centered text")}
+                    className="p-1.5 bg-white hover:bg-slate-200 border border-slate-250 rounded-lg text-slate-700 transition shadow-2xs"
+                    title="Align Center"
+                  >
+                    <AlignCenter className="w-3.5 h-3.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => applyFormat('<div style="text-align:right">', '</div>', "Right aligned text")}
+                    className="p-1.5 bg-white hover:bg-slate-200 border border-slate-250 rounded-lg text-slate-700 transition shadow-2xs"
+                    title="Align Right"
+                  >
+                    <AlignRight className="w-3.5 h-3.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => applyFormat('<div style="text-align:justify">', '</div>', "Justified paragraph")}
+                    className="p-1.5 bg-white hover:bg-slate-200 border border-slate-250 rounded-lg text-slate-700 transition shadow-2xs"
+                    title="Justify Paragraph"
+                  >
+                    <AlignJustify className="w-3.5 h-3.5" />
+                  </button>
+
+                  <div className="h-4 w-px bg-slate-300 mx-0.5" />
+
+                  {/* Lists & Badges */}
+                  <button
+                    type="button"
+                    onClick={() => applyFormat("\n* ", "", "Bullet Item")}
+                    className="p-1.5 bg-white hover:bg-slate-200 border border-slate-250 rounded-lg text-slate-700 transition shadow-2xs"
+                    title="Insert Bullet List Item"
+                  >
+                    <List className="w-3.5 h-3.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => applyFormat("\n1. ", "", "Numbered Item")}
+                    className="p-1.5 bg-white hover:bg-slate-200 border border-slate-250 rounded-lg text-slate-700 transition shadow-2xs"
+                    title="Insert Numbered List Item"
+                  >
+                    <ListOrdered className="w-3.5 h-3.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => applyFormat('<span style="background-color:#0E3B91;color:#ffffff;padding:2px 8px;border-radius:6px;font-weight:bold;font-size:11px">', '</span>', "IMPORTANT NOTICE")}
+                    className="px-2 py-1 bg-blue-900 hover:bg-blue-800 text-white rounded-lg text-[10px] font-bold transition shadow-2xs flex items-center gap-1 cursor-pointer"
+                    title="Insert Styled Badge Tag"
+                  >
+                    <Sparkles className="w-3 h-3 text-amber-300" /> Badge Tag
+                  </button>
+                </div>
+
+              </div>
+
               <textarea
+                ref={bodyTextareaRef}
                 value={bodyText}
                 onChange={(e) => setBodyText(e.target.value)}
                 rows={11}
-                className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-orange focus:border-brand-orange bg-slate-50 font-sans leading-relaxed resize-y"
-                placeholder="Enter details of the notice..."
+                className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-orange focus:border-brand-orange bg-slate-50 font-sans leading-relaxed resize-y shadow-inner"
+                placeholder="Highlight any word or type text to format with colors, sizes, highlights, and font styles..."
               />
             </div>
 
@@ -1283,16 +1534,16 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
                   const afterText = parts.slice(1).join("{{table}}");
                   return (
                     <>
-                      <div className={textStyle}>{beforeText || "Please enter the content details for the notice..."}</div>
+                      <div className={textStyle} dangerouslySetInnerHTML={{ __html: formatNoticeTextToHtml(beforeText || "Please enter the content details for the notice...") }} />
                       {renderTable()}
-                      {afterText && <div className={textStyle}>{afterText}</div>}
+                      {afterText && <div className={textStyle} dangerouslySetInnerHTML={{ __html: formatNoticeTextToHtml(afterText) }} />}
                     </>
                   );
                 }
 
                 return (
                   <>
-                    <div className={textStyle}>{bodyText || "Please enter the content details for the notice..."}</div>
+                    <div className={textStyle} dangerouslySetInnerHTML={{ __html: formatNoticeTextToHtml(bodyText || "Please enter the content details for the notice...") }} />
                     {renderTable()}
                   </>
                 );
