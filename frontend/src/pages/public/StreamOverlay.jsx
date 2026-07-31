@@ -19,6 +19,26 @@ const HOUSE_LOGOS = {
   gautam: "/images/houses/gautam.jpg"
 };
 
+const ALL_PRELOAD_IMAGES = [
+  "https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/logo_aadarsh_clean.png",
+  "/images/houses/ashoka.jpg",
+  "/images/houses/aryabhatta.jpg",
+  "/images/houses/chanakya.jpg",
+  "/images/houses/gautam.jpg",
+  "https://res.cloudinary.com/drx3kb809/image/upload/v1785328179/asd_qophbe.png",
+  "https://res.cloudinary.com/drx3kb809/image/upload/v1785328179/sakd_yv4y3y.png",
+  "https://res.cloudinary.com/drzb164ge/image/upload/q_auto/f_auto/v1778295843/001_feweo3.jpg",
+  "https://res.cloudinary.com/drx3kb809/image/upload/v1785328002/arya_VC_mz1rrs.png",
+  "https://res.cloudinary.com/drx3kb809/image/upload/v1785328003/Chanakya_Captain_xui2ib.png",
+  "https://res.cloudinary.com/drx3kb809/image/upload/v1785328381/Prachi_zcygd3.png",
+  "https://res.cloudinary.com/drzb164ge/image/upload/q_auto/f_auto/v1778296001/005_l9apgk.png",
+  "https://res.cloudinary.com/drx3kb809/image/upload/v1785328565/aradhya_ywacsd.png",
+  "https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/aadarsh_nyhpfq.png",
+  "https://res.cloudinary.com/drx3kb809/image/upload/v1785434282/ankush_anad_sjrqqt.png",
+  "https://res.cloudinary.com/drx3kb809/image/upload/v1785434417/ishika_spfj5r.png",
+  "https://res.cloudinary.com/drx3kb809/image/upload/v1785503589/nitin_iadqvo.png"
+];
+
 function getHouseLogo(lowerThird) {
   if (lowerThird?.houseLogo) return lowerThird.houseLogo;
   const combined = ((lowerThird?.badge || "") + " " + (lowerThird?.subtitle || "") + " " + (lowerThird?.role || "")).toLowerCase();
@@ -27,6 +47,43 @@ function getHouseLogo(lowerThird) {
   if (combined.includes("chanakya")) return HOUSE_LOGOS.chanakya;
   if (combined.includes("gautam")) return HOUSE_LOGOS.gautam;
   return null;
+}
+
+// 8:00 AM Countdown Hook
+function use8AMCountdown(targetTimeString = "08:00") {
+  const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0, expired: false });
+
+  useEffect(() => {
+    const calculate = () => {
+      const now = new Date();
+      const target = new Date();
+      
+      const [h, m] = (targetTimeString || "08:00").split(":").map(Number);
+      target.setHours(h || 8, m || 0, 0, 0);
+
+      if (now > target) {
+        target.setDate(target.getDate() + 1);
+      }
+
+      const diff = target.getTime() - now.getTime();
+      if (diff <= 0) {
+        setTimeLeft({ hours: 0, minutes: 0, seconds: 0, expired: true });
+        return;
+      }
+
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      setTimeLeft({ hours, minutes, seconds, expired: false });
+    };
+
+    calculate();
+    const interval = setInterval(calculate, 1000);
+    return () => clearInterval(interval);
+  }, [targetTimeString]);
+
+  return timeLeft;
 }
 
 export default function StreamOverlay() {
@@ -62,11 +119,21 @@ export default function StreamOverlay() {
     title: "INVESTITURE CEREMONY 2026-27",
     subtitle: "S.D. PUBLIC SCHOOL, PATNA • OFFICIAL LIVE BROADCAST",
     message: "STREAM STARTING SOON",
-    timerText: "Please stay tuned. The ceremony will begin shortly."
+    timerText: "Please stay tuned. The ceremony will begin shortly.",
+    targetTime: "08:00"
   });
 
+  const countdown = use8AMCountdown(startingSoon.targetTime || "08:00");
   const lastConfettiTriggerRef = useRef(0);
   const canvasRef = useRef(null);
+
+  // Background Image Standby Preloader: Preload all candidate & house images into RAM cache
+  useEffect(() => {
+    ALL_PRELOAD_IMAGES.forEach((src) => {
+      const img = new Image();
+      img.src = src;
+    });
+  }, []);
 
   // Trigger HTML5 Canvas Confetti Burst Animation
   const fireCanvasConfetti = () => {
@@ -208,9 +275,10 @@ export default function StreamOverlay() {
           prev.title !== ss.title ||
           prev.subtitle !== ss.subtitle ||
           prev.message !== ss.message ||
-          prev.timerText !== ss.timerText
+          prev.timerText !== ss.timerText ||
+          prev.targetTime !== ss.targetTime
         ) {
-          return { visible: ss.visible, title: ss.title, subtitle: ss.subtitle, message: ss.message, timerText: ss.timerText };
+          return { visible: ss.visible, title: ss.title, subtitle: ss.subtitle, message: ss.message, timerText: ss.timerText, targetTime: ss.targetTime || "08:00" };
         }
         return prev;
       });
@@ -267,7 +335,6 @@ export default function StreamOverlay() {
 
         sseSource.onerror = () => {
           if (sseSource) sseSource.close();
-          // Auto-reconnect after 3 seconds if disconnected
           sseReconnectTimer = setTimeout(connectSSE, 3000);
         };
       } catch (e) {
@@ -337,7 +404,7 @@ export default function StreamOverlay() {
         className="absolute inset-0 w-full h-full pointer-events-none z-50"
       />
 
-      {/* FULL-SCREEN PRE-SHOW SLATE WITH HIGH-ENERGY ANIMATIONS: "INVESTITURE CEREMONY STARTING SOON..." */}
+      {/* FULL-SCREEN PRE-SHOW SLATE WITH 8:00 AM COUNTDOWN & ANIMATED ELEMENTS: "INVESTITURE CEREMONY STARTING SOON..." */}
       {startingSoon.visible && (
         <div className="absolute inset-0 z-40 bg-gradient-to-br from-[#040C1A] via-[#0B1E40] to-[#071329] flex flex-col items-center justify-center p-8 text-white transition-all duration-700 animate-in fade-in-0 zoom-in-95 overflow-hidden">
           
@@ -363,12 +430,12 @@ export default function StreamOverlay() {
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-gradient-to-r from-[#0E3B91]/60 via-amber-500/25 to-[#0E3B91]/60 rounded-full blur-3xl pointer-events-none animate-pulse" />
 
           {/* School Crest Logo with Rotating Sparkle Rings */}
-          <div className="relative mb-8">
+          <div className="relative mb-6">
             {/* Spinning Outer Ring */}
             <div className="absolute -inset-4 rounded-full border-2 border-dashed border-[#F4D571]/40 animate-spin" style={{ animationDuration: '20s' }} />
             <div className="absolute -inset-8 rounded-full border border-amber-300/20 animate-spin" style={{ animationDuration: '35s', animationDirection: 'reverse' }} />
 
-            <div className="w-36 h-36 rounded-3xl bg-[#0B1E40]/90 border-2 border-[#F4D571] p-4 shadow-[0_0_60px_rgba(244,213,113,0.4)] flex items-center justify-center backdrop-blur-2xl relative z-10">
+            <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-3xl bg-[#0B1E40]/90 border-2 border-[#F4D571] p-4 shadow-[0_0_60px_rgba(244,213,113,0.4)] flex items-center justify-center backdrop-blur-2xl relative z-10">
               <img
                 src="https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/logo_aadarsh_clean.png"
                 alt="SDPS Logo"
@@ -385,35 +452,82 @@ export default function StreamOverlay() {
           </div>
 
           {/* School Name & Subtitle */}
-          <div className="text-center space-y-3 max-w-4xl relative z-10">
+          <div className="text-center space-y-2 max-w-4xl relative z-10">
             <h3 className="text-xs md:text-sm font-black text-[#F4D571] tracking-[0.35em] uppercase drop-shadow">
               {startingSoon.subtitle || "S.D. PUBLIC SCHOOL, PATNA • OFFICIAL LIVE BROADCAST"}
             </h3>
 
             {/* Title with Continuous Gold Shimmer Gradient Wave */}
-            <h1 className="font-headline font-black text-4xl md:text-6xl tracking-wide uppercase drop-shadow-[0_10px_30px_rgba(0,0,0,0.9)] text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-200">
+            <h1 className="font-headline font-black text-3xl md:text-5xl lg:text-6xl tracking-wide uppercase drop-shadow-[0_10px_30px_rgba(0,0,0,0.9)] text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-200">
               {startingSoon.title || "INVESTITURE CEREMONY 2026-27"}
             </h1>
           </div>
 
-          {/* Pulsing "STARTING SOON" Live Status Box with Radar Glow */}
-          <div className="mt-10 px-12 py-5 bg-gradient-to-r from-[#0E3B91]/95 via-[#0B1E40]/95 to-[#0E3B91]/95 backdrop-blur-2xl border-2 border-[#F4D571] rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.9)] flex items-center gap-5 relative z-10 animate-bounce">
-            <div className="w-5 h-5 rounded-full bg-rose-500 animate-ping shrink-0" />
-            <span className="font-headline font-black text-3xl md:text-4xl text-white tracking-widest uppercase">
+          {/* LIVE 8:00 AM INVESTITURE CEREMONY COUNTDOWN TIMER */}
+          <div className="mt-6 flex flex-col items-center gap-3 relative z-10">
+            <div className="flex items-center gap-2 text-xs font-black text-amber-300 tracking-[0.3em] uppercase bg-amber-500/20 px-5 py-1.5 rounded-full border border-amber-400/50 shadow-md">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
+              <span>INVESTITURE CEREMONY 8:00 AM COUNTDOWN</span>
+            </div>
+
+            <div className="flex items-center gap-4 sm:gap-6 mt-1">
+              {/* HOURS CARD */}
+              <div className="flex flex-col items-center">
+                <div className="w-20 h-24 sm:w-24 sm:h-28 bg-gradient-to-b from-[#0E3B91] via-[#0B1E40] to-[#050E1F] border-2 border-[#F4D571] rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.9)] flex items-center justify-center relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-200/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                  <span className="font-headline font-black text-4xl sm:text-5xl text-white tracking-tight drop-shadow-lg">
+                    {String(countdown.hours).padStart(2, '0')}
+                  </span>
+                </div>
+                <span className="text-[10px] sm:text-xs font-black text-slate-300 uppercase tracking-widest mt-2">HOURS</span>
+              </div>
+
+              <span className="font-headline font-black text-3xl sm:text-4xl text-[#F4D571] animate-pulse -mt-6">:</span>
+
+              {/* MINUTES CARD */}
+              <div className="flex flex-col items-center">
+                <div className="w-20 h-24 sm:w-24 sm:h-28 bg-gradient-to-b from-[#0E3B91] via-[#0B1E40] to-[#050E1F] border-2 border-[#F4D571] rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.9)] flex items-center justify-center relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-200/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                  <span className="font-headline font-black text-4xl sm:text-5xl text-[#F4D571] tracking-tight drop-shadow-lg">
+                    {String(countdown.minutes).padStart(2, '0')}
+                  </span>
+                </div>
+                <span className="text-[10px] sm:text-xs font-black text-slate-300 uppercase tracking-widest mt-2">MINUTES</span>
+              </div>
+
+              <span className="font-headline font-black text-3xl sm:text-4xl text-[#F4D571] animate-pulse -mt-6">:</span>
+
+              {/* SECONDS CARD */}
+              <div className="flex flex-col items-center">
+                <div className="w-20 h-24 sm:w-24 sm:h-28 bg-gradient-to-b from-[#0E3B91] via-[#0B1E40] to-[#050E1F] border-2 border-rose-500 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.9)] flex items-center justify-center relative overflow-hidden group animate-pulse">
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-rose-300/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                  <span className="font-headline font-black text-4xl sm:text-5xl text-rose-400 tracking-tight drop-shadow-lg">
+                    {String(countdown.seconds).padStart(2, '0')}
+                  </span>
+                </div>
+                <span className="text-[10px] sm:text-xs font-black text-rose-300 uppercase tracking-widest mt-2">SECONDS</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Pulsing "STARTING SOON" Live Status Box */}
+          <div className="mt-6 px-10 py-3.5 bg-gradient-to-r from-[#0E3B91]/95 via-[#0B1E40]/95 to-[#0E3B91]/95 backdrop-blur-2xl border-2 border-[#F4D571] rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.9)] flex items-center gap-4 relative z-10">
+            <div className="w-4 h-4 rounded-full bg-rose-500 animate-ping shrink-0" />
+            <span className="font-headline font-black text-xl sm:text-2xl text-white tracking-widest uppercase">
               {startingSoon.message || "STREAM STARTING SOON"}
             </span>
-            <div className="w-5 h-5 rounded-full bg-rose-500 animate-ping shrink-0" />
+            <div className="w-4 h-4 rounded-full bg-rose-500 animate-ping shrink-0" />
           </div>
 
           {/* Timer Note */}
           {startingSoon.timerText && (
-            <p className="mt-8 text-base md:text-lg font-bold text-amber-200 tracking-wider opacity-90 max-w-2xl text-center relative z-10">
+            <p className="mt-5 text-sm sm:text-base font-bold text-amber-200 tracking-wider opacity-90 max-w-2xl text-center relative z-10">
               {startingSoon.timerText}
             </p>
           )}
 
           {/* Bottom Footer Info Bar */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-8 text-xs text-slate-300 font-bold tracking-widest uppercase border-t border-white/15 pt-5 px-16 z-10">
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-8 text-xs text-slate-300 font-bold tracking-widest uppercase border-t border-white/15 pt-4 px-16 z-10">
             <span>S.D. PUBLIC SCHOOL PATNA</span>
             <span className="text-[#F4D571]">★</span>
             <span>STUDENT COUNCIL 2026-27</span>
@@ -467,7 +581,7 @@ export default function StreamOverlay() {
         </div>
       )}
 
-      {/* 3. BIGGER & BOLDER LOWER THIRD DESIGNATION CARD WITH HOUSE CREST LOGO & CINEMATIC TRANSITIONS */}
+      {/* 3. BIGGER & BOLDER LOWER THIRD DESIGNATION CARD WITH HOUSE CREST AT THE END (LAST OF CARD) */}
       {!startingSoon.visible && lowerThird.visible && (
         <div
           key={`${lowerThird.name}-${lowerThird.role}-${lowerThird.timestamp}`}
@@ -476,7 +590,7 @@ export default function StreamOverlay() {
           {/* Gold Shimmer Beam Wipe Effect across Card */}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-200/35 to-transparent -translate-x-full animate-in slide-in-from-left-full duration-1000 pointer-events-none z-30" />
 
-          {/* Photo Avatar (112px x 112px) */}
+          {/* 1. Candidate Photo Avatar (112px x 112px) */}
           {lowerThird.photo ? (
             <div className="relative shrink-0 mr-4">
               <img
@@ -495,21 +609,8 @@ export default function StreamOverlay() {
             </div>
           )}
 
-          {/* Official House Emblem Crest Badge (If House Captain / Vice Captain) */}
-          {currentHouseLogo && (
-            <div className="relative shrink-0 mr-5 self-center">
-              <div className="w-20 h-20 rounded-2xl bg-white border-2 border-[#F4D571] p-1.5 shadow-[0_0_20px_rgba(244,213,113,0.4)] flex items-center justify-center animate-in zoom-in-75 duration-300">
-                <img
-                  src={currentHouseLogo}
-                  alt="House Crest"
-                  className="w-full h-full object-contain rounded-xl"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Name & Role Text Block - BIGGER & BOLDER */}
-          <div className="flex flex-col justify-center min-w-0 pr-5">
+          {/* 2. Name & Role Text Block */}
+          <div className="flex flex-col justify-center min-w-0 pr-4 flex-1">
             
             {/* Top Badge */}
             {lowerThird.badge && (
@@ -522,7 +623,7 @@ export default function StreamOverlay() {
               </span>
             )}
 
-            {/* Candidate / Leader Full Name - BIGGER (3XL) */}
+            {/* Candidate / Leader Full Name */}
             <h2 
               key={lowerThird.name}
               className="font-headline font-black text-2xl md:text-3xl text-white tracking-tight truncate drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)] animate-in fade-in-0 slide-in-from-left-6 duration-300"
@@ -530,7 +631,7 @@ export default function StreamOverlay() {
               {lowerThird.name}
             </h2>
 
-            {/* Role & Designation - BIGGER (BASE) */}
+            {/* Role & Designation */}
             <div 
               key={lowerThird.role}
               className="flex items-center gap-2 mt-0.5 animate-in fade-in-0 slide-in-from-left-4 duration-400"
@@ -540,7 +641,7 @@ export default function StreamOverlay() {
               </span>
             </div>
 
-            {/* Subtitle / Organization - BIGGER */}
+            {/* Subtitle / Organization */}
             {lowerThird.subtitle && (
               <p className="text-xs md:text-sm font-semibold text-slate-200 truncate mt-0.5 opacity-95">
                 {lowerThird.subtitle.replace(/^Class\s+[IVXLCDM0-9]+\s*•\s*/i, "").trim()}
@@ -549,7 +650,20 @@ export default function StreamOverlay() {
 
           </div>
 
-          {/* Right Gold Accent Stripe - BIGGER & GLOWING */}
+          {/* 3. Official House Emblem Crest Badge (PLACED AT VERY LAST / END OF CARD) */}
+          {currentHouseLogo && (
+            <div className="relative shrink-0 ml-auto mr-4 self-center">
+              <div className="w-20 h-20 rounded-2xl bg-white border-2 border-[#F4D571] p-1.5 shadow-[0_0_20px_rgba(244,213,113,0.4)] flex items-center justify-center animate-in zoom-in-75 duration-300">
+                <img
+                  src={currentHouseLogo}
+                  alt="House Crest"
+                  className="w-full h-full object-contain rounded-xl"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* 4. Right Gold Accent Stripe */}
           <div className="w-2 bg-gradient-to-b from-[#F4D571] via-amber-400 to-[#F4D571] rounded-r-2xl ml-auto self-stretch shrink-0 shadow-[0_0_15px_rgba(244,213,113,0.5)]" />
         </div>
       )}

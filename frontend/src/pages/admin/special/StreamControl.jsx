@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { 
-  Tv, Eye, EyeOff, Copy, ExternalLink, Sparkles, CheckCircle2, User, RefreshCw, Send, Radio, Award, Flag, Building, HelpCircle, Layers, ShieldCheck, PlayCircle
+  Tv, Eye, EyeOff, Copy, ExternalLink, Sparkles, CheckCircle2, User, RefreshCw, Send, Radio, Award, Flag, Building, HelpCircle, Layers, ShieldCheck, PlayCircle, Clock
 } from "lucide-react";
 
 const CHANNEL_NAME = "sdps_obs_stream_channel";
@@ -290,6 +290,15 @@ export default function StreamControl() {
   const [soonSubtitle, setSoonSubtitle] = useState("S.D. PUBLIC SCHOOL, PATNA • OFFICIAL LIVE BROADCAST");
   const [soonMessage, setSoonMessage] = useState("STREAM STARTING SOON");
   const [soonNote, setSoonNote] = useState("Please stay tuned. The ceremony will begin shortly.");
+  const [soonCountdownTarget, setSoonCountdownTarget] = useState("08:00"); // 8:00 AM
+
+  // Suppress auto-logout while actively operating stream control
+  useEffect(() => {
+    window.__sdps_suppress_logout = true;
+    return () => {
+      window.__sdps_suppress_logout = false;
+    };
+  }, []);
 
   // Fetch live photos from database for candidates if available
   useEffect(() => {
@@ -333,14 +342,6 @@ export default function StreamControl() {
     };
 
     loadDbPhotos();
-  }, []);
-
-  // Prevent auto-logout during active stream control
-  useEffect(() => {
-    window.__sdps_suppress_logout = true;
-    return () => {
-      window.__sdps_suppress_logout = false;
-    };
   }, []);
 
   // Init BroadcastChannel
@@ -459,7 +460,8 @@ export default function StreamControl() {
       title: soonTitle,
       subtitle: soonSubtitle,
       message: soonMessage,
-      timerText: soonNote
+      timerText: soonNote,
+      targetTime: soonCountdownTarget
     });
   };
 
@@ -469,7 +471,8 @@ export default function StreamControl() {
       title: soonTitle,
       subtitle: soonSubtitle,
       message: soonMessage,
-      timerText: soonNote
+      timerText: soonNote,
+      targetTime: soonCountdownTarget
     });
     setStartingSoonVisible(true);
   };
@@ -597,13 +600,13 @@ export default function StreamControl() {
         </div>
       </div>
 
-      {/* Full-Screen "Starting Soon" Pre-Show Slate Editor */}
+      {/* Full-Screen "Starting Soon" Pre-Show Slate & 8:00 AM Countdown Editor */}
       <div className="bg-gradient-to-br from-[#0B1E40] via-[#0E3B91] to-[#0B1E40] text-white p-6 rounded-3xl border-2 border-[#F4D571]/60 shadow-xl space-y-4">
         <div className="flex items-center justify-between border-b border-white/10 pb-3">
           <div className="flex items-center gap-2">
-            <PlayCircle className="w-5 h-5 text-[#F4D571]" />
+            <Clock className="w-5 h-5 text-[#F4D571] animate-spin" style={{ animationDuration: '10s' }} />
             <h2 className="text-sm font-headline font-black uppercase tracking-wider text-[#F4D571]">
-              Full-Screen "Starting Soon" Pre-Show Scene Controller
+              Investiture Ceremony 8:00 AM Live Countdown & Pre-Show Scene Controller
             </h2>
           </div>
           <button
@@ -616,7 +619,7 @@ export default function StreamControl() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-slate-800">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-slate-800">
           <div>
             <label className="text-[10px] font-bold text-slate-300 uppercase">Pre-Show Main Header Title</label>
             <input
@@ -640,6 +643,17 @@ export default function StreamControl() {
           </div>
 
           <div>
+            <label className="text-[10px] font-bold text-slate-300 uppercase">8:00 AM Countdown Target Time</label>
+            <input
+              type="text"
+              value={soonCountdownTarget}
+              onChange={(e) => setSoonCountdownTarget(e.target.value)}
+              className="w-full px-3 py-2 text-xs rounded-xl border border-white/20 bg-white font-black text-blue-600"
+              placeholder="e.g. 08:00 (for 8:00 AM)"
+            />
+          </div>
+
+          <div>
             <label className="text-[10px] font-bold text-slate-300 uppercase">Center Pulsing Message</label>
             <input
               type="text"
@@ -650,7 +664,7 @@ export default function StreamControl() {
             />
           </div>
 
-          <div>
+          <div className="md:col-span-2">
             <label className="text-[10px] font-bold text-slate-300 uppercase">Bottom Announcement Note</label>
             <input
               type="text"
@@ -666,7 +680,7 @@ export default function StreamControl() {
           onClick={pushStartingSoon}
           className="w-full py-3 bg-[#F4D571] hover:bg-yellow-400 text-[#0B1E40] font-headline font-black text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
         >
-          <Send className="w-4 h-4" /> Push Pre-Show "Starting Soon" Slate Live
+          <Send className="w-4 h-4" /> Push 8:00 AM Countdown Pre-Show Slate Live
         </button>
       </div>
 
