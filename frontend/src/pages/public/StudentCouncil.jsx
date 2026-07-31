@@ -653,6 +653,12 @@ const OFFICIAL_SCHOOL_PREFECTS = [
     name: "Ishika Kumari",
     photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434417/ishika_spfj5r.png",
     role: "School Prefect"
+  },
+  {
+    id: "prefect-nitin-raj",
+    name: "Nitin Raj",
+    photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785503589/nitin_iadqvo.png",
+    role: "School Prefect"
   }
 ];
 

@@ -110,6 +110,11 @@ export default function Home() {
       name: "Ishika Kumari",
       role: "School Prefect",
       photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434417/ishika_spfj5r.png"
+    },
+    {
+      name: "Nitin Raj",
+      role: "School Prefect",
+      photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785503589/nitin_iadqvo.png"
     }
   ]);
 
@@ -136,6 +141,11 @@ export default function Home() {
           name: "Ishika Kumari",
           role: "School Prefect",
           photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434417/ishika_spfj5r.png"
+        },
+        {
+          name: "Nitin Raj",
+          role: "School Prefect",
+          photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785503589/nitin_iadqvo.png"
         }
       ];
 
