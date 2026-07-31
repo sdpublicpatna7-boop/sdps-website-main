@@ -1,8 +1,27 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import "./index.css";
+import App from "./App";
 
-// Suppress browser extension runtime errors from triggering Create React App error overlay
+// Unregister any stale Service Workers and purge cache to prevent white screen
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (let registration of registrations) {
+      registration.unregister();
+    }
+  }).catch(() => {});
+  if ("caches" in window) {
+    caches.keys().then((names) => {
+      for (let name of names) {
+        if (name.includes("sdps") || name.includes("workbox") || name.includes("precache")) {
+          caches.delete(name);
+        }
+      }
+    }).catch(() => {});
+  }
+}
+
+// Suppress browser extension runtime errors
 window.addEventListener("error", (e) => {
   if (
     e.message?.includes("extension") || 
@@ -14,6 +33,7 @@ window.addEventListener("error", (e) => {
     e.preventDefault();
   }
 });
+
 window.addEventListener("unhandledrejection", (e) => {
   if (
     e.reason?.message?.includes("extension") || 
@@ -25,8 +45,6 @@ window.addEventListener("unhandledrejection", (e) => {
   }
 });
 
-import App from "./App";
-
 const root = ReactDOM.createRoot(document.getElementById("root"));
 
 root.render(
@@ -34,16 +52,3 @@ root.render(
     <App />
   </React.StrictMode>
 );
-
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("/service-worker.js")
-      .then((reg) => {
-        console.log("Service Worker registered successfully:", reg.scope);
-      })
-      .catch((err) => {
-        console.error("Service Worker registration failed:", err);
-      });
-  });
-}
