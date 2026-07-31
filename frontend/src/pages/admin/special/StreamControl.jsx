@@ -8,68 +8,111 @@ const CHANNEL_NAME = "sdps_obs_stream_channel";
 
 const PRESET_CARDS = [
   {
-    category: "Student Leaders",
+    category: "School Prefects & Head Cabinet",
     items: [
       {
         name: "Adarsh Kumar",
-        role: "Head Boy | School Prefect",
+        role: "School Prefect",
         subtitle: "Class XII • S.D. Public School, Patna",
         photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/aadarsh_nyhpfq.png",
-        badge: "INVESTITURE CEREMONY"
+        badge: "SCHOOL PREFECT"
       },
       {
         name: "Ishika Kumari",
-        role: "Head Girl | School Prefect",
+        role: "School Prefect",
         subtitle: "Class XII • S.D. Public School, Patna",
         photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434417/ishika_spfj5r.png",
-        badge: "INVESTITURE CEREMONY"
+        badge: "SCHOOL PREFECT"
       },
       {
         name: "Ankush Anand",
         role: "School Prefect",
         subtitle: "Class XI • S.D. Public School, Patna",
         photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434282/ankush_anad_sjrqqt.png",
-        badge: "INVESTITURE CEREMONY"
+        badge: "SCHOOL PREFECT"
       },
       {
         name: "Nitin Raj",
         role: "School Prefect",
         subtitle: "Class XI • S.D. Public School, Patna",
         photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785503589/nitin_iadqvo.png",
-        badge: "INVESTITURE CEREMONY"
+        badge: "SCHOOL PREFECT"
       }
     ]
   },
   {
-    category: "House Captains",
+    category: "Ashoka House (Yellow Army)",
     items: [
       {
-        name: "Tagore House Captain",
+        name: "Kumar Ashmit",
         role: "House Captain",
-        subtitle: "Tagore House (Red) • S.D. Public School",
-        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/aadarsh_nyhpfq.png",
-        badge: "HOUSE CAPTAIN"
+        subtitle: "Ashoka House (Yellow Army) • 2026-27",
+        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785328179/asd_qophbe.png",
+        badge: "ASHOKA CAPTAIN"
       },
       {
-        name: "Raman House Captain",
+        name: "Sakshi Shree",
+        role: "Vice Captain",
+        subtitle: "Ashoka House (Yellow Army) • 2026-27",
+        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785328179/sakd_yv4y3y.png",
+        badge: "ASHOKA VICE CAPTAIN"
+      }
+    ]
+  },
+  {
+    category: "Aryabhatta House (Red Army)",
+    items: [
+      {
+        name: "Manjari",
         role: "House Captain",
-        subtitle: "Raman House (Green) • S.D. Public School",
-        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434282/ankush_anad_sjrqqt.png",
-        badge: "HOUSE CAPTAIN"
+        subtitle: "Aryabhatta House (Red Army) • 2026-27",
+        photo: "https://res.cloudinary.com/drzb164ge/image/upload/q_auto/f_auto/v1778295843/001_feweo3.jpg",
+        badge: "ARYABHATTA CAPTAIN"
       },
       {
-        name: "Kalam House Captain",
+        name: "Bhavya Kumari",
+        role: "Vice Captain",
+        subtitle: "Aryabhatta House (Red Army) • 2026-27",
+        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785328002/arya_VC_mz1rrs.png",
+        badge: "ARYABHATTA VICE CAPTAIN"
+      }
+    ]
+  },
+  {
+    category: "Chanakya House (Blue Army)",
+    items: [
+      {
+        name: "Abhinav Kumar",
         role: "House Captain",
-        subtitle: "Kalam House (Blue) • S.D. Public School",
-        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434417/ishika_spfj5r.png",
-        badge: "HOUSE CAPTAIN"
+        subtitle: "Chanakya House (Blue Army) • 2026-27",
+        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785328003/Chanakya_Captain_xui2ib.png",
+        badge: "CHANAKYA CAPTAIN"
       },
       {
-        name: "Aryabhatta House Captain",
+        name: "Prachi",
+        role: "Vice Captain",
+        subtitle: "Chanakya House (Blue Army) • 2026-27",
+        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785328381/Prachi_zcygd3.png",
+        badge: "CHANAKYA VICE CAPTAIN"
+      }
+    ]
+  },
+  {
+    category: "Gautam House (Green Army)",
+    items: [
+      {
+        name: "Priyanshu Singh",
         role: "House Captain",
-        subtitle: "Aryabhatta House (Yellow) • S.D. Public School",
-        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785503589/nitin_iadqvo.png",
-        badge: "HOUSE CAPTAIN"
+        subtitle: "Gautam House (Green Army) • 2026-27",
+        photo: "https://res.cloudinary.com/drzb164ge/image/upload/q_auto/f_auto/v1778296001/005_l9apgk.png",
+        badge: "GAUTAM CAPTAIN"
+      },
+      {
+        name: "Aradhya Gupta",
+        role: "Vice Captain",
+        subtitle: "Gautam House (Green Army) • 2026-27",
+        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785328565/aradhya_ywacsd.png",
+        badge: "GAUTAM VICE CAPTAIN"
       }
     ]
   },
@@ -81,14 +124,14 @@ const PRESET_CARDS = [
         role: "Management",
         subtitle: "S.D. Public School, Patna",
         photo: "",
-        badge: "BY ORDER"
+        badge: "MANAGEMENT"
       },
       {
         name: "Principal Ma'am",
         role: "Principal",
         subtitle: "S.D. Public School, Patna",
         photo: "",
-        badge: "OFFICIAL"
+        badge: "PRINCIPAL"
       }
     ]
   }
