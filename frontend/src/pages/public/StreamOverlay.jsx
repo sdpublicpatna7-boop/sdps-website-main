@@ -461,9 +461,7 @@ export default function StreamOverlay() {
 
           {/* Scrolling Ticker Text */}
           <div className="flex-1 overflow-hidden relative">
-            <div className="whitespace-nowrap inline-block animate-marquee font-extrabold text-xs md:text-sm text-amber-200 tracking-wide">
-              <span className="mx-8">★ {ticker.text} ★</span>
-              <span className="mx-8">★ {ticker.text} ★</span>
+            <div className="whitespace-nowrap inline-block animate-marquee font-extrabold text-xs md:text-sm text-amber-200 tracking-wide pl-[100%]">
               <span className="mx-8">★ {ticker.text} ★</span>
             </div>
           </div>
