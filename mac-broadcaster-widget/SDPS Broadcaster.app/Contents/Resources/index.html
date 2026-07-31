@@ -368,7 +368,13 @@
         <option value="1-200">🏫 All Rooms</option>
         <option value="1-50">👶 Primary</option>
         <option value="51-120">🎓 Senior</option>
+        <option value="custom">✏️ Custom Room</option>
       </select>
+    </div>
+
+    <!-- Custom Room Input Box (shown when 'Custom Room' is chosen) -->
+    <div id="customRoomRow" style="display: none; margin-top: 5px; -webkit-app-region: no-drag;">
+      <input type="text" id="customRoomInput" className="ip-input" style="width: 100%; border: 1px solid rgba(245, 158, 11, 0.6); background: rgba(0, 0, 0, 0.6); padding: 4px 8px; border-radius: 8px; font-size: 10px; color: #f59e0b; font-family: monospace; font-weight: bold; outline: none;" placeholder="e.g. 5, 12-25, 101" value="1" />
     </div>
 
   </div>

@@ -18,10 +18,30 @@
   const btnEmergencyCancel = document.getElementById("btnEmergencyCancel");
   const sourceSelect = document.getElementById("sourceSelect");
   const zonePreset = document.getElementById("zonePreset");
+  const customRoomRow = document.getElementById("customRoomRow");
+  const customRoomInput = document.getElementById("customRoomInput");
   const scheduleSelect = document.getElementById("scheduleSelect");
   const btnSyncTime = document.getElementById("btnSyncTime");
 
-  const chimeButtons = document.querySelectorAll(".chime-btn");
+  const chimeButtons = document.querySelectorAll(".chime-tile");
+
+  function getSelectedRooms() {
+    if (zonePreset && zonePreset.value === "custom") {
+      const val = customRoomInput ? customRoomInput.value.trim() : "";
+      return val || "1-200";
+    }
+    return (zonePreset ? zonePreset.value : "1-200") || "1-200";
+  }
+
+  if (zonePreset) {
+    zonePreset.addEventListener("change", () => {
+      if (zonePreset.value === "custom") {
+        if (customRoomRow) customRoomRow.style.display = "block";
+      } else {
+        if (customRoomRow) customRoomRow.style.display = "none";
+      }
+    });
+  }
 
   // State Variables
   let broadcasterIp = localStorage.getItem("sdps_mac_broadcaster_ip") || "192.168.29.252";
@@ -153,7 +173,7 @@
       updateVolume();
 
       // Trigger hardware MIC connect command directly
-      const dest = zonePreset.value || "1-200";
+      const dest = getSelectedRooms();
       await sendDirectHardwareCommand("/BcastDo", {
         sSource: "sMic",
         sFilename: "1",
@@ -164,8 +184,8 @@
 
       isMicActive = true;
       btnMic.classList.add("active");
-      micBtnLabel.textContent = "BROADCASTING";
-      micStatusText.textContent = "🔴 LIVE MIC ON";
+      if (micBtnLabel) micBtnLabel.textContent = "BROADCASTING";
+      if (micStatusText) micStatusText.textContent = "🔴 LIVE MIC ON";
     } catch (err) {
       showToast(`Microphone access error: ${err.message}`, true);
     }
@@ -174,9 +194,9 @@
   async function stopMicrophoneStream() {
     isMicActive = false;
     btnMic.classList.remove("active");
-    micBtnLabel.textContent = "SPEAK NOW";
-    micStatusText.textContent = "Ready";
-    volumeFill.style.width = "0%";
+    if (micBtnLabel) micBtnLabel.textContent = "SPEAK NOW";
+    if (micStatusText) micStatusText.textContent = "Ready";
+    if (volumeFill) volumeFill.style.width = "0%";
 
     if (animFrameId) cancelAnimationFrame(animFrameId);
     if (mediaStream) {
@@ -189,7 +209,7 @@
     }
 
     // Trigger hardware cancel command
-    const dest = zonePreset.value || "1-200";
+    const dest = getSelectedRooms();
     await sendDirectHardwareCommand("/BcastDo", {
       sSource: "sMic",
       sFilename: "1",
@@ -212,9 +232,9 @@
     btn.addEventListener("click", async () => {
       const track = btn.getAttribute("data-track") || "1";
       const name = btn.getAttribute("data-name") || "Bell";
-      const dest = zonePreset.value || "1-200";
+      const dest = getSelectedRooms();
 
-      showToast(`Playing ${name}...`);
+      showToast(`Playing ${name} on Rooms [${dest}]...`);
       await sendDirectHardwareCommand("/BcastDo", {
         sSource: "sFile",
         sFilename: track,
@@ -226,20 +246,22 @@
   });
 
   // 5. Emergency Cancel All Button
-  btnEmergencyCancel.addEventListener("click", async () => {
-    if (isMicActive) {
-      stopMicrophoneStream();
-    }
-    const dest = zonePreset.value || "1-200";
-    await sendDirectHardwareCommand("/BcastDo", {
-      sSource: sourceSelect.value || "sMic",
-      sFilename: "1",
-      sDest: dest,
-      sRooms: dest,
-      sAct: "Cancel"
+  if (btnEmergencyCancel) {
+    btnEmergencyCancel.addEventListener("click", async () => {
+      if (isMicActive) {
+        stopMicrophoneStream();
+      }
+      const dest = getSelectedRooms();
+      await sendDirectHardwareCommand("/BcastDo", {
+        sSource: sourceSelect ? sourceSelect.value : "sMic",
+        sFilename: "1",
+        sDest: dest,
+        sRooms: dest,
+        sAct: "Cancel"
+      });
+      showToast("🛑 ALL BROADCASTS CANCELLED!");
     });
-    showToast("🛑 ALL BROADCASTS CANCELLED!");
-  });
+  }
 
   // 6. Bell Schedule Switcher
   scheduleSelect.addEventListener("change", async () => {

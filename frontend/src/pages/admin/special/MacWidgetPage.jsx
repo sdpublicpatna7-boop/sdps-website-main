@@ -32,10 +32,13 @@ export function MacWidgetPage() {
 
   const [source, setSource] = useState("sMic");
   const [zone, setZone] = useState("1-200");
+  const [customRooms, setCustomRooms] = useState("1");
   const [schedule, setSchedule] = useState("0");
 
   const [isMicActive, setIsMicActive] = useState(false);
   const [micVolume, setMicVolume] = useState(0);
+
+  const getActiveRooms = () => (zone === "custom" ? (customRooms.trim() || "1-200") : zone);
 
   const getCleanUrl = (ip) => {
     let raw = (ip || "").trim();
@@ -98,45 +101,40 @@ export function MacWidgetPage() {
     pingLocalIp(clean);
   };
 
-  // Direct Form Data POST to local hardware URL
-  const sendHardwareCommand = async (endpoint, data) => {
+  const sendHardwareCommand = async (endpoint, payload) => {
     const baseUrl = getCleanUrl(broadcasterIp);
-    const targetUrl = `${baseUrl}${endpoint}`;
-
     const formBody = new URLSearchParams();
     formBody.append("sUser", "admin");
     formBody.append("sPass", "admin");
-    for (const [key, val] of Object.entries(data)) {
-      formBody.append(key, val);
+    for (const [k, v] of Object.entries(payload)) {
+      formBody.append(k, v);
     }
 
     try {
-      await fetch(targetUrl, {
+      await fetch(`${baseUrl}${endpoint}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
-        },
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
         body: formBody,
         mode: "no-cors"
       });
-      showToast(`Command sent to hardware: ${endpoint}`);
       return true;
     } catch (err) {
-      showToast(`Unreachable local IP ${baseUrl}: ${err.message}`, true);
+      showToast(`Command failed: ${err.message}`, true);
       return false;
     }
   };
 
   // Push-to-Talk Mic Toggle
   const toggleMic = async () => {
+    const activeRooms = getActiveRooms();
     if (isMicActive) {
       setIsMicActive(false);
       setMicVolume(0);
       await sendHardwareCommand("/BcastDo", {
         sSource: "sMic",
         sFilename: "1",
-        sDest: zone,
-        sRooms: zone,
+        sDest: activeRooms,
+        sRooms: activeRooms,
         sAct: "Cancel"
       });
     } else {
@@ -163,8 +161,8 @@ export function MacWidgetPage() {
         await sendHardwareCommand("/BcastDo", {
           sSource: "sMic",
           sFilename: "1",
-          sDest: zone,
-          sRooms: zone,
+          sDest: activeRooms,
+          sRooms: activeRooms,
           sAct: "Connect"
         });
 
@@ -175,23 +173,25 @@ export function MacWidgetPage() {
   };
 
   const handleTriggerChime = async (track, name) => {
-    showToast(`Playing ${name}...`);
+    const activeRooms = getActiveRooms();
+    showToast(`Playing ${name} on Rooms [${activeRooms}]...`);
     await sendHardwareCommand("/BcastDo", {
       sSource: "sFile",
       sFilename: String(track),
-      sDest: zone,
-      sRooms: zone,
+      sDest: activeRooms,
+      sRooms: activeRooms,
       sAct: "Connect"
     });
   };
 
   const handleCancelAll = async () => {
+    const activeRooms = getActiveRooms();
     if (isMicActive) setIsMicActive(false);
     await sendHardwareCommand("/BcastDo", {
       sSource: source,
       sFilename: "1",
-      sDest: zone,
-      sRooms: zone,
+      sDest: activeRooms,
+      sRooms: activeRooms,
       sAct: "Cancel"
     });
     showToast("🛑 ALL BROADCASTS CANCELLED!");
@@ -374,8 +374,21 @@ export function MacWidgetPage() {
                 <option value="51-120">🎓 Senior (51-120)</option>
                 <option value="121-150">⚽ Playground (121-150)</option>
                 <option value="151-200">🏢 Admin (151-200)</option>
+                <option value="custom">✏️ Custom Room...</option>
               </select>
             </div>
+
+            {zone === "custom" && (
+              <div className="pt-1">
+                <input
+                  type="text"
+                  value={customRooms}
+                  onChange={(e) => setCustomRooms(e.target.value)}
+                  placeholder="Enter room(s) e.g. 5, 12-25, 101"
+                  className="w-full bg-slate-950 border border-amber-500/50 rounded-xl px-3 py-2 text-xs font-bold text-amber-300 placeholder-slate-500 focus:outline-none focus:border-amber-400 font-mono shadow-inner"
+                />
+              </div>
+            )}
           </div>
 
           {/* 6. BELL SCHEDULE & TIME SYNC */}
