@@ -612,6 +612,10 @@ export default function StreamControl() {
   };
 
   const pushStartingSoonWithTimer = () => {
+    // Hide the lower third card first so it doesn't conflict with the full-screen slate
+    sendBroadcast("LOWER_THIRD", { visible: false });
+    setLowerThirdVisible(false);
+
     sendBroadcast("STARTING_SOON", {
       visible: true,
       showCountdown: true,
@@ -626,6 +630,10 @@ export default function StreamControl() {
   };
 
   const pushStartingSoonWithoutTimer = () => {
+    // Hide the lower third card first so it doesn't conflict with the full-screen slate
+    sendBroadcast("LOWER_THIRD", { visible: false });
+    setLowerThirdVisible(false);
+
     sendBroadcast("STARTING_SOON", {
       visible: true,
       showCountdown: false,

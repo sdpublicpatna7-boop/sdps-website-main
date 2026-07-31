@@ -213,15 +213,20 @@ export default function StreamOverlay() {
     if (!state) return;
 
     if (state.lowerThird) {
+      const lt = state.lowerThird;
+
+      // Auto-dismiss Starting Soon slate ONLY when a NEW card is actively pushed
+      // (detected by a fresh timestamp), not on full-state re-syncs
+      if (lt.visible && lt.timestamp) {
+        setStartingSoon(ss => {
+          if (!ss.visible) return ss; // already hidden, skip
+          return { ...ss, visible: false };
+        });
+      }
+
       setLowerThird(prev => {
-        const lt = state.lowerThird;
         const incomingPerfStr = Array.isArray(lt.performers) ? lt.performers.join(",") : "";
         const prevPerfStr = Array.isArray(prev.performers) ? prev.performers.join(",") : "";
-
-        // Automatically dismiss Pre-Show Starting Soon slate whenever a candidate card is pushed live!
-        if (lt.visible) {
-          setStartingSoon(ss => ({ ...ss, visible: false }));
-        }
 
         if (
           prev.name !== lt.name ||
