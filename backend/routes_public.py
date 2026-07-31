@@ -1710,10 +1710,14 @@ async def get_campus_tour_facilities():
                 "panorama_url": "https://sdpublic.org/assets/img/feature.jpg",
                 "video_url": "",
                 "audio_narrative": "Discover SDPS Residential Hostel. A home away from home offering structured daily study hours, balanced meals, and 24/7 security.",
-                "hotspots": [
-                    {"id": "h12", "title": "Air-Cooled Dormitories", "x": 40, "y": 48, "detail": "Spacious study desks, personal wardrobes, and comfortable bedding for boarders."},
-                    {"id": "h13", "title": "Hygienic Dining Hall", "x": 70, "y": 60, "detail": "Four nutritious meals served daily under strict hygiene and dietary quality control."}
-                ],
+                "equipment_list": ["24/7 Resident Wardens", "Structured Evening Study", "Nutritious 4-Meal Dining", "Doctor-on-Call Service", "24/7 CCTV & Security"],
+                "order": 6,
+                "is_active": True
+            }
+        ]
+
+    return {"facilities": facilities}
+
 # In-memory live stream overlay state cache for OBS Studio real-time synchronization
 STREAM_OVERLAY_STATE = {
     "lowerThird": {
