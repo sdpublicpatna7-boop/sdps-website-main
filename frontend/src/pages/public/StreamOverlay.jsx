@@ -174,22 +174,42 @@ export default function StreamOverlay() {
       }
     } catch (err) {}
 
-    // 2. Real-time Backend API Polling (400ms for OBS Studio CEF sync)
+    // 2. High-Speed Backend API Polling (200ms with cache-busting headers for OBS CEF)
     const fetchApiState = async () => {
       try {
-        const res = await api.get("/stream-overlay/state");
+        const res = await api.get(`/stream-overlay/state?t=${Date.now()}`, {
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+          }
+        });
         if (res.data) {
           processState(res.data);
         }
       } catch (err) {}
     };
 
+    // 3. LocalStorage fallback check (200ms)
+    const checkLocalStorage = () => {
+      try {
+        const saved = localStorage.getItem("sdps_stream_overlay_state");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          processState(parsed);
+        }
+      } catch (e) {}
+    };
+
     fetchApiState();
-    const interval = setInterval(fetchApiState, 400);
+    checkLocalStorage();
+    const interval = setInterval(fetchApiState, 200);
+    const localInterval = setInterval(checkLocalStorage, 200);
 
     return () => {
       if (bc) bc.close();
       clearInterval(interval);
+      clearInterval(localInterval);
     };
   }, []);
 

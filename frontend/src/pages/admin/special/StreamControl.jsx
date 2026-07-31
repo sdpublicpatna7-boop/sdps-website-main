@@ -363,7 +363,7 @@ export default function StreamControl() {
     } catch (e) {}
 
     try {
-      await api.post("/stream-overlay/state", { type, payload });
+      await api.post(`/stream-overlay/state?t=${Date.now()}`, { type, payload });
     } catch (err) {
       console.warn("Stream state sync API error:", err);
     }

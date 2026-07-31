@@ -1749,12 +1749,19 @@ STREAM_OVERLAY_STATE = {
 }
 
 @public_router.get("/stream-overlay/state")
-async def get_stream_overlay_state():
+async def get_stream_overlay_state(response: Response):
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
     return STREAM_OVERLAY_STATE
 
 @public_router.post("/stream-overlay/state")
-async def update_stream_overlay_state(payload: Dict[Any, Any] = Body(...)):
+async def update_stream_overlay_state(payload: Dict[Any, Any] = Body(...), response: Response = None):
     global STREAM_OVERLAY_STATE
+    if response:
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
     msg_type = payload.get("type")
     data = payload.get("payload", {})
     
