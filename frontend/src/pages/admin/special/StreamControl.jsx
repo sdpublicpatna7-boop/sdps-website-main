@@ -143,91 +143,91 @@ const PRESET_CARDS = [
       {
         name: "Adarsh Kumar",
         role: "School Prefect",
-        subtitle: "Class XII • S.D. Public School, Patna",
+        subtitle: "S.D. Public School, Patna",
         photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/aadarsh_nyhpfq.png",
         badge: "SCHOOL PREFECT"
       },
       {
         name: "Ankush Anand",
         role: "School Prefect",
-        subtitle: "Class XI • S.D. Public School, Patna",
+        subtitle: "S.D. Public School, Patna",
         photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434282/ankush_anad_sjrqqt.png",
         badge: "SCHOOL PREFECT"
       },
       {
         name: "Daya Anand Singh",
         role: "School Prefect",
-        subtitle: "Class XI • S.D. Public School, Patna",
+        subtitle: "S.D. Public School, Patna",
         photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/aadarsh_nyhpfq.png",
         badge: "SCHOOL PREFECT"
       },
       {
         name: "Ishika Kumari",
         role: "School Prefect",
-        subtitle: "Class XII • S.D. Public School, Patna",
+        subtitle: "S.D. Public School, Patna",
         photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434417/ishika_spfj5r.png",
         badge: "SCHOOL PREFECT"
       },
       {
         name: "Manjari",
         role: "School Prefect",
-        subtitle: "Class XII • S.D. Public School, Patna",
+        subtitle: "S.D. Public School, Patna",
         photo: "https://res.cloudinary.com/drzb164ge/image/upload/q_auto/f_auto/v1778295843/001_feweo3.jpg",
         badge: "SCHOOL PREFECT"
       },
       {
         name: "Nitin Raj",
         role: "School Prefect",
-        subtitle: "Class XI • S.D. Public School, Patna",
+        subtitle: "S.D. Public School, Patna",
         photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785503589/nitin_iadqvo.png",
         badge: "SCHOOL PREFECT"
       },
       {
         name: "Priyanshu Singh",
         role: "School Prefect",
-        subtitle: "Class XII • S.D. Public School, Patna",
+        subtitle: "S.D. Public School, Patna",
         photo: "https://res.cloudinary.com/drzb164ge/image/upload/q_auto/f_auto/v1778296001/005_l9apgk.png",
         badge: "SCHOOL PREFECT"
       },
       {
         name: "Rudra Sinha",
         role: "School Prefect",
-        subtitle: "Class XI • S.D. Public School, Patna",
+        subtitle: "S.D. Public School, Patna",
         photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434282/ankush_anad_sjrqqt.png",
         badge: "SCHOOL PREFECT"
       },
       {
         name: "Sakshi Pandit",
         role: "School Prefect",
-        subtitle: "Class XI • S.D. Public School, Patna",
+        subtitle: "S.D. Public School, Patna",
         photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434417/ishika_spfj5r.png",
         badge: "SCHOOL PREFECT"
       },
       {
         name: "Sarthak Singh",
         role: "School Prefect",
-        subtitle: "Class XI • S.D. Public School, Patna",
+        subtitle: "S.D. Public School, Patna",
         photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/aadarsh_nyhpfq.png",
         badge: "SCHOOL PREFECT"
       },
       {
         name: "Shadan Ahmed Haidry",
         role: "School Prefect",
-        subtitle: "Class XI • S.D. Public School, Patna",
+        subtitle: "S.D. Public School, Patna",
         photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434282/ankush_anad_sjrqqt.png",
         badge: "SCHOOL PREFECT"
       },
       {
         name: "Surya Singh",
         role: "School Prefect",
-        subtitle: "Class XI • S.D. Public School, Patna",
+        subtitle: "S.D. Public School, Patna",
         photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/aadarsh_nyhpfq.png",
         badge: "SCHOOL PREFECT"
       },
       {
         name: "Twinkle Sinha",
         role: "School Prefect",
-        subtitle: "Class XI • S.D. Public School, Patna",
+        subtitle: "S.D. Public School, Patna",
         photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434417/ishika_spfj5r.png",
         badge: "SCHOOL PREFECT"
       }

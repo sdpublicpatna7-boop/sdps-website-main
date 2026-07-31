@@ -294,10 +294,10 @@ export default function StreamOverlay() {
               </span>
             </div>
 
-            {/* Subtitle / Class */}
+            {/* Subtitle / Organization */}
             {lowerThird.subtitle && (
               <p className="text-[11px] font-medium text-slate-300 truncate mt-0.5 opacity-90">
-                {lowerThird.subtitle}
+                {lowerThird.subtitle.replace(/^Class\s+[IVXLCDM0-9]+\s*•\s*/i, "").trim()}
               </p>
             )}
 
