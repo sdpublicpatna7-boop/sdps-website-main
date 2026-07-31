@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { 
-  Tv, Eye, EyeOff, Copy, ExternalLink, Sparkles, CheckCircle2, User, RefreshCw, Send, Radio, Award, Flag, Building, HelpCircle, Layers, ShieldCheck, PlayCircle, Clock, Plus, Trash2, Save, Music, Users
+  Tv, Eye, EyeOff, Copy, ExternalLink, Sparkles, CheckCircle2, User, RefreshCw, Send, Radio, Award, Flag, Building, HelpCircle, Layers, ShieldCheck, PlayCircle, Clock, Plus, Trash2, Save, Music, Users, Pencil
 } from "lucide-react";
 
 const CHANNEL_NAME = "sdps_obs_stream_channel";
@@ -554,6 +554,29 @@ export default function StreamControl() {
     toast.success("Custom card deleted");
   };
 
+  const editCustomCard = (card, e) => {
+    e.stopPropagation();
+    // Load the card data into the manual form inputs for editing
+    setCardName(card.name || "");
+    setCardRole(card.role || "");
+    setCardSubtitle(card.subtitle || "S.D. Public School, Patna");
+    setCardPhoto(card.photo || "");
+    setCardBadge(card.badge || "SDPS");
+    setCardPerformers(card.performers ? card.performers.join(", ") : "");
+    // Remove the old card from saved list so user can re-save after editing
+    const updated = savedCustomCards.filter(c => c.id !== card.id);
+    setSavedCustomCards(updated);
+    try {
+      localStorage.setItem("sdps_custom_stream_cards", JSON.stringify(updated));
+    } catch (err) {}
+    toast.info(`Editing "${card.name}" — make changes below and click Save to update.`);
+    // Scroll to the manual builder form
+    setTimeout(() => {
+      const el = document.getElementById("manual-card-builder");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 100);
+  };
+
   const createNewBlankCardForm = () => {
     setCardName("");
     setCardRole("");
@@ -884,6 +907,13 @@ export default function StreamControl() {
 
                 <div className="flex items-center gap-1 shrink-0">
                   <button
+                    onClick={(e) => editCustomCard(card, e)}
+                    title="Edit Saved Card"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                  <button
                     onClick={(e) => deleteCustomCard(card.id, e)}
                     title="Delete Saved Card"
                     className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
@@ -962,7 +992,7 @@ export default function StreamControl() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
         {/* Manual Card & Music Group Builder */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+        <div id="manual-card-builder" className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-2">
             <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
               <User className="w-4 h-4 text-blue-600" /> Manual Lower-Third & Music/Dance Group Builder

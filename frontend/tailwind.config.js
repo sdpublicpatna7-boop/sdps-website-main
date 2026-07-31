@@ -95,6 +95,10 @@ module.exports = {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
+        "marquee": {
+          "0%": { transform: "translateX(0%)" },
+          "100%": { transform: "translateX(-100%)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -105,6 +109,7 @@ module.exports = {
         "spin-slow": "spin-slow 22s linear infinite",
         "wiggle": "wiggle 1.6s ease-in-out infinite",
         "shimmer": "shimmer 2s linear infinite",
+        "marquee": "marquee 25s linear infinite",
       },
       backgroundImage: {
         "hero-grad": "linear-gradient(135deg, rgba(14,59,145,0.06) 0%, rgba(248,125,14,0.05) 50%, rgba(232,143,197,0.08) 100%)",
