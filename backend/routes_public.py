@@ -1718,7 +1718,9 @@ async def get_campus_tour_facilities():
 
     return {"facilities": facilities}
 
-# In-memory live stream overlay state cache for OBS Studio real-time synchronization
+# In-memory live stream overlay state cache & SSE subscriber queue
+STREAM_OVERLAY_CLIENTS: List[Any] = []
+
 STREAM_OVERLAY_STATE = {
     "lowerThird": {
         "visible": True,
@@ -1759,8 +1761,44 @@ async def get_stream_overlay_state(response: Response):
     response.headers["Expires"] = "0"
     return STREAM_OVERLAY_STATE
 
+@public_router.get("/stream-overlay/sse")
+async def stream_overlay_sse(request: Request):
+    import json
+    import asyncio
+    
+    async def event_generator():
+        client_queue = asyncio.Queue()
+        STREAM_OVERLAY_CLIENTS.append(client_queue)
+        try:
+            # Send initial state immediately on connect
+            initial_data = json.dumps(STREAM_OVERLAY_STATE)
+            yield f"data: {initial_data}\n\n"
+            
+            while True:
+                if await request.is_disconnected():
+                    break
+                try:
+                    data = await asyncio.wait_for(client_queue.get(), timeout=15.0)
+                    yield f"data: {data}\n\n"
+                except asyncio.TimeoutError:
+                    yield ": heartbeat\n\n"
+        finally:
+            if client_queue in STREAM_OVERLAY_CLIENTS:
+                STREAM_OVERLAY_CLIENTS.remove(client_queue)
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
+
 @public_router.post("/stream-overlay/state")
 async def update_stream_overlay_state(payload: Dict[Any, Any] = Body(...), response: Response = None):
+    import json
     global STREAM_OVERLAY_STATE
     if response:
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
@@ -1783,6 +1821,14 @@ async def update_stream_overlay_state(payload: Dict[Any, Any] = Body(...), respo
     elif msg_type == "CONFETTI":
         STREAM_OVERLAY_STATE["confetti_trigger_id"] = int(datetime.now(timezone.utc).timestamp() * 1000)
         
+    # Broadcast real-time push event to all connected SSE clients instantly (< 5ms)
+    state_json = json.dumps(STREAM_OVERLAY_STATE)
+    for q in list(STREAM_OVERLAY_CLIENTS):
+        try:
+            q.put_nowait(state_json)
+        except Exception:
+            pass
+
     return {"status": "ok", "state": STREAM_OVERLAY_STATE}
 
 

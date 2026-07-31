@@ -67,11 +67,9 @@ export default function StreamOverlay() {
 
   const lastConfettiTriggerRef = useRef(0);
   const canvasRef = useRef(null);
-  const [confettiActive, setConfettiActive] = useState(false);
 
   // Trigger HTML5 Canvas Confetti Burst Animation
   const fireCanvasConfetti = () => {
-    setConfettiActive(true);
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -135,99 +133,98 @@ export default function StreamOverlay() {
         requestAnimationFrame(animate);
       } else {
         ctx.clearRect(0, 0, width, height);
-        setConfettiActive(false);
       }
     };
 
     requestAnimationFrame(animate);
   };
 
-  // Sync state from Backend API, BroadcastChannel & localStorage
+  // Process incoming state updates smoothly without redundant re-renders
+  const processState = (state) => {
+    if (!state) return;
+
+    if (state.lowerThird) {
+      setLowerThird(prev => {
+        const lt = state.lowerThird;
+        if (
+          prev.name !== lt.name ||
+          prev.role !== lt.role ||
+          prev.subtitle !== lt.subtitle ||
+          prev.photo !== lt.photo ||
+          prev.houseLogo !== lt.houseLogo ||
+          prev.badge !== lt.badge ||
+          prev.visible !== lt.visible
+        ) {
+          return {
+            name: lt.name,
+            role: lt.role,
+            subtitle: lt.subtitle,
+            photo: lt.photo,
+            houseLogo: lt.houseLogo,
+            badge: lt.badge,
+            visible: lt.visible,
+            timestamp: lt.timestamp || Date.now()
+          };
+        }
+        return prev;
+      });
+    }
+
+    if (state.banner) {
+      setBanner(prev => {
+        const b = state.banner;
+        if (prev.visible !== b.visible || prev.title !== b.title || prev.subtitle !== b.subtitle) {
+          return { visible: b.visible, title: b.title, subtitle: b.subtitle };
+        }
+        return prev;
+      });
+    }
+
+    if (state.ticker) {
+      setTicker(prev => {
+        const t = state.ticker;
+        if (prev.visible !== t.visible || prev.text !== t.text) {
+          return { visible: t.visible, text: t.text };
+        }
+        return prev;
+      });
+    }
+
+    if (state.logoBug) {
+      setLogoBug(prev => {
+        const l = state.logoBug;
+        if (prev.visible !== l.visible || prev.showLive !== l.showLive) {
+          return { visible: l.visible, showLive: l.showLive };
+        }
+        return prev;
+      });
+    }
+
+    if (state.startingSoon) {
+      setStartingSoon(prev => {
+        const ss = state.startingSoon;
+        if (
+          prev.visible !== ss.visible ||
+          prev.title !== ss.title ||
+          prev.subtitle !== ss.subtitle ||
+          prev.message !== ss.message ||
+          prev.timerText !== ss.timerText
+        ) {
+          return { visible: ss.visible, title: ss.title, subtitle: ss.subtitle, message: ss.message, timerText: ss.timerText };
+        }
+        return prev;
+      });
+    }
+
+    if (state.confetti_trigger_id && state.confetti_trigger_id > lastConfettiTriggerRef.current) {
+      lastConfettiTriggerRef.current = state.confetti_trigger_id;
+      fireCanvasConfetti();
+    }
+  };
+
+  // Connect Real-Time SSE Push Stream & BroadcastChannel Listener
   useEffect(() => {
-    // Strictly compare previous vs incoming properties to prevent re-renders when data hasn't changed!
-    const processState = (state) => {
-      if (!state) return;
-
-      if (state.lowerThird) {
-        setLowerThird(prev => {
-          const lt = state.lowerThird;
-          if (
-            prev.name !== lt.name ||
-            prev.role !== lt.role ||
-            prev.subtitle !== lt.subtitle ||
-            prev.photo !== lt.photo ||
-            prev.houseLogo !== lt.houseLogo ||
-            prev.badge !== lt.badge ||
-            prev.visible !== lt.visible
-          ) {
-            return {
-              name: lt.name,
-              role: lt.role,
-              subtitle: lt.subtitle,
-              photo: lt.photo,
-              houseLogo: lt.houseLogo,
-              badge: lt.badge,
-              visible: lt.visible,
-              timestamp: lt.timestamp || Date.now()
-            };
-          }
-          return prev;
-        });
-      }
-
-      if (state.banner) {
-        setBanner(prev => {
-          const b = state.banner;
-          if (prev.visible !== b.visible || prev.title !== b.title || prev.subtitle !== b.subtitle) {
-            return { visible: b.visible, title: b.title, subtitle: b.subtitle };
-          }
-          return prev;
-        });
-      }
-
-      if (state.ticker) {
-        setTicker(prev => {
-          const t = state.ticker;
-          if (prev.visible !== t.visible || prev.text !== t.text) {
-            return { visible: t.visible, text: t.text };
-          }
-          return prev;
-        });
-      }
-
-      if (state.logoBug) {
-        setLogoBug(prev => {
-          const l = state.logoBug;
-          if (prev.visible !== l.visible || prev.showLive !== l.showLive) {
-            return { visible: l.visible, showLive: l.showLive };
-          }
-          return prev;
-        });
-      }
-
-      if (state.startingSoon) {
-        setStartingSoon(prev => {
-          const ss = state.startingSoon;
-          if (
-            prev.visible !== ss.visible ||
-            prev.title !== ss.title ||
-            prev.subtitle !== ss.subtitle ||
-            prev.message !== ss.message ||
-            prev.timerText !== ss.timerText
-          ) {
-            return { visible: ss.visible, title: ss.title, subtitle: ss.subtitle, message: ss.message, timerText: ss.timerText };
-          }
-          return prev;
-        });
-      }
-
-      if (state.confetti_trigger_id && state.confetti_trigger_id > lastConfettiTriggerRef.current) {
-        lastConfettiTriggerRef.current = state.confetti_trigger_id;
-        fireCanvasConfetti();
-      }
-    };
-
-    // 1. BroadcastChannel API
+    // 1. BroadcastChannel Listener (For same-browser tab changes)
     let bc = null;
     try {
       if ("BroadcastChannel" in window) {
@@ -250,38 +247,49 @@ export default function StreamOverlay() {
       }
     } catch (err) {}
 
-    // 2. High-Speed Direct Fetch Polling (300ms for OBS Studio CEF sync, zero Axios interceptor overhead)
-    const fetchApiState = async () => {
+    // 2. Server-Sent Events (SSE) Push Connection (INSTANT < 5ms PUSH FROM BACKEND)
+    let sseSource = null;
+    let sseReconnectTimer = null;
+
+    const connectSSE = () => {
       try {
-        const apiUrl = `${BACKEND_URL}/api/stream-overlay/state?t=${Date.now()}`;
-        const res = await fetch(apiUrl, { cache: "no-store" });
-        if (res.ok) {
-          const data = await res.json();
-          processState(data);
-        }
-      } catch (err) {}
+        const sseUrl = `${BACKEND_URL || ""}/api/stream-overlay/sse`;
+        sseSource = new EventSource(sseUrl);
+
+        sseSource.onmessage = (event) => {
+          try {
+            if (event.data && event.data !== "heartbeat") {
+              const parsed = JSON.parse(event.data);
+              processState(parsed);
+            }
+          } catch (e) {}
+        };
+
+        sseSource.onerror = () => {
+          if (sseSource) sseSource.close();
+          // Auto-reconnect after 3 seconds if disconnected
+          sseReconnectTimer = setTimeout(connectSSE, 3000);
+        };
+      } catch (e) {
+        sseReconnectTimer = setTimeout(connectSSE, 3000);
+      }
     };
 
-    // 3. LocalStorage fallback check (300ms)
+    connectSSE();
+
+    // 3. LocalStorage fallback listener
     const checkLocalStorage = () => {
       try {
         const saved = localStorage.getItem("sdps_stream_overlay_state");
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          processState(parsed);
-        }
+        if (saved) processState(JSON.parse(saved));
       } catch (e) {}
     };
-
-    fetchApiState();
     checkLocalStorage();
-    const interval = setInterval(fetchApiState, 300);
-    const localInterval = setInterval(checkLocalStorage, 300);
 
     return () => {
       if (bc) bc.close();
-      clearInterval(interval);
-      clearInterval(localInterval);
+      if (sseSource) sseSource.close();
+      if (sseReconnectTimer) clearTimeout(sseReconnectTimer);
     };
   }, []);
 
