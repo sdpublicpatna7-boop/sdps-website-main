@@ -420,7 +420,7 @@ export default function StreamOverlay() {
         className="absolute inset-0 w-full h-full pointer-events-none z-50"
       />
 
-      {/* FULL-SCREEN PRE-SHOW SLATE WITH DUAL MODES (WITH TIMER / WITHOUT TIMER): "INVESTITURE CEREMONY STARTING SOON..." */}
+      {/* FULL-SCREEN PRE-SHOW SLATE WITH DUAL MUTUALLY EXCLUSIVE MODES */}
       {startingSoon.visible && (
         <div className="absolute inset-0 z-40 bg-gradient-to-br from-[#040C1A] via-[#0B1E40] to-[#071329] flex flex-col items-center justify-center p-8 text-white transition-all duration-700 animate-in fade-in-0 zoom-in-95 overflow-hidden">
           
@@ -447,7 +447,6 @@ export default function StreamOverlay() {
 
           {/* School Crest Logo with Rotating Sparkle Rings */}
           <div className="relative mb-6">
-            {/* Spinning Outer Ring */}
             <div className="absolute -inset-4 rounded-full border-2 border-dashed border-[#F4D571]/40 animate-spin" style={{ animationDuration: '20s' }} />
             <div className="absolute -inset-8 rounded-full border border-amber-300/20 animate-spin" style={{ animationDuration: '35s', animationDirection: 'reverse' }} />
 
@@ -473,15 +472,15 @@ export default function StreamOverlay() {
               {startingSoon.subtitle || "S.D. PUBLIC SCHOOL, PATNA • OFFICIAL LIVE BROADCAST"}
             </h3>
 
-            {/* Title with Continuous Gold Shimmer Gradient Wave */}
             <h1 className="font-headline font-black text-3xl md:text-5xl lg:text-6xl tracking-wide uppercase drop-shadow-[0_10px_30px_rgba(0,0,0,0.9)] text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-200">
               {startingSoon.title || "INVESTITURE CEREMONY 2026-27"}
             </h1>
           </div>
 
-          {/* MODE 1: LIVE 8:00 AM INVESTITURE CEREMONY COUNTDOWN TIMER (If showCountdown is TRUE) */}
-          {startingSoon.showCountdown !== false && (
-            <div className="mt-6 flex flex-col items-center gap-3 relative z-10 animate-in fade-in-0 zoom-in-95 duration-500">
+          {/* MUTUALLY EXCLUSIVE PRE-SHOW CONTENT */}
+          {startingSoon.showCountdown !== false ? (
+            /* MODE 1: WITH TIMER - Renders ONLY the 8:00 AM Live Countdown Clock */
+            <div className="mt-8 flex flex-col items-center gap-3 relative z-10 animate-in fade-in-0 zoom-in-95 duration-500">
               <div className="flex items-center gap-2 text-xs font-black text-amber-300 tracking-[0.3em] uppercase bg-amber-500/20 px-5 py-1.5 rounded-full border border-amber-400/50 shadow-md">
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
                 <span>INVESTITURE CEREMONY 8:00 AM COUNTDOWN</span>
@@ -526,20 +525,20 @@ export default function StreamOverlay() {
                 </div>
               </div>
             </div>
+          ) : (
+            /* MODE 2: WITHOUT TIMER - Renders ONLY the Pulsing "STREAM STARTING SOON" Live Status Box */
+            <div className="mt-10 px-12 py-4 bg-gradient-to-r from-[#0E3B91]/95 via-[#0B1E40]/95 to-[#0E3B91]/95 backdrop-blur-2xl border-2 border-[#F4D571] rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.9)] flex items-center gap-4 relative z-10 animate-in fade-in-0 zoom-in-95 duration-500">
+              <div className="w-4 h-4 rounded-full bg-rose-500 animate-ping shrink-0" />
+              <span className="font-headline font-black text-2xl sm:text-3xl text-white tracking-widest uppercase">
+                {startingSoon.message || "STREAM STARTING SOON"}
+              </span>
+              <div className="w-4 h-4 rounded-full bg-rose-500 animate-ping shrink-0" />
+            </div>
           )}
-
-          {/* MODE 2: Pulsing "STARTING SOON" Live Status Box (If showCountdown is FALSE or as secondary indicator) */}
-          <div className="mt-6 px-10 py-3.5 bg-gradient-to-r from-[#0E3B91]/95 via-[#0B1E40]/95 to-[#0E3B91]/95 backdrop-blur-2xl border-2 border-[#F4D571] rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.9)] flex items-center gap-4 relative z-10">
-            <div className="w-4 h-4 rounded-full bg-rose-500 animate-ping shrink-0" />
-            <span className="font-headline font-black text-xl sm:text-2xl text-white tracking-widest uppercase">
-              {startingSoon.message || "STREAM STARTING SOON"}
-            </span>
-            <div className="w-4 h-4 rounded-full bg-rose-500 animate-ping shrink-0" />
-          </div>
 
           {/* Timer Note */}
           {startingSoon.timerText && (
-            <p className="mt-5 text-sm sm:text-base font-bold text-amber-200 tracking-wider opacity-90 max-w-2xl text-center relative z-10">
+            <p className="mt-6 text-sm sm:text-base font-bold text-amber-200 tracking-wider opacity-90 max-w-2xl text-center relative z-10">
               {startingSoon.timerText}
             </p>
           )}

@@ -311,6 +311,32 @@ export default function StreamControl() {
     };
   }, []);
 
+  // Sync state from localStorage & API on mount
+  useEffect(() => {
+    const syncCurrentState = async () => {
+      try {
+        const saved = localStorage.getItem("sdps_stream_overlay_state");
+        let parsed = saved ? JSON.parse(saved) : null;
+
+        if (!parsed) {
+          const res = await api.get("/stream-overlay/state").catch(() => ({ data: {} }));
+          parsed = res.data || {};
+        }
+
+        if (parsed?.startingSoon) {
+          setStartingSoonVisible(!!parsed.startingSoon.visible);
+          setSoonShowTimer(parsed.startingSoon.showCountdown !== false);
+        }
+        if (parsed?.lowerThird) setLowerThirdVisible(!!parsed.lowerThird.visible);
+        if (parsed?.banner) setBannerVisible(!!parsed.banner.visible);
+        if (parsed?.ticker) setTickerVisible(!!parsed.ticker.visible);
+        if (parsed?.logoBug) setLogoBugVisible(!!parsed.logoBug.visible);
+      } catch (err) {}
+    };
+
+    syncCurrentState();
+  }, []);
+
   // Fetch live photos from database for candidates if available
   useEffect(() => {
     const photoMap = {};
@@ -612,8 +638,10 @@ export default function StreamControl() {
         <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
           <button
             onClick={pushStartingSoonWithTimer}
-            className={`p-3 rounded-2xl border font-bold text-xs flex items-center justify-between transition ${
-              startingSoonVisible && soonShowTimer ? "bg-amber-500 border-amber-600 text-white shadow-md animate-pulse" : "bg-slate-100 border-slate-200 text-slate-700"
+            className={`p-3 rounded-2xl border font-bold text-xs flex items-center justify-between transition cursor-pointer ${
+              startingSoonVisible && soonShowTimer 
+                ? "bg-[#F4D571] border-amber-400 text-[#0B1E40] shadow-md ring-2 ring-amber-300 animate-pulse font-black" 
+                : "bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200"
             }`}
           >
             <span className="truncate">Slate (With 8AM Timer)</span>
@@ -622,8 +650,10 @@ export default function StreamControl() {
 
           <button
             onClick={pushStartingSoonWithoutTimer}
-            className={`p-3 rounded-2xl border font-bold text-xs flex items-center justify-between transition ${
-              startingSoonVisible && !soonShowTimer ? "bg-rose-600 border-rose-700 text-white shadow-md animate-pulse" : "bg-slate-100 border-slate-200 text-slate-700"
+            className={`p-3 rounded-2xl border font-bold text-xs flex items-center justify-between transition cursor-pointer ${
+              startingSoonVisible && !soonShowTimer 
+                ? "bg-blue-600 border-blue-700 text-white shadow-md ring-2 ring-blue-400 animate-pulse font-black" 
+                : "bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200"
             }`}
           >
             <span className="truncate">Slate (No Timer)</span>
@@ -632,7 +662,7 @@ export default function StreamControl() {
 
           <button
             onClick={toggleLowerThird}
-            className={`p-3 rounded-2xl border font-bold text-xs flex items-center justify-between transition ${
+            className={`p-3 rounded-2xl border font-bold text-xs flex items-center justify-between transition cursor-pointer ${
               lowerThirdVisible ? "bg-emerald-500 border-emerald-600 text-white shadow-md" : "bg-slate-100 border-slate-200 text-slate-500"
             }`}
           >
@@ -642,7 +672,7 @@ export default function StreamControl() {
 
           <button
             onClick={toggleBanner}
-            className={`p-3 rounded-2xl border font-bold text-xs flex items-center justify-between transition ${
+            className={`p-3 rounded-2xl border font-bold text-xs flex items-center justify-between transition cursor-pointer ${
               bannerVisible ? "bg-emerald-500 border-emerald-600 text-white shadow-md" : "bg-slate-100 border-slate-200 text-slate-500"
             }`}
           >
@@ -652,7 +682,7 @@ export default function StreamControl() {
 
           <button
             onClick={toggleTicker}
-            className={`p-3 rounded-2xl border font-bold text-xs flex items-center justify-between transition ${
+            className={`p-3 rounded-2xl border font-bold text-xs flex items-center justify-between transition cursor-pointer ${
               tickerVisible ? "bg-emerald-500 border-emerald-600 text-white shadow-md" : "bg-slate-100 border-slate-200 text-slate-500"
             }`}
           >
