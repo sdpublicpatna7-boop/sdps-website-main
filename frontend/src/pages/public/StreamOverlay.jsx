@@ -116,6 +116,7 @@ export default function StreamOverlay() {
 
   const [startingSoon, setStartingSoon] = useState({
     visible: false,
+    showCountdown: true,
     title: "INVESTITURE CEREMONY 2026-27",
     subtitle: "S.D. PUBLIC SCHOOL, PATNA • OFFICIAL LIVE BROADCAST",
     message: "STREAM STARTING SOON",
@@ -272,13 +273,22 @@ export default function StreamOverlay() {
         const ss = state.startingSoon;
         if (
           prev.visible !== ss.visible ||
+          prev.showCountdown !== ss.showCountdown ||
           prev.title !== ss.title ||
           prev.subtitle !== ss.subtitle ||
           prev.message !== ss.message ||
           prev.timerText !== ss.timerText ||
           prev.targetTime !== ss.targetTime
         ) {
-          return { visible: ss.visible, title: ss.title, subtitle: ss.subtitle, message: ss.message, timerText: ss.timerText, targetTime: ss.targetTime || "08:00" };
+          return {
+            visible: ss.visible,
+            showCountdown: ss.showCountdown !== false,
+            title: ss.title,
+            subtitle: ss.subtitle,
+            message: ss.message,
+            timerText: ss.timerText,
+            targetTime: ss.targetTime || "08:00"
+          };
         }
         return prev;
       });
@@ -404,7 +414,7 @@ export default function StreamOverlay() {
         className="absolute inset-0 w-full h-full pointer-events-none z-50"
       />
 
-      {/* FULL-SCREEN PRE-SHOW SLATE WITH 8:00 AM COUNTDOWN & ANIMATED ELEMENTS: "INVESTITURE CEREMONY STARTING SOON..." */}
+      {/* FULL-SCREEN PRE-SHOW SLATE WITH DUAL MODES (WITH TIMER / WITHOUT TIMER): "INVESTITURE CEREMONY STARTING SOON..." */}
       {startingSoon.visible && (
         <div className="absolute inset-0 z-40 bg-gradient-to-br from-[#040C1A] via-[#0B1E40] to-[#071329] flex flex-col items-center justify-center p-8 text-white transition-all duration-700 animate-in fade-in-0 zoom-in-95 overflow-hidden">
           
@@ -463,54 +473,56 @@ export default function StreamOverlay() {
             </h1>
           </div>
 
-          {/* LIVE 8:00 AM INVESTITURE CEREMONY COUNTDOWN TIMER */}
-          <div className="mt-6 flex flex-col items-center gap-3 relative z-10">
-            <div className="flex items-center gap-2 text-xs font-black text-amber-300 tracking-[0.3em] uppercase bg-amber-500/20 px-5 py-1.5 rounded-full border border-amber-400/50 shadow-md">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
-              <span>INVESTITURE CEREMONY 8:00 AM COUNTDOWN</span>
+          {/* MODE 1: LIVE 8:00 AM INVESTITURE CEREMONY COUNTDOWN TIMER (If showCountdown is TRUE) */}
+          {startingSoon.showCountdown !== false && (
+            <div className="mt-6 flex flex-col items-center gap-3 relative z-10 animate-in fade-in-0 zoom-in-95 duration-500">
+              <div className="flex items-center gap-2 text-xs font-black text-amber-300 tracking-[0.3em] uppercase bg-amber-500/20 px-5 py-1.5 rounded-full border border-amber-400/50 shadow-md">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
+                <span>INVESTITURE CEREMONY 8:00 AM COUNTDOWN</span>
+              </div>
+
+              <div className="flex items-center gap-4 sm:gap-6 mt-1">
+                {/* HOURS CARD */}
+                <div className="flex flex-col items-center">
+                  <div className="w-20 h-24 sm:w-24 sm:h-28 bg-gradient-to-b from-[#0E3B91] via-[#0B1E40] to-[#050E1F] border-2 border-[#F4D571] rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.9)] flex items-center justify-center relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-200/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                    <span className="font-headline font-black text-4xl sm:text-5xl text-white tracking-tight drop-shadow-lg">
+                      {String(countdown.hours).padStart(2, '0')}
+                    </span>
+                  </div>
+                  <span className="text-[10px] sm:text-xs font-black text-slate-300 uppercase tracking-widest mt-2">HOURS</span>
+                </div>
+
+                <span className="font-headline font-black text-3xl sm:text-4xl text-[#F4D571] animate-pulse -mt-6">:</span>
+
+                {/* MINUTES CARD */}
+                <div className="flex flex-col items-center">
+                  <div className="w-20 h-24 sm:w-24 sm:h-28 bg-gradient-to-b from-[#0E3B91] via-[#0B1E40] to-[#050E1F] border-2 border-[#F4D571] rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.9)] flex items-center justify-center relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-200/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                    <span className="font-headline font-black text-4xl sm:text-5xl text-[#F4D571] tracking-tight drop-shadow-lg">
+                      {String(countdown.minutes).padStart(2, '0')}
+                    </span>
+                  </div>
+                  <span className="text-[10px] sm:text-xs font-black text-slate-300 uppercase tracking-widest mt-2">MINUTES</span>
+                </div>
+
+                <span className="font-headline font-black text-3xl sm:text-4xl text-[#F4D571] animate-pulse -mt-6">:</span>
+
+                {/* SECONDS CARD */}
+                <div className="flex flex-col items-center">
+                  <div className="w-20 h-24 sm:w-24 sm:h-28 bg-gradient-to-b from-[#0E3B91] via-[#0B1E40] to-[#050E1F] border-2 border-rose-500 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.9)] flex items-center justify-center relative overflow-hidden group animate-pulse">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-rose-300/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                    <span className="font-headline font-black text-4xl sm:text-5xl text-rose-400 tracking-tight drop-shadow-lg">
+                      {String(countdown.seconds).padStart(2, '0')}
+                    </span>
+                  </div>
+                  <span className="text-[10px] sm:text-xs font-black text-rose-300 uppercase tracking-widest mt-2">SECONDS</span>
+                </div>
+              </div>
             </div>
+          )}
 
-            <div className="flex items-center gap-4 sm:gap-6 mt-1">
-              {/* HOURS CARD */}
-              <div className="flex flex-col items-center">
-                <div className="w-20 h-24 sm:w-24 sm:h-28 bg-gradient-to-b from-[#0E3B91] via-[#0B1E40] to-[#050E1F] border-2 border-[#F4D571] rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.9)] flex items-center justify-center relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-200/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                  <span className="font-headline font-black text-4xl sm:text-5xl text-white tracking-tight drop-shadow-lg">
-                    {String(countdown.hours).padStart(2, '0')}
-                  </span>
-                </div>
-                <span className="text-[10px] sm:text-xs font-black text-slate-300 uppercase tracking-widest mt-2">HOURS</span>
-              </div>
-
-              <span className="font-headline font-black text-3xl sm:text-4xl text-[#F4D571] animate-pulse -mt-6">:</span>
-
-              {/* MINUTES CARD */}
-              <div className="flex flex-col items-center">
-                <div className="w-20 h-24 sm:w-24 sm:h-28 bg-gradient-to-b from-[#0E3B91] via-[#0B1E40] to-[#050E1F] border-2 border-[#F4D571] rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.9)] flex items-center justify-center relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-200/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                  <span className="font-headline font-black text-4xl sm:text-5xl text-[#F4D571] tracking-tight drop-shadow-lg">
-                    {String(countdown.minutes).padStart(2, '0')}
-                  </span>
-                </div>
-                <span className="text-[10px] sm:text-xs font-black text-slate-300 uppercase tracking-widest mt-2">MINUTES</span>
-              </div>
-
-              <span className="font-headline font-black text-3xl sm:text-4xl text-[#F4D571] animate-pulse -mt-6">:</span>
-
-              {/* SECONDS CARD */}
-              <div className="flex flex-col items-center">
-                <div className="w-20 h-24 sm:w-24 sm:h-28 bg-gradient-to-b from-[#0E3B91] via-[#0B1E40] to-[#050E1F] border-2 border-rose-500 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.9)] flex items-center justify-center relative overflow-hidden group animate-pulse">
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-rose-300/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                  <span className="font-headline font-black text-4xl sm:text-5xl text-rose-400 tracking-tight drop-shadow-lg">
-                    {String(countdown.seconds).padStart(2, '0')}
-                  </span>
-                </div>
-                <span className="text-[10px] sm:text-xs font-black text-rose-300 uppercase tracking-widest mt-2">SECONDS</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Pulsing "STARTING SOON" Live Status Box */}
+          {/* MODE 2: Pulsing "STARTING SOON" Live Status Box (If showCountdown is FALSE or as secondary indicator) */}
           <div className="mt-6 px-10 py-3.5 bg-gradient-to-r from-[#0E3B91]/95 via-[#0B1E40]/95 to-[#0E3B91]/95 backdrop-blur-2xl border-2 border-[#F4D571] rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.9)] flex items-center gap-4 relative z-10">
             <div className="w-4 h-4 rounded-full bg-rose-500 animate-ping shrink-0" />
             <span className="font-headline font-black text-xl sm:text-2xl text-white tracking-widest uppercase">

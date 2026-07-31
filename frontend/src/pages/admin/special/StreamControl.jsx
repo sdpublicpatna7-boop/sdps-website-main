@@ -272,6 +272,7 @@ export default function StreamControl() {
   const [tickerVisible, setTickerVisible] = useState(true);
   const [logoBugVisible, setLogoBugVisible] = useState(true);
   const [startingSoonVisible, setStartingSoonVisible] = useState(false);
+  const [soonShowTimer, setSoonShowTimer] = useState(true);
 
   // Active inputs
   const [cardName, setCardName] = useState("Soumit Kumar");
@@ -452,22 +453,10 @@ export default function StreamControl() {
     sendBroadcast("LOGO", { visible: next });
   };
 
-  const toggleStartingSoon = () => {
-    const next = !startingSoonVisible;
-    setStartingSoonVisible(next);
-    sendBroadcast("STARTING_SOON", { 
-      visible: next,
-      title: soonTitle,
-      subtitle: soonSubtitle,
-      message: soonMessage,
-      timerText: soonNote,
-      targetTime: soonCountdownTarget
-    });
-  };
-
-  const pushStartingSoon = () => {
+  const pushStartingSoonWithTimer = () => {
     sendBroadcast("STARTING_SOON", {
       visible: true,
+      showCountdown: true,
       title: soonTitle,
       subtitle: soonSubtitle,
       message: soonMessage,
@@ -475,6 +464,26 @@ export default function StreamControl() {
       targetTime: soonCountdownTarget
     });
     setStartingSoonVisible(true);
+    setSoonShowTimer(true);
+  };
+
+  const pushStartingSoonWithoutTimer = () => {
+    sendBroadcast("STARTING_SOON", {
+      visible: true,
+      showCountdown: false,
+      title: soonTitle,
+      subtitle: soonSubtitle,
+      message: soonMessage,
+      timerText: soonNote,
+      targetTime: soonCountdownTarget
+    });
+    setStartingSoonVisible(true);
+    setSoonShowTimer(false);
+  };
+
+  const hideStartingSoon = () => {
+    sendBroadcast("STARTING_SOON", { visible: false });
+    setStartingSoonVisible(false);
   };
 
   const pushBanner = () => {
@@ -542,13 +551,23 @@ export default function StreamControl() {
 
         <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
           <button
-            onClick={toggleStartingSoon}
-            className={`p-3 rounded-2xl border font-bold text-xs flex items-center justify-between transition col-span-2 sm:col-span-1 ${
-              startingSoonVisible ? "bg-rose-600 border-rose-700 text-white shadow-md animate-pulse" : "bg-slate-100 border-slate-200 text-slate-700"
+            onClick={pushStartingSoonWithTimer}
+            className={`p-3 rounded-2xl border font-bold text-xs flex items-center justify-between transition ${
+              startingSoonVisible && soonShowTimer ? "bg-amber-500 border-amber-600 text-white shadow-md animate-pulse" : "bg-slate-100 border-slate-200 text-slate-700"
             }`}
           >
-            <span className="truncate">Starting Soon Slate</span>
-            {startingSoonVisible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+            <span className="truncate">Slate (With 8AM Timer)</span>
+            <Clock className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={pushStartingSoonWithoutTimer}
+            className={`p-3 rounded-2xl border font-bold text-xs flex items-center justify-between transition ${
+              startingSoonVisible && !soonShowTimer ? "bg-rose-600 border-rose-700 text-white shadow-md animate-pulse" : "bg-slate-100 border-slate-200 text-slate-700"
+            }`}
+          >
+            <span className="truncate">Slate (No Timer)</span>
+            <PlayCircle className="w-4 h-4" />
           </button>
 
           <button
@@ -582,18 +601,8 @@ export default function StreamControl() {
           </button>
 
           <button
-            onClick={toggleLogoBug}
-            className={`p-3 rounded-2xl border font-bold text-xs flex items-center justify-between transition ${
-              logoBugVisible ? "bg-emerald-500 border-emerald-600 text-white shadow-md" : "bg-slate-100 border-slate-200 text-slate-500"
-            }`}
-          >
-            <span>Logo Bug</span>
-            {logoBugVisible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-          </button>
-
-          <button
             onClick={triggerConfetti}
-            className="p-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:brightness-110 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md transition cursor-pointer col-span-2 sm:col-span-1"
+            className="p-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:brightness-110 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md transition cursor-pointer"
           >
             <Sparkles className="w-4 h-4 text-yellow-300" /> Confetti Burst
           </button>
@@ -606,17 +615,17 @@ export default function StreamControl() {
           <div className="flex items-center gap-2">
             <Clock className="w-5 h-5 text-[#F4D571] animate-spin" style={{ animationDuration: '10s' }} />
             <h2 className="text-sm font-headline font-black uppercase tracking-wider text-[#F4D571]">
-              Investiture Ceremony 8:00 AM Live Countdown & Pre-Show Scene Controller
+              Pre-Show "Starting Soon" Slate Controller (With / Without Countdown)
             </h2>
           </div>
-          <button
-            onClick={toggleStartingSoon}
-            className={`px-4 py-1.5 rounded-xl font-bold text-xs shadow transition flex items-center gap-2 cursor-pointer ${
-              startingSoonVisible ? "bg-rose-600 text-white hover:bg-rose-700" : "bg-[#F4D571] text-[#0B1E40] hover:bg-yellow-400"
-            }`}
-          >
-            {startingSoonVisible ? "🛑 Hide Pre-Show Slate" : "▶ Show Pre-Show Slate Live"}
-          </button>
+          {startingSoonVisible && (
+            <button
+              onClick={hideStartingSoon}
+              className="px-4 py-1.5 rounded-xl font-bold text-xs bg-rose-600 text-white hover:bg-rose-700 shadow transition flex items-center gap-2 cursor-pointer"
+            >
+              🛑 Hide Pre-Show Slate
+            </button>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-slate-800">
@@ -676,12 +685,22 @@ export default function StreamControl() {
           </div>
         </div>
 
-        <button
-          onClick={pushStartingSoon}
-          className="w-full py-3 bg-[#F4D571] hover:bg-yellow-400 text-[#0B1E40] font-headline font-black text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
-        >
-          <Send className="w-4 h-4" /> Push 8:00 AM Countdown Pre-Show Slate Live
-        </button>
+        {/* Dual Mode Launch Buttons */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+          <button
+            onClick={pushStartingSoonWithTimer}
+            className="py-3 bg-gradient-to-r from-amber-400 to-yellow-500 hover:brightness-110 text-[#0B1E40] font-headline font-black text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <Clock className="w-4 h-4" /> Push Slate WITH 8:00 AM Countdown Timer
+          </button>
+
+          <button
+            onClick={pushStartingSoonWithoutTimer}
+            className="py-3 bg-gradient-to-r from-blue-600 to-indigo-700 hover:brightness-110 text-white font-headline font-black text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <PlayCircle className="w-4 h-4" /> Push Slate WITHOUT Timer (Standard Starting Soon)
+          </button>
+        </div>
       </div>
 
       {/* Preset Designation Cards */}
