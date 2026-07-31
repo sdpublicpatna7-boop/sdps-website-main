@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { 
-  Tv, Eye, EyeOff, Copy, ExternalLink, Sparkles, CheckCircle2, User, RefreshCw, Send, Radio, Award, Flag, Building, HelpCircle, Layers, ShieldCheck, PlayCircle, Clock
+  Tv, Eye, EyeOff, Copy, ExternalLink, Sparkles, CheckCircle2, User, RefreshCw, Send, Radio, Award, Flag, Building, HelpCircle, Layers, ShieldCheck, PlayCircle, Clock, Plus, Trash2, Save, Music, Users
 } from "lucide-react";
 
 const CHANNEL_NAME = "sdps_obs_stream_channel";
@@ -266,7 +266,25 @@ export default function StreamControl() {
   const [bc, setBc] = useState(null);
   const [presetCards, setPresetCards] = useState(BASE_PRESET_CARDS);
 
-  // Overlay state
+  // Persistent Custom Saved Preset Library
+  const [savedCustomCards, setSavedCustomCards] = useState(() => {
+    try {
+      const saved = localStorage.getItem("sdps_custom_stream_cards");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Manual Card Maker Inputs (Supports Persons, Music Groups & Multi-Performers)
+  const [cardName, setCardName] = useState("Soumit Kumar");
+  const [cardRole, setCardRole] = useState("School Captain");
+  const [cardSubtitle, setCardSubtitle] = useState("Executive Council 2026-27 • S.D. Public School");
+  const [cardPhoto, setCardPhoto] = useState("");
+  const [cardBadge, setCardBadge] = useState("SCHOOL CAPTAIN");
+  const [cardPerformers, setCardPerformers] = useState(""); // Comma separated performers list
+
+  // Overlay Visibility State
   const [lowerThirdVisible, setLowerThirdVisible] = useState(true);
   const [bannerVisible, setBannerVisible] = useState(true);
   const [tickerVisible, setTickerVisible] = useState(true);
@@ -274,16 +292,8 @@ export default function StreamControl() {
   const [startingSoonVisible, setStartingSoonVisible] = useState(false);
   const [soonShowTimer, setSoonShowTimer] = useState(true);
 
-  // Active inputs
-  const [cardName, setCardName] = useState("Soumit Kumar");
-  const [cardRole, setCardRole] = useState("School Captain");
-  const [cardSubtitle, setCardSubtitle] = useState("Executive Council 2026-27 • S.D. Public School");
-  const [cardPhoto, setCardPhoto] = useState("");
-  const [cardBadge, setCardBadge] = useState("SCHOOL CAPTAIN");
-
   const [bannerTitle, setBannerTitle] = useState("INVESTITURE CEREMONY 2026-27");
   const [bannerSubtitle, setBannerSubtitle] = useState("S.D. PUBLIC SCHOOL, PATNA • OFFICIAL LIVE STREAM");
-
   const [tickerText, setTickerText] = useState("Welcome Parents, Teachers and Students to the Investiture Ceremony 2026-27 | Oath Taking Ceremony in Progress | S.D. Public School, Patna");
 
   // Full screen starting soon inputs
@@ -402,6 +412,7 @@ export default function StreamControl() {
     setCardSubtitle(card.subtitle || "");
     setCardPhoto(card.photo || "");
     setCardBadge(card.badge || "SDPS");
+    setCardPerformers(card.performers ? card.performers.join(", ") : "");
 
     sendBroadcast("LOWER_THIRD", {
       visible: true,
@@ -411,12 +422,14 @@ export default function StreamControl() {
       photo: card.photo,
       houseLogo: card.houseLogo || "",
       badge: card.badge,
+      performers: card.performers || [],
       timestamp: Date.now()
     });
     setLowerThirdVisible(true);
   };
 
   const handleCustomPushCard = () => {
+    const performersList = cardPerformers ? cardPerformers.split(",").map(s => s.trim()).filter(Boolean) : [];
     sendBroadcast("LOWER_THIRD", {
       visible: true,
       name: cardName,
@@ -424,9 +437,56 @@ export default function StreamControl() {
       subtitle: cardSubtitle,
       photo: cardPhoto,
       badge: cardBadge,
+      performers: performersList,
       timestamp: Date.now()
     });
     setLowerThirdVisible(true);
+  };
+
+  const saveCurrentCardToPresetLibrary = () => {
+    if (!cardName.trim()) {
+      toast.error("Please enter a Person Name or Group/Music Title");
+      return;
+    }
+
+    const performersList = cardPerformers ? cardPerformers.split(",").map(s => s.trim()).filter(Boolean) : [];
+    const newCard = {
+      id: "custom-" + Date.now(),
+      name: cardName.trim(),
+      role: cardRole.trim(),
+      subtitle: cardSubtitle.trim() || "S.D. Public School, Patna",
+      badge: cardBadge.trim() || "SDPS",
+      photo: cardPhoto.trim(),
+      performers: performersList
+    };
+
+    const updated = [newCard, ...savedCustomCards];
+    setSavedCustomCards(updated);
+    try {
+      localStorage.setItem("sdps_custom_stream_cards", JSON.stringify(updated));
+    } catch (e) {}
+
+    toast.success("Saved to your Custom Presets Library!");
+  };
+
+  const deleteCustomCard = (id, e) => {
+    e.stopPropagation();
+    const updated = savedCustomCards.filter(c => c.id !== id);
+    setSavedCustomCards(updated);
+    try {
+      localStorage.setItem("sdps_custom_stream_cards", JSON.stringify(updated));
+    } catch (e) {}
+    toast.success("Custom card deleted");
+  };
+
+  const createNewBlankCardForm = () => {
+    setCardName("");
+    setCardRole("");
+    setCardSubtitle("S.D. Public School, Patna");
+    setCardPhoto("");
+    setCardBadge("SDPS");
+    setCardPerformers("");
+    toast.info("Cleared inputs! Enter your new card data below.");
   };
 
   const toggleLowerThird = () => {
@@ -703,6 +763,62 @@ export default function StreamControl() {
         </div>
       </div>
 
+      {/* Saved Custom Preset Library (If user saved any custom cards) */}
+      {savedCustomCards.length > 0 && (
+        <div className="bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent p-6 rounded-3xl border-2 border-amber-400/40 shadow-sm space-y-4">
+          <div className="flex justify-between items-center border-b border-amber-400/20 pb-3">
+            <h2 className="text-xs font-black text-amber-900 uppercase tracking-wider flex items-center gap-2">
+              <Music className="w-4 h-4 text-amber-600" /> 📁 Your Saved Custom Preset Cards & Music Groups ({savedCustomCards.length})
+            </h2>
+            <span className="text-[10px] text-amber-700 font-bold uppercase">Saved in your local library for 1-click broadcast</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {savedCustomCards.map((card) => (
+              <div
+                key={card.id}
+                onClick={() => pushCard(card)}
+                className="p-3.5 bg-white hover:bg-amber-50/50 border border-amber-200 hover:border-amber-400 rounded-2xl transition cursor-pointer flex items-center gap-3 group shadow-2xs relative"
+              >
+                {card.photo ? (
+                  <img src={card.photo} alt={card.name} className="w-12 h-12 rounded-xl object-cover border border-amber-300 shrink-0" />
+                ) : (
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0B1E40] to-[#0E3B91] text-[#F4D571] font-black text-lg flex items-center justify-center border border-[#F4D571]/40 shrink-0 shadow-inner">
+                    {card.performers && card.performers.length > 0 ? <Music className="w-5 h-5 text-amber-300" /> : card.name.charAt(0)}
+                  </div>
+                )}
+
+                <div className="min-w-0 flex-1">
+                  <span className="text-[9px] font-extrabold text-amber-600 uppercase tracking-wider block truncate">
+                    {card.badge || "CUSTOM PRESET"}
+                  </span>
+                  <h4 className="font-bold text-xs text-slate-900 truncate group-hover:text-amber-700 transition">
+                    {card.name}
+                  </h4>
+                  <p className="text-[10px] text-slate-500 truncate">{card.role}</p>
+                  {card.performers && card.performers.length > 0 && (
+                    <p className="text-[9px] font-semibold text-blue-600 truncate mt-0.5">
+                      👥 {card.performers.length} Performers: {card.performers.join(", ")}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    onClick={(e) => deleteCustomCard(card.id, e)}
+                    title="Delete Saved Card"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                  <Send className="w-4 h-4 text-amber-400 group-hover:text-amber-600 group-hover:translate-x-0.5 transition" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Preset Designation Cards */}
       <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-6">
         <div className="flex justify-between items-center border-b border-slate-100 pb-3">
@@ -758,40 +874,61 @@ export default function StreamControl() {
         ))}
       </div>
 
-      {/* Custom Designation Card & Banner Editors */}
+      {/* Manual Lower Third Builder & Event Editors */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
-        {/* Custom Lower Third Editor */}
+        {/* Manual Card & Music Group Builder */}
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-          <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-2">
-            <User className="w-4 h-4 text-blue-600" /> Custom Designation Card Editor
-          </h2>
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <User className="w-4 h-4 text-blue-600" /> Manual Lower-Third & Music Group Builder
+            </h2>
+            <button
+              onClick={createNewBlankCardForm}
+              className="text-[10px] font-bold text-blue-600 hover:underline flex items-center gap-1"
+            >
+              <Plus className="w-3 h-3" /> Create New Blank Card
+            </button>
+          </div>
 
           <div className="space-y-3">
             <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Person Name</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase">Person Name OR Music Group / Choir Title</label>
               <input
                 type="text"
                 value={cardName}
                 onChange={(e) => setCardName(e.target.value)}
                 className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-600 font-bold"
-                placeholder="e.g. Nitin Raj"
+                placeholder="e.g. Classical Fusion Band OR Nitin Raj"
               />
             </div>
 
             <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Role / Designation Title</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase">Role Title OR Song / Composition Name</label>
               <input
                 type="text"
                 value={cardRole}
                 onChange={(e) => setCardRole(e.target.value)}
                 className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-600 font-bold"
-                placeholder="e.g. School Prefect"
+                placeholder="e.g. Vande Mataram Instrumental OR School Prefect"
               />
             </div>
 
             <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Subtitle / Organization</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase">
+                Group Performers / Participant Student Names (Comma-Separated)
+              </label>
+              <textarea
+                value={cardPerformers}
+                onChange={(e) => setCardPerformers(e.target.value)}
+                rows={2}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-600 font-semibold"
+                placeholder="e.g. Soumit Kumar, Nitin Raj, Sakshi Pandit, Priyanshu Singh, Aadhya Jha"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase">Subtitle / School Organization</label>
               <input
                 type="text"
                 value={cardSubtitle}
@@ -809,12 +946,12 @@ export default function StreamControl() {
                   value={cardBadge}
                   onChange={(e) => setCardBadge(e.target.value)}
                   className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-600"
-                  placeholder="e.g. INVESTITURE CEREMONY"
+                  placeholder="e.g. CULTURAL PERFORMANCE"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase">Photo Image URL</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase">Photo / Group Logo Image URL</label>
                 <input
                   type="text"
                   value={cardPhoto}
@@ -825,12 +962,21 @@ export default function StreamControl() {
               </div>
             </div>
 
-            <button
-              onClick={handleCustomPushCard}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-2 cursor-pointer mt-2"
-            >
-              <Send className="w-4 h-4" /> Push Custom Card Live
-            </button>
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                onClick={handleCustomPushCard}
+                className="py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Send className="w-4 h-4" /> Push Card Live Now
+              </button>
+
+              <button
+                onClick={saveCurrentCardToPresetLibrary}
+                className="py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Save className="w-4 h-4" /> Save Card to Presets Library
+              </button>
+            </div>
           </div>
         </div>
 

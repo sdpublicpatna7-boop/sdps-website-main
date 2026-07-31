@@ -95,6 +95,7 @@ export default function StreamOverlay() {
     photo: DEFAULT_LEADER.photo,
     houseLogo: DEFAULT_LEADER.houseLogo,
     badge: DEFAULT_LEADER.badge,
+    performers: [],
     timestamp: Date.now()
   });
 
@@ -214,6 +215,9 @@ export default function StreamOverlay() {
     if (state.lowerThird) {
       setLowerThird(prev => {
         const lt = state.lowerThird;
+        const incomingPerfStr = Array.isArray(lt.performers) ? lt.performers.join(",") : "";
+        const prevPerfStr = Array.isArray(prev.performers) ? prev.performers.join(",") : "";
+
         if (
           prev.name !== lt.name ||
           prev.role !== lt.role ||
@@ -221,7 +225,8 @@ export default function StreamOverlay() {
           prev.photo !== lt.photo ||
           prev.houseLogo !== lt.houseLogo ||
           prev.badge !== lt.badge ||
-          prev.visible !== lt.visible
+          prev.visible !== lt.visible ||
+          prevPerfStr !== incomingPerfStr
         ) {
           return {
             name: lt.name,
@@ -230,6 +235,7 @@ export default function StreamOverlay() {
             photo: lt.photo,
             houseLogo: lt.houseLogo,
             badge: lt.badge,
+            performers: lt.performers || [],
             visible: lt.visible,
             timestamp: lt.timestamp || Date.now()
           };
@@ -593,7 +599,7 @@ export default function StreamOverlay() {
         </div>
       )}
 
-      {/* 3. BIGGER & BOLDER LOWER THIRD DESIGNATION CARD WITH HOUSE CREST AT THE END (LAST OF CARD) */}
+      {/* 3. BIGGER & BOLDER LOWER THIRD DESIGNATION CARD WITH HOUSE CREST AT THE END (LAST OF CARD) & MULTI-PERFORMERS */}
       {!startingSoon.visible && lowerThird.visible && (
         <div
           key={`${lowerThird.name}-${lowerThird.role}-${lowerThird.timestamp}`}
@@ -635,7 +641,7 @@ export default function StreamOverlay() {
               </span>
             )}
 
-            {/* Candidate / Leader Full Name */}
+            {/* Candidate / Group Full Title */}
             <h2 
               key={lowerThird.name}
               className="font-headline font-black text-2xl md:text-3xl text-white tracking-tight truncate drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)] animate-in fade-in-0 slide-in-from-left-6 duration-300"
@@ -643,7 +649,7 @@ export default function StreamOverlay() {
               {lowerThird.name}
             </h2>
 
-            {/* Role & Designation */}
+            {/* Role & Designation OR Song Name */}
             <div 
               key={lowerThird.role}
               className="flex items-center gap-2 mt-0.5 animate-in fade-in-0 slide-in-from-left-4 duration-400"
@@ -658,6 +664,23 @@ export default function StreamOverlay() {
               <p className="text-xs md:text-sm font-semibold text-slate-200 truncate mt-0.5 opacity-95">
                 {lowerThird.subtitle.replace(/^Class\s+[IVXLCDM0-9]+\s*•\s*/i, "").trim()}
               </p>
+            )}
+
+            {/* Multi-Participant / Performer List Badges (For Music Groups, Choirs, Bands, Sports Teams) */}
+            {lowerThird.performers && lowerThird.performers.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 mt-2 max-w-xl animate-in fade-in-0 slide-in-from-left-4 duration-500">
+                <span className="text-[10px] font-black text-[#F4D571] uppercase tracking-wider mr-1">
+                  PERFORMERS:
+                </span>
+                {lowerThird.performers.map((performer, pIdx) => (
+                  <span
+                    key={pIdx}
+                    className="px-2.5 py-0.5 rounded-md bg-white/10 border border-[#F4D571]/40 text-[#F4D571] font-bold text-xs shadow-xs"
+                  >
+                    {performer}
+                  </span>
+                ))}
+              </div>
             )}
 
           </div>
