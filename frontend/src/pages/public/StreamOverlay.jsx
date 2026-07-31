@@ -1,13 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import api from "@/lib/api";
 
 const CHANNEL_NAME = "sdps_obs_stream_channel";
 
 const DEFAULT_LEADER = {
-  name: "Soumit Kumar",
-  role: "School Captain",
-  subtitle: "Executive Council 2026-27 • S.D. Public School",
-  photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/aadarsh_nyhpfq.png",
-  badge: "SCHOOL CAPTAIN"
+  name: "Priyanshu Singh",
+  role: "House Captain",
+  subtitle: "Gautam House (Green Army) • 2026-27",
+  photo: "https://res.cloudinary.com/drzb164ge/image/upload/q_auto/f_auto/v1778296001/005_l9apgk.png",
+  badge: "GAUTAM CAPTAIN"
 };
 
 export default function StreamOverlay() {
@@ -37,23 +38,107 @@ export default function StreamOverlay() {
     showLive: true
   });
 
+  const lastConfettiTriggerRef = useRef(0);
+  const canvasRef = useRef(null);
   const [confettiActive, setConfettiActive] = useState(false);
 
-  // Sync state from BroadcastChannel or localStorage
+  // Trigger HTML5 Canvas Confetti Burst Animation
+  const fireCanvasConfetti = () => {
+    setConfettiActive(true);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    const width = (canvas.width = window.innerWidth);
+    const height = (canvas.height = window.innerHeight);
+
+    const colors = ["#F4D571", "#FFD700", "#ef4444", "#2563eb", "#10b981", "#8b5cf6", "#ec4899", "#f97316"];
+    const particles = [];
+
+    // Create 160 dynamic confetti particles
+    for (let i = 0; i < 160; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * (height * 0.4) - 50,
+        vx: (Math.random() - 0.5) * 8,
+        vy: Math.random() * 6 + 3,
+        size: Math.random() * 10 + 6,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        rotation: Math.random() * 360,
+        rotationSpeed: (Math.random() - 0.5) * 10,
+        shape: Math.random() > 0.4 ? "rect" : "circle",
+        opacity: 1
+      });
+    }
+
+    let startTime = Date.now();
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      ctx.clearRect(0, 0, width, height);
+
+      let alive = false;
+      particles.forEach((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rotation += p.rotationSpeed;
+        if (elapsed > 3000) {
+          p.opacity -= 0.02;
+        }
+
+        if (p.opacity > 0 && p.y < height + 50) {
+          alive = true;
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, p.opacity);
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rotation * Math.PI) / 180);
+          ctx.fillStyle = p.color;
+
+          if (p.shape === "circle") {
+            ctx.beginPath();
+            ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size * 0.6);
+          }
+          ctx.restore();
+        }
+      });
+
+      if (alive && elapsed < 5500) {
+        requestAnimationFrame(animate);
+      } else {
+        ctx.clearRect(0, 0, width, height);
+        setConfettiActive(false);
+      }
+    };
+
+    requestAnimationFrame(animate);
+  };
+
+  // Sync state from Backend API, BroadcastChannel & localStorage
   useEffect(() => {
-    const handleMessage = (data) => {
-      if (!data) return;
-      if (data.type === "LOWER_THIRD") {
-        setLowerThird(prev => ({ ...prev, ...data.payload, timestamp: Date.now() }));
-      } else if (data.type === "BANNER") {
-        setBanner(prev => ({ ...prev, ...data.payload }));
-      } else if (data.type === "TICKER") {
-        setTicker(prev => ({ ...prev, ...data.payload }));
-      } else if (data.type === "LOGO") {
-        setLogoBug(prev => ({ ...prev, ...data.payload }));
-      } else if (data.type === "CONFETTI") {
-        setConfettiActive(true);
-        setTimeout(() => setConfettiActive(false), 5000);
+    const processState = (state) => {
+      if (!state) return;
+      if (state.lowerThird) {
+        setLowerThird(prev => {
+          if (
+            prev.name !== state.lowerThird.name ||
+            prev.role !== state.lowerThird.role ||
+            prev.visible !== state.lowerThird.visible ||
+            prev.timestamp !== state.lowerThird.timestamp
+          ) {
+            return { ...prev, ...state.lowerThird };
+          }
+          return prev;
+        });
+      }
+      if (state.banner) setBanner(prev => ({ ...prev, ...state.banner }));
+      if (state.ticker) setTicker(prev => ({ ...prev, ...state.ticker }));
+      if (state.logoBug) setLogoBug(prev => ({ ...prev, ...state.logoBug }));
+
+      if (state.confetti_trigger_id && state.confetti_trigger_id > lastConfettiTriggerRef.current) {
+        lastConfettiTriggerRef.current = state.confetti_trigger_id;
+        fireCanvasConfetti();
       }
     };
 
@@ -62,48 +147,50 @@ export default function StreamOverlay() {
     try {
       if ("BroadcastChannel" in window) {
         bc = new BroadcastChannel(CHANNEL_NAME);
-        bc.onmessage = (e) => handleMessage(e.data);
+        bc.onmessage = (e) => {
+          if (e.data?.type === "CONFETTI") {
+            fireCanvasConfetti();
+          } else if (e.data?.type === "LOWER_THIRD") {
+            setLowerThird(prev => ({ ...prev, ...e.data.payload, timestamp: Date.now() }));
+          } else if (e.data?.type === "BANNER") {
+            setBanner(prev => ({ ...prev, ...e.data.payload }));
+          } else if (e.data?.type === "TICKER") {
+            setTicker(prev => ({ ...prev, ...e.data.payload }));
+          } else if (e.data?.type === "LOGO") {
+            setLogoBug(prev => ({ ...prev, ...e.data.payload }));
+          }
+        };
       }
-    } catch (err) {
-      console.warn("BroadcastChannel error:", err);
-    }
+    } catch (err) {}
 
-    // 2. LocalStorage sync fallback
-    const handleStorage = (e) => {
-      if (e.key === "sdps_stream_overlay_state" && e.newValue) {
-        try {
-          const parsed = JSON.parse(e.newValue);
-          if (parsed.lowerThird) setLowerThird(prev => ({ ...prev, ...parsed.lowerThird, timestamp: Date.now() }));
-          if (parsed.banner) setBanner(parsed.banner);
-          if (parsed.ticker) setTicker(parsed.ticker);
-          if (parsed.logoBug) setLogoBug(parsed.logoBug);
-        } catch (err) {}
-      }
+    // 2. Real-time Backend API Polling (400ms for OBS Studio CEF sync)
+    const fetchApiState = async () => {
+      try {
+        const res = await api.get("/stream-overlay/state");
+        if (res.data) {
+          processState(res.data);
+        }
+      } catch (err) {}
     };
 
-    window.addEventListener("storage", handleStorage);
-
-    // Initial load check from localStorage
-    try {
-      const saved = localStorage.getItem("sdps_stream_overlay_state");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.lowerThird) setLowerThird(prev => ({ ...prev, ...parsed.lowerThird }));
-        if (parsed.banner) setBanner(parsed.banner);
-        if (parsed.ticker) setTicker(parsed.ticker);
-        if (parsed.logoBug) setLogoBug(parsed.logoBug);
-      }
-    } catch (e) {}
+    fetchApiState();
+    const interval = setInterval(fetchApiState, 400);
 
     return () => {
       if (bc) bc.close();
-      window.removeEventListener("storage", handleStorage);
+      clearInterval(interval);
     };
   }, []);
 
   return (
     <div className="w-screen h-screen bg-transparent overflow-hidden relative select-none pointer-events-none font-sans">
       
+      {/* HTML5 CONFETTI CANVAS */}
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 w-full h-full pointer-events-none z-50"
+      />
+
       {/* 1. TOP LOGO BUG & LIVE INDICATOR (TOP RIGHT) */}
       {logoBug.visible && (
         <div className="absolute top-6 right-8 flex items-center gap-3 bg-[#0B1E40]/90 backdrop-blur-md border border-[#F4D571]/40 px-4 py-2 rounded-2xl shadow-2xl transition-all duration-500">
@@ -154,7 +241,7 @@ export default function StreamOverlay() {
           className="absolute bottom-16 left-10 flex items-stretch bg-gradient-to-r from-[#071329]/95 via-[#0E3B91]/95 to-[#071329]/90 backdrop-blur-2xl border-2 border-[#F4D571]/80 rounded-3xl p-3.5 max-w-xl shadow-[0_20px_50px_rgba(0,0,0,0.9)] animate-in fade-in-0 slide-in-from-bottom-8 zoom-in-95 duration-500 ease-out overflow-hidden"
         >
           {/* Gold Shimmer Beam Transition Effect */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-300/20 to-transparent -translate-x-full animate-in slide-in-from-left-full duration-1000 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-300/25 to-transparent -translate-x-full animate-in slide-in-from-left-full duration-1000 pointer-events-none" />
 
           {/* Photo Avatar (Seamless Cross-Fade) */}
           {lowerThird.photo ? (
@@ -240,24 +327,6 @@ export default function StreamOverlay() {
             </div>
           </div>
 
-        </div>
-      )}
-
-      {/* 5. CONFETTI ANIMATION OVERLAY */}
-      {confettiActive && (
-        <div className="absolute inset-0 pointer-events-none overflow-hidden z-50">
-          <div className="animate-confetti-rain w-full h-full flex justify-around">
-            {[...Array(30)].map((_, i) => (
-              <div
-                key={i}
-                className="w-3 h-3 rounded-full animate-bounce"
-                style={{
-                  backgroundColor: ["#F4D571", "#ef4444", "#2563eb", "#10b981", "#8b5cf6"][i % 5],
-                  animationDelay: `${(i % 10) * 0.2}s`
-                }}
-              />
-            ))}
-          </div>
         </div>
       )}
 

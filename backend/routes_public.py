@@ -1714,13 +1714,56 @@ async def get_campus_tour_facilities():
                     {"id": "h12", "title": "Air-Cooled Dormitories", "x": 40, "y": 48, "detail": "Spacious study desks, personal wardrobes, and comfortable bedding for boarders."},
                     {"id": "h13", "title": "Hygienic Dining Hall", "x": 70, "y": 60, "detail": "Four nutritious meals served daily under strict hygiene and dietary quality control."}
                 ],
-                "equipment_list": ["24/7 Resident Wardens", "Structured Evening Study", "Nutritious 4-Meal Dining", "Doctor-on-Call Service", "24/7 CCTV & Security"],
-                "order": 6,
-                "is_active": True
-            }
-        ]
+# In-memory live stream overlay state cache for OBS Studio real-time synchronization
+STREAM_OVERLAY_STATE = {
+    "lowerThird": {
+        "visible": True,
+        "name": "Priyanshu Singh",
+        "role": "House Captain",
+        "subtitle": "Gautam House (Green Army) • 2026-27",
+        "photo": "https://res.cloudinary.com/drzb164ge/image/upload/q_auto/f_auto/v1778296001/005_l9apgk.png",
+        "badge": "GAUTAM CAPTAIN",
+        "timestamp": 0
+    },
+    "banner": {
+        "visible": True,
+        "title": "INVESTITURE CEREMONY 2026-27",
+        "subtitle": "S.D. PUBLIC SCHOOL, PATNA • OFFICIAL LIVE STREAM"
+    },
+    "ticker": {
+        "visible": True,
+        "text": "Welcome Parents, Teachers and Students to the Investiture Ceremony 2026-27 | Oath Taking Ceremony in Progress | S.D. Public School, Patna"
+    },
+    "logoBug": {
+        "visible": True,
+        "showLive": True
+    },
+    "confetti_trigger_id": 0
+}
 
-    return {"facilities": facilities}
+@public_router.get("/stream-overlay/state")
+async def get_stream_overlay_state():
+    return STREAM_OVERLAY_STATE
+
+@public_router.post("/stream-overlay/state")
+async def update_stream_overlay_state(payload: Dict[Any, Any] = Body(...)):
+    global STREAM_OVERLAY_STATE
+    msg_type = payload.get("type")
+    data = payload.get("payload", {})
+    
+    if msg_type == "LOWER_THIRD":
+        STREAM_OVERLAY_STATE["lowerThird"].update(data)
+        STREAM_OVERLAY_STATE["lowerThird"]["timestamp"] = int(datetime.now(timezone.utc).timestamp() * 1000)
+    elif msg_type == "BANNER":
+        STREAM_OVERLAY_STATE["banner"].update(data)
+    elif msg_type == "TICKER":
+        STREAM_OVERLAY_STATE["ticker"].update(data)
+    elif msg_type == "LOGO":
+        STREAM_OVERLAY_STATE["logoBug"].update(data)
+    elif msg_type == "CONFETTI":
+        STREAM_OVERLAY_STATE["confetti_trigger_id"] = int(datetime.now(timezone.utc).timestamp() * 1000)
+        
+    return {"status": "ok", "state": STREAM_OVERLAY_STATE}
 
 
 

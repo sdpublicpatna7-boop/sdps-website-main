@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import api from "@/lib/api";
 import { 
   Tv, Eye, EyeOff, Copy, ExternalLink, Sparkles, CheckCircle2, User, RefreshCw, Send, Radio, Award, Flag, Building, HelpCircle, Layers, ShieldCheck
 } from "lucide-react";
@@ -290,8 +291,8 @@ export default function StreamControl() {
     };
   }, []);
 
-  // Save to localStorage & broadcast
-  const sendBroadcast = (type, payload) => {
+  // Save to localStorage, BroadcastChannel & Backend API for OBS CEF
+  const sendBroadcast = async (type, payload) => {
     if (bc) {
       bc.postMessage({ type, payload });
     }
@@ -307,6 +308,12 @@ export default function StreamControl() {
 
       localStorage.setItem("sdps_stream_overlay_state", JSON.stringify(currentState));
     } catch (e) {}
+
+    try {
+      await api.post("/stream-overlay/state", { type, payload });
+    } catch (err) {
+      console.warn("Stream state sync API error:", err);
+    }
 
     toast.success(`Pushed live: ${payload?.name || type}`);
   };
