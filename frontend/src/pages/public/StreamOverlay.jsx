@@ -8,8 +8,26 @@ const DEFAULT_LEADER = {
   role: "House Captain",
   subtitle: "Gautam House (Green Army) • 2026-27",
   photo: "https://res.cloudinary.com/drzb164ge/image/upload/q_auto/f_auto/v1778296001/005_l9apgk.png",
+  houseLogo: "/images/houses/gautam.jpg",
   badge: "GAUTAM CAPTAIN"
 };
+
+const HOUSE_LOGOS = {
+  ashoka: "/images/houses/ashoka.jpg",
+  aryabhatta: "/images/houses/aryabhatta.jpg",
+  chanakya: "/images/houses/chanakya.jpg",
+  gautam: "/images/houses/gautam.jpg"
+};
+
+function getHouseLogo(lowerThird) {
+  if (lowerThird?.houseLogo) return lowerThird.houseLogo;
+  const combined = ((lowerThird?.badge || "") + " " + (lowerThird?.subtitle || "") + " " + (lowerThird?.role || "")).toLowerCase();
+  if (combined.includes("ashoka")) return HOUSE_LOGOS.ashoka;
+  if (combined.includes("aryabhatta")) return HOUSE_LOGOS.aryabhatta;
+  if (combined.includes("chanakya")) return HOUSE_LOGOS.chanakya;
+  if (combined.includes("gautam")) return HOUSE_LOGOS.gautam;
+  return null;
+}
 
 export default function StreamOverlay() {
   const [lowerThird, setLowerThird] = useState({
@@ -18,6 +36,7 @@ export default function StreamOverlay() {
     role: DEFAULT_LEADER.role,
     subtitle: DEFAULT_LEADER.subtitle,
     photo: DEFAULT_LEADER.photo,
+    houseLogo: DEFAULT_LEADER.houseLogo,
     badge: DEFAULT_LEADER.badge,
     timestamp: Date.now()
   });
@@ -236,6 +255,8 @@ export default function StreamOverlay() {
     };
   }, []);
 
+  const currentHouseLogo = getHouseLogo(lowerThird);
+
   return (
     <div className="w-screen h-screen bg-transparent overflow-hidden relative select-none pointer-events-none font-sans">
       
@@ -375,7 +396,7 @@ export default function StreamOverlay() {
         </div>
       )}
 
-      {/* 3. BIGGER & BOLDER LOWER THIRD DESIGNATION CARD WITH CINEMATIC 3D FLIP & SLIDE TRANSITIONS */}
+      {/* 3. BIGGER & BOLDER LOWER THIRD DESIGNATION CARD WITH HOUSE CREST LOGO & CINEMATIC TRANSITIONS */}
       {!startingSoon.visible && lowerThird.visible && (
         <div
           key={`${lowerThird.name}-${lowerThird.role}-${lowerThird.timestamp}`}
@@ -384,9 +405,9 @@ export default function StreamOverlay() {
           {/* Gold Shimmer Beam Wipe Effect across Card */}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-200/35 to-transparent -translate-x-full animate-in slide-in-from-left-full duration-1000 pointer-events-none z-30" />
 
-          {/* Photo Avatar - BIGGER & BOLDER (112px x 112px) */}
+          {/* Photo Avatar (112px x 112px) */}
           {lowerThird.photo ? (
-            <div className="relative shrink-0 mr-5">
+            <div className="relative shrink-0 mr-4">
               <img
                 key={lowerThird.photo}
                 src={lowerThird.photo}
@@ -398,8 +419,21 @@ export default function StreamOverlay() {
               </div>
             </div>
           ) : (
-            <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 flex items-center justify-center text-white font-black text-4xl border-3 border-[#F4D571] mr-5 shadow-[0_0_25px_rgba(244,213,113,0.4)] shrink-0">
+            <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 flex items-center justify-center text-white font-black text-4xl border-3 border-[#F4D571] mr-4 shadow-[0_0_25px_rgba(244,213,113,0.4)] shrink-0">
               {lowerThird.name ? lowerThird.name.charAt(0) : "S"}
+            </div>
+          )}
+
+          {/* Official House Emblem Crest Badge (If House Captain / Vice Captain) */}
+          {currentHouseLogo && (
+            <div className="relative shrink-0 mr-5 self-center">
+              <div className="w-20 h-20 rounded-2xl bg-white border-2 border-[#F4D571] p-1.5 shadow-[0_0_20px_rgba(244,213,113,0.4)] flex items-center justify-center animate-in zoom-in-75 duration-300">
+                <img
+                  src={currentHouseLogo}
+                  alt="House Crest"
+                  className="w-full h-full object-contain rounded-xl"
+                />
+              </div>
             </div>
           )}
 

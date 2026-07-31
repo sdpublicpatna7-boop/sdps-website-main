@@ -84,6 +84,7 @@ const BASE_PRESET_CARDS = [
         role: "House Captain",
         subtitle: "Ashoka House (Yellow Army) • 2026-27",
         photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785328179/asd_qophbe.png",
+        houseLogo: "/images/houses/ashoka.jpg",
         badge: "ASHOKA CAPTAIN"
       },
       {
@@ -91,6 +92,7 @@ const BASE_PRESET_CARDS = [
         role: "Vice Captain",
         subtitle: "Ashoka House (Yellow Army) • 2026-27",
         photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785328179/sakd_yv4y3y.png",
+        houseLogo: "/images/houses/ashoka.jpg",
         badge: "ASHOKA VICE CAPTAIN"
       },
       {
@@ -98,6 +100,7 @@ const BASE_PRESET_CARDS = [
         role: "House Captain",
         subtitle: "Aryabhatta House (Red Army) • 2026-27",
         photo: "https://res.cloudinary.com/drzb164ge/image/upload/q_auto/f_auto/v1778295843/001_feweo3.jpg",
+        houseLogo: "/images/houses/aryabhatta.jpg",
         badge: "ARYABHATTA CAPTAIN"
       },
       {
@@ -105,6 +108,7 @@ const BASE_PRESET_CARDS = [
         role: "Vice Captain",
         subtitle: "Aryabhatta House (Red Army) • 2026-27",
         photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785328002/arya_VC_mz1rrs.png",
+        houseLogo: "/images/houses/aryabhatta.jpg",
         badge: "ARYABHATTA VICE CAPTAIN"
       },
       {
@@ -112,6 +116,7 @@ const BASE_PRESET_CARDS = [
         role: "House Captain",
         subtitle: "Chanakya House (Blue Army) • 2026-27",
         photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785328003/Chanakya_Captain_xui2ib.png",
+        houseLogo: "/images/houses/chanakya.jpg",
         badge: "CHANAKYA CAPTAIN"
       },
       {
@@ -119,6 +124,7 @@ const BASE_PRESET_CARDS = [
         role: "Vice Captain",
         subtitle: "Chanakya House (Blue Army) • 2026-27",
         photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785328381/Prachi_zcygd3.png",
+        houseLogo: "/images/houses/chanakya.jpg",
         badge: "CHANAKYA VICE CAPTAIN"
       },
       {
@@ -126,6 +132,7 @@ const BASE_PRESET_CARDS = [
         role: "House Captain",
         subtitle: "Gautam House (Green Army) • 2026-27",
         photo: "https://res.cloudinary.com/drzb164ge/image/upload/q_auto/f_auto/v1778296001/005_l9apgk.png",
+        houseLogo: "/images/houses/gautam.jpg",
         badge: "GAUTAM CAPTAIN"
       },
       {
@@ -133,6 +140,7 @@ const BASE_PRESET_CARDS = [
         role: "Vice Captain",
         subtitle: "Gautam House (Green Army) • 2026-27",
         photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785328565/aradhya_ywacsd.png",
+        houseLogo: "/images/houses/gautam.jpg",
         badge: "GAUTAM VICE CAPTAIN"
       }
     ]
@@ -391,6 +399,7 @@ export default function StreamControl() {
       role: card.role,
       subtitle: card.subtitle,
       photo: card.photo,
+      houseLogo: card.houseLogo || "",
       badge: card.badge,
       timestamp: Date.now()
     });
@@ -677,6 +686,8 @@ export default function StreamControl() {
                 >
                   {card.photo ? (
                     <img src={card.photo} alt={card.name} className="w-12 h-12 rounded-xl object-cover border border-slate-300 bg-white shrink-0" />
+                  ) : card.houseLogo ? (
+                    <img src={card.houseLogo} alt="" className="w-12 h-12 rounded-xl object-contain border border-amber-400 bg-white shrink-0" />
                   ) : (
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0B1E40] to-[#0E3B91] text-[#F4D571] font-black text-lg flex items-center justify-center border border-[#F4D571]/40 shrink-0 shadow-inner">
                       {card.name.charAt(0)}
@@ -684,9 +695,14 @@ export default function StreamControl() {
                   )}
 
                   <div className="min-w-0 flex-1">
-                    <span className="text-[9px] font-extrabold text-brand-orange uppercase tracking-wider block truncate">
-                      {card.badge || "PREFECT"}
-                    </span>
+                    <div className="flex items-center gap-1">
+                      {card.houseLogo && (
+                        <img src={card.houseLogo} alt="" className="w-3.5 h-3.5 object-contain shrink-0" />
+                      )}
+                      <span className="text-[9px] font-extrabold text-brand-orange uppercase tracking-wider block truncate">
+                        {card.badge || "PREFECT"}
+                      </span>
+                    </div>
                     <h4 className="font-bold text-xs text-slate-900 truncate group-hover:text-brand-orange transition">
                       {card.name}
                     </h4>
