@@ -416,6 +416,9 @@ export default function StreamOverlay() {
 
   const currentHouseLogo = getHouseLogo(lowerThird);
 
+  // Check if card is a Group / Music / Dance Performance Card OR Card without Photo
+  const isGroupOrNoPhoto = (lowerThird.performers && lowerThird.performers.length > 0) || (!lowerThird.photo && !currentHouseLogo);
+
   return (
     <div className="w-screen h-screen bg-transparent overflow-hidden relative select-none pointer-events-none font-sans">
       
@@ -603,108 +606,157 @@ export default function StreamOverlay() {
         </div>
       )}
 
-      {/* 3. BIGGER & BOLDER LOWER THIRD DESIGNATION CARD WITH HOUSE CREST AT THE END (LAST OF CARD) & MULTI-PERFORMERS */}
+      {/* 3. DYNAMIC HYBRID LOWER THIRD DESIGN */}
       {!startingSoon.visible && lowerThird.visible && (
-        <div
-          key={`${lowerThird.name}-${lowerThird.role}-${lowerThird.timestamp}`}
-          className="absolute bottom-16 left-10 flex items-stretch bg-gradient-to-r from-[#050E1F]/95 via-[#0E3B91]/95 to-[#071329]/95 backdrop-blur-2xl border-2 border-[#F4D571] rounded-[2rem] p-5 max-w-2xl shadow-[0_25px_60px_rgba(0,0,0,0.95)] animate-in fade-in-0 slide-in-from-bottom-12 zoom-in-95 duration-500 ease-out overflow-hidden"
-        >
-          {/* Gold Shimmer Beam Wipe Effect across Card */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-200/35 to-transparent -translate-x-full animate-in slide-in-from-left-full duration-1000 pointer-events-none z-30" />
+        isGroupOrNoPhoto ? (
+          /* OPTION A: STUNNING CENTER-ALIGNED GRADIENT CARD FOR DANCE/MUSIC GROUPS & PERFORMER LISTS (NO EMPTY PHOTO BOX) */
+          <div
+            key={`${lowerThird.name}-${lowerThird.role}-${lowerThird.timestamp}`}
+            className="absolute bottom-16 left-1/2 -translate-x-1/2 flex flex-col items-center text-center bg-gradient-to-r from-[#040C1A]/95 via-[#0E3B91]/98 to-[#040C1A]/95 backdrop-blur-2xl border-2 border-[#F4D571] rounded-[2.5rem] py-5 px-10 min-w-[500px] max-w-4xl shadow-[0_25px_60px_rgba(0,0,0,0.95)] animate-in fade-in-0 slide-in-from-bottom-12 zoom-in-95 duration-500 ease-out overflow-hidden"
+          >
+            {/* Gold Shimmer Beam Wipe Effect across Card */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-200/35 to-transparent -translate-x-full animate-in slide-in-from-left-full duration-1000 pointer-events-none z-30" />
 
-          {/* 1. Candidate Photo Avatar (112px x 112px) */}
-          {lowerThird.photo ? (
-            <div className="relative shrink-0 mr-4">
-              <img
-                key={lowerThird.photo}
-                src={lowerThird.photo}
-                alt={lowerThird.name}
-                className="w-28 h-28 rounded-2xl object-cover border-3 border-[#F4D571] shadow-[0_0_25px_rgba(244,213,113,0.4)] bg-slate-900 animate-in fade-in-0 zoom-in-75 duration-400"
-              />
-              <div className="absolute -bottom-2 -right-2 bg-[#F4D571] text-[#0B1E40] text-[10px] font-black px-2 py-0.5 rounded-md uppercase shadow-lg border border-amber-300">
-                SDPS
-              </div>
-            </div>
-          ) : (
-            <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 flex items-center justify-center text-white font-black text-4xl border-3 border-[#F4D571] mr-4 shadow-[0_0_25px_rgba(244,213,113,0.4)] shrink-0">
-              {lowerThird.name ? lowerThird.name.charAt(0) : "S"}
-            </div>
-          )}
-
-          {/* 2. Name & Role Text Block */}
-          <div className="flex flex-col justify-center min-w-0 pr-4 flex-1">
-            
-            {/* Top Badge */}
+            {/* Top Centered Badge */}
             {lowerThird.badge && (
               <span 
                 key={lowerThird.badge}
-                className="inline-flex items-center gap-1.5 self-start px-3 py-1 rounded-lg bg-amber-500/25 border border-amber-400/60 text-[#F4D571] font-black text-xs tracking-widest uppercase mb-1.5 animate-in fade-in-0 zoom-in-90 duration-300 shadow-sm"
+                className="inline-flex items-center gap-1.5 px-4 py-1 rounded-full bg-amber-500/25 border border-amber-400/60 text-[#F4D571] font-black text-xs tracking-widest uppercase mb-2 animate-in fade-in-0 zoom-in-90 duration-300 shadow-md"
               >
                 <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
                 {lowerThird.badge}
               </span>
             )}
 
-            {/* Candidate / Group Full Title */}
+            {/* Group / Song / Performance Full Title */}
             <h2 
               key={lowerThird.name}
-              className="font-headline font-black text-2xl md:text-3xl text-white tracking-tight truncate drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)] animate-in fade-in-0 slide-in-from-left-6 duration-300"
+              className="font-headline font-black text-3xl md:text-4xl text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-200 tracking-tight truncate drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)] animate-in fade-in-0 slide-in-from-bottom-4 duration-300"
             >
               {lowerThird.name}
             </h2>
 
             {/* Role & Designation OR Song Name */}
-            <div 
-              key={lowerThird.role}
-              className="flex items-center gap-2 mt-0.5 animate-in fade-in-0 slide-in-from-left-4 duration-400"
-            >
-              <span className="font-extrabold text-sm md:text-base text-amber-300 uppercase tracking-wide truncate">
-                {lowerThird.role}
-              </span>
-            </div>
+            {lowerThird.role && (
+              <div 
+                key={lowerThird.role}
+                className="mt-1 animate-in fade-in-0 slide-in-from-bottom-3 duration-400"
+              >
+                <span className="font-extrabold text-base md:text-lg text-amber-300 uppercase tracking-wide">
+                  {lowerThird.role}
+                </span>
+              </div>
+            )}
 
             {/* Subtitle / Organization */}
             {lowerThird.subtitle && (
-              <p className="text-xs md:text-sm font-semibold text-slate-200 truncate mt-0.5 opacity-95">
+              <p className="text-xs md:text-sm font-semibold text-slate-200 truncate mt-1 opacity-95">
                 {lowerThird.subtitle.replace(/^Class\s+[IVXLCDM0-9]+\s*•\s*/i, "").trim()}
               </p>
             )}
 
-            {/* Multi-Participant / Performer List Badges (For Music Groups, Choirs, Bands, Sports Teams) */}
+            {/* Centered Multi-Participant / Performer List Badges */}
             {lowerThird.performers && lowerThird.performers.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5 mt-2 max-w-xl animate-in fade-in-0 slide-in-from-left-4 duration-500">
-                <span className="text-[10px] font-black text-[#F4D571] uppercase tracking-wider mr-1">
-                  PERFORMERS:
+              <div className="flex flex-col items-center gap-1.5 mt-3.5 animate-in fade-in-0 zoom-in-95 duration-500">
+                <span className="text-[11px] font-black text-[#F4D571] uppercase tracking-widest">
+                  PERFORMERS & PARTICIPANTS:
                 </span>
-                {lowerThird.performers.map((performer, pIdx) => (
-                  <span
-                    key={pIdx}
-                    className="px-2.5 py-0.5 rounded-md bg-white/10 border border-[#F4D571]/40 text-[#F4D571] font-bold text-xs shadow-xs"
-                  >
-                    {performer}
-                  </span>
-                ))}
+                <div className="flex flex-wrap items-center justify-center gap-2 max-w-3xl">
+                  {lowerThird.performers.map((performer, pIdx) => (
+                    <span
+                      key={pIdx}
+                      className="px-3.5 py-1 rounded-xl bg-gradient-to-r from-white/15 to-white/10 border border-[#F4D571]/60 text-[#F4D571] font-extrabold text-xs shadow-md backdrop-blur-md"
+                    >
+                      {performer}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
 
           </div>
+        ) : (
+          /* OPTION B: STANDARD INDIVIDUAL CANDIDATE CARD WITH PHOTO & HOUSE CREST (LEFT-ALIGNED) */
+          <div
+            key={`${lowerThird.name}-${lowerThird.role}-${lowerThird.timestamp}`}
+            className="absolute bottom-16 left-10 flex items-stretch bg-gradient-to-r from-[#050E1F]/95 via-[#0E3B91]/95 to-[#071329]/95 backdrop-blur-2xl border-2 border-[#F4D571] rounded-[2rem] p-5 max-w-2xl shadow-[0_25px_60px_rgba(0,0,0,0.95)] animate-in fade-in-0 slide-in-from-bottom-12 zoom-in-95 duration-500 ease-out overflow-hidden"
+          >
+            {/* Gold Shimmer Beam Wipe Effect across Card */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-200/35 to-transparent -translate-x-full animate-in slide-in-from-left-full duration-1000 pointer-events-none z-30" />
 
-          {/* 3. Official House Emblem Crest Badge (PLACED AT VERY LAST / END OF CARD) */}
-          {currentHouseLogo && (
-            <div className="relative shrink-0 ml-auto mr-4 self-center">
-              <div className="w-20 h-20 rounded-2xl bg-white border-2 border-[#F4D571] p-1.5 shadow-[0_0_20px_rgba(244,213,113,0.4)] flex items-center justify-center animate-in zoom-in-75 duration-300">
+            {/* Candidate Photo Avatar (112px x 112px) */}
+            {lowerThird.photo && (
+              <div className="relative shrink-0 mr-4">
                 <img
-                  src={currentHouseLogo}
-                  alt="House Crest"
-                  className="w-full h-full object-contain rounded-xl"
+                  key={lowerThird.photo}
+                  src={lowerThird.photo}
+                  alt={lowerThird.name}
+                  className="w-28 h-28 rounded-2xl object-cover border-3 border-[#F4D571] shadow-[0_0_25px_rgba(244,213,113,0.4)] bg-slate-900 animate-in fade-in-0 zoom-in-75 duration-400"
                 />
+                <div className="absolute -bottom-2 -right-2 bg-[#F4D571] text-[#0B1E40] text-[10px] font-black px-2 py-0.5 rounded-md uppercase shadow-lg border border-amber-300">
+                  SDPS
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* 4. Right Gold Accent Stripe */}
-          <div className="w-2 bg-gradient-to-b from-[#F4D571] via-amber-400 to-[#F4D571] rounded-r-2xl ml-auto self-stretch shrink-0 shadow-[0_0_15px_rgba(244,213,113,0.5)]" />
-        </div>
+            {/* Name & Role Text Block */}
+            <div className="flex flex-col justify-center min-w-0 pr-4 flex-1">
+              
+              {/* Top Badge */}
+              {lowerThird.badge && (
+                <span 
+                  key={lowerThird.badge}
+                  className="inline-flex items-center gap-1.5 self-start px-3 py-1 rounded-lg bg-amber-500/25 border border-amber-400/60 text-[#F4D571] font-black text-xs tracking-widest uppercase mb-1.5 animate-in fade-in-0 zoom-in-90 duration-300 shadow-sm"
+                >
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                  {lowerThird.badge}
+                </span>
+              )}
+
+              {/* Candidate / Group Full Title */}
+              <h2 
+                key={lowerThird.name}
+                className="font-headline font-black text-2xl md:text-3xl text-white tracking-tight truncate drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)] animate-in fade-in-0 slide-in-from-left-6 duration-300"
+              >
+                {lowerThird.name}
+              </h2>
+
+              {/* Role & Designation OR Song Name */}
+              <div 
+                key={lowerThird.role}
+                className="flex items-center gap-2 mt-0.5 animate-in fade-in-0 slide-in-from-left-4 duration-400"
+              >
+                <span className="font-extrabold text-sm md:text-base text-amber-300 uppercase tracking-wide truncate">
+                  {lowerThird.role}
+                </span>
+              </div>
+
+              {/* Subtitle / Organization */}
+              {lowerThird.subtitle && (
+                <p className="text-xs md:text-sm font-semibold text-slate-200 truncate mt-0.5 opacity-95">
+                  {lowerThird.subtitle.replace(/^Class\s+[IVXLCDM0-9]+\s*•\s*/i, "").trim()}
+                </p>
+              )}
+
+            </div>
+
+            {/* Official House Emblem Crest Badge (LAST OF CARD) */}
+            {currentHouseLogo && (
+              <div className="relative shrink-0 ml-auto mr-4 self-center">
+                <div className="w-20 h-20 rounded-2xl bg-white border-2 border-[#F4D571] p-1.5 shadow-[0_0_20px_rgba(244,213,113,0.4)] flex items-center justify-center animate-in zoom-in-75 duration-300">
+                  <img
+                    src={currentHouseLogo}
+                    alt="House Crest"
+                    className="w-full h-full object-contain rounded-xl"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Right Gold Accent Stripe */}
+            <div className="w-2 bg-gradient-to-b from-[#F4D571] via-amber-400 to-[#F4D571] rounded-r-2xl ml-auto self-stretch shrink-0 shadow-[0_0_15px_rgba(244,213,113,0.5)]" />
+          </div>
+        )
       )}
 
       {/* 4. LIVE NEWS TICKER / CRAWLER (BOTTOM FULL WIDTH) */}
