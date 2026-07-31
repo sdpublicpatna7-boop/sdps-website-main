@@ -145,6 +145,27 @@ function App() {
     window.location.hostname.startsWith("audio.")
   );
 
+  if (isBroadcastingSubdomain) {
+    return (
+      <div className="App">
+        <HelmetProvider>
+          <AuthProvider>
+            <BrowserRouter>
+              <ErrorBoundary>
+                <RouteSEOManager />
+                <Suspense fallback={<AdminLoading />}>
+                  <Routes>
+                    <Route path="*" element={<AdminAudioBroadcast />} />
+                  </Routes>
+                </Suspense>
+              </ErrorBoundary>
+            </BrowserRouter>
+          </AuthProvider>
+        </HelmetProvider>
+      </div>
+    );
+  }
+
   return (
     <div className="App">
       <HelmetProvider>
@@ -167,13 +188,10 @@ function App() {
                 <Route path="/video-call" element={<Suspense fallback={<div>Loading Call...</div>}><PublicVideoCall /></Suspense>} />
                 <Route path="/broadcasting" element={<Suspense fallback={<AdminLoading />}><AdminAudioBroadcast /></Suspense>} />
                 <Route path="/apaar" element={<Suspense fallback={<AdminLoading />}><ApaarForm /></Suspense>} />
-                {isBroadcastingSubdomain && (
-                  <Route path="/" element={<Suspense fallback={<AdminLoading />}><AdminAudioBroadcast /></Suspense>} />
-                )}
 
                 {/* Public */}
                 <Route element={<PublicLayout />}>
-                  {!isBroadcastingSubdomain && <Route path="/" element={<Home />} />}
+                  <Route path="/" element={<Home />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/academics" element={<Academics />} />
                   <Route path="/house-system" element={<HouseSystem />} />
