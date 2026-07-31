@@ -335,6 +335,14 @@ export default function StreamControl() {
     loadDbPhotos();
   }, []);
 
+  // Prevent auto-logout during active stream control
+  useEffect(() => {
+    window.__sdps_suppress_logout = true;
+    return () => {
+      window.__sdps_suppress_logout = false;
+    };
+  }, []);
+
   // Init BroadcastChannel
   useEffect(() => {
     let channel = null;

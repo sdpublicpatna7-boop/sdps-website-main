@@ -59,18 +59,18 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (!user) return;
-    const INACTIVITY_LIMIT = 10 * 60 * 1000; // 10 minutes
+    const INACTIVITY_LIMIT = 30 * 60 * 1000; // 30 minutes of inactivity
     let timer;
     const reset = () => {
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => {
-        // Skip auto-logout if a long-running operation (e.g. PDF export) is in progress
+        // Skip auto-logout if a long-running operation (e.g. live streaming, PDF export) is in progress
         if (window.__sdps_suppress_logout) return reset();
         logout();
       }, INACTIVITY_LIMIT);
     };
-    const events = ["mousemove", "keydown", "click", "scroll"];
-    events.forEach((e) => window.addEventListener(e, reset));
+    const events = ["mousemove", "keydown", "click", "scroll", "touchstart", "pointermove", "focus"];
+    events.forEach((e) => window.addEventListener(e, reset, { passive: true }));
     reset();
     return () => {
       if (timer) clearTimeout(timer);
