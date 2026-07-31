@@ -19,7 +19,7 @@ export default function NoticeBoard() {
       } catch {}
     };
     load();
-    const id = setInterval(load, 5000);
+    const id = setInterval(load, 60000);
     const tickId = setInterval(() => setNow(new Date()), 1000);
     return () => { active = false; clearInterval(id); clearInterval(tickId); };
   }, []);

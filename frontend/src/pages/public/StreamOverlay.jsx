@@ -277,7 +277,16 @@ export default function StreamOverlay() {
 
     connectSSE();
 
-    // 3. LocalStorage fallback listener
+    // 3. LocalStorage fallback & storage event listener
+    const handleStorageChange = (e) => {
+      if (e.key === "sdps_stream_overlay_state" && e.newValue) {
+        try {
+          processState(JSON.parse(e.newValue));
+        } catch (err) {}
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+
     const checkLocalStorage = () => {
       try {
         const saved = localStorage.getItem("sdps_stream_overlay_state");
@@ -290,6 +299,7 @@ export default function StreamOverlay() {
       if (bc) bc.close();
       if (sseSource) sseSource.close();
       if (sseReconnectTimer) clearTimeout(sseReconnectTimer);
+      window.removeEventListener("storage", handleStorageChange);
     };
   }, []);
 
