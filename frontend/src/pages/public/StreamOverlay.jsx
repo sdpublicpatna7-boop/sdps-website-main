@@ -193,6 +193,29 @@ export default function StreamOverlay() {
     };
   }, []);
 
+  // Force transparent background for OBS Studio Browser Source
+  useEffect(() => {
+    document.documentElement.classList.add("obs-transparent-mode");
+    document.body.classList.add("obs-transparent-mode");
+    const rootEl = document.getElementById("root");
+    if (rootEl) rootEl.classList.add("obs-transparent-mode");
+
+    document.body.style.background = "transparent";
+    document.body.style.backgroundColor = "transparent";
+    document.documentElement.style.background = "transparent";
+    document.documentElement.style.backgroundColor = "transparent";
+
+    return () => {
+      document.documentElement.classList.remove("obs-transparent-mode");
+      document.body.classList.remove("obs-transparent-mode");
+      if (rootEl) rootEl.classList.remove("obs-transparent-mode");
+      document.body.style.background = "";
+      document.body.style.backgroundColor = "";
+      document.documentElement.style.background = "";
+      document.documentElement.style.backgroundColor = "";
+    };
+  }, []);
+
   return (
     <div className="w-screen h-screen bg-transparent overflow-hidden relative select-none pointer-events-none font-sans">
       
