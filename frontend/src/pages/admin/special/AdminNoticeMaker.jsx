@@ -116,7 +116,7 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
       setSignatureUrl(signaturePresets.director || "");
     } else if (selectedRolePreset === "management") {
       setSignatoryHeader("By Order:");
-      setSignatoryAuthority("Management / Trustee");
+      setSignatoryAuthority("Management");
       setSignatureUrl(signaturePresets.management || "");
     } else if (selectedRolePreset === "custom") {
       // Keep custom text, clear signature

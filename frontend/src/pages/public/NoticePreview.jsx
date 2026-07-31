@@ -86,7 +86,7 @@ export function NoticePreview() {
     signatoryLabel = "Director";
   } else if (authLower.includes("management") || authLower.includes("trustee")) {
     signatoryPresetKey = "signature_management";
-    signatoryLabel = "Management / Trustee";
+    signatoryLabel = "Management";
   }
 
   const rawSig = signatoryPresetKey ? settings?.[signatoryPresetKey] : "";
