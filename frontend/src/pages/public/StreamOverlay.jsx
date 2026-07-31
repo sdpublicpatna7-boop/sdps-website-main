@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
-import api from "@/lib/api";
 
 const CHANNEL_NAME = "sdps_obs_stream_channel";
+const BACKEND_URL = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
 
 const DEFAULT_LEADER = {
   name: "Priyanshu Singh",
@@ -144,25 +144,82 @@ export default function StreamOverlay() {
 
   // Sync state from Backend API, BroadcastChannel & localStorage
   useEffect(() => {
+    // Strictly compare previous vs incoming properties to prevent re-renders when data hasn't changed!
     const processState = (state) => {
       if (!state) return;
+
       if (state.lowerThird) {
         setLowerThird(prev => {
+          const lt = state.lowerThird;
           if (
-            prev.name !== state.lowerThird.name ||
-            prev.role !== state.lowerThird.role ||
-            prev.visible !== state.lowerThird.visible ||
-            prev.timestamp !== state.lowerThird.timestamp
+            prev.name !== lt.name ||
+            prev.role !== lt.role ||
+            prev.subtitle !== lt.subtitle ||
+            prev.photo !== lt.photo ||
+            prev.houseLogo !== lt.houseLogo ||
+            prev.badge !== lt.badge ||
+            prev.visible !== lt.visible
           ) {
-            return { ...prev, ...state.lowerThird };
+            return {
+              name: lt.name,
+              role: lt.role,
+              subtitle: lt.subtitle,
+              photo: lt.photo,
+              houseLogo: lt.houseLogo,
+              badge: lt.badge,
+              visible: lt.visible,
+              timestamp: lt.timestamp || Date.now()
+            };
           }
           return prev;
         });
       }
-      if (state.banner) setBanner(prev => ({ ...prev, ...state.banner }));
-      if (state.ticker) setTicker(prev => ({ ...prev, ...state.ticker }));
-      if (state.logoBug) setLogoBug(prev => ({ ...prev, ...state.logoBug }));
-      if (state.startingSoon) setStartingSoon(prev => ({ ...prev, ...state.startingSoon }));
+
+      if (state.banner) {
+        setBanner(prev => {
+          const b = state.banner;
+          if (prev.visible !== b.visible || prev.title !== b.title || prev.subtitle !== b.subtitle) {
+            return { visible: b.visible, title: b.title, subtitle: b.subtitle };
+          }
+          return prev;
+        });
+      }
+
+      if (state.ticker) {
+        setTicker(prev => {
+          const t = state.ticker;
+          if (prev.visible !== t.visible || prev.text !== t.text) {
+            return { visible: t.visible, text: t.text };
+          }
+          return prev;
+        });
+      }
+
+      if (state.logoBug) {
+        setLogoBug(prev => {
+          const l = state.logoBug;
+          if (prev.visible !== l.visible || prev.showLive !== l.showLive) {
+            return { visible: l.visible, showLive: l.showLive };
+          }
+          return prev;
+        });
+      }
+
+      if (state.startingSoon) {
+        setStartingSoon(prev => {
+          const ss = state.startingSoon;
+          if (
+            prev.visible !== ss.visible ||
+            prev.title !== ss.title ||
+            prev.subtitle !== ss.subtitle ||
+            prev.message !== ss.message ||
+            prev.timerText !== ss.timerText
+          ) {
+            return { visible: ss.visible, title: ss.title, subtitle: ss.subtitle, message: ss.message, timerText: ss.timerText };
+          }
+          return prev;
+        });
+      }
 
       if (state.confetti_trigger_id && state.confetti_trigger_id > lastConfettiTriggerRef.current) {
         lastConfettiTriggerRef.current = state.confetti_trigger_id;
@@ -179,37 +236,33 @@ export default function StreamOverlay() {
           if (e.data?.type === "CONFETTI") {
             fireCanvasConfetti();
           } else if (e.data?.type === "LOWER_THIRD") {
-            setLowerThird(prev => ({ ...prev, ...e.data.payload, timestamp: Date.now() }));
+            processState({ lowerThird: e.data.payload });
           } else if (e.data?.type === "BANNER") {
-            setBanner(prev => ({ ...prev, ...e.data.payload }));
+            processState({ banner: e.data.payload });
           } else if (e.data?.type === "TICKER") {
-            setTicker(prev => ({ ...prev, ...e.data.payload }));
+            processState({ ticker: e.data.payload });
           } else if (e.data?.type === "LOGO") {
-            setLogoBug(prev => ({ ...prev, ...e.data.payload }));
+            processState({ logoBug: e.data.payload });
           } else if (e.data?.type === "STARTING_SOON") {
-            setStartingSoon(prev => ({ ...prev, ...e.data.payload }));
+            processState({ startingSoon: e.data.payload });
           }
         };
       }
     } catch (err) {}
 
-    // 2. High-Speed Backend API Polling (200ms with cache-busting headers for OBS CEF)
+    // 2. High-Speed Direct Fetch Polling (300ms for OBS Studio CEF sync, zero Axios interceptor overhead)
     const fetchApiState = async () => {
       try {
-        const res = await api.get(`/stream-overlay/state?t=${Date.now()}`, {
-          headers: {
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            "Pragma": "no-cache",
-            "Expires": "0"
-          }
-        });
-        if (res.data) {
-          processState(res.data);
+        const apiUrl = `${BACKEND_URL}/api/stream-overlay/state?t=${Date.now()}`;
+        const res = await fetch(apiUrl, { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          processState(data);
         }
       } catch (err) {}
     };
 
-    // 3. LocalStorage fallback check (200ms)
+    // 3. LocalStorage fallback check (300ms)
     const checkLocalStorage = () => {
       try {
         const saved = localStorage.getItem("sdps_stream_overlay_state");
@@ -222,8 +275,8 @@ export default function StreamOverlay() {
 
     fetchApiState();
     checkLocalStorage();
-    const interval = setInterval(fetchApiState, 200);
-    const localInterval = setInterval(checkLocalStorage, 200);
+    const interval = setInterval(fetchApiState, 300);
+    const localInterval = setInterval(checkLocalStorage, 300);
 
     return () => {
       if (bc) bc.close();
