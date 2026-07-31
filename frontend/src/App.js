@@ -58,8 +58,10 @@ const ShortLinkRedirect = lazy(() => import("@/pages/ShortLinkRedirect"));
 const LinksPage = lazy(() => import("@/pages/public/LinksPage"));
 const NoticePreview = lazy(() => import("@/pages/public/NoticePreview"));
 const PublicVideoCall = lazy(() => import("@/pages/public/PublicVideoCall"));
+const StreamOverlay = lazy(() => import("@/pages/public/StreamOverlay"));
 
 // Lazy-loaded Admin Pages
+const StreamControl = lazy(() => import("@/pages/admin/special/StreamControl"));
 const AdminAudioBroadcast = lazy(() => import("@/pages/admin/AdminAudioBroadcast"));
 const MacWidgetPage = lazy(() => import("@/pages/admin/special/MacWidgetPage"));
 const AdminNews = lazy(() => import("@/pages/admin/crud/AdminNews"));
@@ -157,6 +159,9 @@ function MainApp() {
       <Route path="/notice-preview/:id" element={<Suspense fallback={<div>Loading...</div>}><NoticePreview /></Suspense>} />
       <Route path="/review" element={<MapsReview />} />
       <Route path="/video-call" element={<Suspense fallback={<div>Loading Call...</div>}><PublicVideoCall /></Suspense>} />
+      <Route path="/stream-overlay" element={<Suspense fallback={null}><StreamOverlay /></Suspense>} />
+      <Route path="/obs-overlay" element={<Suspense fallback={null}><StreamOverlay /></Suspense>} />
+      <Route path="/stream-control" element={<Suspense fallback={<AdminLoading />}><StreamControl /></Suspense>} />
       <Route path="/broadcasting" element={<Suspense fallback={<AdminLoading />}><AdminAudioBroadcast /></Suspense>} />
       <Route path="/apaar" element={<Suspense fallback={<AdminLoading />}><ApaarForm /></Suspense>} />
 
@@ -246,6 +251,7 @@ function MainApp() {
         <Route path="salary-certificate" element={<AdminSalaryCertificate />} />
         <Route path="experience-certificate" element={<AdminExperienceCertificate />} />
         <Route path="notice-maker" element={<AdminNoticeMaker />} />
+        <Route path="stream-control" element={<Suspense fallback={<AdminLoading />}><StreamControl /></Suspense>} />
         <Route path="omr-generator" element={<Suspense fallback={<AdminLoading />}><AdminOmrGenerator /></Suspense>} />
         <Route path="omr-roster" element={<Suspense fallback={<AdminLoading />}><AdminOmrRoster /></Suspense>} />
         <Route path="omr-checker" element={<Suspense fallback={<AdminLoading />}><AdminOmrChecker /></Suspense>} />

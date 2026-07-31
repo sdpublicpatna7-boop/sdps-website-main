@@ -8,7 +8,7 @@ import {
   GraduationCap, Award, FileText, CreditCard, Settings, LogOut,
   MessageSquare, Megaphone, ScrollText, FilePlus, Home, Hotel,
   BookOpen, Shield, EyeOff, ClipboardList, BookMarked, UserCog,
-  Menu, X, Star, Cake, Link2 as LinkIcon, Fingerprint, Lock, CheckSquare, PhoneCall, Radio,
+  Menu, X, Star, Cake, Link2 as LinkIcon, Fingerprint, Lock, CheckSquare, PhoneCall, Radio, Tv,
   ChevronDown, ChevronRight, PanelLeftClose, PanelLeft, ChevronLeft
 } from "lucide-react";
 import { useAuth } from "../../lib/auth";
@@ -109,6 +109,7 @@ const NAV_CATEGORIES = [
     label: "Tools & Generators",
     icon: Shield,
     items: [
+      { to: "/admin/stream-control", label: "OBS Stream Overlay", icon: Tv, permission: ["notice-maker", "media-tools", "site-settings"] },
       { to: "/admin/video-support", label: "Voice AI Support Agent", icon: PhoneCall, permission: ["site-settings", "admissions", "media-tools"] },
       { to: "/admin/thumbnail-generator", label: "Thumbnail Generator", icon: ImageIcon, permission: ["thumbnail-generator", "media-tools"] },
       { to: "/admin/notice-maker", label: "Notice Maker", icon: FileText, permission: ["notice-maker", "media-tools"] },
