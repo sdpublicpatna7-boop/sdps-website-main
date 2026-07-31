@@ -1,47 +1,82 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { 
-  Tv, Eye, EyeOff, Copy, ExternalLink, Sparkles, CheckCircle2, User, RefreshCw, Send, Radio, Award, Flag, Building, HelpCircle, Layers
+  Tv, Eye, EyeOff, Copy, ExternalLink, Sparkles, CheckCircle2, User, RefreshCw, Send, Radio, Award, Flag, Building, HelpCircle, Layers, ShieldCheck
 } from "lucide-react";
 
 const CHANNEL_NAME = "sdps_obs_stream_channel";
 
 const PRESET_CARDS = [
   {
-    category: "School Prefects & Head Cabinet",
+    category: "🏆 Executive Head Cabinet & Appointed Leaders",
     items: [
       {
-        name: "Adarsh Kumar",
-        role: "School Prefect",
-        subtitle: "Class XII • S.D. Public School, Patna",
+        name: "Soumit Kumar",
+        role: "School Captain",
+        subtitle: "Executive Council 2026-27 • S.D. Public School",
         photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/aadarsh_nyhpfq.png",
-        badge: "SCHOOL PREFECT"
+        badge: "SCHOOL CAPTAIN"
       },
       {
-        name: "Ishika Kumari",
-        role: "School Prefect",
-        subtitle: "Class XII • S.D. Public School, Patna",
-        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434417/ishika_spfj5r.png",
-        badge: "SCHOOL PREFECT"
-      },
-      {
-        name: "Ankush Anand",
-        role: "School Prefect",
-        subtitle: "Class XI • S.D. Public School, Patna",
+        name: "Aniket Raj",
+        role: "Vice School Captain",
+        subtitle: "Appointed by School Management • 2026-27",
         photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434282/ankush_anad_sjrqqt.png",
-        badge: "SCHOOL PREFECT"
+        badge: "VICE CAPTAIN"
       },
       {
-        name: "Nitin Raj",
-        role: "School Prefect",
-        subtitle: "Class XI • S.D. Public School, Patna",
-        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785503589/nitin_iadqvo.png",
-        badge: "SCHOOL PREFECT"
+        name: "Aadhya Jha",
+        role: "Vice School Captain",
+        subtitle: "Appointed by School Management • 2026-27",
+        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434417/ishika_spfj5r.png",
+        badge: "VICE CAPTAIN"
+      },
+      {
+        name: "Vicky Singh",
+        role: "Sports Skipper",
+        subtitle: "Sports Head • S.D. Public School, Patna",
+        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/aadarsh_nyhpfq.png",
+        badge: "SPORTS SKIPPER"
+      },
+      {
+        name: "Vijaya Laxmi",
+        role: "Sports Skipper",
+        subtitle: "Appointed by School Management • 2026-27",
+        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434417/ishika_spfj5r.png",
+        badge: "SPORTS SKIPPER"
+      },
+      {
+        name: "Abhishek Kumar",
+        role: "Cultural Head",
+        subtitle: "Cultural Affairs • S.D. Public School, Patna",
+        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434282/ankush_anad_sjrqqt.png",
+        badge: "CULTURAL HEAD"
+      },
+      {
+        name: "Anshika",
+        role: "Cultural Head",
+        subtitle: "Appointed by School Management • 2026-27",
+        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434417/ishika_spfj5r.png",
+        badge: "CULTURAL HEAD"
+      },
+      {
+        name: "Harsh Raj Cesodia",
+        role: "Discipline Head",
+        subtitle: "Appointed by School Management • 2026-27",
+        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/aadarsh_nyhpfq.png",
+        badge: "DISCIPLINE HEAD"
+      },
+      {
+        name: "Simran Kumari",
+        role: "Discipline Head",
+        subtitle: "Appointed by School Management • 2026-27",
+        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434417/ishika_spfj5r.png",
+        badge: "DISCIPLINE HEAD"
       }
     ]
   },
   {
-    category: "Ashoka House (Yellow Army)",
+    category: "🚩 House Captains & Vice Captains",
     items: [
       {
         name: "Kumar Ashmit",
@@ -56,12 +91,7 @@ const PRESET_CARDS = [
         subtitle: "Ashoka House (Yellow Army) • 2026-27",
         photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785328179/sakd_yv4y3y.png",
         badge: "ASHOKA VICE CAPTAIN"
-      }
-    ]
-  },
-  {
-    category: "Aryabhatta House (Red Army)",
-    items: [
+      },
       {
         name: "Manjari",
         role: "House Captain",
@@ -75,12 +105,7 @@ const PRESET_CARDS = [
         subtitle: "Aryabhatta House (Red Army) • 2026-27",
         photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785328002/arya_VC_mz1rrs.png",
         badge: "ARYABHATTA VICE CAPTAIN"
-      }
-    ]
-  },
-  {
-    category: "Chanakya House (Blue Army)",
-    items: [
+      },
       {
         name: "Abhinav Kumar",
         role: "House Captain",
@@ -94,12 +119,7 @@ const PRESET_CARDS = [
         subtitle: "Chanakya House (Blue Army) • 2026-27",
         photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785328381/Prachi_zcygd3.png",
         badge: "CHANAKYA VICE CAPTAIN"
-      }
-    ]
-  },
-  {
-    category: "Gautam House (Green Army)",
-    items: [
+      },
       {
         name: "Priyanshu Singh",
         role: "House Captain",
@@ -117,7 +137,103 @@ const PRESET_CARDS = [
     ]
   },
   {
-    category: "School Management & Dignitaries",
+    category: "🎗️ School Prefects (2026-27 Cabinet)",
+    items: [
+      {
+        name: "Adarsh Kumar",
+        role: "School Prefect",
+        subtitle: "Class XII • S.D. Public School, Patna",
+        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/aadarsh_nyhpfq.png",
+        badge: "SCHOOL PREFECT"
+      },
+      {
+        name: "Ankush Anand",
+        role: "School Prefect",
+        subtitle: "Class XI • S.D. Public School, Patna",
+        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434282/ankush_anad_sjrqqt.png",
+        badge: "SCHOOL PREFECT"
+      },
+      {
+        name: "Daya Anand Singh",
+        role: "School Prefect",
+        subtitle: "Class XI • S.D. Public School, Patna",
+        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/aadarsh_nyhpfq.png",
+        badge: "SCHOOL PREFECT"
+      },
+      {
+        name: "Ishika Kumari",
+        role: "School Prefect",
+        subtitle: "Class XII • S.D. Public School, Patna",
+        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434417/ishika_spfj5r.png",
+        badge: "SCHOOL PREFECT"
+      },
+      {
+        name: "Manjari",
+        role: "School Prefect",
+        subtitle: "Class XII • S.D. Public School, Patna",
+        photo: "https://res.cloudinary.com/drzb164ge/image/upload/q_auto/f_auto/v1778295843/001_feweo3.jpg",
+        badge: "SCHOOL PREFECT"
+      },
+      {
+        name: "Nitin Raj",
+        role: "School Prefect",
+        subtitle: "Class XI • S.D. Public School, Patna",
+        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785503589/nitin_iadqvo.png",
+        badge: "SCHOOL PREFECT"
+      },
+      {
+        name: "Priyanshu Singh",
+        role: "School Prefect",
+        subtitle: "Class XII • S.D. Public School, Patna",
+        photo: "https://res.cloudinary.com/drzb164ge/image/upload/q_auto/f_auto/v1778296001/005_l9apgk.png",
+        badge: "SCHOOL PREFECT"
+      },
+      {
+        name: "Rudra Sinha",
+        role: "School Prefect",
+        subtitle: "Class XI • S.D. Public School, Patna",
+        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434282/ankush_anad_sjrqqt.png",
+        badge: "SCHOOL PREFECT"
+      },
+      {
+        name: "Sakshi Pandit",
+        role: "School Prefect",
+        subtitle: "Class XI • S.D. Public School, Patna",
+        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434417/ishika_spfj5r.png",
+        badge: "SCHOOL PREFECT"
+      },
+      {
+        name: "Sarthak Singh",
+        role: "School Prefect",
+        subtitle: "Class XI • S.D. Public School, Patna",
+        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/aadarsh_nyhpfq.png",
+        badge: "SCHOOL PREFECT"
+      },
+      {
+        name: "Shadan Ahmed Haidry",
+        role: "School Prefect",
+        subtitle: "Class XI • S.D. Public School, Patna",
+        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434282/ankush_anad_sjrqqt.png",
+        badge: "SCHOOL PREFECT"
+      },
+      {
+        name: "Surya Singh",
+        role: "School Prefect",
+        subtitle: "Class XI • S.D. Public School, Patna",
+        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/aadarsh_nyhpfq.png",
+        badge: "SCHOOL PREFECT"
+      },
+      {
+        name: "Twinkle Sinha",
+        role: "School Prefect",
+        subtitle: "Class XI • S.D. Public School, Patna",
+        photo: "https://res.cloudinary.com/drx3kb809/image/upload/v1785434417/ishika_spfj5r.png",
+        badge: "SCHOOL PREFECT"
+      }
+    ]
+  },
+  {
+    category: "🏢 School Management & Dignitaries",
     items: [
       {
         name: "Dr. BVatsal Sir",
@@ -147,11 +263,11 @@ export default function StreamControl() {
   const [logoBugVisible, setLogoBugVisible] = useState(true);
 
   // Active inputs
-  const [cardName, setCardName] = useState("Adarsh Kumar");
-  const [cardRole, setCardRole] = useState("Head Boy | School Prefect");
-  const [cardSubtitle, setCardSubtitle] = useState("Class XII • S.D. Public School, Patna");
+  const [cardName, setCardName] = useState("Soumit Kumar");
+  const [cardRole, setCardRole] = useState("School Captain");
+  const [cardSubtitle, setCardSubtitle] = useState("Executive Council 2026-27 • S.D. Public School");
   const [cardPhoto, setCardPhoto] = useState("https://res.cloudinary.com/drx3kb809/image/upload/v1785434108/aadarsh_nyhpfq.png");
-  const [cardBadge, setCardBadge] = useState("INVESTITURE CEREMONY");
+  const [cardBadge, setCardBadge] = useState("SCHOOL CAPTAIN");
 
   const [bannerTitle, setBannerTitle] = useState("INVESTITURE CEREMONY 2026-27");
   const [bannerSubtitle, setBannerSubtitle] = useState("S.D. PUBLIC SCHOOL, PATNA • OFFICIAL LIVE STREAM");
@@ -176,12 +292,10 @@ export default function StreamControl() {
 
   // Save to localStorage & broadcast
   const sendBroadcast = (type, payload) => {
-    // 1. BroadcastChannel
     if (bc) {
       bc.postMessage({ type, payload });
     }
 
-    // 2. LocalStorage sync for cross-tab updates
     try {
       const saved = localStorage.getItem("sdps_stream_overlay_state");
       const currentState = saved ? JSON.parse(saved) : {};
@@ -194,14 +308,14 @@ export default function StreamControl() {
       localStorage.setItem("sdps_stream_overlay_state", JSON.stringify(currentState));
     } catch (e) {}
 
-    toast.success(`Broadcast updated: ${type}`);
+    toast.success(`Pushed live: ${payload?.name || type}`);
   };
 
   const overlayUrl = typeof window !== "undefined" ? `${window.location.origin}/stream-overlay` : "https://sdpublic.org/stream-overlay";
 
   const copyOverlayUrl = () => {
     navigator.clipboard.writeText(overlayUrl);
-    toast.success("OBS Overlay URL copied to clipboard! Add as Browser Source in OBS Studio.");
+    toast.success("OBS Overlay URL copied to clipboard!");
   };
 
   const pushCard = (card) => {
@@ -217,7 +331,8 @@ export default function StreamControl() {
       role: card.role,
       subtitle: card.subtitle,
       photo: card.photo,
-      badge: card.badge
+      badge: card.badge,
+      timestamp: Date.now()
     });
     setLowerThirdVisible(true);
   };
@@ -229,7 +344,8 @@ export default function StreamControl() {
       role: cardRole,
       subtitle: cardSubtitle,
       photo: cardPhoto,
-      badge: cardBadge
+      badge: cardBadge,
+      timestamp: Date.now()
     });
     setLowerThirdVisible(true);
   };
@@ -292,7 +408,7 @@ export default function StreamControl() {
             </h1>
           </div>
           <p className="text-xs text-slate-300">
-            Real-time overlay manager for OBS Studio, vMix, and Streamlabs. Controls designation cards, lower thirds, banners, and tickers live on air.
+            Real-time seamless lower-third & overlay manager for OBS Studio, vMix, and Streamlabs.
           </p>
         </div>
 
@@ -301,7 +417,7 @@ export default function StreamControl() {
             onClick={copyOverlayUrl}
             className="px-4 py-2.5 bg-[#F4D571] hover:bg-amber-400 text-[#0B1E40] font-headline font-bold text-xs rounded-xl shadow-lg transition flex items-center gap-2 cursor-pointer"
           >
-            <Copy className="w-4 h-4" /> Copy OBS Browser Source URL
+            <Copy className="w-4 h-4" /> Copy OBS Overlay URL
           </button>
           
           <a
@@ -312,15 +428,6 @@ export default function StreamControl() {
           >
             <ExternalLink className="w-4 h-4" /> Preview Overlay Window
           </a>
-        </div>
-      </div>
-
-      {/* OBS Integration Instructions Banner */}
-      <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex items-start gap-3 text-xs text-amber-900">
-        <Tv className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-        <div>
-          <span className="font-bold block text-sm">How to use in OBS Studio / vMix:</span>
-          Add a new <strong className="font-extrabold text-amber-900 font-mono">Browser Source</strong> in OBS, paste URL <code className="bg-amber-200/60 px-1.5 py-0.5 rounded text-amber-950 font-bold font-mono">{overlayUrl}</code>, set width to <strong className="font-mono">1920</strong> and height to <strong className="font-mono">1080</strong>, and check <strong className="font-bold">"Shutdown source when not visible"</strong>. All changes from this controller will push live on air instantly!
         </div>
       </div>
 
@@ -373,7 +480,7 @@ export default function StreamControl() {
 
           <button
             onClick={triggerConfetti}
-            className="p-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:brightness-110 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md transition"
+            className="p-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:brightness-110 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md transition cursor-pointer"
           >
             <Sparkles className="w-4 h-4 text-yellow-300" /> Trigger Confetti
           </button>
@@ -384,15 +491,14 @@ export default function StreamControl() {
       <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-6">
         <div className="flex justify-between items-center border-b border-slate-100 pb-3">
           <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
-            <Award className="w-4 h-4 text-brand-orange" /> 1-Click Preset Designation Cards
+            <Award className="w-4 h-4 text-brand-orange" /> 1-Click Authentic Preset Designation Cards (2026-27)
           </h2>
-          <span className="text-[10px] text-slate-400 font-bold uppercase">Click any card to show on stream lower-third</span>
+          <span className="text-[10px] text-slate-400 font-bold uppercase">Click any card to show seamlessly on stream</span>
         </div>
 
         {PRESET_CARDS.map((cat, idx) => (
           <div key={idx} className="space-y-3">
-            <h3 className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-              {idx === 0 ? <User className="w-3.5 h-3.5 text-blue-600" /> : idx === 1 ? <Flag className="w-3.5 h-3.5 text-emerald-600" /> : <Building className="w-3.5 h-3.5 text-purple-600" />}
+            <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5 border-l-4 border-brand-orange pl-2">
               {cat.category}
             </h3>
 
@@ -404,7 +510,7 @@ export default function StreamControl() {
                   className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-brand-orange rounded-2xl transition cursor-pointer flex items-center gap-3 group shadow-2xs"
                 >
                   {card.photo ? (
-                    <img src={card.photo} alt={card.name} className="w-12 h-12 rounded-xl object-cover border border-slate-300 bg-white" />
+                    <img src={card.photo} alt={card.name} className="w-12 h-12 rounded-xl object-cover border border-slate-300 bg-white shrink-0" />
                   ) : (
                     <div className="w-12 h-12 rounded-xl bg-slate-800 text-white font-black text-lg flex items-center justify-center shrink-0">
                       {card.name.charAt(0)}
@@ -412,7 +518,7 @@ export default function StreamControl() {
                   )}
 
                   <div className="min-w-0 flex-1">
-                    <span className="text-[9px] font-extrabold text-brand-orange uppercase tracking-wider block">
+                    <span className="text-[9px] font-extrabold text-brand-orange uppercase tracking-wider block truncate">
                       {card.badge || "PREFECT"}
                     </span>
                     <h4 className="font-bold text-xs text-slate-900 truncate group-hover:text-brand-orange transition">
