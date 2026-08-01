@@ -26,7 +26,7 @@ export function AdminKheloPatna() {
 
     // Fetch site settings for logo
     api
-      .get("/site-settings")
+      .get("/admin/site-settings")
       .then((r) => {
         if (r.data?.khelo_patna_logo_url) {
           setLogoUrl(r.data.khelo_patna_logo_url);
@@ -46,7 +46,7 @@ export function AdminKheloPatna() {
     }
     setSavingLogo(true);
     try {
-      const res = await api.put("/site-settings", { khelo_patna_logo_url: logoUrl });
+      const res = await api.put("/admin/site-settings", { khelo_patna_logo_url: logoUrl });
       try {
         localStorage.removeItem("sdps_site_settings");
         if (res.data?.khelo_patna_logo_url) {
