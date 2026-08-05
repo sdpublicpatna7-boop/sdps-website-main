@@ -7,17 +7,18 @@ import { X, Download, Archive, Image as ImageIcon, Sparkles, ChevronLeft, Chevro
 const API_BASE = process.env.REACT_APP_BACKEND_URL || "";
 
 function getThumbUrl(fileId) {
-  // Use Google Drive fast 500px compressed CDN thumbnail
+  // Ultra-fast 500px preview thumbnail directly from Google CDN (instant grid load)
   return `https://lh3.googleusercontent.com/d/${fileId}=w500`;
 }
 
-function getFullProxyUrl(fileId) {
-  // High-res for lightbox modal
-  return `${API_BASE}/api/gdrive-proxy/${fileId}?w=1600`;
+function getFullUrl(fileId) {
+  // 100% Original full uncompressed max resolution photo from Google CDN
+  return `https://lh3.googleusercontent.com/d/${fileId}=s0`;
 }
 
-function getDownloadUrl(fileId, title) {
-  return `${API_BASE}/api/gdrive-download/${fileId}?filename=${encodeURIComponent((title || "photo") + ".jpg")}`;
+function getDownloadUrl(fileId) {
+  // Direct Google Drive original full-res download link (0 Render server bandwidth!)
+  return `https://drive.google.com/uc?export=download&id=${fileId}`;
 }
 
 export default function GDriveFolderPage() {
@@ -145,8 +146,7 @@ export default function GDriveFolderPage() {
                     loading="lazy"
                     decoding="async"
                     onError={(e) => {
-                      // Fallback to proxy
-                      e.target.src = `${API_BASE}/api/gdrive-proxy/${g.file_id}?w=400`;
+                      e.target.src = `${API_BASE}/api/gdrive-proxy/${g.file_id}?w=500`;
                     }}
                   />
                 </div>
@@ -157,11 +157,13 @@ export default function GDriveFolderPage() {
                   </span>
 
                   <a
-                    href={getDownloadUrl(g.file_id, g.title)}
+                    href={getDownloadUrl(g.file_id)}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     download
                     onClick={(e) => e.stopPropagation()}
                     className="p-1.5 rounded-lg bg-amber-400/20 hover:bg-amber-400 text-amber-300 hover:text-slate-950 border border-amber-400/30 transition shrink-0"
-                    title="Download Photo"
+                    title="Download Original Full High-Res Photo"
                   >
                     <Download className="w-3.5 h-3.5" />
                   </a>
@@ -172,7 +174,7 @@ export default function GDriveFolderPage() {
         )}
       </div>
 
-      {/* Lightbox Modal */}
+      {/* Lightbox Full High-Res Modal */}
       <AnimatePresence>
         {activeFile && (
           <motion.div
@@ -195,12 +197,14 @@ export default function GDriveFolderPage() {
 
               <div className="flex items-center gap-2 shrink-0">
                 <a
-                  href={getDownloadUrl(activeFile.file_id, activeFile.title)}
+                  href={getDownloadUrl(activeFile.file_id)}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   download
                   onClick={(e) => e.stopPropagation()}
                   className="px-4 py-2 rounded-xl bg-[#F4D571] hover:bg-amber-300 text-[#0B1E40] font-headline font-bold text-xs transition flex items-center gap-1.5 shadow-lg"
                 >
-                  <Download className="w-4 h-4" /> Download Photo
+                  <Download className="w-4 h-4" /> Download Original High-Res
                 </a>
 
                 <button
@@ -222,11 +226,11 @@ export default function GDriveFolderPage() {
               </button>
 
               <img
-                src={getFullProxyUrl(activeFile.file_id)}
+                src={getFullUrl(activeFile.file_id)}
                 alt={activeFile.title}
-                className="max-w-full max-h-[80vh] rounded-2xl object-contain shadow-2xl border border-white/10"
+                className="max-w-full max-h-[85vh] rounded-2xl object-contain shadow-2xl border border-white/10"
                 onError={(e) => {
-                  e.target.src = `https://lh3.googleusercontent.com/d/${activeFile.file_id}=w1920`;
+                  e.target.src = `${API_BASE}/api/gdrive-proxy/${activeFile.file_id}?w=1600`;
                 }}
               />
 

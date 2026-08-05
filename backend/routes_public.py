@@ -1882,30 +1882,12 @@ async def gdrive_proxy_image(file_id: str, w: Optional[int] = None):
 
 
 @public_router.get("/gdrive-download/{file_id}")
-async def gdrive_download_image(file_id: str, filename: Optional[str] = "investiture-ceremony-photo.jpg"):
-    """Allow 1-click photo downloads with custom domain filename."""
-    target_urls = [
-        f"https://lh3.googleusercontent.com/d/{file_id}",
-        f"https://drive.google.com/uc?export=download&id={file_id}"
-    ]
-    clean_filename = re.sub(r'[^a-zA-Z0-9_.-]', '_', filename or "sdps-photo.jpg")
-    async with httpx.AsyncClient(follow_redirects=True, timeout=20.0) as client:
-        for target in target_urls:
-            try:
-                resp = await client.get(target)
-                if resp.status_code == 200 and len(resp.content) > 500:
-                    return Response(
-                        content=resp.content,
-                        media_type="application/octet-stream",
-                        headers={
-                            "Content-Disposition": f'attachment; filename="{clean_filename}"',
-                            "Cache-Control": "no-cache",
-                            "Access-Control-Allow-Origin": "*"
-                        }
-                    )
-            except Exception:
-                continue
-    raise HTTPException(status_code=404, detail="Photo file not available for download")
+async def gdrive_download_image(file_id: str, filename: Optional[str] = "sdps-photo.jpg"):
+    """Redirect directly to Google Drive original high-res download URL to preserve Render server bandwidth."""
+    return RedirectResponse(
+        url=f"https://drive.google.com/uc?export=download&id={file_id}",
+        status_code=307
+    )
 
 
 @public_router.get("/investiture-gallery")
