@@ -2064,6 +2064,63 @@ async def download_gdrive_folder_zip(slug: str):
     )
 
 
+@public_router.get("/gdrive-folders/{slug}/og-html")
+@public_router.get("/photos-share/{slug}")
+async def get_gdrive_folder_og_html(slug: str):
+    """Return Server-Side Rendered HTML with dynamic OpenGraph meta tags for WhatsApp, iMessage, Facebook, and Twitter link previews."""
+    try:
+        folder = await get_gdrive_folder_public(slug)
+    except Exception:
+        folder = {
+            "title": "School Photo Album",
+            "description": "Official photographs from S.D. Public School, Patna.",
+            "files": []
+        }
+
+    title = folder.get("title", "School Photo Album")
+    desc = folder.get("description") or f"Explore and download official high-resolution photographs from {title} at S.D. Public School, Patna."
+    
+    files = folder.get("files", [])
+    cover_image = f"https://lh3.googleusercontent.com/d/{files[0]['file_id']}=w1000" if files and files[0].get("file_id") else "https://www.sdpublic.org/logo512.png"
+    target_url = f"https://www.sdpublic.org/photos/{slug}"
+
+    html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>📷 {title} | S.D. Public School Photo Gallery</title>
+    <meta name="description" content="{desc}">
+    
+    <!-- OpenGraph Meta Tags for WhatsApp, iMessage, Facebook -->
+    <meta property="og:site_name" content="S.D. Public School, Patna">
+    <meta property="og:title" content="📷 {title} | Photo Gallery">
+    <meta property="og:description" content="{desc}">
+    <meta property="og:image" content="{cover_image}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:url" content="{target_url}">
+    <meta property="og:type" content="article">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="📷 {title}">
+    <meta name="twitter:description" content="{desc}">
+    <meta name="twitter:image" content="{cover_image}">
+    
+    <script>
+        window.location.href = "{target_url}";
+    </script>
+</head>
+<body style="font-family: system-ui, sans-serif; background: #0b1e40; color: white; padding: 40px; text-align: center;">
+    <h2>📷 {title}</h2>
+    <p>{desc}</p>
+    <p><a href="{target_url}" style="color: #f4d571;">Click here if you are not redirected automatically...</a></p>
+</body>
+</html>"""
+    return HTMLResponse(content=html_content, status_code=200)
+
+
 
 
 

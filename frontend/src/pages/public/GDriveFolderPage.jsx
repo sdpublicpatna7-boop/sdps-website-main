@@ -43,6 +43,44 @@ export default function GDriveFolderPage() {
     }
   }, [slug]);
 
+  // Dynamic Meta Tags for SEO, WhatsApp, Facebook & Social Media Sharing
+  useEffect(() => {
+    if (folder) {
+      const folderTitle = folder.title || "School Photo Album";
+      const fullPageTitle = `📷 ${folderTitle} | S.D. Public School, Patna`;
+      const folderDesc = folder.description || `Explore and download official high-resolution photographs from ${folderTitle} at S.D. Public School, Patna.`;
+      
+      const coverPhoto = (folder.files && folder.files.length > 0 && folder.files[0].file_id)
+        ? `https://lh3.googleusercontent.com/d/${folder.files[0].file_id}=w1000`
+        : `${window.location.origin}/logo512.png`;
+
+      document.title = fullPageTitle;
+
+      const setMetaTag = (attrName, attrValue, content) => {
+        let el = document.querySelector(`meta[${attrName}="${attrValue}"]`);
+        if (!el) {
+          el = document.createElement("meta");
+          el.setAttribute(attrName, attrValue);
+          document.head.appendChild(el);
+        }
+        el.setAttribute("content", content);
+      };
+
+      setMetaTag("name", "description", folderDesc);
+      setMetaTag("property", "og:title", `📷 ${folderTitle} | Photo Gallery`);
+      setMetaTag("property", "og:description", folderDesc);
+      setMetaTag("property", "og:image", coverPhoto);
+      setMetaTag("property", "og:image:width", "1200");
+      setMetaTag("property", "og:image:height", "630");
+      setMetaTag("property", "og:url", window.location.href);
+      setMetaTag("property", "og:type", "article");
+      setMetaTag("name", "twitter:card", "summary_large_image");
+      setMetaTag("name", "twitter:title", `📷 ${folderTitle}`);
+      setMetaTag("name", "twitter:description", folderDesc);
+      setMetaTag("name", "twitter:image", coverPhoto);
+    }
+  }, [folder]);
+
   const files = folder?.files || [];
   const activeFile = activeIdx !== null && files[activeIdx] ? files[activeIdx] : null;
 
