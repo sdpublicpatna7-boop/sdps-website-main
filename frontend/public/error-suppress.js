@@ -1,6 +1,4 @@
-// Suppress a benign cross-origin DataCloneError from PerformanceServerTiming
-// that some browsers raise. Kept in an external file so the page can enforce a
-// strict Content-Security-Policy (no inline scripts).
+// Suppress cross-origin & stream reading network connection reset errors
 window.addEventListener("error", function (e) {
   if (
     e.error &&
@@ -14,3 +12,14 @@ window.addEventListener("error", function (e) {
     e.preventDefault();
   }
 }, true);
+
+window.addEventListener("unhandledrejection", function (e) {
+  if (
+    e.reason &&
+    typeof e.reason.message === "string" &&
+    (e.reason.message.includes("connection reset") ||
+      e.reason.message.includes("stream reading error"))
+  ) {
+    e.preventDefault();
+  }
+});

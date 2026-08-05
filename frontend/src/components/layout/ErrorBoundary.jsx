@@ -19,7 +19,10 @@ export default class ErrorBoundary extends React.Component {
       error.name === "ChunkLoadError" ||
       error.message?.includes("Loading chunk") ||
       error.message?.includes("Importing a module script failed") ||
-      error.message?.includes("Failed to fetch dynamically imported module")
+      error.message?.includes("Failed to fetch dynamically imported module") ||
+      error.message?.includes("306") ||
+      error.message?.includes("connection reset") ||
+      error.message?.includes("stream reading error")
     );
 
     if (isChunkError) {
