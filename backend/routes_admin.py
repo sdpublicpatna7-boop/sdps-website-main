@@ -1370,6 +1370,79 @@ async def delete_khelo_patna_photo(item_id: str, admin: TokenData = Depends(requ
     return {"deleted": item_id}
 
 
+# ============= INVESTITURE CEREMONY GALLERY & GDRIVE BULK IMPORT =============
+
+@admin_router.get("/investiture-gallery")
+async def list_investiture_gallery_admin(admin: TokenData = Depends(require_permission("gallery"))):
+    items = await db.investiture_gallery.find({}, {"_id": 0}).sort("order", 1).to_list(1000)
+    return items
+
+@admin_router.post("/investiture-gallery/bulk")
+async def bulk_add_investiture_gallery(payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(require_permission("gallery"))):
+    """Bulk extract Google Drive URLs or File IDs and save as Investiture Gallery photos."""
+    import re
+    from datetime import datetime, timezone
+
+    def _get_fid(url_or_id: str) -> Optional[str]:
+        if not url_or_id:
+            return None
+        s = str(url_or_id).strip()
+        m = re.search(r'/file/d/([a-zA-Z0-9_-]+)', s)
+        if m: return m.group(1)
+        m = re.search(r'[?&]id=([a-zA-Z0-9_-]+)', s)
+        if m: return m.group(1)
+        m = re.search(r'googleusercontent\.com/d/([a-zA-Z0-9_-]+)', s)
+        if m: return m.group(1)
+        if re.match(r'^[a-zA-Z0-9_-]{20,}$', s):
+            return s
+        return None
+
+    raw_input = payload.get("urls", [])
+    if isinstance(raw_input, str):
+        raw_urls = [line.strip() for line in raw_input.replace(",", "\n").split("\n") if line.strip()]
+    else:
+        raw_urls = raw_input
+
+    category = payload.get("category", "General Ceremony")
+    inserted = []
+    current_count = await db.investiture_gallery.count_documents({})
+
+    for idx, raw in enumerate(raw_urls):
+        file_id = _get_fid(str(raw))
+        if not file_id:
+            continue
+
+        exists = await db.investiture_gallery.find_one({"file_id": file_id})
+        if exists:
+            continue
+
+        doc = {
+            "id": f"inv-{file_id[:12]}-{int(datetime.now(timezone.utc).timestamp())}-{idx}",
+            "file_id": file_id,
+            "title": payload.get("title") or f"Investiture Ceremony Photo #{current_count + idx + 1}",
+            "category": category,
+            "original_url": str(raw),
+            "proxy_url": f"/api/gdrive-proxy/{file_id}",
+            "download_url": f"/api/gdrive-download/{file_id}",
+            "order": current_count + idx + 1,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.investiture_gallery.insert_one(doc.copy())
+        inserted.append({k: v for k, v in doc.items() if k != "_id"})
+
+    return {"status": "ok", "added": len(inserted), "items": inserted}
+
+@admin_router.delete("/investiture-gallery/{item_id}")
+async def delete_investiture_photo(item_id: str, admin: TokenData = Depends(require_permission("gallery"))):
+    await db.investiture_gallery.delete_one({"id": item_id})
+    return {"deleted": item_id}
+
+@admin_router.delete("/investiture-gallery")
+async def clear_all_investiture_photos(admin: TokenData = Depends(require_permission("gallery"))):
+    result = await db.investiture_gallery.delete_many({})
+    return {"deleted_count": result.deleted_count}
+
+
 # ============= LINK SHORTENER =============
 
 class ShortenerMetadataParser(HTMLParser):

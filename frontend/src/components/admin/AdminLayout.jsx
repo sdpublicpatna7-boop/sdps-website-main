@@ -33,6 +33,7 @@ const NAV_CATEGORIES = [
       { to: "/admin/news", label: "News", icon: Newspaper, permission: "news" },
       { to: "/admin/notices", label: "Notices", icon: Bell, permission: "notices" },
       { to: "/admin/gallery", label: "Gallery", icon: ImageIcon, permission: "gallery" },
+      { to: "/admin/investiture-gallery", label: "Investiture Photos (GDrive)", icon: Sparkles, permission: "gallery" },
       { to: "/admin/videos", label: "Videos", icon: Video, permission: "gallery" },
       { to: "/admin/calendar", label: "Calendar", icon: Calendar, permission: "calendar" },
       { to: "/admin/holidays", label: "Holidays", icon: PartyPopper, permission: "calendar" },

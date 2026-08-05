@@ -7,9 +7,27 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 
 import io
+import re
 from fastapi import APIRouter, HTTPException, Form, File, UploadFile, Body, Request, Response
 from fastapi.responses import FileResponse, RedirectResponse, HTMLResponse, StreamingResponse
 from pydantic import BaseModel
+
+def extract_gdrive_file_id(url_or_id: str) -> Optional[str]:
+    if not url_or_id:
+        return None
+    url_or_id = str(url_or_id).strip()
+    match = re.search(r'/file/d/([a-zA-Z0-9_-]+)', url_or_id)
+    if match:
+        return match.group(1)
+    match = re.search(r'[?&]id=([a-zA-Z0-9_-]+)', url_or_id)
+    if match:
+        return match.group(1)
+    match = re.search(r'googleusercontent\.com/d/([a-zA-Z0-9_-]+)', url_or_id)
+    if match:
+        return match.group(1)
+    if re.match(r'^[a-zA-Z0-9_-]{20,}$', url_or_id):
+        return url_or_id
+    return None
 import razorpay
 from slowapi import Limiter
 
@@ -1830,6 +1848,74 @@ async def update_stream_overlay_state(payload: Dict[Any, Any] = Body(...), respo
             pass
 
     return {"status": "ok", "state": STREAM_OVERLAY_STATE}
+
+
+# ============= GOOGLE DRIVE PHOTO PROXY & INVESTITURE GALLERY =============
+
+@public_router.get("/gdrive-proxy/{file_id}")
+async def gdrive_proxy_image(file_id: str):
+    """Proxy image directly from Google Drive under own domain sdpublic.org without Cloudinary quota."""
+    target_urls = [
+        f"https://lh3.googleusercontent.com/d/{file_id}=w1920-h1080",
+        f"https://lh3.googleusercontent.com/d/{file_id}",
+        f"https://drive.google.com/uc?export=view&id={file_id}"
+    ]
+    async with httpx.AsyncClient(follow_redirects=True, timeout=15.0) as client:
+        for target in target_urls:
+            try:
+                resp = await client.get(target)
+                if resp.status_code == 200 and len(resp.content) > 500:
+                    content_type = resp.headers.get("content-type", "image/jpeg")
+                    return Response(
+                        content=resp.content,
+                        media_type=content_type,
+                        headers={
+                            "Cache-Control": "public, max-age=86400, s-maxage=604800",
+                            "Access-Control-Allow-Origin": "*"
+                        }
+                    )
+            except Exception:
+                continue
+    raise HTTPException(status_code=404, detail="Image not found on Google Drive")
+
+
+@public_router.get("/gdrive-download/{file_id}")
+async def gdrive_download_image(file_id: str, filename: Optional[str] = "investiture-ceremony-photo.jpg"):
+    """Allow 1-click photo downloads with custom domain filename."""
+    target_urls = [
+        f"https://lh3.googleusercontent.com/d/{file_id}",
+        f"https://drive.google.com/uc?export=download&id={file_id}"
+    ]
+    clean_filename = re.sub(r'[^a-zA-Z0-9_.-]', '_', filename or "sdps-photo.jpg")
+    async with httpx.AsyncClient(follow_redirects=True, timeout=20.0) as client:
+        for target in target_urls:
+            try:
+                resp = await client.get(target)
+                if resp.status_code == 200 and len(resp.content) > 500:
+                    return Response(
+                        content=resp.content,
+                        media_type="application/octet-stream",
+                        headers={
+                            "Content-Disposition": f'attachment; filename="{clean_filename}"',
+                            "Cache-Control": "no-cache",
+                            "Access-Control-Allow-Origin": "*"
+                        }
+                    )
+            except Exception:
+                continue
+    raise HTTPException(status_code=404, detail="Photo file not available for download")
+
+
+@public_router.get("/investiture-gallery")
+async def list_investiture_gallery(category: Optional[str] = None):
+    """Fetch all Investiture Ceremony photos stored via Google Drive links."""
+    from db import db
+    q = {}
+    if category and category != "All":
+        q["category"] = category
+    items = await db.investiture_gallery.find(q, {"_id": 0}).sort("order", 1).to_list(1000)
+    return items
+
 
 
 
