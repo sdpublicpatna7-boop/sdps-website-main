@@ -107,10 +107,10 @@ export default function AdminDashboard() {
                   </div>
                   
                   <div className="text-4xl font-headline font-bold text-slate-800 tracking-tight min-h-[40px] flex items-center">
-                    {loading && (!stats || stats[s.key] === undefined) ? (
+                    {loading || !stats ? (
                       <span className="inline-block w-12 h-9 bg-slate-100 animate-pulse rounded-xl"></span>
                     ) : (
-                      stats[s.key] ?? 0
+                      stats?.[s.key] ?? 0
                     )}
                   </div>
                   

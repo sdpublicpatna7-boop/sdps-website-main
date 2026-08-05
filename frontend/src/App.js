@@ -215,7 +215,7 @@ function MainApp() {
       <Route path="/forgot-password" element={<Suspense fallback={<AdminLoading />}><AdminForgotPassword /></Suspense>} />
 
       {/* Admin (protected) */}
-      <Route path="/admin" element={<Suspense fallback={<AdminLoading />}><AdminLayout /></Suspense>}>
+      <Route path="/admin" element={<ErrorBoundary><Suspense fallback={<AdminLoading />}><AdminLayout /></Suspense></ErrorBoundary>}>
         <Route index element={<AdminDashboard />} />
         <Route path="link-shortener" element={<Suspense fallback={<AdminLoading />}><AdminShortener /></Suspense>} />
         <Route path="linktree" element={<Suspense fallback={<AdminLoading />}><AdminLinktree /></Suspense>} />
