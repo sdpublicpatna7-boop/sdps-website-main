@@ -6,6 +6,11 @@
       "permanent": false
     },
     {
+      "source": "/p/:slug",
+      "destination": "https://api.sdpublic.org/api/gdrive-folders/:slug/og-html",
+      "permanent": false
+    },
+    {
       "source": "/index.html",
       "destination": "/",
       "permanent": true

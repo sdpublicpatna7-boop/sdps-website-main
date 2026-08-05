@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import api from "../../lib/api";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Download, Archive, Image as ImageIcon, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, Download, Archive, Image as ImageIcon, Sparkles, ChevronLeft, ChevronRight, Share2 } from "lucide-react";
+import { toast } from "sonner";
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || "";
 
@@ -84,6 +85,12 @@ export default function GDriveFolderPage() {
   const files = folder?.files || [];
   const activeFile = activeIdx !== null && files[activeIdx] ? files[activeIdx] : null;
 
+  const copyShareLink = () => {
+    const shareUrl = `${window.location.origin}/p/${slug}`;
+    navigator.clipboard.writeText(shareUrl);
+    toast.success("WhatsApp preview share link copied to clipboard!");
+  };
+
   const nextPhoto = (e) => {
     e?.stopPropagation();
     if (activeIdx !== null && activeIdx < files.length - 1) {
@@ -125,15 +132,26 @@ export default function GDriveFolderPage() {
           </div>
         </div>
 
-        {files.length > 0 && (
-          <a
-            href={`${API_BASE}/api/gdrive-folders/${slug}/zip`}
-            download
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 hover:brightness-110 text-slate-950 font-bold text-xs transition flex items-center gap-1.5 shadow-lg"
-          >
-            <Archive className="w-4 h-4" /> Download All ({files.length} Photos)
-          </a>
-        )}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {slug && (
+            <button
+              onClick={copyShareLink}
+              className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition border border-white/20 flex items-center gap-1.5 cursor-pointer shadow-md"
+            >
+              <Share2 className="w-3.5 h-3.5 text-amber-400" /> Share Album Link
+            </button>
+          )}
+
+          {files.length > 0 && (
+            <a
+              href={`${API_BASE}/api/gdrive-folders/${slug}/zip`}
+              download
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 hover:brightness-110 text-slate-950 font-bold text-xs transition flex items-center gap-1.5 shadow-lg"
+            >
+              <Archive className="w-4 h-4" /> Download All ({files.length} Photos)
+            </a>
+          )}
+        </div>
       </header>
 
       {/* Main Banner Header */}
@@ -144,7 +162,7 @@ export default function GDriveFolderPage() {
           </h1>
 
           {folder?.description && (
-            <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto font-medium">
+            <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto font-medium leading-relaxed">
               {folder.description}
             </p>
           )}
