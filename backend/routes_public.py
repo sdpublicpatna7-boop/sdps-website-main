@@ -1988,10 +1988,13 @@ async def get_gdrive_folder_public(slug: str):
         # Auto-bridge for Investiture Ceremony album if empty or missing
         if (not folder or not folder.get("files")) and ("investiture" in slug.lower() or slug == "investiture-ceremony-2026-27"):
             items = await db.investiture_gallery.find({}, {"_id": 0}).sort("order", 1).to_list(1000)
+            if not items:
+                items = await db.gallery.find({"$or": [{"category": {"$regex": "investiture", "$options": "i"}}, {"title": {"$regex": "investiture", "$options": "i"}}]}, {"_id": 0}).to_list(1000)
+            
             files = []
             if items:
                 for idx, item in enumerate(items):
-                    fid = item.get("file_id") or extract_gdrive_file_id(item.get("drive_url") or "")
+                    fid = item.get("file_id") or extract_gdrive_file_id(item.get("drive_url") or item.get("image_url") or "")
                     if fid:
                         files.append({
                             "file_id": fid,
