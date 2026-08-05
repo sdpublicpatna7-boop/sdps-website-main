@@ -8,7 +8,7 @@ import {
   GraduationCap, Award, FileText, CreditCard, Settings, LogOut,
   MessageSquare, Megaphone, ScrollText, FilePlus, Home, Hotel,
   BookOpen, Shield, EyeOff, ClipboardList, BookMarked, UserCog,
-  Menu, X, Star, Cake, Link2 as LinkIcon, Fingerprint, Lock, CheckSquare, PhoneCall, Radio, Tv, FolderPlus,
+  Menu, X, Star, Cake, Link2 as LinkIcon, Fingerprint, Lock, CheckSquare, PhoneCall, Radio, Tv, FolderPlus, Sparkles,
   ChevronDown, ChevronRight, PanelLeftClose, PanelLeft, ChevronLeft
 } from "lucide-react";
 import { useAuth } from "../../lib/auth";
