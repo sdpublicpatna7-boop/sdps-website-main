@@ -90,7 +90,7 @@
       "destination": "https://api.sdpublic.org/api/gdrive-folders/:slug/og-html"
     },
     {
-      "source": "/((?!api|s|static|assets|qp-portal|favicon.ico|robots.txt|sitemap.xml|paper-builder.html).*)",
+      "source": "/((?!api|s|p|static|assets|qp-portal|favicon.ico|robots.txt|sitemap.xml|paper-builder.html).*)",
       "destination": "/index.html"
     }
   ]
