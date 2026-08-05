@@ -1909,7 +1909,7 @@ async def gdrive_download_image(file_id: str, filename: Optional[str] = "investi
 @public_router.get("/investiture-gallery")
 async def list_investiture_gallery(category: Optional[str] = None):
     """Fetch all Investiture Ceremony photos stored via Google Drive links."""
-    from db import db
+    from server import db
     q = {}
     if category and category != "All":
         q["category"] = category
@@ -1973,7 +1973,7 @@ async def extract_gdrive_folder_files(folder_url_or_id: str) -> List[Dict[str, s
 @public_router.get("/gdrive-folders")
 async def list_gdrive_folders_public():
     """List all public Google Drive photo folders created on own domain."""
-    from db import db
+    from server import db
     folders = await db.gdrive_folders.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
     return folders
 
@@ -1981,7 +1981,7 @@ async def list_gdrive_folders_public():
 @public_router.get("/gdrive-folders/{slug}")
 async def get_gdrive_folder_public(slug: str):
     """Fetch single Google Drive photo folder by slug/ID."""
-    from db import db
+    from server import db
     try:
         folder = await db.gdrive_folders.find_one({"$or": [{"slug": slug}, {"id": slug}]}, {"_id": 0})
 
@@ -2036,7 +2036,7 @@ async def download_gdrive_folder_zip(slug: str):
     import zipfile
     import io
     import httpx
-    from db import db
+    from server import db
 
     folder = await db.gdrive_folders.find_one({"$or": [{"slug": slug}, {"id": slug}]}, {"_id": 0})
     if not folder or not folder.get("files"):
