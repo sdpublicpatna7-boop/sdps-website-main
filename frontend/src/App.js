@@ -165,6 +165,11 @@ function MainApp() {
       <Route path="/stream-control" element={<Suspense fallback={<AdminLoading />}><StreamControl /></Suspense>} />
       <Route path="/broadcasting" element={<Suspense fallback={<AdminLoading />}><AdminAudioBroadcast /></Suspense>} />
       <Route path="/apaar" element={<Suspense fallback={<AdminLoading />}><ApaarForm /></Suspense>} />
+      
+      {/* Standalone Google Drive Photo Albums (no header/footer/popups) */}
+      <Route path="/photos" element={<GDriveFolderPage />} />
+      <Route path="/photos/:slug" element={<GDriveFolderPage />} />
+      <Route path="/drive/:slug" element={<GDriveFolderPage />} />
 
       {/* Public */}
       <Route element={<PublicLayout />}>
@@ -179,9 +184,6 @@ function MainApp() {
         <Route path="/gallery" element={<Gallery />} />
         <Route path="/gallery/investiture-ceremony" element={<InvestitureGallery />} />
         <Route path="/investiture-ceremony-gallery" element={<InvestitureGallery />} />
-        <Route path="/photos" element={<GDriveFolderPage />} />
-        <Route path="/photos/:slug" element={<GDriveFolderPage />} />
-        <Route path="/drive/:slug" element={<GDriveFolderPage />} />
         <Route path="/videos" element={<Videos />} />
         <Route path="/news" element={<NewsList />} />
         <Route path="/notices" element={<NoticesList />} />
