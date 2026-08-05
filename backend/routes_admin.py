@@ -1536,6 +1536,60 @@ async def delete_gdrive_folder_admin(slug: str, admin: TokenData = Depends(requi
     return {"status": "deleted"}
 
 
+@admin_router.get("/gdrive-folders/analytics")
+async def get_gdrive_folders_analytics(admin: TokenData = Depends(require_permission("gallery"))):
+    """Return analytics for all Google Drive photo folders: total views, total downloads, and top downloaded photos across all albums."""
+    folders = await db.gdrive_folders.find({}, {"_id": 0}).to_list(500)
+    
+    total_views = sum(f.get("views", 0) for f in folders)
+    total_downloads = sum(f.get("downloads", 0) for f in folders)
+
+    top_photos = []
+    for f in folders:
+        folder_title = f.get("title", "Album")
+        folder_slug = f.get("slug", "")
+        for img in f.get("files", []):
+            dl_count = img.get("downloads", 0)
+            if dl_count > 0:
+                top_photos.append({
+                    "file_id": img.get("file_id"),
+                    "title": img.get("title") or "Photo",
+                    "folder_title": folder_title,
+                    "folder_slug": folder_slug,
+                    "downloads": dl_count,
+                    "proxy_url": f"/api/gdrive-proxy/{img.get('file_id')}?w=500"
+                })
+
+    top_photos.sort(key=lambda x: x["downloads"], reverse=True)
+
+    folder_summaries = []
+    for f in folders:
+        files = f.get("files", [])
+        top_img = max(files, key=lambda x: x.get("downloads", 0), default=None) if files else None
+        folder_summaries.append({
+            "id": f.get("id"),
+            "slug": f.get("slug"),
+            "title": f.get("title"),
+            "file_count": len(files),
+            "views": f.get("views", 0),
+            "downloads": f.get("downloads", 0),
+            "top_photo": {
+                "file_id": top_img.get("file_id"),
+                "title": top_img.get("title"),
+                "downloads": top_img.get("downloads", 0)
+            } if top_img and top_img.get("downloads", 0) > 0 else None,
+            "created_at": f.get("created_at")
+        })
+
+    return {
+        "total_views": total_views,
+        "total_downloads": total_downloads,
+        "folder_count": len(folders),
+        "top_photos": top_photos[:20],
+        "folders": folder_summaries
+    }
+
+
 
 # ============= LINK SHORTENER =============
 

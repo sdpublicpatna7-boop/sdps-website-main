@@ -2017,6 +2017,40 @@ async def get_gdrive_folder_public(slug: str):
         raise HTTPException(status_code=500, detail=str(err))
 
 
+@public_router.post("/gdrive-folders/{slug}/track-view")
+async def track_gdrive_folder_view(slug: str):
+    """Track view hit for a photo album."""
+    from server import db
+    try:
+        await db.gdrive_folders.update_one(
+            {"$or": [{"slug": slug}, {"id": slug}]},
+            {"$inc": {"views": 1}}
+        )
+        return {"status": "ok"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@public_router.post("/gdrive-folders/{slug}/track-download")
+async def track_gdrive_photo_download(slug: str, payload: Dict[str, Any] = Body(...)):
+    """Track single photo download and increment total folder downloads counter + photo download counter."""
+    from server import db
+    file_id = payload.get("file_id")
+    try:
+        await db.gdrive_folders.update_one(
+            {"$or": [{"slug": slug}, {"id": slug}]},
+            {"$inc": {"downloads": 1}}
+        )
+        if file_id:
+            await db.gdrive_folders.update_one(
+                {"$or": [{"slug": slug}, {"id": slug}], "files.file_id": file_id},
+                {"$inc": {"files.$.downloads": 1}}
+            )
+        return {"status": "ok"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
 @public_router.get("/gdrive-folders/{slug}/zip")
 async def download_gdrive_folder_zip(slug: str):
     """Stream all photos in a folder as a single ZIP archive."""

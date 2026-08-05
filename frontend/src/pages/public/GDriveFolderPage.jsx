@@ -33,7 +33,10 @@ export default function GDriveFolderPage() {
     setLoading(true);
     if (slug) {
       api.get(`/gdrive-folders/${slug}`)
-        .then((r) => setFolder(r.data))
+        .then((r) => {
+          setFolder(r.data);
+          api.post(`/gdrive-folders/${slug}/track-view`).catch(() => {});
+        })
         .catch(() => setFolder(null))
         .finally(() => setLoading(false));
     } else {
@@ -91,6 +94,12 @@ export default function GDriveFolderPage() {
     toast.success("WhatsApp preview share link copied to clipboard!");
   };
 
+  const handleDownloadTrack = (fileId) => {
+    if (slug && fileId) {
+      api.post(`/gdrive-folders/${slug}/track-download`, { file_id: fileId }).catch(() => {});
+    }
+  };
+
   const nextPhoto = (e) => {
     e?.stopPropagation();
     if (activeIdx !== null && activeIdx < files.length - 1) {
@@ -146,6 +155,7 @@ export default function GDriveFolderPage() {
             <a
               href={`${API_BASE}/api/gdrive-folders/${slug}/zip`}
               download
+              onClick={() => handleDownloadTrack("zip-all")}
               className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 hover:brightness-110 text-slate-950 font-bold text-xs transition flex items-center gap-1.5 shadow-lg"
             >
               <Archive className="w-4 h-4" /> Download All ({files.length} Photos)
@@ -217,7 +227,10 @@ export default function GDriveFolderPage() {
                     target="_blank"
                     rel="noopener noreferrer"
                     download
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDownloadTrack(g.file_id);
+                    }}
                     className="p-1.5 rounded-lg bg-amber-400/20 hover:bg-amber-400 text-amber-300 hover:text-slate-950 border border-amber-400/30 transition shrink-0"
                     title="Download Original Full High-Res Photo"
                   >
@@ -257,7 +270,10 @@ export default function GDriveFolderPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   download
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDownloadTrack(activeFile.file_id);
+                  }}
                   className="px-4 py-2 rounded-xl bg-[#F4D571] hover:bg-amber-300 text-[#0B1E40] font-headline font-bold text-xs transition flex items-center gap-1.5 shadow-lg"
                 >
                   <Download className="w-4 h-4" /> Download Original High-Res

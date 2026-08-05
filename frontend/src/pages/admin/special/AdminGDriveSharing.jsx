@@ -2,13 +2,14 @@ import { useState, useEffect } from "react";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import {
-  FolderPlus, Folder, Sparkles, Copy, ExternalLink, RefreshCw, Trash2, Download, AlertCircle, Link as LinkIcon, Image as ImageIcon, Layers
+  FolderPlus, Folder, Sparkles, Copy, ExternalLink, RefreshCw, Trash2, Download, AlertCircle, Link as LinkIcon, Image as ImageIcon, Layers, Eye, TrendingUp, Award, BarChart3, Share2
 } from "lucide-react";
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || "";
 
 export function AdminGDriveSharing() {
   const [folders, setFolders] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [syncingSlug, setSyncingSlug] = useState(null);
@@ -19,16 +20,21 @@ export function AdminGDriveSharing() {
   const [description, setDescription] = useState("");
   const [manualUrls, setManualUrls] = useState("");
 
-  const loadFolders = () => {
+  const loadData = () => {
     setLoading(true);
-    api.get("/admin/gdrive-folders")
-      .then((r) => setFolders(r.data || []))
-      .catch(() => setFolders([]))
+    Promise.all([
+      api.get("/admin/gdrive-folders").catch(() => ({ data: [] })),
+      api.get("/admin/gdrive-folders/analytics").catch(() => ({ data: null }))
+    ])
+      .then(([foldersRes, analyticsRes]) => {
+        setFolders(foldersRes.data || []);
+        setAnalytics(analyticsRes.data);
+      })
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
-    loadFolders();
+    loadData();
   }, []);
 
   const handleCreateFolder = async (e) => {
@@ -59,7 +65,7 @@ export function AdminGDriveSharing() {
         setSlug("");
         setDescription("");
         setManualUrls("");
-        loadFolders();
+        loadData();
       }
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Failed to create Google Drive folder album");
@@ -73,7 +79,7 @@ export function AdminGDriveSharing() {
     try {
       const res = await api.post(`/admin/gdrive-folders/${folderSlug}/sync`);
       toast.success(`Synced folder! ${res.data?.count || 0} total photos found.`);
-      loadFolders();
+      loadData();
     } catch (err) {
       toast.error("Failed to re-sync folder from Google Drive");
     } finally {
@@ -86,280 +92,291 @@ export function AdminGDriveSharing() {
     try {
       await api.delete(`/admin/gdrive-folders/${folderSlug}`);
       toast.success("Folder album deleted");
-      loadFolders();
+      loadData();
     } catch (err) {
       toast.error("Failed to delete folder album");
     }
   };
 
   const copyShareLink = (folderSlug) => {
-    const shareUrl = `${window.location.origin}/photos/${folderSlug}`;
+    const shareUrl = `${window.location.origin}/p/${folderSlug}`;
     navigator.clipboard.writeText(shareUrl);
-    toast.success(`Share link copied: ${shareUrl}`);
+    toast.success(`WhatsApp preview link copied: ${shareUrl}`);
   };
 
   return (
-    <div className="p-6 md:p-10 space-y-8 max-w-7xl mx-auto">
-      {/* Header Banner */}
-      <div className="bg-gradient-to-r from-[#0B1E40] via-[#0E3B91] to-[#0B1E40] text-white p-6 md:p-8 rounded-3xl shadow-xl border border-[#F4D571]/40 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <FolderPlus className="w-6 h-6 text-[#F4D571]" />
-            <h1 className="text-2xl md:text-3xl font-headline font-black tracking-wide">
-              Google Drive Photo Sharing & Folder Converter
-            </h1>
+    <div className="p-6 max-w-7xl mx-auto space-y-8 font-sans">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl relative overflow-hidden">
+        <div className="space-y-1 relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/10 text-amber-400 border border-amber-400/20 text-xs font-bold uppercase tracking-wider">
+            <Sparkles className="w-3.5 h-3.5" /> High-Performance Media Drive
           </div>
-          <p className="text-xs md:text-sm text-slate-300 max-w-2xl">
-            Paste any Google Drive Folder link to create branded shareable photo albums on your own domain (<code className="text-[#F4D571] font-mono">sdpublic.org/photos/album-name</code>) with high-res preview and 1-click downloads!
+          <h1 className="text-2xl sm:text-3xl font-black text-white font-headline tracking-tight">
+            Google Drive Photo Sharing & Analytics
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-400 max-w-2xl">
+            Convert Google Drive photo folders into standalone, high-speed photo albums hosted on your domain with detailed view & download analytics.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 shrink-0">
-          <a
-            href="/photos"
-            target="_blank"
-            rel="noreferrer"
-            className="px-5 py-3 bg-[#F4D571] hover:bg-amber-400 text-[#0B1E40] font-headline font-black text-xs rounded-2xl shadow-lg transition flex items-center gap-2"
-          >
-            <ExternalLink className="w-4 h-4" /> View All Public Albums
-          </a>
-        </div>
+        <button
+          onClick={loadData}
+          className="self-start md:self-auto px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition flex items-center gap-2 border border-slate-700 cursor-pointer"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Refresh Analytics
+        </button>
       </div>
 
-      {/* Paste Google Drive Folder Converter Form */}
-      <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+      {/* Analytics KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <div className="bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 p-6 rounded-3xl shadow-xl flex items-center justify-between">
           <div className="space-y-1">
-            <h2 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-brand-orange" /> Convert Google Drive Folder Link to Own Domain Link
-            </h2>
-            <p className="text-xs text-slate-500">
-              Paste a public Google Drive folder URL. Visitors will see high-res photos on your domain with 0 Cloudinary quota used!
-            </p>
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Total Album Views</span>
+            <div className="text-3xl font-black text-white font-headline">
+              {analytics?.total_views || 0}
+            </div>
+            <span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+              <TrendingUp className="w-3 h-3" /> Live Visitor Count
+            </span>
+          </div>
+          <div className="p-3.5 bg-indigo-500/10 text-indigo-400 rounded-2xl border border-indigo-500/20">
+            <Eye className="w-6 h-6" />
           </div>
         </div>
 
-        <form onSubmit={handleCreateFolder} className="space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                Album Title *
-              </label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => {
-                  setTitle(e.target.value);
-                  if (!slug) {
-                    setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""));
-                  }
-                }}
-                placeholder="e.g. Investiture Ceremony 2026-27 Photos"
-                className="w-full px-4 py-3 text-xs rounded-2xl border border-slate-200 bg-slate-50 font-bold text-slate-900 focus:bg-white transition"
-                required
-              />
+        <div className="bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 p-6 rounded-3xl shadow-xl flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Total Photo Downloads</span>
+            <div className="text-3xl font-black text-amber-400 font-headline">
+              {analytics?.total_downloads || 0}
             </div>
+            <span className="text-[11px] text-amber-300/80 font-medium flex items-center gap-1">
+              <Award className="w-3 h-3" /> Original Full-Res Exports
+            </span>
+          </div>
+          <div className="p-3.5 bg-amber-400/10 text-amber-400 rounded-2xl border border-amber-400/20">
+            <Download className="w-6 h-6" />
+          </div>
+        </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center justify-between">
-                <span>Custom Domain Link Slug</span>
-                <span className="text-[10px] text-blue-600 font-mono">sdpublic.org/photos/{slug || "slug"}</span>
-              </label>
-              <input
-                type="text"
-                value={slug}
-                onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-"))}
-                placeholder="e.g. investiture-ceremony-2026-27"
-                className="w-full px-4 py-3 text-xs font-mono rounded-2xl border border-slate-200 bg-slate-50 text-slate-800 focus:bg-white transition"
-              />
+        <div className="bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 p-6 rounded-3xl shadow-xl flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Active Albums</span>
+            <div className="text-3xl font-black text-white font-headline">
+              {folders.length}
             </div>
+            <span className="text-[11px] text-slate-400 font-medium">
+              Hosted on custom domain
+            </span>
           </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-              Google Drive Folder Share Link *
-            </label>
-            <input
-              type="text"
-              value={driveUrl}
-              onChange={(e) => setDriveUrl(e.target.value)}
-              placeholder="Paste link: https://drive.google.com/drive/folders/1a2b3c4d5e6f7g8h9i0j..."
-              className="w-full px-4 py-3 text-xs font-mono rounded-2xl border border-slate-200 bg-slate-50 text-slate-900 focus:bg-white transition"
-            />
+          <div className="p-3.5 bg-blue-500/10 text-blue-400 rounded-2xl border border-blue-500/20">
+            <Folder className="w-6 h-6" />
           </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-              Album Description (Optional)
-            </label>
-            <textarea
-              rows={2}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="e.g. Official photos from Oath Taking, Cultural Dance Medley, and House Captains Installation"
-              className="w-full p-3 text-xs rounded-2xl border border-slate-200 bg-slate-50 text-slate-800 focus:bg-white transition"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center justify-between">
-              <span>Specific File Links inside Folder (Optional Fallback / Additional Links)</span>
-              <span className="text-[10px] text-slate-400 lowercase">Paste individual drive photo URLs if folder extraction is restricted</span>
-            </label>
-            <textarea
-              rows={3}
-              value={manualUrls}
-              onChange={(e) => setManualUrls(e.target.value)}
-              placeholder="Paste individual file links (one per line):&#10;https://drive.google.com/file/d/1ABC123/view&#10;https://drive.google.com/file/d/4DEF456/view"
-              className="w-full p-3 text-xs font-mono rounded-2xl border border-slate-200 bg-slate-50 text-slate-800 focus:bg-white transition"
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
-            <div className="text-xs text-slate-500 flex items-center gap-1.5">
-              <AlertCircle className="w-4 h-4 text-amber-500" />
-              Ensure the Google Drive Folder is set to <b>"Anyone with the link can view"</b>.
-            </div>
-
-            <button
-              type="submit"
-              disabled={creating}
-              className="px-6 py-3.5 bg-gradient-to-r from-amber-500 to-yellow-500 hover:brightness-110 text-slate-900 font-headline font-black text-xs rounded-2xl shadow-lg transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
-            >
-              {creating ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" /> Extracting Folder & Creating Album...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" /> Create Own Domain Photo Folder
-                </>
-              )}
-            </button>
-          </div>
-        </form>
+        </div>
       </div>
 
-      {/* Existing Custom Domain Photo Folders */}
-      <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
-        <div className="flex flex-wrap justify-between items-center border-b border-slate-100 pb-4 gap-2">
-          <div>
-            <h2 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
-              <Folder className="w-4 h-4 text-brand-orange" /> Created Own Domain Photo Albums ({folders.length})
-            </h2>
-            <p className="text-xs text-slate-500">
-              Each folder gets an official shareable URL under <code className="text-blue-600 font-bold">sdpublic.org/photos/:slug</code>
-            </p>
+      {/* Top Downloaded Photos Analytics Section */}
+      {analytics?.top_photos && analytics.top_photos.length > 0 && (
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-amber-400" />
+              <h2 className="text-lg font-bold text-white">Most Downloaded Photos Ranking</h2>
+            </div>
+            <span className="text-xs font-bold text-slate-400">Top {analytics.top_photos.length} Photos</span>
           </div>
-        </div>
 
-        {loading && (
-          <div className="text-center py-12 text-xs font-bold text-slate-400 uppercase tracking-wider">
-            Loading photo folders...
-          </div>
-        )}
-
-        {!loading && folders.length === 0 && (
-          <div className="text-center py-16 bg-slate-50 rounded-3xl border border-dashed border-slate-200 space-y-3">
-            <Folder className="w-10 h-10 text-slate-300 mx-auto" />
-            <h4 className="text-xs font-bold text-slate-600">No Own Domain Folders Created Yet</h4>
-            <p className="text-xs text-slate-400 max-w-md mx-auto">
-              Paste a Google Drive Folder link above to create your first branded shareable photo album!
-            </p>
-          </div>
-        )}
-
-        {!loading && folders.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {folders.map((f) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {analytics.top_photos.slice(0, 8).map((photo, idx) => (
               <div
-                key={f.slug || f.id}
-                className="p-5 rounded-2xl bg-slate-50 border border-slate-200 hover:border-amber-400 transition space-y-4 flex flex-col justify-between shadow-2xs"
+                key={photo.file_id || idx}
+                className="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden p-3 flex gap-3 items-center"
               >
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-800 text-[10px] font-black uppercase border border-amber-300/40">
-                      📁 {f.file_count || f.files?.length || 0} PHOTOS
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-mono">
-                      /photos/{f.slug}
+                <img
+                  src={`https://lh3.googleusercontent.com/d/${photo.file_id}=w500`}
+                  alt={photo.title}
+                  className="w-14 h-14 object-cover rounded-xl shrink-0 bg-slate-900"
+                />
+                <div className="space-y-0.5 overflow-hidden flex-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-xs font-bold text-white truncate">{photo.title}</span>
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                      #{idx + 1}
                     </span>
                   </div>
-
-                  <h3 className="text-base font-bold text-slate-900">{f.title}</h3>
-                  {f.description && (
-                    <p className="text-xs text-slate-600 line-clamp-2">{f.description}</p>
-                  )}
-
-                  {/* Thumbnail Preview Strip */}
-                  {f.files && f.files.length > 0 && (
-                    <div className="flex items-center gap-1.5 overflow-hidden pt-2">
-                      {f.files.slice(0, 5).map((img, i) => (
-                        <img
-                          key={i}
-                          src={`${API_BASE}/api/gdrive-proxy/${img.file_id}`}
-                          alt="preview"
-                          className="w-12 h-12 rounded-xl object-cover border border-slate-200 bg-slate-200 shrink-0"
-                          loading="lazy"
-                          onError={(e) => {
-                            e.target.src = `https://lh3.googleusercontent.com/d/${img.file_id}=w200`;
-                          }}
-                        />
-                      ))}
-                      {f.files.length > 5 && (
-                        <div className="w-12 h-12 rounded-xl bg-slate-200 text-slate-600 text-xs font-bold flex items-center justify-center border border-slate-300 shrink-0">
-                          +{f.files.length - 5}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-200/80">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => copyShareLink(f.slug)}
-                      className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold text-xs rounded-xl shadow-2xs transition flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <Copy className="w-3.5 h-3.5 text-amber-600" /> Copy Share Link
-                    </button>
-
-                    <a
-                      href={`/photos/${f.slug}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-2xs transition flex items-center gap-1.5"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" /> View Album
-                    </a>
-                  </div>
-
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => handleResync(f.slug)}
-                      disabled={syncingSlug === f.slug}
-                      title="Re-sync folder from Google Drive"
-                      className="p-2 rounded-xl bg-white hover:bg-slate-100 text-slate-600 border border-slate-300 transition cursor-pointer"
-                    >
-                      <RefreshCw className={`w-3.5 h-3.5 ${syncingSlug === f.slug ? 'animate-spin text-amber-600' : ''}`} />
-                    </button>
-
-                    <button
-                      onClick={() => handleDelete(f.slug)}
-                      title="Delete album"
-                      className="p-2 rounded-xl bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-300 transition cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                  <p className="text-[10px] text-slate-400 truncate">{photo.folder_title}</p>
+                  <div className="text-xs font-black text-amber-400 flex items-center gap-1 pt-1">
+                    <Download className="w-3 h-3" /> {photo.downloads} Downloads
                   </div>
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Convert New Folder Form */}
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
+        <div className="space-y-1">
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <FolderPlus className="w-5 h-5 text-amber-400" /> Create New Photo Album
+          </h2>
+          <p className="text-xs text-slate-400">
+            Paste a public Google Drive folder link to instantly generate a branded photo album page on your domain.
+          </p>
+        </div>
+
+        <form onSubmit={handleCreateFolder} className="space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-300">Folder Title *</label>
+              <input
+                type="text"
+                placeholder="e.g. Annual Sports Day 2026"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-400 transition"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-300">Custom URL Slug (Optional)</label>
+              <input
+                type="text"
+                placeholder="e.g. sports-day-2026"
+                value={slug}
+                onChange={(e) => setSlug(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-400 transition"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-300">Google Drive Folder Link *</label>
+            <input
+              type="text"
+              placeholder="https://drive.google.com/drive/folders/1abcxyz..."
+              value={driveUrl}
+              onChange={(e) => setDriveUrl(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-400 transition"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-300">Album Description (Optional)</label>
+            <textarea
+              rows={2}
+              placeholder="Brief description of the event or photographs..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-400 transition resize-none"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={creating}
+            className="px-6 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs transition flex items-center gap-2 shadow-lg disabled:opacity-50 cursor-pointer"
+          >
+            {creating ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" /> Converting Google Drive Folder...
+              </>
+            ) : (
+              <>
+                <FolderPlus className="w-4 h-4" /> Convert & Host Album
+              </>
+            )}
+          </button>
+        </form>
+      </div>
+
+      {/* Album Management Table */}
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <Layers className="w-5 h-5 text-amber-400" /> Hosted Photo Albums ({folders.length})
+          </h2>
+        </div>
+
+        {folders.length === 0 ? (
+          <div className="text-center py-12 text-slate-400 text-xs">
+            No photo folders created yet. Use the form above to add your first folder.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-slate-300">
+              <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
+                <tr>
+                  <th className="p-3.5">Album Title & Slug</th>
+                  <th className="p-3.5">Photos</th>
+                  <th className="p-3.5">Views</th>
+                  <th className="p-3.5">Downloads</th>
+                  <th className="p-3.5 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60">
+                {folders.map((f) => (
+                  <tr key={f.id || f.slug} className="hover:bg-slate-800/40 transition">
+                    <td className="p-3.5">
+                      <div className="font-bold text-white text-sm">{f.title}</div>
+                      <div className="text-[11px] text-amber-400/80 font-mono">/photos/{f.slug}</div>
+                    </td>
+                    <td className="p-3.5 font-semibold text-slate-200">
+                      {f.file_count || f.files?.length || 0} Photos
+                    </td>
+                    <td className="p-3.5 font-bold text-indigo-400">
+                      <span className="flex items-center gap-1">
+                        <Eye className="w-3.5 h-3.5" /> {f.views || 0}
+                      </span>
+                    </td>
+                    <td className="p-3.5 font-bold text-amber-400">
+                      <span className="flex items-center gap-1">
+                        <Download className="w-3.5 h-3.5" /> {f.downloads || 0}
+                      </span>
+                    </td>
+                    <td className="p-3.5 text-right space-x-2">
+                      <button
+                        onClick={() => copyShareLink(f.slug)}
+                        className="px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold transition inline-flex items-center gap-1 cursor-pointer"
+                        title="Copy WhatsApp share link"
+                      >
+                        <Share2 className="w-3 h-3 text-amber-400" /> Share Link
+                      </button>
+
+                      <button
+                        onClick={() => handleResync(f.slug)}
+                        disabled={syncingSlug === f.slug}
+                        className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold transition inline-flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                        title="Re-sync folder with Google Drive"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${syncingSlug === f.slug ? "animate-spin" : ""}`} /> Sync
+                      </button>
+
+                      <a
+                        href={`/photos/${f.slug}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-2.5 py-1.5 rounded-lg bg-amber-400/20 hover:bg-amber-400 text-amber-300 hover:text-slate-950 text-[11px] font-bold transition inline-flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-3 h-3" /> View
+                      </a>
+
+                      <button
+                        onClick={() => handleDelete(f.slug)}
+                        className="px-2.5 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500 text-rose-300 hover:text-white text-[11px] font-bold transition inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
     </div>
   );
 }
-
-export default AdminGDriveSharing;
