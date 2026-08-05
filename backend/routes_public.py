@@ -1983,6 +1983,35 @@ async def get_gdrive_folder_public(slug: str):
     """Fetch single Google Drive photo folder by slug/ID."""
     from db import db
     folder = await db.gdrive_folders.find_one({"$or": [{"slug": slug}, {"id": slug}]}, {"_id": 0})
+
+    # Auto-bridge for Investiture Ceremony album if empty or missing
+    if (not folder or not folder.get("files")) and ("investiture" in slug.lower() or slug == "investiture-ceremony-2026-27"):
+        items = await db.investiture_gallery.find({}, {"_id": 0}).sort("order", 1).to_list(1000)
+        if items:
+            files = []
+            for idx, item in enumerate(items):
+                fid = item.get("file_id") or extract_gdrive_file_id(item.get("drive_url", ""))
+                if fid:
+                    files.append({
+                        "file_id": fid,
+                        "title": item.get("title") or f"Investiture Photo #{idx + 1}",
+                        "proxy_url": f"/api/gdrive-proxy/{fid}",
+                        "download_url": f"/api/gdrive-download/{fid}"
+                    })
+            if files:
+                folder = {
+                    "id": f"folder-{slug}",
+                    "slug": slug,
+                    "title": "Investiture Ceremony 2026-27 Photos",
+                    "description": "Official Oath Taking Ceremony, House Captains Installation, and Student Leadership Badging Photos",
+                    "drive_folder_url": "https://drive.google.com/drive/folders/investiture",
+                    "files": files,
+                    "file_count": len(files),
+                    "own_domain_url": f"/photos/{slug}",
+                    "created_at": "2026-08-05T00:00:00Z"
+                }
+                await db.gdrive_folders.update_one({"slug": slug}, {"$set": folder}, upsert=True)
+
     if not folder:
         raise HTTPException(status_code=404, detail="Photo folder not found")
     return folder
