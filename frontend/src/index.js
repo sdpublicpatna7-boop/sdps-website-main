@@ -21,11 +21,29 @@ if ("serviceWorker" in navigator) {
   }
 }
 
-// Suppress browser extension runtime errors
+// Auto-recover from deployment chunk loading errors & suppress extension errors
 window.addEventListener("error", (e) => {
+  const msg = String(e.message || e.error?.message || "");
+  const isChunkError = (
+    msg.includes("Loading chunk") ||
+    msg.includes("ChunkLoadError") ||
+    msg.includes("Importing a module script failed") ||
+    msg.includes("Failed to fetch dynamically imported module")
+  );
+
+  if (isChunkError) {
+    const lastReload = sessionStorage.getItem("sdps_chunk_reload");
+    const now = Date.now();
+    if (!lastReload || now - parseInt(lastReload, 10) > 8000) {
+      sessionStorage.setItem("sdps_chunk_reload", now.toString());
+      window.location.reload();
+      return;
+    }
+  }
+
   if (
-    e.message?.includes("extension") || 
-    e.message?.includes("browser extension") || 
+    msg.includes("extension") || 
+    msg.includes("browser extension") || 
     e.filename?.startsWith("blob:") || 
     e.filename?.includes("extension")
   ) {
@@ -35,10 +53,27 @@ window.addEventListener("error", (e) => {
 });
 
 window.addEventListener("unhandledrejection", (e) => {
+  const reason = String(e.reason?.message || e.reason || "");
+  const isChunkError = (
+    reason.includes("Loading chunk") ||
+    reason.includes("ChunkLoadError") ||
+    reason.includes("Importing a module script failed") ||
+    reason.includes("Failed to fetch dynamically imported module")
+  );
+
+  if (isChunkError) {
+    const lastReload = sessionStorage.getItem("sdps_chunk_reload");
+    const now = Date.now();
+    if (!lastReload || now - parseInt(lastReload, 10) > 8000) {
+      sessionStorage.setItem("sdps_chunk_reload", now.toString());
+      window.location.reload();
+      return;
+    }
+  }
+
   if (
-    e.reason?.message?.includes("extension") || 
-    e.reason?.stack?.includes("extension") || 
-    String(e.reason)?.includes("extension")
+    reason.includes("extension") || 
+    e.reason?.stack?.includes("extension")
   ) {
     e.stopImmediatePropagation();
     e.preventDefault();
