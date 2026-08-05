@@ -1853,10 +1853,12 @@ async def update_stream_overlay_state(payload: Dict[Any, Any] = Body(...), respo
 # ============= GOOGLE DRIVE PHOTO PROXY & INVESTITURE GALLERY =============
 
 @public_router.get("/gdrive-proxy/{file_id}")
-async def gdrive_proxy_image(file_id: str):
-    """Proxy image directly from Google Drive under own domain sdpublic.org without Cloudinary quota."""
+async def gdrive_proxy_image(file_id: str, w: Optional[int] = None):
+    """Proxy image directly from Google Drive under own domain sdpublic.org.
+       Supports ?w=500 for lightning-fast thumbnail previews!"""
+    size_suffix = f"=w{w}" if w else "=w500"
     target_urls = [
-        f"https://lh3.googleusercontent.com/d/{file_id}=w1920-h1080",
+        f"https://lh3.googleusercontent.com/d/{file_id}{size_suffix}",
         f"https://lh3.googleusercontent.com/d/{file_id}",
         f"https://drive.google.com/uc?export=view&id={file_id}"
     ]
@@ -1864,13 +1866,13 @@ async def gdrive_proxy_image(file_id: str):
         for target in target_urls:
             try:
                 resp = await client.get(target)
-                if resp.status_code == 200 and len(resp.content) > 500:
+                if resp.status_code == 200 and len(resp.content) > 200:
                     content_type = resp.headers.get("content-type", "image/jpeg")
                     return Response(
                         content=resp.content,
                         media_type=content_type,
                         headers={
-                            "Cache-Control": "public, max-age=86400, s-maxage=604800",
+                            "Cache-Control": "public, max-age=604800, s-maxage=2592000",
                             "Access-Control-Allow-Origin": "*"
                         }
                     )
