@@ -1723,7 +1723,7 @@ STREAM_OVERLAY_CLIENTS: List[Any] = []
 
 STREAM_OVERLAY_STATE = {
     "lowerThird": {
-        "visible": True,
+        "visible": False,
         "name": "Priyanshu Singh",
         "role": "House Captain",
         "subtitle": "Gautam House (Green Army) • 2026-27",
@@ -1732,16 +1732,16 @@ STREAM_OVERLAY_STATE = {
         "timestamp": 0
     },
     "banner": {
-        "visible": True,
+        "visible": False,
         "title": "S.D. PUBLIC SCHOOL, PATNA",
         "subtitle": "OFFICIAL LIVE STREAM • PATNA, BIHAR"
     },
     "ticker": {
-        "visible": True,
+        "visible": False,
         "text": "Welcome to S.D. Public School, Patna Official Live Stream | Excellence in Education & Holistic Development | Stay Tuned for Live Events & Updates"
     },
     "logoBug": {
-        "visible": True,
+        "visible": False,
         "showLive": True
     },
     "startingSoon": {

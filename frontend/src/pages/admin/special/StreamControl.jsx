@@ -324,11 +324,11 @@ export default function StreamControl() {
   const [cardBadge, setCardBadge] = useState("CULTURAL DANCE");
   const [cardPerformers, setCardPerformers] = useState("Ananya Sharma, Aditi Roy, Rhea Sen, Kavya Singh, Sneha Kumari");
 
-  // Overlay Visibility State (News Ticker set to false by default)
-  const [lowerThirdVisible, setLowerThirdVisible] = useState(true);
-  const [bannerVisible, setBannerVisible] = useState(true);
+  // Overlay Visibility State (All set to false by default for inactive standby mode)
+  const [lowerThirdVisible, setLowerThirdVisible] = useState(false);
+  const [bannerVisible, setBannerVisible] = useState(false);
   const [tickerVisible, setTickerVisible] = useState(false);
-  const [logoBugVisible, setLogoBugVisible] = useState(true);
+  const [logoBugVisible, setLogoBugVisible] = useState(false);
   const [startingSoonVisible, setStartingSoonVisible] = useState(false);
   const [soonShowTimer, setSoonShowTimer] = useState(true);
 
@@ -342,6 +342,34 @@ export default function StreamControl() {
   const [soonMessage, setSoonMessage] = useState("STREAM STARTING SOON");
   const [soonNote, setSoonNote] = useState("Please stay tuned. The stream will begin shortly.");
   const [soonCountdownTarget, setSoonCountdownTarget] = useState("08:00"); // 8:00 AM
+
+  const isOverlayActive = lowerThirdVisible || bannerVisible || tickerVisible || logoBugVisible || startingSoonVisible;
+
+  const deactivateAndArchiveOverlay = () => {
+    setLowerThirdVisible(false);
+    setBannerVisible(false);
+    setTickerVisible(false);
+    setLogoBugVisible(false);
+    setStartingSoonVisible(false);
+
+    sendBroadcast("LOWER_THIRD", { visible: false });
+    sendBroadcast("BANNER", { visible: false });
+    sendBroadcast("TICKER", { visible: false });
+    sendBroadcast("LOGO", { visible: false });
+    sendBroadcast("STARTING_SOON", { visible: false });
+
+    toast.success("Stream Overlay is now INACTIVE & ARCHIVED (OBS canvas set to 100% clean transparent)");
+  };
+
+  const activateStreamOverlay = () => {
+    setBannerVisible(true);
+    setLogoBugVisible(true);
+
+    sendBroadcast("BANNER", { visible: true, title: bannerTitle, subtitle: bannerSubtitle });
+    sendBroadcast("LOGO", { visible: true, showLive: true });
+
+    toast.success("Stream Overlay is now LIVE & ACTIVE!");
+  };
 
   const loadEventArchive = (pack) => {
     setBannerTitle(pack.bannerTitle);
@@ -728,6 +756,43 @@ export default function StreamControl() {
           >
             <ExternalLink className="w-4 h-4" /> Preview Overlay Window
           </a>
+        </div>
+      </div>
+
+      {/* Master Stream Overlay Status & Archive Mode Banner */}
+      <div className={`p-5 rounded-3xl border shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition ${
+        isOverlayActive 
+          ? "bg-gradient-to-r from-emerald-950 via-slate-900 to-slate-900 border-emerald-500/50 text-white"
+          : "bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 border-amber-500/40 text-white"
+      }`}>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2.5">
+            <span className={`w-3 h-3 rounded-full ${isOverlayActive ? 'bg-emerald-400 animate-ping' : 'bg-slate-400'}`} />
+            <h2 className="text-xs sm:text-sm font-headline font-black uppercase tracking-wider text-amber-300">
+              OVERLAY STATUS: {isOverlayActive ? "🔴 LIVE STREAM BROADCAST ACTIVE" : "📦 INACTIVE & ARCHIVED (CLEAN STANDBY)"}
+            </h2>
+          </div>
+          <p className="text-xs text-slate-300">
+            {isOverlayActive 
+              ? "Overlay elements are actively broadcasting live on your OBS screen canvas." 
+              : "Overlay is in archived standby mode. OBS canvas output is 100% clean & transparent until your next live stream!"}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <button
+            onClick={deactivateAndArchiveOverlay}
+            className="px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-headline font-bold text-xs rounded-xl shadow transition flex items-center gap-2 cursor-pointer"
+          >
+            📦 Set Overlay Inactive / Archive Mode
+          </button>
+          
+          <button
+            onClick={activateStreamOverlay}
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-headline font-bold text-xs rounded-xl shadow transition flex items-center gap-2 cursor-pointer"
+          >
+            🔴 Activate Live Stream Overlay
+          </button>
         </div>
       </div>
 

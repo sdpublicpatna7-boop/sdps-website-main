@@ -88,7 +88,7 @@ function use8AMCountdown(targetTimeString = "08:00") {
 
 export default function StreamOverlay() {
   const [lowerThird, setLowerThird] = useState({
-    visible: true,
+    visible: false,
     name: DEFAULT_LEADER.name,
     role: DEFAULT_LEADER.role,
     subtitle: DEFAULT_LEADER.subtitle,
@@ -100,7 +100,7 @@ export default function StreamOverlay() {
   });
 
   const [banner, setBanner] = useState({
-    visible: true,
+    visible: false,
     title: "S.D. PUBLIC SCHOOL, PATNA",
     subtitle: "OFFICIAL LIVE STREAM • PATNA, BIHAR"
   });
@@ -111,7 +111,7 @@ export default function StreamOverlay() {
   });
 
   const [logoBug, setLogoBug] = useState({
-    visible: true,
+    visible: false,
     showLive: true
   });
 
