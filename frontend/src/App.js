@@ -28,6 +28,7 @@ const NotFound = lazy(() => import("@/pages/public/static/NotFound"));
 
 const Gallery = lazy(() => import("@/pages/public/Gallery"));
 const InvestitureGallery = lazy(() => import("@/pages/public/InvestitureGallery"));
+const GDriveFolderPage = lazy(() => import("@/pages/public/GDriveFolderPage"));
 const Videos = lazy(() => import("@/pages/public/Videos"));
 const NewsList = lazy(() => import("@/pages/public/NewsCalendar").then(m => ({ default: m.NewsList })));
 const NoticesList = lazy(() => import("@/pages/public/NewsCalendar").then(m => ({ default: m.NoticesList })));
@@ -111,6 +112,7 @@ const AdminSiteSettings = lazy(() => import("@/pages/admin/special/AdminSiteSett
 const AdminIntegrationKeys = lazy(() => import("@/pages/admin/special/AdminIntegrationKeys"));
 const AdminKheloPatna = lazy(() => import("@/pages/admin/special/AdminKheloPatna"));
 const AdminInvestitureGallery = lazy(() => import("@/pages/admin/special/AdminInvestitureGallery"));
+const AdminGDriveSharing = lazy(() => import("@/pages/admin/special/AdminGDriveSharing"));
 const AdminHolidayHomework = lazy(() => import("@/pages/admin/staff/AdminHolidayHomework"));
 const AdminStaffUsers = lazy(() => import("@/pages/admin/staff/AdminStaffUsers"));
 const AdminMapsReview = lazy(() => import("@/pages/admin/special/AdminMapsReview"));
@@ -180,6 +182,9 @@ function MainApp() {
         <Route path="/gallery" element={<Gallery />} />
         <Route path="/gallery/investiture-ceremony" element={<InvestitureGallery />} />
         <Route path="/investiture-ceremony-gallery" element={<InvestitureGallery />} />
+        <Route path="/photos" element={<GDriveFolderPage />} />
+        <Route path="/photos/:slug" element={<GDriveFolderPage />} />
+        <Route path="/drive/:slug" element={<GDriveFolderPage />} />
         <Route path="/videos" element={<Videos />} />
         <Route path="/news" element={<NewsList />} />
         <Route path="/notices" element={<NoticesList />} />
@@ -266,6 +271,7 @@ function MainApp() {
         <Route path="integration-keys" element={<AdminIntegrationKeys />} />
         <Route path="khelo-patna-gallery" element={<AdminKheloPatna />} />
         <Route path="investiture-gallery" element={<AdminInvestitureGallery />} />
+        <Route path="gdrive-sharing" element={<AdminGDriveSharing />} />
         <Route path="holiday-homework" element={<AdminHolidayHomework />} />
         <Route path="staff-users" element={<AdminStaffUsers />} />
         <Route path="maps-review" element={<AdminMapsReview />} />

@@ -1917,6 +1917,120 @@ async def list_investiture_gallery(category: Optional[str] = None):
     return items
 
 
+# ============= GOOGLE DRIVE FOLDER SHARING & ALBUM CONVERTER =============
+
+async def extract_gdrive_folder_files(folder_url_or_id: str) -> List[Dict[str, str]]:
+    """Scrape public Google Drive folder page or embedded view to extract all image file IDs."""
+    import re
+    import httpx
+    
+    # Extract folder ID
+    m = re.search(r'/folders/([a-zA-Z0-9_-]+)', folder_url_or_id)
+    folder_id = m.group(1) if m else str(folder_url_or_id).strip()
+    
+    files = []
+    seen_ids = set()
+    
+    target_urls = [
+        f"https://drive.google.com/embeddedfolderview?id={folder_id}#grid",
+        f"https://drive.google.com/embeddedfolderview?id={folder_id}#list",
+        f"https://drive.google.com/drive/folders/{folder_id}"
+    ]
+    
+    async with httpx.AsyncClient(follow_redirects=True, timeout=20.0, headers={
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }) as client:
+        for target in target_urls:
+            try:
+                resp = await client.get(target)
+                if resp.status_code == 200:
+                    text = resp.text
+                    matched_ids = re.findall(r'id=["\']entry-([a-zA-Z0-9_-]+)["\']', text)
+                    if not matched_ids:
+                        matched_ids = re.findall(r'drive\.google\.com/file/d/([a-zA-Z0-9_-]+)', text)
+                    if not matched_ids:
+                        matched_ids = re.findall(r'["\']([a-zA-Z0-9_-]{25,50})["\']', text)
+                        matched_ids = [fid for fid in matched_ids if fid != folder_id and not fid.startswith("http")]
+                        
+                    for fid in matched_ids:
+                        if fid and fid not in seen_ids and len(fid) >= 20 and fid != folder_id:
+                            seen_ids.add(fid)
+                            files.append({
+                                "file_id": fid,
+                                "title": f"Photo #{len(files) + 1}",
+                                "proxy_url": f"/api/gdrive-proxy/{fid}",
+                                "download_url": f"/api/gdrive-download/{fid}"
+                            })
+                    if len(files) > 0:
+                        break
+            except Exception as err:
+                logging.warning(f"Error fetching gdrive folder {target}: {err}")
+                continue
+
+    return files
+
+
+@public_router.get("/gdrive-folders")
+async def list_gdrive_folders_public():
+    """List all public Google Drive photo folders created on own domain."""
+    from db import db
+    folders = await db.gdrive_folders.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return folders
+
+
+@public_router.get("/gdrive-folders/{slug}")
+async def get_gdrive_folder_public(slug: str):
+    """Fetch single Google Drive photo folder by slug/ID."""
+    from db import db
+    folder = await db.gdrive_folders.find_one({"$or": [{"slug": slug}, {"id": slug}]}, {"_id": 0})
+    if not folder:
+        raise HTTPException(status_code=404, detail="Photo folder not found")
+    return folder
+
+
+@public_router.get("/gdrive-folders/{slug}/zip")
+async def download_gdrive_folder_zip(slug: str):
+    """Stream all photos in a folder as a single ZIP archive."""
+    import zipfile
+    import io
+    import httpx
+    from db import db
+
+    folder = await db.gdrive_folders.find_one({"$or": [{"slug": slug}, {"id": slug}]}, {"_id": 0})
+    if not folder or not folder.get("files"):
+        raise HTTPException(status_code=404, detail="Folder empty or not found")
+
+    zip_buffer = io.BytesIO()
+    files = folder.get("files", [])
+
+    async with httpx.AsyncClient(follow_redirects=True, timeout=15.0) as client:
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+            for idx, f in enumerate(files[:50]):
+                file_id = f.get("file_id")
+                if not file_id:
+                    continue
+                try:
+                    img_url = f"https://lh3.googleusercontent.com/d/{file_id}"
+                    resp = await client.get(img_url)
+                    if resp.status_code == 200 and len(resp.content) > 500:
+                        filename = f"{idx + 1:02d}_{f.get('title', 'photo').replace(' ', '_')}.jpg"
+                        zf.writestr(filename, resp.content)
+                except Exception:
+                    continue
+
+    zip_buffer.seek(0)
+    clean_title = re.sub(r'[^a-zA-Z0-9_.-]', '_', folder.get("title", "sdps-photos"))
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f'attachment; filename="{clean_title}.zip"',
+            "Cache-Control": "no-cache"
+        }
+    )
+
+
+
 
 
 

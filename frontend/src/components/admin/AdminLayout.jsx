@@ -8,7 +8,7 @@ import {
   GraduationCap, Award, FileText, CreditCard, Settings, LogOut,
   MessageSquare, Megaphone, ScrollText, FilePlus, Home, Hotel,
   BookOpen, Shield, EyeOff, ClipboardList, BookMarked, UserCog,
-  Menu, X, Star, Cake, Link2 as LinkIcon, Fingerprint, Lock, CheckSquare, PhoneCall, Radio, Tv,
+  Menu, X, Star, Cake, Link2 as LinkIcon, Fingerprint, Lock, CheckSquare, PhoneCall, Radio, Tv, FolderPlus,
   ChevronDown, ChevronRight, PanelLeftClose, PanelLeft, ChevronLeft
 } from "lucide-react";
 import { useAuth } from "../../lib/auth";
@@ -33,6 +33,7 @@ const NAV_CATEGORIES = [
       { to: "/admin/news", label: "News", icon: Newspaper, permission: "news" },
       { to: "/admin/notices", label: "Notices", icon: Bell, permission: "notices" },
       { to: "/admin/gallery", label: "Gallery", icon: ImageIcon, permission: "gallery" },
+      { to: "/admin/gdrive-sharing", label: "GDrive Photo Sharing", icon: FolderPlus, permission: "gallery" },
       { to: "/admin/investiture-gallery", label: "Investiture Photos (GDrive)", icon: Sparkles, permission: "gallery" },
       { to: "/admin/videos", label: "Videos", icon: Video, permission: "gallery" },
       { to: "/admin/calendar", label: "Calendar", icon: Calendar, permission: "calendar" },

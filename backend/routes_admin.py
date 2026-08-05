@@ -1443,6 +1443,100 @@ async def clear_all_investiture_photos(admin: TokenData = Depends(require_permis
     return {"deleted_count": result.deleted_count}
 
 
+# ============= GOOGLE DRIVE FOLDER SHARING & ALBUM CONVERTER ADMIN =============
+
+@admin_router.get("/gdrive-folders")
+async def list_gdrive_folders_admin(admin: TokenData = Depends(require_permission("gallery"))):
+    items = await db.gdrive_folders.find({}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    return items
+
+
+@admin_router.post("/gdrive-folders")
+async def create_gdrive_folder_admin(payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(require_permission("gallery"))):
+    """Create a new own-domain photo folder by extracting Google Drive folder URL or list of files."""
+    import re
+    from datetime import datetime, timezone
+    from routes_public import extract_gdrive_folder_files, extract_gdrive_file_id
+
+    drive_url = payload.get("drive_folder_url", "").strip()
+    title = payload.get("title", "").strip() or "Google Drive Photo Album"
+    description = payload.get("description", "").strip()
+    custom_slug = payload.get("slug", "").strip()
+
+    if not drive_url:
+        raise HTTPException(status_code=400, detail="Google Drive folder URL or links required")
+
+    # Generate slug from title or custom_slug
+    if not custom_slug:
+        custom_slug = re.sub(r'[^a-z0-9]+', '-', title.lower()).strip('-')
+    else:
+        custom_slug = re.sub(r'[^a-z0-9]+', '-', custom_slug.lower()).strip('-')
+
+    if not custom_slug:
+        custom_slug = f"album-{int(datetime.now(timezone.utc).timestamp())}"
+
+    # Extract files from Google Drive folder URL
+    extracted_files = await extract_gdrive_folder_files(drive_url)
+
+    # If simple folder view extraction didn't yield files, check if user passed explicit file URLs in payload or raw text
+    if not extracted_files and payload.get("manual_urls"):
+        manual_raw = payload.get("manual_urls", "")
+        lines = manual_raw.replace(",", "\n").split("\n") if isinstance(manual_raw, str) else manual_raw
+        for idx, line in enumerate(lines):
+            fid = extract_gdrive_file_id(line)
+            if fid:
+                extracted_files.append({
+                    "file_id": fid,
+                    "title": f"Photo #{len(extracted_files) + 1}",
+                    "proxy_url": f"/api/gdrive-proxy/{fid}",
+                    "download_url": f"/api/gdrive-download/{fid}"
+                })
+
+    doc = {
+        "id": f"folder-{custom_slug}",
+        "slug": custom_slug,
+        "title": title,
+        "description": description,
+        "drive_folder_url": drive_url,
+        "files": extracted_files,
+        "file_count": len(extracted_files),
+        "own_domain_url": f"/photos/{custom_slug}",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+
+    # Upsert by slug
+    await db.gdrive_folders.update_one({"slug": custom_slug}, {"$set": doc}, upsert=True)
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+
+@admin_router.post("/gdrive-folders/{slug}/sync")
+async def resync_gdrive_folder_admin(slug: str, admin: TokenData = Depends(require_permission("gallery"))):
+    """Re-sync Google Drive folder to discover newly added photos."""
+    from datetime import datetime, timezone
+    from routes_public import extract_gdrive_folder_files
+    folder = await db.gdrive_folders.find_one({"$or": [{"slug": slug}, {"id": slug}]})
+    if not folder:
+        raise HTTPException(status_code=404, detail="Folder not found")
+
+    drive_url = folder.get("drive_folder_url", "")
+    extracted_files = await extract_gdrive_folder_files(drive_url)
+
+    if extracted_files:
+        await db.gdrive_folders.update_one(
+            {"$or": [{"slug": slug}, {"id": slug}]},
+            {"$set": {"files": extracted_files, "file_count": len(extracted_files), "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        return {"status": "synced", "count": len(extracted_files)}
+    return {"status": "no_change", "count": len(folder.get("files", []))}
+
+
+@admin_router.delete("/gdrive-folders/{slug}")
+async def delete_gdrive_folder_admin(slug: str, admin: TokenData = Depends(require_permission("gallery"))):
+    await db.gdrive_folders.delete_one({"$or": [{"slug": slug}, {"id": slug}]})
+    return {"status": "deleted"}
+
+
+
 # ============= LINK SHORTENER =============
 
 class ShortenerMetadataParser(HTMLParser):
