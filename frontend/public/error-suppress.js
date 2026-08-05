@@ -3,6 +3,8 @@
 // strict Content-Security-Policy (no inline scripts).
 window.addEventListener("error", function (e) {
   if (
+    e.error &&
+    typeof DOMException !== "undefined" &&
     e.error instanceof DOMException &&
     e.error.name === "DataCloneError" &&
     e.message &&

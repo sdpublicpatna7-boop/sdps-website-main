@@ -23,61 +23,41 @@ if ("serviceWorker" in navigator) {
 
 // Auto-recover from deployment chunk loading errors & suppress extension errors
 window.addEventListener("error", (e) => {
-  const msg = String(e.message || e.error?.message || "");
-  const isChunkError = (
-    msg.includes("Loading chunk") ||
-    msg.includes("ChunkLoadError") ||
-    msg.includes("Importing a module script failed") ||
-    msg.includes("Failed to fetch dynamically imported module")
-  );
-
-  if (isChunkError) {
-    const lastReload = sessionStorage.getItem("sdps_chunk_reload");
-    const now = Date.now();
-    if (!lastReload || now - parseInt(lastReload, 10) > 8000) {
-      sessionStorage.setItem("sdps_chunk_reload", now.toString());
-      window.location.reload();
-      return;
+  try {
+    const msg = String(e?.message || e?.error?.message || "");
+    if (
+      msg.includes("Loading chunk") ||
+      msg.includes("ChunkLoadError") ||
+      msg.includes("Importing a module script failed") ||
+      msg.includes("Failed to fetch dynamically imported module")
+    ) {
+      const lastReload = sessionStorage.getItem("sdps_chunk_reload");
+      const now = Date.now();
+      if (!lastReload || now - parseInt(lastReload, 10) > 8000) {
+        sessionStorage.setItem("sdps_chunk_reload", now.toString());
+        window.location.reload();
+      }
     }
-  }
-
-  if (
-    msg.includes("extension") || 
-    msg.includes("browser extension") || 
-    e.filename?.startsWith("blob:") || 
-    e.filename?.includes("extension")
-  ) {
-    e.stopImmediatePropagation();
-    e.preventDefault();
-  }
+  } catch (err) {}
 });
 
 window.addEventListener("unhandledrejection", (e) => {
-  const reason = String(e.reason?.message || e.reason || "");
-  const isChunkError = (
-    reason.includes("Loading chunk") ||
-    reason.includes("ChunkLoadError") ||
-    reason.includes("Importing a module script failed") ||
-    reason.includes("Failed to fetch dynamically imported module")
-  );
-
-  if (isChunkError) {
-    const lastReload = sessionStorage.getItem("sdps_chunk_reload");
-    const now = Date.now();
-    if (!lastReload || now - parseInt(lastReload, 10) > 8000) {
-      sessionStorage.setItem("sdps_chunk_reload", now.toString());
-      window.location.reload();
-      return;
+  try {
+    const reason = String(e?.reason?.message || e?.reason || "");
+    if (
+      reason.includes("Loading chunk") ||
+      reason.includes("ChunkLoadError") ||
+      reason.includes("Importing a module script failed") ||
+      reason.includes("Failed to fetch dynamically imported module")
+    ) {
+      const lastReload = sessionStorage.getItem("sdps_chunk_reload");
+      const now = Date.now();
+      if (!lastReload || now - parseInt(lastReload, 10) > 8000) {
+        sessionStorage.setItem("sdps_chunk_reload", now.toString());
+        window.location.reload();
+      }
     }
-  }
-
-  if (
-    reason.includes("extension") || 
-    e.reason?.stack?.includes("extension")
-  ) {
-    e.stopImmediatePropagation();
-    e.preventDefault();
-  }
+  } catch (err) {}
 });
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
