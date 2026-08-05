@@ -7,7 +7,7 @@ import {
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || "";
 
-export function AdminGDriveSharing() {
+export default function AdminGDriveSharing() {
   const [folders, setFolders] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
