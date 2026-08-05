@@ -1982,39 +1982,52 @@ async def list_gdrive_folders_public():
 async def get_gdrive_folder_public(slug: str):
     """Fetch single Google Drive photo folder by slug/ID."""
     from db import db
-    folder = await db.gdrive_folders.find_one({"$or": [{"slug": slug}, {"id": slug}]}, {"_id": 0})
+    try:
+        folder = await db.gdrive_folders.find_one({"$or": [{"slug": slug}, {"id": slug}]}, {"_id": 0})
 
-    # Auto-bridge for Investiture Ceremony album if empty or missing
-    if (not folder or not folder.get("files")) and ("investiture" in slug.lower() or slug == "investiture-ceremony-2026-27"):
-        items = await db.investiture_gallery.find({}, {"_id": 0}).sort("order", 1).to_list(1000)
-        if items:
+        # Auto-bridge for Investiture Ceremony album if empty or missing
+        if (not folder or not folder.get("files")) and ("investiture" in slug.lower() or slug == "investiture-ceremony-2026-27"):
+            items = await db.investiture_gallery.find({}, {"_id": 0}).sort("order", 1).to_list(1000)
             files = []
-            for idx, item in enumerate(items):
-                fid = item.get("file_id") or extract_gdrive_file_id(item.get("drive_url", ""))
-                if fid:
-                    files.append({
-                        "file_id": fid,
-                        "title": item.get("title") or f"Investiture Photo #{idx + 1}",
-                        "proxy_url": f"/api/gdrive-proxy/{fid}",
-                        "download_url": f"/api/gdrive-download/{fid}"
-                    })
-            if files:
-                folder = {
-                    "id": f"folder-{slug}",
-                    "slug": slug,
-                    "title": "Investiture Ceremony 2026-27 Photos",
-                    "description": "Official Oath Taking Ceremony, House Captains Installation, and Student Leadership Badging Photos",
-                    "drive_folder_url": "https://drive.google.com/drive/folders/investiture",
-                    "files": files,
-                    "file_count": len(files),
-                    "own_domain_url": f"/photos/{slug}",
-                    "created_at": "2026-08-05T00:00:00Z"
-                }
+            if items:
+                for idx, item in enumerate(items):
+                    fid = item.get("file_id") or extract_gdrive_file_id(item.get("drive_url") or "")
+                    if fid:
+                        files.append({
+                            "file_id": fid,
+                            "title": item.get("title") or f"Investiture Photo #{idx + 1}",
+                            "proxy_url": f"/api/gdrive-proxy/{fid}",
+                            "download_url": f"/api/gdrive-download/{fid}"
+                        })
+            
+            folder = {
+                "id": f"folder-{slug}",
+                "slug": slug,
+                "title": "Investiture Ceremony 2026-27 Photos",
+                "description": "Official Oath Taking Ceremony, House Captains Installation, and Student Leadership Badging Photos",
+                "drive_folder_url": "https://drive.google.com/drive/folders/investiture",
+                "files": files,
+                "file_count": len(files),
+                "own_domain_url": f"/photos/{slug}",
+                "created_at": "2026-08-05T00:00:00Z"
+            }
+            try:
                 await db.gdrive_folders.update_one({"slug": slug}, {"$set": folder}, upsert=True)
+            except Exception as e:
+                logging.warning(f"Failed to upsert gdrive_folders: {e}")
 
-    if not folder:
-        raise HTTPException(status_code=404, detail="Photo folder not found")
-    return folder
+        if not folder:
+            raise HTTPException(status_code=404, detail="Photo folder not found")
+
+        if "_id" in folder:
+            del folder["_id"]
+
+        return folder
+    except HTTPException:
+        raise
+    except Exception as err:
+        logging.error(f"Error in get_gdrive_folder_public for {slug}: {err}")
+        raise HTTPException(status_code=500, detail=str(err))
 
 
 @public_router.get("/gdrive-folders/{slug}/zip")
@@ -2026,6 +2039,11 @@ async def download_gdrive_folder_zip(slug: str):
     from db import db
 
     folder = await db.gdrive_folders.find_one({"$or": [{"slug": slug}, {"id": slug}]}, {"_id": 0})
+    if not folder or not folder.get("files"):
+        try:
+            folder = await get_gdrive_folder_public(slug)
+        except Exception:
+            folder = None
     if not folder or not folder.get("files"):
         raise HTTPException(status_code=404, detail="Folder empty or not found")
 
