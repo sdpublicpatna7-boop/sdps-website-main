@@ -73,7 +73,7 @@
   },
   "scripts": {
     "start": "craco start",
-    "build": "craco build && node scripts/inject-csp.js && node scripts/inject-qp-config.js",
+    "build": "craco build && node scripts/inject-qp-config.js",
     "test": "craco test"
   },
   "browserslist": {
