@@ -7,17 +7,17 @@ import { X, Download, Archive, Image as ImageIcon, Sparkles, ChevronLeft, Chevro
 const API_BASE = process.env.REACT_APP_BACKEND_URL || "";
 
 function getThumbUrl(fileId) {
-  // Ultra-fast 500px preview thumbnail directly from Google CDN (instant grid load)
+  // Fast 500px preview thumbnail directly from Google CDN (instant grid load)
   return `https://lh3.googleusercontent.com/d/${fileId}=w500`;
 }
 
 function getFullUrl(fileId) {
-  // 100% Original full uncompressed max resolution photo from Google CDN
-  return `https://lh3.googleusercontent.com/d/${fileId}=s0`;
+  // Fast 1000px preview for modal slideshow (instant modal load)
+  return `https://lh3.googleusercontent.com/d/${fileId}=w1000`;
 }
 
 function getDownloadUrl(fileId) {
-  // Direct Google Drive original full-res download link (0 Render server bandwidth!)
+  // Direct Google Drive 100% original full-res download link (0 Render server bandwidth!)
   return `https://drive.google.com/uc?export=download&id=${fileId}`;
 }
 
@@ -174,7 +174,7 @@ export default function GDriveFolderPage() {
         )}
       </div>
 
-      {/* Lightbox Full High-Res Modal */}
+      {/* Lightbox Fast Preview Modal */}
       <AnimatePresence>
         {activeFile && (
           <motion.div
@@ -230,7 +230,7 @@ export default function GDriveFolderPage() {
                 alt={activeFile.title}
                 className="max-w-full max-h-[85vh] rounded-2xl object-contain shadow-2xl border border-white/10"
                 onError={(e) => {
-                  e.target.src = `${API_BASE}/api/gdrive-proxy/${activeFile.file_id}?w=1600`;
+                  e.target.src = `${API_BASE}/api/gdrive-proxy/${activeFile.file_id}?w=1000`;
                 }}
               />
 
