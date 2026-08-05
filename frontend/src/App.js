@@ -12,7 +12,6 @@ import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { AdminLogin, AdminForgotPassword } from "@/pages/admin/AuthPages";
 import AdminDashboard from "@/pages/admin/Dashboard";
-import CampusTour from "@/pages/public/CampusTour";
 import KheloPatna from "@/pages/public/KheloPatna";
 
 
@@ -59,7 +58,6 @@ const ElectionBoard = lazy(() => import("@/pages/elections/NoticeBoard"));
 const ShortLinkRedirect = lazy(() => import("@/pages/ShortLinkRedirect"));
 const LinksPage = lazy(() => import("@/pages/public/LinksPage"));
 const NoticePreview = lazy(() => import("@/pages/public/NoticePreview"));
-const PublicVideoCall = lazy(() => import("@/pages/public/PublicVideoCall"));
 const StreamOverlay = lazy(() => import("@/pages/public/StreamOverlay"));
 
 // Lazy-loaded Admin Pages
@@ -162,7 +160,6 @@ function MainApp() {
       <Route path="/links" element={<Suspense fallback={<div>Loading...</div>}><LinksPage /></Suspense>} />
       <Route path="/notice-preview/:id" element={<Suspense fallback={<div>Loading...</div>}><NoticePreview /></Suspense>} />
       <Route path="/review" element={<MapsReview />} />
-      <Route path="/video-call" element={<Suspense fallback={<div>Loading Call...</div>}><PublicVideoCall /></Suspense>} />
       <Route path="/stream-overlay" element={<Suspense fallback={null}><StreamOverlay /></Suspense>} />
       <Route path="/obs-overlay" element={<Suspense fallback={null}><StreamOverlay /></Suspense>} />
       <Route path="/stream-control" element={<Suspense fallback={<AdminLoading />}><StreamControl /></Suspense>} />
@@ -205,7 +202,6 @@ function MainApp() {
         <Route path="/privacy" element={<TermsPrivacy />} />
         <Route path="/mac-widget" element={<Suspense fallback={<PublicLoading />}><MacWidgetPage /></Suspense>} />
         <Route path="/khelo-patna" element={<KheloPatna />} />
-        <Route path="/campus-tour" element={<CampusTour />} />
         <Route path="*" element={<NotFound />} />
       </Route>
 

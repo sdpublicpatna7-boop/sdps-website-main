@@ -112,7 +112,6 @@ const NAV_CATEGORIES = [
     icon: Shield,
     items: [
       { to: "/admin/stream-control", label: "OBS Stream Overlay", icon: Tv, permission: ["notice-maker", "media-tools", "site-settings"] },
-      { to: "/admin/video-support", label: "Voice AI Support Agent", icon: PhoneCall, permission: ["site-settings", "admissions", "media-tools"] },
       { to: "/admin/thumbnail-generator", label: "Thumbnail Generator", icon: ImageIcon, permission: ["thumbnail-generator", "media-tools"] },
       { to: "/admin/notice-maker", label: "Notice Maker", icon: FileText, permission: ["notice-maker", "media-tools"] },
       { to: "/admin/salary-slip", label: "Salary Slip Generator", icon: FileText, permission: ["salary-tools", "media-tools"] },
