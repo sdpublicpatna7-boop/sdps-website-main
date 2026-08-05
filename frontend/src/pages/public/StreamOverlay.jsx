@@ -101,13 +101,13 @@ export default function StreamOverlay() {
 
   const [banner, setBanner] = useState({
     visible: true,
-    title: "INVESTITURE CEREMONY 2026-27",
-    subtitle: "S.D. PUBLIC SCHOOL, PATNA • OFFICIAL LIVE STREAM"
+    title: "S.D. PUBLIC SCHOOL, PATNA",
+    subtitle: "OFFICIAL LIVE STREAM • PATNA, BIHAR"
   });
 
   const [ticker, setTicker] = useState({
     visible: false,
-    text: "Welcome Parents, Teachers and Students to the Investiture Ceremony 2026-27 | Oath Taking Ceremony in Progress | S.D. Public School, Patna"
+    text: "Welcome to S.D. Public School, Patna Official Live Stream | Excellence in Education & Holistic Development | Stay Tuned for Live Events & Updates"
   });
 
   const [logoBug, setLogoBug] = useState({
@@ -118,10 +118,10 @@ export default function StreamOverlay() {
   const [startingSoon, setStartingSoon] = useState({
     visible: false,
     showCountdown: true,
-    title: "INVESTITURE CEREMONY 2026-27",
-    subtitle: "S.D. PUBLIC SCHOOL, PATNA • OFFICIAL LIVE BROADCAST",
+    title: "S.D. PUBLIC SCHOOL, PATNA",
+    subtitle: "OFFICIAL LIVE BROADCAST • PATNA, BIHAR",
     message: "STREAM STARTING SOON",
-    timerText: "Please stay tuned. The ceremony will begin shortly.",
+    timerText: "Please stay tuned. The stream will begin shortly.",
     targetTime: "08:00"
   });
 
@@ -486,7 +486,7 @@ export default function StreamOverlay() {
             </h3>
 
             <h1 className="font-headline font-black text-3xl md:text-5xl lg:text-6xl tracking-wide uppercase drop-shadow-[0_10px_30px_rgba(0,0,0,0.9)] text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-200">
-              {startingSoon.title || "INVESTITURE CEREMONY 2026-27"}
+              {startingSoon.title || "S.D. PUBLIC SCHOOL, PATNA"}
             </h1>
           </div>
 
@@ -496,7 +496,7 @@ export default function StreamOverlay() {
             <div className="mt-8 flex flex-col items-center gap-3 relative z-10 animate-in fade-in-0 zoom-in-95 duration-500">
               <div className="flex items-center gap-2 text-xs font-black text-amber-300 tracking-[0.3em] uppercase bg-amber-500/20 px-5 py-1.5 rounded-full border border-amber-400/50 shadow-md">
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
-                <span>INVESTITURE CEREMONY 8:00 AM COUNTDOWN</span>
+                <span>LIVE STREAM 8:00 AM COUNTDOWN</span>
               </div>
 
               <div className="flex items-center gap-4 sm:gap-6 mt-1">

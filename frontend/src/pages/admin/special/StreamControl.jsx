@@ -9,40 +9,40 @@ const CHANNEL_NAME = "sdps_obs_stream_channel";
 
 const BASE_PRESET_CARDS = [
   {
-    category: "🎵 Dance, Music & Cultural Performance Groups",
+    category: "🎵 Dance, Music & Cultural Performance Groups (Archived Event Presets)",
     items: [
       {
         name: "Classical Dance Troupe",
         role: "Ganesh Vandana • Welcome Dance",
-        subtitle: "Investiture Ceremony 2026-27 • S.D. Public School",
+        subtitle: "Cultural Performance • S.D. Public School",
         badge: "CULTURAL DANCE",
         performers: ["Ananya Sharma", "Aditi Roy", "Rhea Sen", "Kavya Singh", "Sneha Kumari"]
       },
       {
         name: "SDPS School Choir",
         role: "School Anthem & Patriotic Medley",
-        subtitle: "Investiture Ceremony 2026-27 • S.D. Public School",
+        subtitle: "School Music Choir • S.D. Public School",
         badge: "MUSIC CHOIR",
         performers: ["Aarav Raj", "Nitin Kumar", "Aadhya Jha", "Rohan Verma", "Shadan Ahmed", "Twinkle Sinha"]
       },
       {
         name: "Instrumental Band",
         role: "Vande Mataram • Fusion Performance",
-        subtitle: "Investiture Ceremony 2026-27 • S.D. Public School",
+        subtitle: "Instrumental Band • S.D. Public School",
         badge: "MUSIC BAND",
         performers: ["Soumit Kumar", "Ankush Anand", "Ishika Kumari", "Priyanshu Singh"]
       },
       {
         name: "Folk Dance Group",
         role: "Festive Folk Dance Performance",
-        subtitle: "Investiture Ceremony 2026-27 • S.D. Public School",
+        subtitle: "Folk Dance Group • S.D. Public School",
         badge: "FOLK DANCE",
         performers: ["Manjari", "Bhavya Kumari", "Sakshi Shree", "Aradhya Gupta", "Simran Kumari"]
       },
       {
         name: "SDPS Theatre & Drama",
         role: "Nukkad Natak • Student Leadership Skit",
-        subtitle: "Investiture Ceremony 2026-27 • S.D. Public School",
+        subtitle: "Theatre & Drama • S.D. Public School",
         badge: "THEATRE DRAMA",
         performers: ["Abhinav Kumar", "Vicky Singh", "Abhishek Kumar", "Harsh Raj Cesodia"]
       }
@@ -319,7 +319,7 @@ export default function StreamControl() {
   // Manual Card Maker Inputs (Supports Persons, Music Groups & Multi-Performers)
   const [cardName, setCardName] = useState("Classical Dance Troupe");
   const [cardRole, setCardRole] = useState("Ganesh Vandana • Welcome Dance");
-  const [cardSubtitle, setCardSubtitle] = useState("Investiture Ceremony 2026-27 • S.D. Public School");
+  const [cardSubtitle, setCardSubtitle] = useState("S.D. Public School, Patna");
   const [cardPhoto, setCardPhoto] = useState("");
   const [cardBadge, setCardBadge] = useState("CULTURAL DANCE");
   const [cardPerformers, setCardPerformers] = useState("Ananya Sharma, Aditi Roy, Rhea Sen, Kavya Singh, Sneha Kumari");
@@ -332,16 +332,41 @@ export default function StreamControl() {
   const [startingSoonVisible, setStartingSoonVisible] = useState(false);
   const [soonShowTimer, setSoonShowTimer] = useState(true);
 
-  const [bannerTitle, setBannerTitle] = useState("INVESTITURE CEREMONY 2026-27");
-  const [bannerSubtitle, setBannerSubtitle] = useState("S.D. PUBLIC SCHOOL, PATNA • OFFICIAL LIVE STREAM");
-  const [tickerText, setTickerText] = useState("Welcome Parents, Teachers and Students to the Investiture Ceremony 2026-27 | Oath Taking Ceremony in Progress | S.D. Public School, Patna");
+  const [bannerTitle, setBannerTitle] = useState("S.D. PUBLIC SCHOOL, PATNA");
+  const [bannerSubtitle, setBannerSubtitle] = useState("OFFICIAL LIVE STREAM • PATNA, BIHAR");
+  const [tickerText, setTickerText] = useState("Welcome to S.D. Public School, Patna Official Live Stream | Excellence in Education & Holistic Development | Stay Tuned for Live Events & Updates");
 
   // Full screen starting soon inputs
-  const [soonTitle, setSoonTitle] = useState("INVESTITURE CEREMONY 2026-27");
-  const [soonSubtitle, setSoonSubtitle] = useState("S.D. PUBLIC SCHOOL, PATNA • OFFICIAL LIVE BROADCAST");
+  const [soonTitle, setSoonTitle] = useState("S.D. PUBLIC SCHOOL, PATNA");
+  const [soonSubtitle, setSoonSubtitle] = useState("OFFICIAL LIVE BROADCAST • PATNA, BIHAR");
   const [soonMessage, setSoonMessage] = useState("STREAM STARTING SOON");
-  const [soonNote, setSoonNote] = useState("Please stay tuned. The ceremony will begin shortly.");
+  const [soonNote, setSoonNote] = useState("Please stay tuned. The stream will begin shortly.");
   const [soonCountdownTarget, setSoonCountdownTarget] = useState("08:00"); // 8:00 AM
+
+  const loadEventArchive = (pack) => {
+    setBannerTitle(pack.bannerTitle);
+    setBannerSubtitle(pack.bannerSubtitle);
+    setTickerText(pack.tickerText);
+    setSoonTitle(pack.soonTitle);
+    setSoonSubtitle(pack.soonSubtitle);
+    setSoonMessage(pack.soonMessage);
+    setSoonNote(pack.soonNote);
+
+    // Also send updates to live stream if requested
+    sendBroadcast("BANNER", { visible: bannerVisible, title: pack.bannerTitle, subtitle: pack.bannerSubtitle });
+    sendBroadcast("TICKER", { visible: tickerVisible, text: pack.tickerText });
+    sendBroadcast("STARTING_SOON", {
+      visible: startingSoonVisible,
+      showCountdown: soonShowTimer,
+      title: pack.soonTitle,
+      subtitle: pack.soonSubtitle,
+      message: pack.soonMessage,
+      timerText: pack.soonNote,
+      targetTime: soonCountdownTarget
+    });
+
+    toast.success(`Loaded Event Preset Pack: ${pack.title}`);
+  };
 
   // Suppress auto-logout while actively operating stream control
   useEffect(() => {
@@ -867,6 +892,85 @@ export default function StreamControl() {
           >
             <PlayCircle className="w-4 h-4" /> Push Slate WITHOUT Timer (Standard Starting Soon)
           </button>
+        </div>
+      </div>
+
+      {/* 📁 Archived Broadcast Event Presets & Quick Event Loader */}
+      <div className="bg-slate-900 text-white p-6 rounded-3xl border border-slate-800 shadow-lg space-y-4">
+        <div className="flex flex-wrap justify-between items-center border-b border-slate-800 pb-3 gap-2">
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-[#F4D571]" />
+            <h2 className="text-xs font-headline font-black uppercase tracking-wider text-[#F4D571]">
+              📁 Event Archives & Past Broadcast Preset Packs
+            </h2>
+          </div>
+          <span className="text-[10px] text-slate-400 font-bold uppercase">
+            Load 1-Click Event Overlay Presets from Past Ceremonies
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Investiture Ceremony Archive Pack */}
+          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 hover:border-[#F4D571]/50 transition">
+            <div className="flex items-center justify-between">
+              <span className="px-2.5 py-0.5 rounded-md bg-amber-500/20 text-[#F4D571] text-[10px] font-black uppercase border border-amber-400/40">
+                ARCHIVED EVENT PACK
+              </span>
+              <span className="text-[10px] text-slate-400 font-bold">Session 2026-27</span>
+            </div>
+            <h3 className="text-sm font-bold text-white">Investiture Ceremony 2026-27</h3>
+            <p className="text-[11px] text-slate-300">
+              Includes oath-taking slates, ceremony banners, news tickers & cultural group presets.
+            </p>
+            <div className="flex flex-wrap items-center gap-2 pt-2">
+              <button
+                onClick={() => loadEventArchive({
+                  title: "Investiture Ceremony 2026-27",
+                  bannerTitle: "INVESTITURE CEREMONY 2026-27",
+                  bannerSubtitle: "S.D. PUBLIC SCHOOL, PATNA • OFFICIAL LIVE STREAM",
+                  tickerText: "Welcome Parents, Teachers and Students to the Investiture Ceremony 2026-27 | Oath Taking Ceremony in Progress | S.D. Public School, Patna",
+                  soonTitle: "INVESTITURE CEREMONY 2026-27",
+                  soonSubtitle: "S.D. PUBLIC SCHOOL, PATNA • OFFICIAL LIVE BROADCAST",
+                  soonMessage: "STREAM STARTING SOON",
+                  soonNote: "Please stay tuned. The ceremony will begin shortly."
+                })}
+                className="px-3 py-2 rounded-xl bg-[#F4D571] hover:bg-amber-300 text-[#0B1E40] font-black text-xs transition shadow flex items-center gap-1.5 cursor-pointer"
+              >
+                <RefreshCw className="w-3.5 h-3.5" /> Load Investiture Ceremony Titles & Slates
+              </button>
+            </div>
+          </div>
+
+          {/* Standard School Live Stream Pack */}
+          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 hover:border-blue-400/50 transition">
+            <div className="flex items-center justify-between">
+              <span className="px-2.5 py-0.5 rounded-md bg-blue-500/20 text-blue-300 text-[10px] font-black uppercase border border-blue-400/40">
+                ACTIVE GENERAL DEFAULT
+              </span>
+              <span className="text-[10px] text-slate-400 font-bold">Standard Stream</span>
+            </div>
+            <h3 className="text-sm font-bold text-white">Standard School Live Stream</h3>
+            <p className="text-[11px] text-slate-300">
+              Clean general broadcast titles, school announcements ticker, and standard starting soon pre-show slate.
+            </p>
+            <div className="flex flex-wrap items-center gap-2 pt-2">
+              <button
+                onClick={() => loadEventArchive({
+                  title: "Standard School Live Stream",
+                  bannerTitle: "S.D. PUBLIC SCHOOL, PATNA",
+                  bannerSubtitle: "OFFICIAL LIVE STREAM • PATNA, BIHAR",
+                  tickerText: "Welcome to S.D. Public School, Patna Official Live Stream | Excellence in Education & Holistic Development | Stay Tuned for Live Events & Updates",
+                  soonTitle: "S.D. PUBLIC SCHOOL, PATNA",
+                  soonSubtitle: "OFFICIAL LIVE BROADCAST • PATNA, BIHAR",
+                  soonMessage: "STREAM STARTING SOON",
+                  soonNote: "Please stay tuned. The stream will begin shortly."
+                })}
+                className="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs transition shadow flex items-center gap-1.5 cursor-pointer"
+              >
+                <RefreshCw className="w-3.5 h-3.5" /> Restore Standard School Live Stream Titles
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

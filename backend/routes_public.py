@@ -1733,12 +1733,12 @@ STREAM_OVERLAY_STATE = {
     },
     "banner": {
         "visible": True,
-        "title": "INVESTITURE CEREMONY 2026-27",
-        "subtitle": "S.D. PUBLIC SCHOOL, PATNA • OFFICIAL LIVE STREAM"
+        "title": "S.D. PUBLIC SCHOOL, PATNA",
+        "subtitle": "OFFICIAL LIVE STREAM • PATNA, BIHAR"
     },
     "ticker": {
         "visible": True,
-        "text": "Welcome Parents, Teachers and Students to the Investiture Ceremony 2026-27 | Oath Taking Ceremony in Progress | S.D. Public School, Patna"
+        "text": "Welcome to S.D. Public School, Patna Official Live Stream | Excellence in Education & Holistic Development | Stay Tuned for Live Events & Updates"
     },
     "logoBug": {
         "visible": True,
@@ -1746,10 +1746,10 @@ STREAM_OVERLAY_STATE = {
     },
     "startingSoon": {
         "visible": False,
-        "title": "INVESTITURE CEREMONY 2026-27",
-        "subtitle": "S.D. PUBLIC SCHOOL, PATNA • OFFICIAL LIVE BROADCAST",
+        "title": "S.D. PUBLIC SCHOOL, PATNA",
+        "subtitle": "OFFICIAL LIVE BROADCAST • PATNA, BIHAR",
         "message": "STREAM STARTING SOON",
-        "timerText": "Please stay tuned. The ceremony will begin shortly."
+        "timerText": "Please stay tuned. The stream will begin shortly."
     },
     "confetti_trigger_id": 0
 }
