@@ -223,13 +223,36 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
     }
   });
 
-  // Load drafts from Database on mount
+  // Load drafts from Database on mount & auto-migrate any existing local storage drafts to MongoDB
   useEffect(() => {
     api.get("/admin/notice-drafts")
-      .then((r) => {
-        if (Array.isArray(r.data) && r.data.length > 0) {
-          setDrafts(r.data);
+      .then(async (r) => {
+        let dbDrafts = Array.isArray(r.data) ? r.data : [];
+        
+        try {
+          const localSaved = localStorage.getItem("sdps_notice_drafts");
+          const localDrafts = localSaved ? JSON.parse(localSaved) : [];
+          
+          if (localDrafts.length > 0) {
+            const dbIds = new Set(dbDrafts.map(d => d.id));
+            const unmigrated = localDrafts.filter(d => !dbIds.has(d.id));
+            
+            for (const d of unmigrated) {
+              await api.post("/admin/notice-drafts", d).catch(() => {});
+            }
+
+            if (unmigrated.length > 0) {
+              const updatedR = await api.get("/admin/notice-drafts").catch(() => null);
+              if (updatedR && Array.isArray(updatedR.data)) {
+                dbDrafts = updatedR.data;
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Auto-migration error:", e);
         }
+
+        setDrafts(dbDrafts);
       })
       .catch((err) => {
         console.error("Failed to fetch drafts from database:", err);
@@ -1379,10 +1402,15 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
 
           {/* Database & Cloud Draft History */}
           <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-            <h3 className="text-xs font-bold text-slate-800 border-b border-slate-100 pb-2 uppercase tracking-wide">Saved Drafts (Database & Cloud)</h3>
+            <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wide">Saved Drafts</h3>
+              <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                ☁️ Cloud MongoDB Synced
+              </span>
+            </div>
             
             {drafts.length === 0 ? (
-              <p className="text-xs text-slate-400 italic text-center py-2">No drafts saved in database yet.</p>
+              <p className="text-xs text-slate-400 italic text-center py-2">No drafts saved in cloud database yet.</p>
             ) : (
               <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                 {drafts.map(item => (
