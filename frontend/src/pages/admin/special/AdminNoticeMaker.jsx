@@ -532,7 +532,13 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
       {/* CSS Print Styles */}
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
-          /* Hide editor columns, sidebar, layouts, header, footer */
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            height: 100% !important;
+            overflow: hidden !important;
+            background: white !important;
+          }
           body * {
             visibility: hidden;
           }
@@ -540,19 +546,29 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
             visibility: visible;
           }
           #notice-a4-print-area {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            max-width: 100%;
-            margin: 0;
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 210mm !important;
+            height: 297mm !important;
+            max-width: 210mm !important;
+            max-height: 297mm !important;
+            min-height: 0 !important;
+            margin: 0 auto !important;
             padding: 1.5cm 1.5cm !important;
             box-shadow: none !important;
             border: none !important;
-            box-sizing: border-box;
+            border-radius: 0 !important;
+            box-sizing: border-box !important;
             background-color: white !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+            overflow: hidden !important;
+            page-break-after: avoid !important;
+            page-break-before: avoid !important;
+            page-break-inside: avoid !important;
           }
           @page {
             size: A4 portrait;
