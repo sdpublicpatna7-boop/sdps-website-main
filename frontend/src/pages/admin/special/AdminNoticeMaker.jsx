@@ -213,7 +213,7 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
     return refNo;
   };
 
-  // Drafts Local History
+  // Drafts Database & Cloud History
   const [drafts, setDrafts] = useState(() => {
     try {
       const saved = localStorage.getItem("sdps_notice_drafts");
@@ -223,7 +223,20 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
     }
   });
 
-  // Save drafts to localStorage whenever it changes
+  // Load drafts from Database on mount
+  useEffect(() => {
+    api.get("/admin/notice-drafts")
+      .then((r) => {
+        if (Array.isArray(r.data) && r.data.length > 0) {
+          setDrafts(r.data);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to fetch drafts from database:", err);
+      });
+  }, []);
+
+  // Save drafts to localStorage whenever state changes
   useEffect(() => {
     try {
       localStorage.setItem("sdps_notice_drafts", JSON.stringify(drafts));
@@ -256,8 +269,8 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
     }, 150);
   };
 
-  // Save draft locally
-  const handleSaveDraft = () => {
+  // Save draft to Database & Local Cache
+  const handleSaveDraft = async () => {
     const newDraft = {
       id: Date.now().toString(),
       created_at: new Date().toISOString(),
@@ -289,8 +302,14 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
       tableAlign
     };
 
-    setDrafts(prev => [newDraft, ...prev.filter(d => d.noticeTitle !== noticeTitle || d.subject !== subject)]);
-    toast.success("Draft saved successfully to browser cache!");
+    setDrafts(prev => [newDraft, ...prev.filter(d => d.id !== newDraft.id && (d.noticeTitle !== noticeTitle || d.subject !== subject))]);
+    
+    try {
+      await api.post("/admin/notice-drafts", newDraft);
+      toast.success("Draft saved successfully to Database & Cloud!");
+    } catch (err) {
+      toast.success("Draft saved to browser storage!");
+    }
   };
 
   const handleLoadDraft = (item) => {
@@ -327,11 +346,16 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
     toast.success("Draft loaded into notice editor!");
   };
 
-  const handleDeleteDraft = (id, e) => {
+  const handleDeleteDraft = async (id, e) => {
     e.stopPropagation();
     if (!window.confirm("Are you sure you want to delete this draft?")) return;
     setDrafts(prev => prev.filter(d => d.id !== id));
-    toast.success("Draft removed from local cache");
+    try {
+      await api.delete(`/admin/notice-drafts/${id}`);
+      toast.success("Draft removed from Database & Cloud");
+    } catch (err) {
+      toast.success("Draft removed from local storage");
+    }
   };
 
   const handleReset = () => {
@@ -1353,12 +1377,12 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
             )}
           </div>
 
-          {/* Local Draft History */}
+          {/* Database & Cloud Draft History */}
           <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-            <h3 className="text-xs font-bold text-slate-800 border-b border-slate-100 pb-2 uppercase tracking-wide">Saved Drafts (Local Storage)</h3>
+            <h3 className="text-xs font-bold text-slate-800 border-b border-slate-100 pb-2 uppercase tracking-wide">Saved Drafts (Database & Cloud)</h3>
             
             {drafts.length === 0 ? (
-              <p className="text-xs text-slate-400 italic text-center py-2">No drafts saved on this computer yet.</p>
+              <p className="text-xs text-slate-400 italic text-center py-2">No drafts saved in database yet.</p>
             ) : (
               <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                 {drafts.map(item => (

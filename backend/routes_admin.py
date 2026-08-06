@@ -1590,6 +1590,60 @@ async def get_gdrive_folders_analytics(admin: TokenData = Depends(require_permis
     }
 
 
+# ============= NOTICE MAKER DRAFTS (DATABASE / CLOUD STORAGE) =============
+
+@admin_router.get("/notice-drafts")
+async def list_notice_drafts_admin(admin: TokenData = Depends(require_permission("notices"))):
+    """List all saved notice drafts stored in MongoDB database."""
+    drafts = await db.notice_drafts.find({}, {"_id": 0}).sort("updated_at", -1).to_list(500)
+    return drafts
+
+
+@admin_router.post("/notice-drafts")
+async def save_notice_draft_admin(payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(require_permission("notices"))):
+    """Save or update a notice draft in MongoDB database."""
+    draft_id = payload.get("id") or f"draft-{new_id()}"
+    doc = {
+        "id": draft_id,
+        "noticeTitle": payload.get("noticeTitle", "NOTICE"),
+        "subject": payload.get("subject", ""),
+        "refNo": payload.get("refNo", ""),
+        "noticeDate": payload.get("noticeDate", ""),
+        "bodyText": payload.get("bodyText", ""),
+        "signatoryHeader": payload.get("signatoryHeader", "By Order:"),
+        "signatoryAuthority": payload.get("signatoryAuthority", "Principal"),
+        "showWatermark": payload.get("showWatermark", True),
+        "showSealBox": payload.get("showSealBox", True),
+        "fontSize": payload.get("fontSize", "sm"),
+        "lineHeight": payload.get("lineHeight", "relaxed"),
+        "letterheadHeader": payload.get("letterheadHeader", True),
+        "selectedRolePreset": payload.get("selectedRolePreset", "principal"),
+        "signatureUrl": payload.get("signatureUrl", ""),
+        "sigHeight": payload.get("sigHeight", 48),
+        "autoRefEnabled": payload.get("autoRefEnabled", True),
+        "refPrefix": payload.get("refPrefix", "SDPS/2026-27/"),
+        "refSerial": payload.get("refSerial", 45),
+        "refLocked": payload.get("refLocked", False),
+        "pdfUrl": payload.get("pdfUrl", ""),
+        "showTable": payload.get("showTable", False),
+        "tableHeaders": payload.get("tableHeaders", []),
+        "tableRows": payload.get("tableRows", []),
+        "tableStyle": payload.get("tableStyle", "dividers"),
+        "tableHeaderBg": payload.get("tableHeaderBg", "none"),
+        "tableAlign": payload.get("tableAlign", "left"),
+        "created_at": payload.get("created_at") or datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.notice_drafts.update_one({"id": draft_id}, {"$set": doc}, upsert=True)
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+
+@admin_router.delete("/notice-drafts/{draft_id}")
+async def delete_notice_draft_admin(draft_id: str, admin: TokenData = Depends(require_permission("notices"))):
+    """Delete a notice draft from MongoDB database."""
+    await db.notice_drafts.delete_one({"id": draft_id})
+    return {"status": "deleted"}
+
 
 # ============= LINK SHORTENER =============
 
