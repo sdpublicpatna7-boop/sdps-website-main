@@ -50,6 +50,11 @@ from image_utils import save_raw_file, UPLOAD_ROOT, UnsafeUploadError
 logger = logging.getLogger(__name__)
 public_router = APIRouter(prefix="/api", tags=["public"])
 
+@public_router.get("/version")
+async def get_system_version():
+    """Return current system version."""
+    return {"version": "v2.6.4"}
+
 def get_real_ip(request: Request) -> str:
     forwarded = request.headers.get("X-Forwarded-For")
     if forwarded:

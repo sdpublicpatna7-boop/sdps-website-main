@@ -15,6 +15,7 @@ import { useAuth } from "../../lib/auth";
 import { startPinger } from "../../lib/pinger";
 import api from "../../lib/api";
 import SEO from "../layout/SEO";
+import SYSTEM_VERSION from "../../version";
 
 // Structured Nav Categories with Subcategories
 const NAV_CATEGORIES = [
@@ -206,7 +207,17 @@ export default function AdminLayout() {
     return "";
   });
 
+  const [appVersion, setAppVersion] = useState(SYSTEM_VERSION);
+
   useEffect(() => {
+    api.get("/version")
+      .then((r) => {
+        if (r.data && r.data.version) {
+          setAppVersion(r.data.version);
+        }
+      })
+      .catch(() => {});
+
     api.get("/site-settings")
       .then((r) => {
         setSettings(r.data);
@@ -645,6 +656,13 @@ export default function AdminLayout() {
             >
               <LogOut className="w-3.5 h-3.5" /> Logout
             </button>
+            
+            <div className="flex items-center justify-between pt-2.5 mt-1 border-t border-white/[0.06] text-[10.5px] font-semibold text-slate-400">
+              <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Version</span>
+              <span className="font-mono text-emerald-400 font-extrabold text-xs bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 shadow-2xs">
+                {appVersion}
+              </span>
+            </div>
           </div>
         </aside>
       </div>
@@ -763,6 +781,13 @@ export default function AdminLayout() {
           >
             <LogOut className="w-3.5 h-3.5" /> {!collapsed && "Logout"}
           </button>
+
+          <div className={`flex items-center ${collapsed ? "justify-center" : "justify-between"} pt-2.5 mt-1 border-t border-white/[0.06] text-[10.5px] font-semibold text-slate-400`}>
+            {!collapsed && <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Version</span>}
+            <span className="font-mono text-emerald-400 font-extrabold text-xs bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 shadow-2xs">
+              {appVersion}
+            </span>
+          </div>
         </div>
       </aside>
 
