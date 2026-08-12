@@ -2116,7 +2116,8 @@ async def get_gdrive_folder_og_html(slug: str):
     desc = folder.get("description") or f"Explore and download official high-resolution photographs from {title} at S.D. Public School, Patna."
     
     files = folder.get("files", [])
-    cover_image = f"https://lh3.googleusercontent.com/d/{files[0]['file_id']}=w1000" if files and files[0].get("file_id") else "https://www.sdpublic.org/logo512.png"
+    cover_file_id = folder.get("cover_file_id") or (files[0].get("file_id") if files and isinstance(files[0], dict) else None)
+    cover_image = f"https://lh3.googleusercontent.com/d/{cover_file_id}=w1000" if cover_file_id else "https://www.sdpublic.org/logo512.png"
     target_url = f"https://www.sdpublic.org/photos/{slug}"
 
     html_content = f"""<!DOCTYPE html>
