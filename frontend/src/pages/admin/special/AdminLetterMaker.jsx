@@ -321,7 +321,7 @@ export default function AdminLetterMaker() {
 
           <div
             ref={letterRef}
-            className="bg-white text-slate-900 rounded-2xl shadow-xl p-8 sm:p-12 min-h-[780px] flex flex-col justify-between relative overflow-hidden border border-slate-200 print:shadow-none print:border-none print:rounded-none print:p-8"
+            className="bg-white text-slate-900 rounded-2xl shadow-xl p-8 sm:p-12 min-h-[1020px] aspect-[210/297] flex flex-col justify-between relative overflow-hidden border border-slate-200 print:shadow-none print:border-none print:rounded-none print:p-8 print:w-[210mm] print:h-[297mm] print:max-h-[297mm] mx-auto"
             style={{ fontFamily: "'Times New Roman', Georgia, serif" }}
           >
             {/* Top Navy/Gold Accent Bar */}
