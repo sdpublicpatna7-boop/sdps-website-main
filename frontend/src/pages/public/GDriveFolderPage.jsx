@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import api from "../../lib/api";
+import api, { getBackendUrl } from "../../lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Download, Archive, Image as ImageIcon, Sparkles, ChevronLeft, ChevronRight, Share2 } from "lucide-react";
 import { toast } from "sonner";
 
-const API_BASE = process.env.REACT_APP_BACKEND_URL || "";
+const API_BASE = getBackendUrl();
 
 function getThumbUrl(fileId) {
   // Fast 500px preview thumbnail directly from Google CDN (instant grid load)

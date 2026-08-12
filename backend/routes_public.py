@@ -2058,34 +2058,52 @@ async def track_gdrive_photo_download(slug: str, payload: Dict[str, Any] = Body(
 
 @public_router.get("/gdrive-folders/{slug}/zip")
 async def download_gdrive_folder_zip(slug: str):
-    """Stream selected photos in a folder as a single ZIP archive."""
+    """Stream selected photos in a folder as a single ZIP archive ultra-fast using parallel async downloads."""
     import zipfile
     import io
     import httpx
     import re
+    import asyncio
+    import logging
     from server import db
 
     folder = await db.gdrive_folders.find_one({"$or": [{"slug": slug}, {"id": slug}]}, {"_id": 0})
     if not folder or not folder.get("files"):
         raise HTTPException(status_code=404, detail="Folder empty or not found")
 
-    zip_buffer = io.BytesIO()
     files = folder.get("files", [])
+    if not files:
+        raise HTTPException(status_code=404, detail="No photos in album")
 
-    async with httpx.AsyncClient(follow_redirects=True, timeout=20.0) as client:
-        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-            for idx, f in enumerate(files):
-                file_id = f.get("file_id")
-                if not file_id:
-                    continue
-                try:
-                    img_url = f"https://lh3.googleusercontent.com/d/{file_id}"
-                    resp = await client.get(img_url)
-                    if resp.status_code == 200 and len(resp.content) > 500:
-                        filename = f"{idx + 1:02d}_{f.get('title', 'photo').replace(' ', '_')}.jpg"
-                        zf.writestr(filename, resp.content)
-                except Exception:
-                    continue
+    sem = asyncio.Semaphore(15)
+
+    async def fetch_photo(client, idx, f):
+        file_id = f.get("file_id")
+        if not file_id:
+            return None
+        img_url = f"https://lh3.googleusercontent.com/d/{file_id}"
+        async with sem:
+            try:
+                resp = await client.get(img_url)
+                if resp.status_code == 200 and len(resp.content) > 500:
+                    raw_title = f.get('title', 'photo')
+                    safe_title = re.sub(r'[^a-zA-Z0-9_.-]', '_', raw_title)
+                    filename = f"{idx + 1:02d}_{safe_title}.jpg"
+                    return (filename, resp.content)
+            except Exception as e:
+                logging.warning(f"Error fetching photo {file_id}: {e}")
+        return None
+
+    async with httpx.AsyncClient(follow_redirects=True, timeout=30.0) as client:
+        tasks = [fetch_photo(client, idx, f) for idx, f in enumerate(files)]
+        results = await asyncio.gather(*tasks)
+
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_STORED) as zf:
+        for item in results:
+            if item:
+                filename, content = item
+                zf.writestr(filename, content)
 
     zip_buffer.seek(0)
     clean_title = re.sub(r'[^a-zA-Z0-9_.-]', '_', folder.get("title", "sdps-photos"))
