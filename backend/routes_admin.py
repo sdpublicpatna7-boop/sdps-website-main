@@ -1461,22 +1461,26 @@ async def list_gdrive_folders_admin(admin: TokenData = Depends(require_permissio
 
 @admin_router.post("/gdrive-folders/extract")
 async def extract_gdrive_photos_admin(payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(require_permission("gallery"))):
-    """Extract photo metadata from a Google Drive folder link or manual file links without saving."""
+    """Extract photo metadata from one or multiple Google Drive folder links or manual file links without saving."""
+    import re
     from routes_public import extract_gdrive_folder_files, extract_gdrive_file_id
 
-    drive_url = payload.get("drive_folder_url", "").strip()
+    drive_url_raw = payload.get("drive_folder_url", "").strip()
     manual_urls = payload.get("manual_urls", "")
 
     extracted_files = []
     seen_ids = set()
 
-    if drive_url:
-        folder_files = await extract_gdrive_folder_files(drive_url)
-        for f in folder_files:
-            fid = f.get("file_id")
-            if fid and fid not in seen_ids:
-                seen_ids.add(fid)
-                extracted_files.append(f)
+    if drive_url_raw:
+        # Split by newline, comma, or space if multiple folder URLs were pasted
+        folder_urls = [u.strip() for u in re.split(r'[\s,\n]+', drive_url_raw) if u.strip()]
+        for url in folder_urls:
+            folder_files = await extract_gdrive_folder_files(url)
+            for f in folder_files:
+                fid = f.get("file_id")
+                if fid and fid not in seen_ids:
+                    seen_ids.add(fid)
+                    extracted_files.append(f)
 
     if manual_urls:
         lines = manual_urls.replace(",", "\n").split("\n") if isinstance(manual_urls, str) else manual_urls

@@ -41,6 +41,10 @@ export default function AdminGDriveSharing() {
   const [editCoverId, setEditCoverId] = useState("");
   const [updating, setUpdating] = useState(false);
 
+  // Additional folder state for Edit Modal
+  const [extraFolderUrl, setExtraFolderUrl] = useState("");
+  const [appendingFolder, setAppendingFolder] = useState(false);
+
   const loadData = () => {
     setLoading(true);
     Promise.all([
@@ -172,6 +176,7 @@ export default function AdminGDriveSharing() {
     const files = folder.files || [];
     setEditPhotos(files);
     setEditSelectedIds(new Set(files.map((f) => f.file_id)));
+    setExtraFolderUrl("");
     setEditModalOpen(true);
   };
 
@@ -200,6 +205,48 @@ export default function AdminGDriveSharing() {
       toast.error("Failed to re-sync folder from Google Drive.");
     } finally {
       setSyncingSlug(null);
+    }
+  };
+
+  // Append photos from an additional Google Drive folder in Edit Modal
+  const handleAppendFolderInModal = async () => {
+    if (!extraFolderUrl.trim()) {
+      toast.error("Please enter an additional Google Drive folder link or photo links.");
+      return;
+    }
+
+    setAppendingFolder(true);
+    try {
+      const res = await api.post("/admin/gdrive-folders/extract", {
+        drive_folder_url: extraFolderUrl.trim()
+      });
+      const newFiles = res.data?.files || [];
+      if (newFiles.length === 0) {
+        toast.error("No photos found in this additional folder link.");
+      } else {
+        const existingIds = new Set(editPhotos.map((f) => f.file_id));
+        let addedCount = 0;
+        const combined = [...editPhotos];
+        const updatedSelected = new Set(editSelectedIds);
+
+        for (const f of newFiles) {
+          if (!existingIds.has(f.file_id)) {
+            existingIds.add(f.file_id);
+            combined.push(f);
+            updatedSelected.add(f.file_id);
+            addedCount++;
+          }
+        }
+
+        setEditPhotos(combined);
+        setEditSelectedIds(updatedSelected);
+        setExtraFolderUrl("");
+        toast.success(`Appended ${addedCount} new photos from additional folder!`);
+      }
+    } catch (err) {
+      toast.error("Failed to extract photos from additional folder link.");
+    } finally {
+      setAppendingFolder(false);
     }
   };
 
@@ -273,7 +320,7 @@ export default function AdminGDriveSharing() {
             Google Drive Photo Sharing & Picker
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 max-w-2xl">
-            Paste Google Drive links, extract photos instantly, pick which photos to publish, set cover images, and generate custom domain albums.
+            Paste Google Drive links, combine multiple folders, extract photos instantly, pick which photos to publish, set cover images, and generate custom domain albums.
           </p>
         </div>
 
@@ -297,7 +344,7 @@ export default function AdminGDriveSharing() {
               <TrendingUp className="w-3 h-3" /> Live Visitor Count
             </span>
           </div>
-          <div className="p-3.5 bg-indigo-500/10 text-indigo-400 rounded-2xl border border-indigo-500/20">
+          <div className="p-3.5 bg-indigo500/10 text-indigo-400 rounded-2xl border border-indigo-500/20">
             <Eye className="w-6 h-6" />
           </div>
         </div>
@@ -380,7 +427,7 @@ export default function AdminGDriveSharing() {
             <FolderPlus className="w-5 h-5 text-amber-400" /> Create Photo Album with Custom Selection
           </h2>
           <p className="text-xs text-slate-400">
-            Paste Google Drive links, extract photo previews, select which photos to show, choose a cover photo, and host instantly.
+            Paste Google Drive links (one or multiple folders), extract photo previews, select which photos to show, choose a cover photo, and host instantly.
           </p>
         </div>
 
@@ -410,11 +457,11 @@ export default function AdminGDriveSharing() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-300">Google Drive Folder Link or Direct Photo Links *</label>
+            <label className="text-xs font-bold text-slate-300">Google Drive Folder Link(s) * (Supports multiple links separated by space/newline)</label>
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="https://drive.google.com/drive/folders/1abcxyz... or photo links"
+                placeholder="https://drive.google.com/drive/folders/1abcxyz... https://drive.google.com/drive/folders/2def..."
                 value={driveUrl}
                 onChange={(e) => setDriveUrl(e.target.value)}
                 className="flex-1 px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-400 transition"
@@ -681,7 +728,7 @@ export default function AdminGDriveSharing() {
                   <SlidersHorizontal className="w-5 h-5 text-amber-400" />
                   Manage Photos & Album: {editingFolder?.title}
                 </h3>
-                <p className="text-xs text-slate-400">Toggle photos to show or hide, select cover photo, and update metadata.</p>
+                <p className="text-xs text-slate-400">Toggle photos to show or hide, select cover photo, or add photos from extra Google Drive folders.</p>
               </div>
 
               <button
@@ -705,7 +752,7 @@ export default function AdminGDriveSharing() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-300">Google Drive Link</label>
+                  <label className="text-xs font-bold text-slate-300">Google Drive Link(s)</label>
                   <input
                     type="text"
                     value={editDriveUrl}
@@ -723,6 +770,31 @@ export default function AdminGDriveSharing() {
                   onChange={(e) => setEditDescription(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-400 resize-none"
                 />
+              </div>
+
+              {/* Add Extra Folder Section */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                <label className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                  <FolderPlus className="w-4 h-4" /> Add Photos from Another Google Drive Folder or Link
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="https://drive.google.com/drive/folders/1abcxyz... (Paste new folder link to merge photos)"
+                    value={extraFolderUrl}
+                    onChange={(e) => setExtraFolderUrl(e.target.value)}
+                    className="flex-1 px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAppendFolderInModal}
+                    disabled={appendingFolder}
+                    className="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs transition flex items-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-50"
+                  >
+                    {appendingFolder ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5 stroke-[3]" />}
+                    Fetch & Append Folder
+                  </button>
+                </div>
               </div>
 
               {/* Photo Selection Grid in Modal */}
