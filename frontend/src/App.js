@@ -102,6 +102,7 @@ const AdminSalarySlip = lazy(() => import("@/pages/admin/special/AdminSalarySlip
 const AdminSalaryCertificate = lazy(() => import("@/pages/admin/special/AdminSalaryCertificate"));
 const AdminExperienceCertificate = lazy(() => import("@/pages/admin/special/AdminExperienceCertificate"));
 const AdminNoticeMaker = lazy(() => import("@/pages/admin/special/AdminNoticeMaker"));
+const AdminLetterMaker = lazy(() => import("@/pages/admin/special/AdminLetterMaker"));
 const AdminOmrGenerator = lazy(() => import("@/pages/admin/special/AdminOmrGenerator"));
 const AdminOmrRoster = lazy(() => import("@/pages/admin/special/AdminOmrRoster"));
 const AdminOmrChecker = lazy(() => import("@/pages/admin/special/AdminOmrChecker"));
@@ -259,6 +260,7 @@ function MainApp() {
         <Route path="salary-certificate" element={<AdminSalaryCertificate />} />
         <Route path="experience-certificate" element={<AdminExperienceCertificate />} />
         <Route path="notice-maker" element={<AdminNoticeMaker />} />
+        <Route path="letter-maker" element={<Suspense fallback={<AdminLoading />}><AdminLetterMaker /></Suspense>} />
         <Route path="stream-control" element={<Suspense fallback={<AdminLoading />}><StreamControl /></Suspense>} />
         <Route path="omr-generator" element={<Suspense fallback={<AdminLoading />}><AdminOmrGenerator /></Suspense>} />
         <Route path="omr-roster" element={<Suspense fallback={<AdminLoading />}><AdminOmrRoster /></Suspense>} />
