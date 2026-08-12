@@ -3683,4 +3683,286 @@ async def video_support_agent_chat(
     }
 
 
+class LetterheadPdfPayload(BaseModel):
+    ref_no: str = "SDPS/ADM/2026-27/084"
+    date_str: str = ""
+    recipient: str = ""
+    details: str = ""
+    subject: str = ""
+    salutation: str = ""
+    body: str = ""
+    signatory_title: str = "Principal / Head of Institution"
+    signature_url: str = ""
+    signature_height: int = 48
+    show_stamp: bool = True
+
+
+@admin_router.post("/letterhead/pdf")
+async def generate_letterhead_pdf_browserless(
+    payload: LetterheadPdfPayload,
+    admin: TokenData = Depends(require_permission(["notice-maker", "media-tools", "site-settings"]))
+):
+    """
+    Generate pixel-perfect A4 Official School Letterhead PDF using Browserless Cloud REST API.
+    """
+    formatted_body = (
+        payload.body
+        .replace("{recipient}", payload.recipient or "[Recipient Name]")
+        .replace("{details}", payload.details or "[Class/Details]")
+        .replace("{date}", payload.date_str or "[Date]")
+    )
+
+    recipient_html = ""
+    if payload.recipient or payload.details:
+        r_text = (payload.recipient or "").replace("\n", "<br/>")
+        d_text = (payload.details or "").replace("\n", "<br/>")
+        recipient_html = f"""
+        <div class="to-block">
+          <div style="font-weight: 800; color: #0B1E40; text-transform: uppercase; font-size: 11px; tracking: 0.05em;">TO,</div>
+          {f'<div style="font-weight: 700; color: #0f172a; font-size: 14px;">{r_text}</div>' if r_text else ''}
+          {f'<div style="color: #475569; font-size: 12px;">{d_text}</div>' if d_text else ''}
+        </div>
+        """
+
+    subject_html = ""
+    if payload.subject:
+        subject_html = f"""
+        <div class="subject-box">
+          SUBJECT: {payload.subject}
+        </div>
+        """
+
+    stamp_html = ""
+    if payload.show_stamp:
+        stamp_html = """
+        <div style="position: absolute; top: -40px; left: 50%; transform: translateX(-50%) rotate(-12deg); width: 80px; height: 80px; border: 2px dashed rgba(217, 119, 6, 0.4); border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4px; background: rgba(245, 158, 11, 0.05);">
+          <div style="font-size: 7.5px; font-weight: 900; color: #92400e; text-transform: uppercase; text-align: center; line-height: 1;">S.D. PUBLIC SCHOOL</div>
+          <div style="font-size: 12px; color: #b45309; margin: 2px 0;">★</div>
+          <div style="font-size: 7px; font-weight: 700; color: #78350f; text-transform: uppercase;">PATNA • SEAL</div>
+        </div>
+        """
+
+    sig_image_html = f'<img src="{payload.signature_url}" style="height: {payload.signature_height}px; max-width: 200px; object-fit: contain;" />' if payload.signature_url else '<span style="font-family: serif; font-style: italic; font-size: 18px; color: #312e81; font-weight: bold; border-bottom: 1px solid #94a3b8; padding: 0 16px;">S.D. Public School</span>'
+
+    html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>SDPS Letterhead - {payload.ref_no}</title>
+  <style>
+    @page {{ size: A4 portrait; margin: 0; }}
+    *, *:before, *:after {{ box-sizing: border-box; }}
+    html, body {{
+      width: 210mm;
+      height: 297mm;
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      color: #0f172a;
+      font-family: 'Times New Roman', Georgia, serif;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .page {{
+      width: 210mm;
+      height: 297mm;
+      min-height: 297mm;
+      max-height: 297mm;
+      padding: 12mm 15mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+      background: #ffffff;
+    }}
+    .top-bar {{
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 10px;
+      background: linear-gradient(to right, #0B1E40, #0E3B91, #f59e0b);
+    }}
+    .header-table {{
+      width: 100%;
+      border-bottom: 2px solid #0B1E40;
+      padding-bottom: 10px;
+      margin-bottom: 10px;
+    }}
+    .watermark {{
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 380px;
+      height: 380px;
+      opacity: 0.04;
+      pointer-events: none;
+      z-index: 0;
+      border-radius: 50%;
+    }}
+    .content-area {{
+      position: relative;
+      z-index: 10;
+      margin: 12px 0;
+      font-size: 13.5px;
+      line-height: 1.6;
+    }}
+    .to-block {{
+      border-left: 2.5px solid #0B1E40;
+      padding-left: 12px;
+      margin-bottom: 14px;
+      font-family: system-ui, -apple-system, sans-serif;
+    }}
+    .subject-box {{
+      text-align: center;
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 8px 16px;
+      margin: 14px 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-weight: 900;
+      color: #0B1E40;
+      text-transform: uppercase;
+      font-size: 12.5px;
+    }}
+    .body-text {{
+      text-align: justify;
+      white-space: pre-line;
+      color: #1e293b;
+      font-size: 13px;
+    }}
+    .footer-area {{
+      position: relative;
+      z-index: 10;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 10px;
+    }}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="top-bar"></div>
+
+    <div>
+      <!-- Header -->
+      <table class="header-table" style="width: 100%;">
+        <tr>
+          <td style="vertical-align: middle;">
+            <table style="border-collapse: collapse;">
+              <tr>
+                <td style="padding-right: 14px;">
+                  <img src="https://res.cloudinary.com/drx3kb809/image/upload/v1782313772/sdps/misc/hffxigjkpw7cbc7cmdm5.jpg" style="width: 72px; height: 72px; object-fit: contain; border-radius: 50%;" />
+                </td>
+                <td>
+                  <div style="font-size: 22px; font-weight: 900; color: #0B1E40; text-transform: uppercase; letter-spacing: -0.5px;">S.D. PUBLIC SCHOOL</div>
+                  <div style="font-size: 10.5px; font-weight: 800; color: #b45309; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;">SURYAMUNI DEVI PUBLIC SCHOOL • PATNA, BIHAR</div>
+                  <div style="font-size: 9.5px; font-weight: 600; color: #475569; font-family: system-ui, sans-serif; margin-top: 2px;">Operated by The Suryamuni Devi Foundation Trust</div>
+                  <div style="font-size: 9px; color: #64748b; font-family: system-ui, sans-serif; margin-top: 2px;">Maurya Colony Near R.O.B Kumhrar Biscoman Golambar, Gulzarbagh Road, Patna, Bihar 800007</div>
+                </td>
+              </tr>
+            </table>
+          </td>
+          <td style="text-align: right; vertical-align: middle; font-family: system-ui, sans-serif; font-size: 9.5px; color: #475569; width: 180px;">
+            <div style="font-weight: 800; color: #0B1E40;">Contact Desk:</div>
+            <div>Phone: +91 99551 90262</div>
+            <div>Email: helpdesk@sdpublic.org</div>
+            <div>Website: www.sdpublic.org</div>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Ref & Date -->
+      <table style="width: 100%; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 700; color: #334155; margin-top: 4px;">
+        <tr>
+          <td>
+            <div style="font-size: 9.5px; color: #64748b; font-family: monospace; text-transform: uppercase;">REFERENCE NO:</div>
+            <div style="font-family: monospace; color: #0B1E40; font-size: 12px;">{payload.ref_no}</div>
+          </td>
+          <td style="text-align: right;">
+            <div style="font-size: 9.5px; color: #64748b; text-transform: uppercase;">DATE OF ISSUE:</div>
+            <div style="color: #0f172a; font-size: 12px;">{payload.date_str}</div>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Watermark Logo -->
+    <img src="https://res.cloudinary.com/drx3kb809/image/upload/v1782313772/sdps/misc/hffxigjkpw7cbc7cmdm5.jpg" class="watermark" />
+
+    <!-- Content -->
+    <div class="content-area">
+      {recipient_html}
+      {subject_html}
+      <div style="font-weight: bold; color: #0f172a; margin-bottom: 12px;">{payload.salutation}</div>
+      <div class="body-text">{formatted_body}</div>
+    </div>
+
+    <!-- Footer & Signatures -->
+    <div class="footer-area">
+      <table style="width: 100%; font-family: system-ui, sans-serif;">
+        <tr>
+          <td style="vertical-align: bottom; font-size: 9.5px; color: #64748b; width: 60%;">
+            <div style="color: #047857; font-weight: 700; display: flex; align-items: center; gap: 4px; margin-bottom: 2px;">✔ Official Verified Document</div>
+            <div>Valid only with official institutional seal and signature. Verified at S.D. Public School Patna Administrative Records.</div>
+          </td>
+          <td style="text-align: center; vertical-align: bottom; position: relative; min-width: 180px;">
+            {stamp_html}
+            <div style="height: 56px; display: flex; align-items: center; justify-content: center; margin-bottom: 4px;">
+              {sig_image_html}
+            </div>
+            <div style="font-size: 11.5px; font-weight: 900; color: #0B1E40; text-transform: uppercase;">{payload.signatory_title}</div>
+            <div style="font-size: 9.5px; color: #475569; font-weight: 500;">S.D. Public School, Patna</div>
+          </td>
+        </tr>
+      </table>
+
+      <table style="width: 100%; font-family: system-ui, sans-serif; font-size: 9px; color: #94a3b8; border-top: 1px solid #f1f5f9; margin-top: 8px; padding-top: 6px;">
+        <tr>
+          <td>Empowering Generations Since 1994</td>
+          <td style="text-align: center;">Page 1 of 1</td>
+          <td style="text-align: right;">www.sdpublic.org</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</body>
+</html>
+"""
+
+    browserless_key = os.getenv("BROWSERLESS_API_KEY", "").strip()
+    if browserless_key:
+        logger.info(f"Rendering Letterhead PDF via Browserless.io Cloud REST API for ref: {payload.ref_no}...")
+        try:
+            b_url = f"https://chrome.browserless.io/pdf?token={browserless_key}"
+            b_payload = {
+                "html": html_content,
+                "options": {
+                    "displayHeaderFooter": False,
+                    "printBackground": True,
+                    "format": "A4",
+                    "margin": {"top": "0mm", "right": "0mm", "bottom": "0mm", "left": "0mm"}
+                }
+            }
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                resp = await client.post(b_url, json=b_payload)
+                if resp.status_code == 200 and len(resp.content) > 100:
+                    safe_filename = payload.ref_no.replace("/", "_").replace("\\", "_")
+                    return Response(
+                        content=resp.content,
+                        media_type="application/pdf",
+                        headers={"Content-Disposition": f'attachment; filename="SDPS_Letter_{safe_filename}.pdf"'}
+                    )
+                else:
+                    logger.warning(f"Browserless API returned status {resp.status_code}: {resp.text[:200]}")
+        except Exception as err:
+            logger.error(f"Browserless PDF API failed: {err}")
+
+    # Fallback response: Return clean HTML suitable for browser rendering or printing
+    return HTMLResponse(content=html_content)
+
+
+
 

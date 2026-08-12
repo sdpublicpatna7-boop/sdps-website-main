@@ -227,6 +227,50 @@ export default function AdminLetterMaker() {
     }
   };
 
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+
+  const handleDownloadPdfBrowserless = async () => {
+    setGeneratingPdf(true);
+    try {
+      const payload = {
+        ref_no: refNo,
+        date_str: letterDate,
+        recipient,
+        details,
+        subject,
+        salutation,
+        body,
+        signatory_title: getSignatoryTitle(),
+        signature_url: signatureUrl,
+        signature_height: signatureHeight,
+        show_stamp: showStamp
+      };
+
+      const response = await api.post("/admin/letterhead/pdf", payload, {
+        responseType: "blob"
+      });
+
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const blobUrl = window.URL.createObjectURL(blob);
+      const safeRef = refNo.replace(/\//g, "_");
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `SDPS_Letter_${safeRef}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+
+      toast.success("A4 PDF generated & downloaded via Browserless!");
+    } catch (err) {
+      console.error("Browserless PDF generation error:", err);
+      toast.error("Failed to generate PDF via Browserless. Using browser print fallback.");
+      window.print();
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 font-sans text-slate-800 bg-slate-50 min-h-screen print:bg-white print:text-black print:p-0 print:m-0">
       {/* Strict CSS for A4 printing */}
@@ -289,16 +333,32 @@ export default function AdminLetterMaker() {
           <div className="flex items-center gap-2">
             <button
               onClick={handleCopyText}
-              className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs border border-slate-300 transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+              className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs border border-slate-300 transition flex items-center gap-1.5 cursor-pointer shadow-xs"
             >
               <Copy className="w-4 h-4 text-blue-600" /> Copy Text
             </button>
 
             <button
-              onClick={handlePrint}
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 text-white font-bold text-xs transition flex items-center gap-2 shadow-md cursor-pointer"
+              onClick={handleDownloadPdfBrowserless}
+              disabled={generatingPdf}
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 text-white font-bold text-xs transition flex items-center gap-2 shadow-md cursor-pointer disabled:opacity-50"
             >
-              <Printer className="w-4 h-4" /> Print Official Letter
+              {generatingPdf ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" /> Rendering PDF...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" /> Download A4 PDF
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={handlePrint}
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 text-white font-bold text-xs transition flex items-center gap-2 shadow-md cursor-pointer"
+            >
+              <Printer className="w-4 h-4" /> Print Letter
             </button>
           </div>
         </div>
