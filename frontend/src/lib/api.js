@@ -7,6 +7,7 @@ export let supabase = null;
 
 // Candidate backend bases, in priority order
 const RAW_BASES = [
+  "https://api.sdpublic.org",
   process.env.REACT_APP_BACKEND_URL,
   process.env.REACT_APP_BACKEND_FALLBACK,
 ]
@@ -1137,6 +1138,7 @@ async function handleSupabaseRequest(config) {
 // ─────────────────────────────────────────────────────────────────────────────
 const api = axios.create({
   withCredentials: true,
+  timeout: 10000,
   adapter: async (config) => {
     if (useSupabase) {
       // In serverless mode, all routes are intercepted and resolved by the Supabase adapter
