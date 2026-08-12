@@ -222,24 +222,24 @@ export default function AdminLetterMaker() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-700">Recipient Name / Student Name</label>
-              <input
-                type="text"
+              <label className="text-[11px] font-bold text-slate-700">Recipient Name / Student / Organization</label>
+              <textarea
+                rows={2}
                 value={recipient}
                 onChange={(e) => setRecipient(e.target.value)}
-                placeholder="e.g. Aarav Kumar"
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-xs focus:outline-none focus:border-blue-600"
+                placeholder="e.g. The Management&#10;Hindustan Ventures Pvt. Ltd."
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-xs focus:outline-none focus:border-blue-600 resize-y"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-700">Class / Roll No / Designation</label>
-              <input
-                type="text"
+              <label className="text-[11px] font-bold text-slate-700">Class / Roll No / Designation / Address</label>
+              <textarea
+                rows={2}
                 value={details}
                 onChange={(e) => setDetails(e.target.value)}
-                placeholder="e.g. Class X - Sec A (Adm No: 2024-892)"
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-xs focus:outline-none focus:border-blue-600"
+                placeholder="e.g. Class X - Sec A (Adm No: 2024-892)&#10;Boring Road, Patna"
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-xs focus:outline-none focus:border-blue-600 resize-y"
               />
             </div>
 
@@ -384,8 +384,8 @@ export default function AdminLetterMaker() {
               {(recipient || details) && (
                 <div className="space-y-0.5 font-sans text-xs text-slate-800 font-medium border-l-2 border-[#0B1E40] pl-3 py-1">
                   <div className="font-bold text-[#0B1E40] uppercase text-[11px] tracking-wider">To,</div>
-                  {recipient && <div className="font-bold text-slate-900 text-sm">{recipient}</div>}
-                  {details && <div className="text-slate-600">{details}</div>}
+                  {recipient && <div className="font-bold text-slate-900 text-sm whitespace-pre-line">{recipient}</div>}
+                  {details && <div className="text-slate-600 whitespace-pre-line">{details}</div>}
                 </div>
               )}
 
