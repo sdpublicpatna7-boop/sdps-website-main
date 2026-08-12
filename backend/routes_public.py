@@ -2081,17 +2081,33 @@ async def download_gdrive_folder_zip(slug: str):
         file_id = f.get("file_id")
         if not file_id:
             return None
-        img_url = f"https://lh3.googleusercontent.com/d/{file_id}"
+        
+        orig_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+        fallback_url = f"https://lh3.googleusercontent.com/d/{file_id}=w4000"
+        
         async with sem:
+            # 1. Try 100% original camera quality download
             try:
-                resp = await client.get(img_url)
-                if resp.status_code == 200 and len(resp.content) > 500:
-                    raw_title = f.get('title', 'photo')
+                resp = await client.get(orig_url)
+                if resp.status_code == 200 and len(resp.content) > 500 and "text/html" not in resp.headers.get("content-type", "").lower():
+                    raw_title = f.get('title', f"photo_{idx + 1}")
                     safe_title = re.sub(r'[^a-zA-Z0-9_.-]', '_', raw_title)
-                    filename = f"{idx + 1:02d}_{safe_title}.jpg"
+                    filename = f"Photo_{idx + 1:03d}_{safe_title}.jpg"
                     return (filename, resp.content)
             except Exception as e:
-                logging.warning(f"Error fetching photo {file_id}: {e}")
+                logging.warning(f"Failed original download for {file_id}: {e}")
+            
+            # 2. Fallback to 4000px ultra high-res CDN
+            try:
+                resp = await client.get(fallback_url)
+                if resp.status_code == 200 and len(resp.content) > 500:
+                    raw_title = f.get('title', f"photo_{idx + 1}")
+                    safe_title = re.sub(r'[^a-zA-Z0-9_.-]', '_', raw_title)
+                    filename = f"Photo_{idx + 1:03d}_{safe_title}.jpg"
+                    return (filename, resp.content)
+            except Exception as e:
+                logging.warning(f"Failed fallback download for {file_id}: {e}")
+
         return None
 
     async with httpx.AsyncClient(follow_redirects=True, timeout=30.0) as client:
