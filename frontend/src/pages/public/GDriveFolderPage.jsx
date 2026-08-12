@@ -228,7 +228,7 @@ export default function GDriveFolderPage() {
 
                 <div className="p-3 bg-slate-900 flex justify-between items-center gap-2">
                   <span className="text-xs font-bold text-slate-200 truncate">
-                    {g.title || `Photo #${idx + 1}`}
+                    Photo #{idx + 1}
                   </span>
 
                   <a
@@ -269,7 +269,7 @@ export default function GDriveFolderPage() {
                   {folder?.title || "SDPS PHOTO ALBUM"}
                 </span>
                 <h3 className="text-sm sm:text-base font-bold text-white truncate">
-                  {activeFile.title || `Photo #${activeIdx + 1}`}
+                  Photo #{activeIdx + 1}
                 </h3>
               </div>
 

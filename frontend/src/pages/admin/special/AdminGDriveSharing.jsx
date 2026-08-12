@@ -531,7 +531,7 @@ export default function AdminGDriveSharing() {
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 max-h-96 overflow-y-auto p-1 scrollbar-thin">
-                {extractedPhotos.map((photo) => {
+                {extractedPhotos.map((photo, idx) => {
                   const isSelected = selectedPhotoIds.has(photo.file_id);
                   const isCover = coverFileId === photo.file_id;
 
@@ -547,7 +547,7 @@ export default function AdminGDriveSharing() {
                     >
                       <img
                         src={`https://lh3.googleusercontent.com/d/${photo.file_id}=w500`}
-                        alt={photo.title}
+                        alt={`Photo #${idx + 1}`}
                         className="w-full h-full object-cover bg-slate-950"
                         loading="lazy"
                       />
@@ -588,7 +588,7 @@ export default function AdminGDriveSharing() {
 
                       {/* Bottom Title bar */}
                       <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent p-2 pt-4">
-                        <p className="text-[10px] font-bold text-white truncate">{photo.title}</p>
+                        <p className="text-[10px] font-bold text-white truncate">Photo #{idx + 1}</p>
                       </div>
                     </div>
                   );
@@ -832,7 +832,7 @@ export default function AdminGDriveSharing() {
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-80 overflow-y-auto p-1 scrollbar-thin">
-                  {editPhotos.map((photo) => {
+                  {editPhotos.map((photo, idx) => {
                     const isSelected = editSelectedIds.has(photo.file_id);
                     const isCover = editCoverId === photo.file_id;
 
@@ -848,7 +848,7 @@ export default function AdminGDriveSharing() {
                       >
                         <img
                           src={`https://lh3.googleusercontent.com/d/${photo.file_id}=w500`}
-                          alt={photo.title}
+                          alt={`Photo #${idx + 1}`}
                           className="w-full h-full object-cover bg-slate-950"
                           loading="lazy"
                         />
@@ -886,7 +886,7 @@ export default function AdminGDriveSharing() {
                         </button>
 
                         <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent p-2 pt-4">
-                          <p className="text-[10px] font-bold text-white truncate">{photo.title}</p>
+                          <p className="text-[10px] font-bold text-white truncate">Photo #{idx + 1}</p>
                         </div>
                       </div>
                     );
