@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import {
   FileText, Printer, Copy, RefreshCw, Sparkles, Stamp, Award, ShieldCheck,
   Building, Calendar, CheckCircle2, User, FileSpreadsheet, Eye, Download,
-  PenTool, Upload, Trash2, AlertCircle, SlidersHorizontal
+  PenTool, Upload, Trash2, AlertCircle, SlidersHorizontal, Space, ArrowDown
 } from "lucide-react";
 
 const TEMPLATES = {
@@ -74,6 +74,11 @@ export default function AdminLetterMaker() {
   const [subjectFontSize, setSubjectFontSize] = useState(13);
   const [recipientFontSize, setRecipientFontSize] = useState(12);
   const [lineHeight, setLineHeight] = useState(1.6);
+
+  // Vertical Gap & Layout Spacing States
+  const [sectionGap, setSectionGap] = useState(12);
+  const [paragraphGap, setParagraphGap] = useState(10);
+  const [pushFooterToBottom, setPushFooterToBottom] = useState(false);
 
   // Digital Signature State
   const [signaturePresets, setSignaturePresets] = useState(() => {
@@ -147,12 +152,12 @@ export default function AdminLetterMaker() {
   };
 
   const handleCopyText = () => {
-    const fullText = `S.D. PUBLIC SCHOOL, PATNA\nRef No: ${refNo}\nDate: ${letterDate}\n\nTo,\n${recipient}\n${details}\n\nSubject: ${subject}\n\n${salutation}\n\n${formattedBody()}\n\nSincerely,\n${getSignatoryTitle()}`;
+    const fullText = `S.D. PUBLIC SCHOOL, PATNA\nRef No: ${refNo}\nDate: ${letterDate}\n\nTo,\n${recipient}\n${details}\n\nSubject: ${subject}\n\n${salutation}\n\n${formattedBodyText()}\n\nSincerely,\n${getSignatoryTitle()}`;
     navigator.clipboard.writeText(fullText);
     toast.success("Letter content copied to clipboard!");
   };
 
-  const formattedBody = () => {
+  const formattedBodyText = () => {
     return body
       .replace(/\{recipient\}/g, recipient || "[Recipient Name]")
       .replace(/\{details\}/g, details || "[Class/Details]")
@@ -253,7 +258,10 @@ export default function AdminLetterMaker() {
         body_font_size: bodyFontSize,
         subject_font_size: subjectFontSize,
         recipient_font_size: recipientFontSize,
-        line_height: lineHeight
+        line_height: lineHeight,
+        section_gap: sectionGap,
+        paragraph_gap: paragraphGap,
+        push_footer_bottom: pushFooterToBottom
       };
 
       const response = await api.post("/admin/letterhead/pdf", payload, {
@@ -280,6 +288,8 @@ export default function AdminLetterMaker() {
       setGeneratingPdf(false);
     }
   };
+
+  const bodyParagraphs = formattedBodyText().split("\n\n").filter((p) => p.trim());
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 font-sans text-slate-800 bg-slate-50 min-h-screen print:bg-white print:text-black print:p-0 print:m-0">
@@ -498,10 +508,10 @@ export default function AdminLetterMaker() {
             </div>
           </div>
 
-          {/* Typography & Font Size Controls */}
+          {/* Typography & Spacing Controls */}
           <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
             <h3 className="text-xs font-bold text-slate-800 border-b border-slate-100 pb-2 uppercase tracking-wider flex items-center gap-1.5">
-              <SlidersHorizontal className="w-3.5 h-3.5 text-blue-600" /> Typography & Font Size Controls
+              <SlidersHorizontal className="w-3.5 h-3.5 text-blue-600" /> Typography & Vertical Gap Controls
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -565,6 +575,57 @@ export default function AdminLetterMaker() {
                   className="w-full accent-blue-600 cursor-pointer"
                 />
               </div>
+
+              <div className="space-y-1">
+                <div className="flex justify-between items-center text-xs">
+                  <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">SECTION GAP</label>
+                  <span className="font-mono text-xs font-bold text-blue-600">{sectionGap}PX</span>
+                </div>
+                <input
+                  type="range"
+                  min="4"
+                  max="32"
+                  value={sectionGap}
+                  onChange={(e) => setSectionGap(Number(e.target.value))}
+                  className="w-full accent-blue-600 cursor-pointer"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex justify-between items-center text-xs">
+                  <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">PARAGRAPH GAP</label>
+                  <span className="font-mono text-xs font-bold text-blue-600">{paragraphGap}PX</span>
+                </div>
+                <input
+                  type="range"
+                  min="4"
+                  max="24"
+                  value={paragraphGap}
+                  onChange={(e) => setParagraphGap(Number(e.target.value))}
+                  className="w-full accent-blue-600 cursor-pointer"
+                />
+              </div>
+            </div>
+
+            {/* Footer Bottom Alignment Toggle */}
+            <div className="pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setPushFooterToBottom(!pushFooterToBottom)}
+                className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-bold transition flex items-center justify-between cursor-pointer ${
+                  pushFooterToBottom
+                    ? "bg-indigo-50 border-indigo-300 text-indigo-900"
+                    : "bg-slate-50 border-slate-300 text-slate-700"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <ArrowDown className="w-4 h-4 text-indigo-600" />
+                  <span>Push Signatory Footer to Bottom of Page</span>
+                </div>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-white border border-slate-200">
+                  {pushFooterToBottom ? "ACTIVE (Bottom)" : "OFF (Compact)"}
+                </span>
+              </button>
             </div>
           </div>
 
@@ -712,15 +773,15 @@ export default function AdminLetterMaker() {
 
           <div
             ref={letterRef}
-            className="letterhead-print-area bg-white text-slate-900 rounded-2xl shadow-xl p-8 sm:p-10 min-h-[1020px] aspect-[210/297] flex flex-col justify-between relative overflow-hidden border border-slate-200 print:shadow-none print:border-none print:rounded-none print:p-0 print:m-0 mx-auto"
+            className="letterhead-print-area bg-white text-slate-900 rounded-2xl shadow-xl p-8 sm:p-10 min-h-[1020px] aspect-[210/297] flex flex-col relative overflow-hidden border border-slate-200 print:shadow-none print:border-none print:rounded-none print:p-0 print:m-0 mx-auto"
             style={{ fontFamily: "'Times New Roman', Georgia, serif" }}
           >
             {/* Top Navy/Gold Accent Bar */}
             <div className="absolute top-0 inset-x-0 h-2.5 bg-gradient-to-r from-[#0B1E40] via-[#0E3B91] to-amber-400"></div>
 
             {/* School Header */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b-2 border-[#0B1E40] pb-3">
+            <div>
+              <div className="flex items-center justify-between border-b-2 border-[#0B1E40] pb-3" style={{ marginBottom: `${sectionGap}px` }}>
                 <div className="flex items-center gap-3.5">
                   <img
                     src="https://res.cloudinary.com/drx3kb809/image/upload/v1782313772/sdps/misc/hffxigjkpw7cbc7cmdm5.jpg"
@@ -753,7 +814,7 @@ export default function AdminLetterMaker() {
               </div>
 
               {/* Ref No & Date */}
-              <div className="flex justify-between items-center text-xs font-sans font-bold text-slate-700 pt-1">
+              <div className="flex justify-between items-center text-xs font-sans font-bold text-slate-700 pt-1" style={{ marginBottom: `${sectionGap}px` }}>
                 <div>
                   <span className="text-slate-500 uppercase text-[10px] block font-mono">REFERENCE NO:</span>
                   <span className="font-mono text-[#0B1E40]">{refNo}</span>
@@ -771,12 +832,12 @@ export default function AdminLetterMaker() {
             </div>
 
             {/* Letter Content Body */}
-            <div className="my-4 space-y-4 relative z-10 text-slate-900">
+            <div className="relative z-10 text-slate-900" style={{ margin: `${sectionGap}px 0` }}>
               {/* To Recipient Address Block */}
               {(recipient || details) && (
                 <div
                   className="space-y-0.5 font-sans font-medium border-l-2 border-[#0B1E40] pl-3 py-1"
-                  style={{ fontSize: `${recipientFontSize}px` }}
+                  style={{ fontSize: `${recipientFontSize}px`, marginBottom: `${sectionGap}px` }}
                 >
                   <div className="font-bold text-[#0B1E40] uppercase tracking-wider" style={{ fontSize: `${Math.max(10, recipientFontSize - 1)}px` }}>TO,</div>
                   {recipient && <div className="font-bold text-slate-900 whitespace-pre-line" style={{ fontSize: `${recipientFontSize + 2}px` }}>{recipient}</div>}
@@ -788,7 +849,7 @@ export default function AdminLetterMaker() {
               {subject && (
                 <div
                   className="text-center py-2 px-4 bg-slate-50 border-y border-slate-200 font-sans"
-                  style={{ fontSize: `${subjectFontSize}px` }}
+                  style={{ fontSize: `${subjectFontSize}px`, margin: `${sectionGap}px 0` }}
                 >
                   <span className="font-black text-[#0B1E40] tracking-wide uppercase">
                     SUBJECT: {subject}
@@ -797,21 +858,28 @@ export default function AdminLetterMaker() {
               )}
 
               {/* Salutation */}
-              <div className="font-bold text-slate-900" style={{ fontSize: `${bodyFontSize}px` }}>
+              <div className="font-bold text-slate-900" style={{ fontSize: `${bodyFontSize}px`, marginBottom: `${sectionGap}px` }}>
                 {salutation}
               </div>
 
               {/* Formatted Body Paragraphs */}
               <div
-                className="space-y-3 text-justify whitespace-pre-line text-slate-800"
+                className="text-justify text-slate-800"
                 style={{ fontSize: `${bodyFontSize}px`, lineHeight: lineHeight }}
               >
-                {formattedBody()}
+                {bodyParagraphs.map((p, idx) => (
+                  <p key={idx} style={{ marginBottom: `${paragraphGap}px` }}>
+                    {p}
+                  </p>
+                ))}
               </div>
             </div>
 
             {/* Bottom Footer & Signatures */}
-            <div className="space-y-4 relative z-10 pt-4 border-t border-slate-200">
+            <div
+              className="space-y-4 relative z-10 pt-4 border-t border-slate-200"
+              style={{ marginTop: pushFooterToBottom ? "auto" : `${sectionGap * 2}px` }}
+            >
               <div className="flex justify-between items-end">
                 {/* Left Seal / Verification Note */}
                 <div className="space-y-1 text-[9.5px] font-sans text-slate-500 max-w-xs">

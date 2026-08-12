@@ -3699,6 +3699,9 @@ class LetterheadPdfPayload(BaseModel):
     subject_font_size: int = 13
     recipient_font_size: int = 12
     line_height: float = 1.6
+    section_gap: int = 12
+    paragraph_gap: int = 10
+    push_footer_bottom: bool = False
 
 
 @admin_router.post("/letterhead/pdf")
@@ -3721,7 +3724,7 @@ async def generate_letterhead_pdf_browserless(
         r_text = (payload.recipient or "").replace("\n", "<br/>")
         d_text = (payload.details or "").replace("\n", "<br/>")
         recipient_html = f"""
-        <div class="to-block">
+        <div class="to-block" style="margin-bottom: {payload.section_gap}px;">
           <div style="font-weight: 800; color: #0B1E40; text-transform: uppercase; font-size: {payload.recipient_font_size - 1}px; letter-spacing: 0.05em;">TO,</div>
           {f'<div style="font-weight: 700; color: #0f172a; font-size: {payload.recipient_font_size + 2}px;">{r_text}</div>' if r_text else ''}
           {f'<div style="color: #475569; font-size: {payload.recipient_font_size}px;">{d_text}</div>' if d_text else ''}
@@ -3731,7 +3734,7 @@ async def generate_letterhead_pdf_browserless(
     subject_html = ""
     if payload.subject:
         subject_html = f"""
-        <div class="subject-box" style="font-size: {payload.subject_font_size}px;">
+        <div class="subject-box" style="font-size: {payload.subject_font_size}px; margin: {payload.section_gap}px 0;">
           SUBJECT: {payload.subject}
         </div>
         """
@@ -3747,6 +3750,12 @@ async def generate_letterhead_pdf_browserless(
         """
 
     sig_image_html = f'<img src="{payload.signature_url}" style="height: {payload.signature_height}px; max-width: 200px; object-fit: contain;" />' if payload.signature_url else '<span style="font-family: serif; font-style: italic; font-size: 18px; color: #312e81; font-weight: bold; border-bottom: 1px solid #94a3b8; padding: 0 16px;">S.D. Public School</span>'
+
+    # Split paragraphs for custom paragraph gap
+    paragraphs = [p for p in formatted_body.split("\n\n") if p.strip()]
+    paragraphs_html = "".join([f'<p style="margin: 0 0 {payload.paragraph_gap}px 0;">{p}</p>' for p in paragraphs])
+
+    footer_margin_css = "margin-top: auto;" if payload.push_footer_bottom else f"margin-top: {payload.section_gap * 2}px;"
 
     html_content = f"""<!DOCTYPE html>
 <html>
@@ -3791,7 +3800,7 @@ async def generate_letterhead_pdf_browserless(
       width: 100%;
       border-bottom: 2px solid #0B1E40;
       padding-bottom: 8px;
-      margin-bottom: 8px;
+      margin-bottom: {payload.section_gap}px;
     }}
     .watermark {{
       position: absolute;
@@ -3808,14 +3817,13 @@ async def generate_letterhead_pdf_browserless(
     .content-area {{
       position: relative;
       z-index: 10;
-      margin: 12px 0;
+      margin: {payload.section_gap}px 0;
       font-size: {payload.body_font_size}px;
       line-height: {payload.line_height};
     }}
     .to-block {{
       border-left: 2.5px solid #0B1E40;
       padding-left: 12px;
-      margin-bottom: 12px;
       font-family: system-ui, -apple-system, sans-serif;
     }}
     .subject-box {{
@@ -3824,7 +3832,6 @@ async def generate_letterhead_pdf_browserless(
       border-top: 1px solid #e2e8f0;
       border-bottom: 1px solid #e2e8f0;
       padding: 6px 14px;
-      margin: 12px 0;
       font-family: system-ui, -apple-system, sans-serif;
       font-weight: 900;
       color: #0B1E40;
@@ -3832,7 +3839,6 @@ async def generate_letterhead_pdf_browserless(
     }}
     .body-text {{
       text-align: justify;
-      white-space: pre-line;
       color: #1e293b;
       font-size: {payload.body_font_size}px;
       line-height: {payload.line_height};
@@ -3842,7 +3848,7 @@ async def generate_letterhead_pdf_browserless(
       z-index: 10;
       border-top: 1px solid #e2e8f0;
       padding-top: 10px;
-      margin-top: auto;
+      {footer_margin_css}
     }}
   </style>
 </head>
@@ -3879,7 +3885,7 @@ async def generate_letterhead_pdf_browserless(
       </table>
 
       <!-- Ref & Date -->
-      <table style="width: 100%; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 700; color: #334155; margin-top: 4px;">
+      <table style="width: 100%; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 700; color: #334155; margin-top: 4px; margin-bottom: {payload.section_gap}px;">
         <tr>
           <td>
             <div style="font-size: 9.5px; color: #64748b; font-family: monospace; text-transform: uppercase;">REFERENCE NO:</div>
@@ -3900,8 +3906,8 @@ async def generate_letterhead_pdf_browserless(
     <div class="content-area">
       {recipient_html}
       {subject_html}
-      <div style="font-weight: bold; color: #0f172a; margin-bottom: 12px;">{payload.salutation}</div>
-      <div class="body-text">{formatted_body}</div>
+      <div style="font-weight: bold; color: #0f172a; margin-bottom: {payload.section_gap}px;">{payload.salutation}</div>
+      <div class="body-text">{paragraphs_html}</div>
     </div>
 
     <!-- Footer & Signatures -->
