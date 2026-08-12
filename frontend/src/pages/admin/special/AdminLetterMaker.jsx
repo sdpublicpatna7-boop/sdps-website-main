@@ -332,9 +332,9 @@ export default function AdminLetterMaker() {
               <div className="flex items-center justify-between border-b-2 border-[#0B1E40] pb-4">
                 <div className="flex items-center gap-4">
                   <img
-                    src="/logo512.png"
-                    alt="SDPS Logo"
-                    className="w-20 h-20 object-contain shrink-0"
+                    src="https://res.cloudinary.com/drx3kb809/image/upload/v1782313772/sdps/misc/hffxigjkpw7cbc7cmdm5.jpg"
+                    alt="SDPS Official Seal Logo"
+                    className="w-20 h-20 object-contain shrink-0 rounded-full shadow-sm"
                   />
                   <div className="space-y-0.5">
                     <h1 className="text-xl sm:text-2xl font-black text-[#0B1E40] tracking-tight uppercase" style={{ fontFamily: "serif" }}>
@@ -343,11 +343,14 @@ export default function AdminLetterMaker() {
                     <p className="text-[11px] font-bold text-amber-700 tracking-wide uppercase">
                       SURYAMUNI DEVI PUBLIC SCHOOL • PATNA, BIHAR
                     </p>
-                    <p className="text-[10px] text-slate-600 font-sans">
-                      CBSE Affiliated Senior Secondary Institution • School Code: 10482
+                    <p className="text-[10px] font-semibold text-slate-700 font-sans">
+                      Govt. Recognized • Follows CBSE Pattern Curriculum • Estd. 13-11-1994
+                    </p>
+                    <p className="text-[9.5px] text-slate-600 font-sans">
+                      Operated by The Suryamuni Devi Foundation Trust
                     </p>
                     <p className="text-[9.5px] text-slate-500 font-sans">
-                      East Lakshmi Nagar, Ramakrishna Nagar, Patna, Bihar 800027
+                      Maurya Colony, Transport Nagar, Kumhrar, Patna, Bihar 800026
                     </p>
                   </div>
                 </div>
@@ -374,8 +377,8 @@ export default function AdminLetterMaker() {
             </div>
 
             {/* Background Watermark Logo */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.035] z-0">
-              <img src="/logo512.png" alt="Watermark" className="w-96 h-96 object-contain" />
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.04] z-0">
+              <img src="https://res.cloudinary.com/drx3kb809/image/upload/v1782313772/sdps/misc/hffxigjkpw7cbc7cmdm5.jpg" alt="Watermark" className="w-96 h-96 object-contain rounded-full" />
             </div>
 
             {/* Letter Content Body */}
