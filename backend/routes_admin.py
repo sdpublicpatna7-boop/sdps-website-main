@@ -3695,6 +3695,10 @@ class LetterheadPdfPayload(BaseModel):
     signature_url: str = ""
     signature_height: int = 48
     show_stamp: bool = True
+    body_font_size: int = 13
+    subject_font_size: int = 13
+    recipient_font_size: int = 12
+    line_height: float = 1.6
 
 
 @admin_router.post("/letterhead/pdf")
@@ -3718,16 +3722,16 @@ async def generate_letterhead_pdf_browserless(
         d_text = (payload.details or "").replace("\n", "<br/>")
         recipient_html = f"""
         <div class="to-block">
-          <div style="font-weight: 800; color: #0B1E40; text-transform: uppercase; font-size: 11px; tracking: 0.05em;">TO,</div>
-          {f'<div style="font-weight: 700; color: #0f172a; font-size: 14px;">{r_text}</div>' if r_text else ''}
-          {f'<div style="color: #475569; font-size: 12px;">{d_text}</div>' if d_text else ''}
+          <div style="font-weight: 800; color: #0B1E40; text-transform: uppercase; font-size: {payload.recipient_font_size - 1}px; letter-spacing: 0.05em;">TO,</div>
+          {f'<div style="font-weight: 700; color: #0f172a; font-size: {payload.recipient_font_size + 2}px;">{r_text}</div>' if r_text else ''}
+          {f'<div style="color: #475569; font-size: {payload.recipient_font_size}px;">{d_text}</div>' if d_text else ''}
         </div>
         """
 
     subject_html = ""
     if payload.subject:
         subject_html = f"""
-        <div class="subject-box">
+        <div class="subject-box" style="font-size: {payload.subject_font_size}px;">
           SUBJECT: {payload.subject}
         </div>
         """
@@ -3771,7 +3775,6 @@ async def generate_letterhead_pdf_browserless(
       padding: 12mm 15mm;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
       position: relative;
       overflow: hidden;
       background: #ffffff;
@@ -3787,8 +3790,8 @@ async def generate_letterhead_pdf_browserless(
     .header-table {{
       width: 100%;
       border-bottom: 2px solid #0B1E40;
-      padding-bottom: 10px;
-      margin-bottom: 10px;
+      padding-bottom: 8px;
+      margin-bottom: 8px;
     }}
     .watermark {{
       position: absolute;
@@ -3806,13 +3809,13 @@ async def generate_letterhead_pdf_browserless(
       position: relative;
       z-index: 10;
       margin: 12px 0;
-      font-size: 13.5px;
-      line-height: 1.6;
+      font-size: {payload.body_font_size}px;
+      line-height: {payload.line_height};
     }}
     .to-block {{
       border-left: 2.5px solid #0B1E40;
       padding-left: 12px;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
       font-family: system-ui, -apple-system, sans-serif;
     }}
     .subject-box {{
@@ -3820,25 +3823,26 @@ async def generate_letterhead_pdf_browserless(
       background: #f8fafc;
       border-top: 1px solid #e2e8f0;
       border-bottom: 1px solid #e2e8f0;
-      padding: 8px 16px;
-      margin: 14px 0;
+      padding: 6px 14px;
+      margin: 12px 0;
       font-family: system-ui, -apple-system, sans-serif;
       font-weight: 900;
       color: #0B1E40;
       text-transform: uppercase;
-      font-size: 12.5px;
     }}
     .body-text {{
       text-align: justify;
       white-space: pre-line;
       color: #1e293b;
-      font-size: 13px;
+      font-size: {payload.body_font_size}px;
+      line-height: {payload.line_height};
     }}
     .footer-area {{
       position: relative;
       z-index: 10;
       border-top: 1px solid #e2e8f0;
       padding-top: 10px;
+      margin-top: auto;
     }}
   </style>
 </head>

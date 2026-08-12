@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import {
   FileText, Printer, Copy, RefreshCw, Sparkles, Stamp, Award, ShieldCheck,
   Building, Calendar, CheckCircle2, User, FileSpreadsheet, Eye, Download,
-  PenTool, Upload, Trash2, AlertCircle
+  PenTool, Upload, Trash2, AlertCircle, SlidersHorizontal
 } from "lucide-react";
 
 const TEMPLATES = {
@@ -68,6 +68,12 @@ export default function AdminLetterMaker() {
   const [signatory, setSignatory] = useState("principal"); // principal, director, management, custom
   const [customSignatoryTitle, setCustomSignatoryTitle] = useState("Authorized Signatory");
   const [showStamp, setShowStamp] = useState(true);
+
+  // Font Size & Typography Control States
+  const [bodyFontSize, setBodyFontSize] = useState(13);
+  const [subjectFontSize, setSubjectFontSize] = useState(13);
+  const [recipientFontSize, setRecipientFontSize] = useState(12);
+  const [lineHeight, setLineHeight] = useState(1.6);
 
   // Digital Signature State
   const [signaturePresets, setSignaturePresets] = useState(() => {
@@ -243,7 +249,11 @@ export default function AdminLetterMaker() {
         signatory_title: getSignatoryTitle(),
         signature_url: signatureUrl,
         signature_height: signatureHeight,
-        show_stamp: showStamp
+        show_stamp: showStamp,
+        body_font_size: bodyFontSize,
+        subject_font_size: subjectFontSize,
+        recipient_font_size: recipientFontSize,
+        line_height: lineHeight
       };
 
       const response = await api.post("/admin/letterhead/pdf", payload, {
@@ -310,7 +320,6 @@ export default function AdminLetterMaker() {
             overflow: hidden !important;
             display: flex !important;
             flex-direction: column !important;
-            justify-content: space-between !important;
           }
         }
       `}</style>
@@ -332,6 +341,7 @@ export default function AdminLetterMaker() {
 
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={handleCopyText}
               className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs border border-slate-300 transition flex items-center gap-1.5 cursor-pointer shadow-xs"
             >
@@ -339,6 +349,7 @@ export default function AdminLetterMaker() {
             </button>
 
             <button
+              type="button"
               onClick={handleDownloadPdfBrowserless}
               disabled={generatingPdf}
               className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 text-white font-bold text-xs transition flex items-center gap-2 shadow-md cursor-pointer disabled:opacity-50"
@@ -355,6 +366,7 @@ export default function AdminLetterMaker() {
             </button>
 
             <button
+              type="button"
               onClick={handlePrint}
               className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 text-white font-bold text-xs transition flex items-center gap-2 shadow-md cursor-pointer"
             >
@@ -483,6 +495,76 @@ export default function AdminLetterMaker() {
                 className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-xs leading-relaxed focus:outline-none focus:border-blue-600 resize-y"
               />
               <span className="text-[10px] text-slate-500">Use &#123;recipient&#125;, &#123;details&#125;, &#123;date&#125; variables to auto-insert recipient details.</span>
+            </div>
+          </div>
+
+          {/* Typography & Font Size Controls */}
+          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+            <h3 className="text-xs font-bold text-slate-800 border-b border-slate-100 pb-2 uppercase tracking-wider flex items-center gap-1.5">
+              <SlidersHorizontal className="w-3.5 h-3.5 text-blue-600" /> Typography & Font Size Controls
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <div className="flex justify-between items-center text-xs">
+                  <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">BODY FONT SIZE</label>
+                  <span className="font-mono text-xs font-bold text-blue-600">{bodyFontSize}PX</span>
+                </div>
+                <input
+                  type="range"
+                  min="10"
+                  max="18"
+                  value={bodyFontSize}
+                  onChange={(e) => setBodyFontSize(Number(e.target.value))}
+                  className="w-full accent-blue-600 cursor-pointer"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex justify-between items-center text-xs">
+                  <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">SUBJECT FONT SIZE</label>
+                  <span className="font-mono text-xs font-bold text-blue-600">{subjectFontSize}PX</span>
+                </div>
+                <input
+                  type="range"
+                  min="10"
+                  max="18"
+                  value={subjectFontSize}
+                  onChange={(e) => setSubjectFontSize(Number(e.target.value))}
+                  className="w-full accent-blue-600 cursor-pointer"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex justify-between items-center text-xs">
+                  <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">RECIPIENT FONT SIZE</label>
+                  <span className="font-mono text-xs font-bold text-blue-600">{recipientFontSize}PX</span>
+                </div>
+                <input
+                  type="range"
+                  min="10"
+                  max="16"
+                  value={recipientFontSize}
+                  onChange={(e) => setRecipientFontSize(Number(e.target.value))}
+                  className="w-full accent-blue-600 cursor-pointer"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex justify-between items-center text-xs">
+                  <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">LINE SPACING</label>
+                  <span className="font-mono text-xs font-bold text-blue-600">{lineHeight}</span>
+                </div>
+                <input
+                  type="range"
+                  min="1.2"
+                  max="2.2"
+                  step="0.1"
+                  value={lineHeight}
+                  onChange={(e) => setLineHeight(Number(e.target.value))}
+                  className="w-full accent-blue-600 cursor-pointer"
+                />
+              </div>
             </div>
           </div>
 
@@ -689,32 +771,41 @@ export default function AdminLetterMaker() {
             </div>
 
             {/* Letter Content Body */}
-            <div className="my-4 space-y-4 relative z-10 text-slate-900 leading-relaxed text-sm">
+            <div className="my-4 space-y-4 relative z-10 text-slate-900">
               {/* To Recipient Address Block */}
               {(recipient || details) && (
-                <div className="space-y-0.5 font-sans text-xs text-slate-800 font-medium border-l-2 border-[#0B1E40] pl-3 py-1">
-                  <div className="font-bold text-[#0B1E40] uppercase text-[11px] tracking-wider">TO,</div>
-                  {recipient && <div className="font-bold text-slate-900 text-sm whitespace-pre-line">{recipient}</div>}
-                  {details && <div className="text-slate-600 whitespace-pre-line">{details}</div>}
+                <div
+                  className="space-y-0.5 font-sans font-medium border-l-2 border-[#0B1E40] pl-3 py-1"
+                  style={{ fontSize: `${recipientFontSize}px` }}
+                >
+                  <div className="font-bold text-[#0B1E40] uppercase tracking-wider" style={{ fontSize: `${Math.max(10, recipientFontSize - 1)}px` }}>TO,</div>
+                  {recipient && <div className="font-bold text-slate-900 whitespace-pre-line" style={{ fontSize: `${recipientFontSize + 2}px` }}>{recipient}</div>}
+                  {details && <div className="text-slate-600 whitespace-pre-line" style={{ fontSize: `${recipientFontSize}px` }}>{details}</div>}
                 </div>
               )}
 
               {/* Subject Box */}
               {subject && (
-                <div className="text-center py-2 px-4 bg-slate-50 border-y border-slate-200 font-sans">
-                  <span className="font-black text-[#0B1E40] text-xs sm:text-sm tracking-wide uppercase">
+                <div
+                  className="text-center py-2 px-4 bg-slate-50 border-y border-slate-200 font-sans"
+                  style={{ fontSize: `${subjectFontSize}px` }}
+                >
+                  <span className="font-black text-[#0B1E40] tracking-wide uppercase">
                     SUBJECT: {subject}
                   </span>
                 </div>
               )}
 
               {/* Salutation */}
-              <div className="font-bold text-slate-900 text-sm">
+              <div className="font-bold text-slate-900" style={{ fontSize: `${bodyFontSize}px` }}>
                 {salutation}
               </div>
 
               {/* Formatted Body Paragraphs */}
-              <div className="space-y-3 text-justify whitespace-pre-line text-[13px] leading-relaxed text-slate-800">
+              <div
+                className="space-y-3 text-justify whitespace-pre-line text-slate-800"
+                style={{ fontSize: `${bodyFontSize}px`, lineHeight: lineHeight }}
+              >
                 {formattedBody()}
               </div>
             </div>
