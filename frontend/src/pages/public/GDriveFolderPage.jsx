@@ -51,7 +51,7 @@ export default function GDriveFolderPage() {
   useEffect(() => {
     if (folder) {
       const folderTitle = folder.title || "School Photo Album";
-      const fullPageTitle = `📷 ${folderTitle} | S.D. Public School, Patna`;
+      const fullPageTitle = `${folderTitle} | S.D. Public School, Patna`;
       const folderDesc = folder.description || `Explore and download official high-resolution photographs from ${folderTitle} at S.D. Public School, Patna.`;
       
       const coverPhotoId = folder.cover_file_id || (folder.files && folder.files.length > 0 ? folder.files[0].file_id : null);
@@ -72,7 +72,7 @@ export default function GDriveFolderPage() {
       };
 
       setMetaTag("name", "description", folderDesc);
-      setMetaTag("property", "og:title", `📷 ${folderTitle} | Photo Gallery`);
+      setMetaTag("property", "og:title", `${folderTitle} | Photo Gallery`);
       setMetaTag("property", "og:description", folderDesc);
       setMetaTag("property", "og:image", coverPhoto);
       setMetaTag("property", "og:image:width", "1200");
@@ -80,7 +80,7 @@ export default function GDriveFolderPage() {
       setMetaTag("property", "og:url", window.location.href);
       setMetaTag("property", "og:type", "article");
       setMetaTag("name", "twitter:card", "summary_large_image");
-      setMetaTag("name", "twitter:title", `📷 ${folderTitle}`);
+      setMetaTag("name", "twitter:title", `${folderTitle}`);
       setMetaTag("name", "twitter:description", folderDesc);
       setMetaTag("name", "twitter:image", coverPhoto);
     }

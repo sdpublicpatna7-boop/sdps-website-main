@@ -2124,12 +2124,12 @@ async def get_gdrive_folder_og_html(slug: str):
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>📷 {title} | S.D. Public School Photo Gallery</title>
+    <title>{title} | S.D. Public School Photo Gallery</title>
     <meta name="description" content="{desc}">
     
     <!-- OpenGraph Meta Tags for WhatsApp, iMessage, Facebook -->
     <meta property="og:site_name" content="S.D. Public School, Patna">
-    <meta property="og:title" content="📷 {title} | Photo Gallery">
+    <meta property="og:title" content="{title} | Photo Gallery">
     <meta property="og:description" content="{desc}">
     <meta property="og:image" content="{cover_image}">
     <meta property="og:image:width" content="1200">
@@ -2139,7 +2139,7 @@ async def get_gdrive_folder_og_html(slug: str):
     
     <!-- Twitter Card Meta Tags -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="📷 {title}">
+    <meta name="twitter:title" content="{title}">
     <meta name="twitter:description" content="{desc}">
     <meta name="twitter:image" content="{cover_image}">
     
@@ -2148,7 +2148,7 @@ async def get_gdrive_folder_og_html(slug: str):
     </script>
 </head>
 <body style="font-family: system-ui, sans-serif; background: #0b1e40; color: white; padding: 40px; text-align: center;">
-    <h2>📷 {title}</h2>
+    <h2>{title}</h2>
     <p>{desc}</p>
     <p><a href="{target_url}" style="color: #f4d571;">Click here if you are not redirected automatically...</a></p>
 </body>
