@@ -172,7 +172,7 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
       setSignatureUrl(signaturePresets.director || "");
     } else if (selectedRolePreset === "management") {
       setSignatoryHeader("By Order:");
-      setSignatoryAuthority("Management");
+      setSignatoryAuthority("SDPS Management");
       setSignatureUrl(signaturePresets.management || "");
     } else if (selectedRolePreset === "custom") {
       // Keep custom text, clear signature
@@ -993,7 +993,7 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
                       : "bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-600"
                   }`}
                 >
-                  {role}
+                  {role === "management" ? "SDPS MANAGEMENT" : role}
                 </button>
               ))}
             </div>
@@ -1003,7 +1003,7 @@ All students are advised to stay indoors, drink plenty of water, and utilize thi
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-150 space-y-3">
                 <div className="flex justify-between items-center text-xs">
                   <span className="font-bold text-slate-500 uppercase tracking-wider">
-                    {selectedRolePreset} Preset
+                    {selectedRolePreset === "management" ? "SDPS MANAGEMENT" : selectedRolePreset} Preset
                   </span>
                   {signaturePresets[selectedRolePreset] && (
                     <button
