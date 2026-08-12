@@ -39,7 +39,11 @@ export const API = `${DEFAULT_BASE}/api`;
 // (and therefore any XSS payload) cannot read.
 let inMemoryToken = null;
 try {
-  // One-time cleanup: purge tokens persisted by older versions of the app.
+  // Purge legacy onrender.com pinned bases from session storage
+  const p = sessionStorage.getItem("sdps_api_base");
+  if (p && p.includes("onrender.com")) {
+    sessionStorage.removeItem("sdps_api_base");
+  }
   localStorage.removeItem("sdps_admin_token");
 } catch (e) {}
 
