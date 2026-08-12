@@ -343,14 +343,11 @@ export default function AdminLetterMaker() {
                     <p className="text-[11px] font-bold text-amber-700 tracking-wide uppercase">
                       SURYAMUNI DEVI PUBLIC SCHOOL • PATNA, BIHAR
                     </p>
-                    <p className="text-[10px] font-semibold text-slate-700 font-sans">
-                      Govt. Recognized • Follows CBSE Pattern Curriculum • Estd. 13-11-1994
-                    </p>
-                    <p className="text-[9.5px] text-slate-600 font-sans">
+                    <p className="text-[9.5px] text-slate-600 font-sans font-medium">
                       Operated by The Suryamuni Devi Foundation Trust
                     </p>
                     <p className="text-[9.5px] text-slate-500 font-sans">
-                      Maurya Colony, Transport Nagar, Kumhrar, Patna, Bihar 800026
+                      Maurya Colony Near R.O.B Kumhrar Biscoman Golambar, Gulzarbagh Road, Patna, Bihar 800007
                     </p>
                   </div>
                 </div>
@@ -382,7 +379,16 @@ export default function AdminLetterMaker() {
             </div>
 
             {/* Letter Content Body */}
-            <div className="my-8 space-y-6 relative z-10 text-slate-900 leading-relaxed text-sm">
+            <div className="my-6 space-y-5 relative z-10 text-slate-900 leading-relaxed text-sm">
+              {/* To Recipient Address Block */}
+              {(recipient || details) && (
+                <div className="space-y-0.5 font-sans text-xs text-slate-800 font-medium border-l-2 border-[#0B1E40] pl-3 py-1">
+                  <div className="font-bold text-[#0B1E40] uppercase text-[11px] tracking-wider">To,</div>
+                  {recipient && <div className="font-bold text-slate-900 text-sm">{recipient}</div>}
+                  {details && <div className="text-slate-600">{details}</div>}
+                </div>
+              )}
+
               {/* Subject Box */}
               {subject && (
                 <div className="text-center py-2 px-4 bg-slate-50 border-y border-slate-200 font-sans">
