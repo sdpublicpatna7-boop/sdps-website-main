@@ -3762,7 +3762,7 @@ async def generate_letterhead_pdf_browserless(
       font-family: 'Times New Roman', Georgia, serif;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
-    }
+    }}
     .page {{
       width: 210mm;
       height: 297mm;
