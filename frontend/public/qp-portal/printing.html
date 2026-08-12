@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Printing Head — QP Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#f8fafc;color:#334155;min-height:100vh;display:flex;flex-direction:column}
+.main{flex:1;padding:32px;overflow-y:auto;max-width:1400px;width:100%;margin:0 auto}
+.page-title{font-family:'Outfit',sans-serif;font-size:24px;font-weight:800;color:#0f172a;letter-spacing:-.5px}
+.page-sub{font-size:13px;color:#64748b;margin-top:4px}
+.card{background:#ffffff;border-radius:20px;border:1px solid #f1f5f9;padding:24px;margin-bottom:24px;box-shadow:0 10px 30px rgba(0,0,0,0.015)}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
+.stat{background:#ffffff;border:1px solid #f1f5f9;border-radius:18px;padding:20px;text-align:center;box-shadow:0 8px 25px rgba(0,0,0,0.01);transition:transform 0.2s, box-shadow 0.2s}
+.stat:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(0,0,0,0.03)}
+.stat .num{font-family:'Outfit',sans-serif;font-size:32px;font-weight:800;color:#0e7490;letter-spacing:-1px}
+.stat .lbl{font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-top:6px}
+select,input{background:#ffffff;border:1.5px solid #e2e8f0;border-radius:12px;color:#1e293b;font-family:'Inter',sans-serif;font-size:13.5px;padding:10px 14px;outline:none;transition:border-color .15s, box-shadow .15s}
+select:focus{border-color:#0e3b91;box-shadow:0 0 0 3.5px rgba(14,59,145,.08)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f8fafc;padding:12px 16px;text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:#64748b;font-weight:700;border-bottom:1.5px solid #e2e8f0}
+td{padding:12px 16px;border-bottom:1px solid #f1f5f9;color:#334155;vertical-align:middle}
+tr:hover td{background:#f8fafc}
+.btn{padding:9px 18px;border:none;border-radius:12px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:600;cursor:pointer;transition:all .2s ease;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn-primary{background:#0e3b91;color:#fff}.btn-primary:hover{background:#1d4ed8;transform:translateY(-1px);box-shadow:0 4px 12px rgba(14,59,145,0.15)}
+.btn-teal{background:#0e7490;color:#fff}.btn-teal:hover{background:#0c6478;transform:translateY(-1px);box-shadow:0 4px 12px rgba(14,116,144,0.15)}
+.btn-purple{background:#7c3aed;color:#fff}.btn-purple:hover{background:#6d28d9;transform:translateY(-1px);box-shadow:0 4px 12px rgba(124,58,237,0.15)}
+.btn-ghost{background:#f1f5f9;color:#475569}.btn-ghost:hover{background:#e2e8f0;color:#1e293b}
+.btn-sm{padding:6px 12px;font-size:11.5px;border-radius:8px}
+.filter-bar{background:#ffffff;border:1px solid #f1f5f9;border-radius:18px;padding:16px 24px;margin-bottom:24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 8px 25px rgba(0,0,0,0.01)}
+/* Preview modal */
+.modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.15);z-index:100;display:none;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:24px;width:100%;max-width:860px;overflow:hidden;margin:auto;box-shadow:0 30px 60px rgba(15,23,42,.12);border:1px solid #f1f5f9}
+.modal-toolbar{background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.paper-body{padding:12px 48px 48px;font-family:'Montserrat',sans-serif;font-size:12px;line-height:1.65;color:#000;background:#fff}
+/* Paper styles */
+.a4-hdr-img{width:100%;display:block;border-bottom:2px solid #000}
+.a4-exam{text-align:center;font-weight:800;letter-spacing:.04em;border-top:2px solid #000;border-bottom:1.5px solid #000;padding:4px 0;margin-top:3px;margin-bottom:3px;font-size:18px}
+.a4-meta{display:flex;justify-content:space-between;font-size:11.5px;font-weight:600;margin-bottom:5px}
+.a4-student{display:flex;justify-content:space-between;font-size:11px;font-weight:600;margin-bottom:6px}
+.a4-comp{text-align:center;font-weight:700;border-top:1.5px solid #000;border-bottom:1.5px solid #000;padding:3px 0;margin:4px 0 8px;font-size:11.5px}
+.a4-passage-title{font-weight:800;font-size:12px;text-align:center;margin:6px 0 4px}
+.a4-passage{font-size:11.5px;line-height:1.7;text-align:justify;margin-bottom:8px}
+.a4-qblock{margin-bottom:12px}
+.a4-qhead{display:flex;justify-content:space-between;font-weight:700;font-size:11.5px;margin-bottom:3px;border-bottom:1px dotted #ccc;padding-bottom:2px}
+.a4-sub{display:flex;gap:6px;margin-bottom:4px;font-size:11.5px}
+.a4-sub-no{font-weight:700;min-width:22px}
+.a4-opts{display:flex;flex-wrap:wrap;gap:3px 20px;margin:3px 0 3px 28px;font-size:11.5px}
+.a4-ans-line{border-bottom:.8px solid #bbb;margin-bottom:5px;height:17px}
+.blank-line{display:inline-block;border-bottom:1px solid #000;min-width:70px;vertical-align:bottom}
+@media print{
+  .modal-bg,.main,nav,.filter-bar{display:none!important}
+  .modal,.modal-bg{display:block!important;position:static!important;background:none!important;padding:0!important;border-radius:0!important;box-shadow:none!important;overflow:visible!important;width:auto!important}
+  .paper-body{padding:15mm 18mm 20mm!important;font-size:11pt!important}
+  @page{size:A4;margin:0}
+}
+/* ── MOBILE RESPONSIVE ── */
+@media (max-width: 768px){
+  .main{padding:16px}
+  .stat-row{grid-template-columns:1fr 1fr}
+  .filter-bar{padding:12px 14px}
+  .filter-bar select{min-width:0!important;flex:1}
+  table{display:block;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}
+  .modal{max-width:100%}
+  .paper-body{padding:18px 14px}
+}
+</style>
+</head>
+<body>
+<div id="nav"></div>
+<div class="main">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+    <div><div class="page-title">Print Queue</div><div class="page-sub">View and print approved question papers</div></div>
+    <button class="btn btn-teal" onclick="printAll()">🖨 Print All Visible</button>
+  </div>
+
+  <div class="filter-bar">
+    <span style="font-size:12px;font-weight:700;color:#6b7280">Archive:</span>
+    <select id="archiveFilter" onchange="loadPapers()" style="min-width:200px"></select>
+    <select id="statusFilter" onchange="loadPapers()">
+      <option value="">All Ready</option>
+      <option value="approved">Approved</option>
+      <option value="printing">Sent to Print</option>
+    </select>
+    <button onclick="loadPapers()" style="background:#eff6ff;border:none;color:#0e3b91;border-radius:8px;padding:7px 16px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer">↻ Refresh</button>
+  </div>
+
+  <div class="stat-row" id="statsRow">
+    <div class="stat"><div style="font-size:22px;margin-bottom:6px">📋</div><div class="num" id="sTotal">—</div><div class="lbl">Total Ready</div></div>
+    <div class="stat"><div style="font-size:22px;margin-bottom:6px">✅</div><div class="num" id="sApproved">—</div><div class="lbl">Approved</div></div>
+    <div class="stat"><div style="font-size:22px;margin-bottom:6px">🖨️</div><div class="num" id="sPrinting">—</div><div class="lbl">Sent to Print</div></div>
+  </div>
+
+  <div class="card">
+    <table>
+      <thead><tr><th>Archive</th><th>Class</th><th>Subject</th><th>Teacher</th><th>Status</th><th>Approved</th><th>Actions</th></tr></thead>
+      <tbody id="papersTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal-bg" id="previewModal">
+  <div class="modal">
+    <div class="modal-toolbar">
+      <span style="font-size:13px;font-weight:700;color:#1f2937" id="previewTitle">Paper Preview</span>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary btn-sm" onclick="doPrint()">🖨 A4 Print</button>
+        <button class="btn btn-purple btn-sm" onclick="doBooklet()">📖 Booklet</button>
+        <button class="btn btn-ghost btn-sm" onclick="closePreview()">✕ Close</button>
+      </div>
+    </div>
+    <div class="paper-body" id="paperContent"></div>
+  </div>
+</div>
+
+<script src="./config.js"></script>
+<script src="./qp-common.js"></script>
+<script>
+const _isLocalDev=/localhost:(3000|3001)|127\.0\.0\.1:(3000|3001)/.test(window.location.origin);
+const _API=(typeof API!=='undefined' && API) ? API : (_isLocalDev?'http://localhost:8000':'https://sdps-website-main.onrender.com');
+const ROMAN=['i','ii','iii','iv','v','vi','vii','viii','ix','x','xi','xii'];
+const QT={MCQ:'Multiple Choice',FIB:'Fill in Blanks',TrueFalse:'True/False',Assertion:'Assertion & Reason',Short:'Short Answer',Long:'Long Answer',Grammar:'Grammar',Poem:'Poem',Map:'Map',Puzzle:'Puzzle',Comprehension:'Comprehension'};
+let allAssignments=[],currentA=null;
+
+window.addEventListener('DOMContentLoaded',async()=>{
+  const u=getUser();
+  if(!u||u.role!=='printing_head'){location.href='./index.html';return;}
+  document.getElementById('nav').innerHTML=navBar('printing_head','Print Queue');
+  const archives=await apiFetch('/archives')||[];
+  const sel=document.getElementById('archiveFilter');
+  sel.innerHTML='<option value="">All Archives</option>'+archives.map(a=>`<option value="${a.id}">${a.session_name} — ${a.exam_type}</option>`).join('');
+  await loadPapers();
+});
+
+async function loadPapers(){
+  allAssignments=await apiFetch('/assignments')||[];
+  const archiveId=document.getElementById('archiveFilter').value;
+  const statusF=document.getElementById('statusFilter').value;
+  let rows=allAssignments.filter(a=>['approved','printing'].includes(a.status));
+  if(archiveId)rows=rows.filter(r=>r.archive_id===archiveId);
+  if(statusF)rows=rows.filter(r=>r.status===statusF);
+
+  document.getElementById('sTotal').textContent=rows.length;
+  document.getElementById('sApproved').textContent=rows.filter(r=>r.status==='approved').length;
+  document.getElementById('sPrinting').textContent=rows.filter(r=>r.status==='printing').length;
+
+  document.getElementById('papersTable').innerHTML=rows.length?rows.map(r=>`<tr>
+    <td style="font-size:11px;color:#9ca3af">${r.session_name} · ${r.exam_type}</td>
+    <td style="font-weight:700">${r.class_name}</td>
+    <td>${r.subject}</td>
+    <td style="color:#6b7280">${r.teacher_name}</td>
+    <td>${statusBadge(r.status)}</td>
+    <td style="font-size:11px;color:#9ca3af">${r.admin_approved_at?r.admin_approved_at.split('T')[0]:'—'}</td>
+    <td><div style="display:flex;gap:5px">
+      <button class="btn btn-sm btn-primary" onclick="previewPaper('${r.id}')">👁 Preview</button>
+      <button class="btn btn-sm btn-teal" onclick="printSingle('${r.id}')">🖨 Print</button>
+    </div></td>
+  </tr>`).join('')
+  :'<tr><td colspan="7" style="text-align:center;padding:24px;color:#9ca3af">No papers ready for printing</td></tr>';
+}
+
+function renderPaper(paper,a){
+  const showHdr=paper.show_header_image!==false;
+  let h='';
+  if(showHdr){
+    h+=`<img class="a4-hdr-img" src="./Title_copy.png" alt="SDPS" style="width:95%;margin:0 auto;border-bottom:none" onerror="this.style.display='none'"/>`;
+  }
+  // Header OFF → no header/image/text at all; start directly at the exam name.
+  h+=`<div class="a4-exam"${showHdr?'':' style="border-top:2px solid #000"'}>${a.exam_type} Examination ${a.session_name}</div>
+  <div class="a4-meta">
+    <div><div><strong>STD – ${stdLabel(a.class_name)}</strong></div><div><strong>SUBJECT – ${a.subject}</strong></div></div>
+    <div style="text-align:right"><div><strong>F.M. – ${paper.total_marks||60} MARKS</strong></div><div><strong>TIME – ${paper.duration||'2 Hours'}</strong></div></div>
+  </div>
+  <div class="a4-student">
+    <span><strong>NAME OF STUDENT :</strong>&nbsp;…………………………………</span>
+    <span style="white-space:nowrap"><strong>SECTION :</strong>&nbsp;……………</span>
+    <span style="white-space:nowrap"><strong>ROLL NO :</strong>&nbsp;…………</span>
+  </div>`;
+  if(paper.compulsory_note)h+=`<div class="a4-comp">★ &nbsp;${paper.compulsory_note}&nbsp; ★</div>`;
+  if(paper.passage_title||paper.passage_text){
+    h+=`<hr style="border:none;border-top:1px solid #ccc;margin:7px 0"/>
+    <div style="font-weight:700;font-size:11.5px;margin-bottom:4px">Read the passage carefully –</div>`;
+    if(paper.passage_title)h+=`<div class="a4-passage-title">${paper.passage_title}</div>`;
+    if(paper.passage_text)h+=`<div class="a4-passage">${paper.passage_text}</div>`;
+  }
+  if((paper.sections||[]).length)h+=`<hr style="border:none;border-top:1px solid #ccc;margin:7px 0"/>`;
+  (paper.sections||[]).forEach((s,si)=>{
+    h+=`<div class="a4-qblock"><div class="a4-qhead"><span>Q${si+1}. ${s.instructions||QT[s.question_type]||''}</span>${s.total_marks?`<span>(${s.total_marks})</span>`:''}</div>`;
+    (s.questions||[]).forEach((q,qi)=>{
+      h+=`<div class="a4-sub"><span class="a4-sub-no">${ROMAN[qi]}.</span><div style="flex:1">`;
+      const t=s.question_type;
+      if(t==='MCQ'){
+        h+=`<div>${q.question||'……'}</div>`;
+        const opts=(q.options||[]).filter(o=>o);
+        h+=`<div class="a4-opts">${(opts.length?opts:['……','……','……']).map((o,i)=>`<div style="min-width:120px">${String.fromCharCode(97+i)}. ${o}</div>`).join('')}</div>`;
+      }else if(t==='FIB'){
+        h+=`<div>${(q.question||'……').replace(/_{3,}/g,'<span class="blank-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>')}</div>`;
+      }else if(t==='TrueFalse'){
+        h+=`<div>${q.question||'……'}</div><div style="display:flex;gap:16px;margin:3px 0;font-size:11.5px"><label><input type="checkbox" disabled/> True</label><label><input type="checkbox" disabled/> False</label></div>`;
+      }else if(t==='Assertion'){
+        h+=`<div><strong>Assertion (A):</strong> ${q.question||'……'}</div>`;
+        if((q.options||[])[0])h+=`<div style="margin-top:2px"><strong>Reason (R):</strong> ${q.options[0]}</div>`;
+        const ao=['Both A and R are true and R is correct explanation','Both A and R are true but R is NOT the correct explanation','A is true but R is false','A is false but R is true'];
+        h+=`<div class="a4-opts" style="margin-top:5px">${ao.map((o,i)=>`<div style="width:48%;font-size:10.5px">${String.fromCharCode(97+i)}. ${o}</div>`).join('')}</div>`;
+      }else if(t==='Map'){
+        h+=`<div>${q.question||'Mark the following on the map.'}</div><div style="border:1.5px dashed #999;height:160px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#999;margin:6px 0;border-radius:3px">[ Map / Picture ]</div>`;
+      }else{
+        h+=`<div>${q.question||'……'}</div>`;
+        if((q.sub_questions||[]).length)h+=`<div style="margin-top:4px">${q.sub_questions.map((sq,i)=>`<div style="margin-left:16px;margin-bottom:2px">${String.fromCharCode(97+i)}. ${sq.text||sq}</div>`).join('')}</div>`;
+        const lines=t==='Long'||t==='Poem'?6:t==='Short'?3:2;
+        h+=`<div style="margin:3px 0 3px 22px">${'<div class="a4-ans-line"></div>'.repeat(lines)}</div>`;
+      }
+      if(q.image_url||q.image_data)h+=`<div style="margin:5px 0"><img src="${q.image_data||((_API)+q.image_url)}" style="max-width:100%;max-height:130px;object-fit:contain;border-radius:6px"/></div>`;
+      if(q.marks>0)h+=`<div style="text-align:right;font-size:10px;color:#555;margin-top:2px">[${q.marks}]</div>`;
+      h+=`</div></div>`;
+    });
+    h+=`</div>`;
+  });
+  return h;
+}
+
+async function previewPaper(id){
+  const a=allAssignments.find(x=>x.id===id);
+  const paper=await apiFetch(`/papers/${id}`);
+  if(!paper||!Object.keys(paper).length){toast('No paper content yet','error');return;}
+  currentA=a;
+  document.getElementById('previewTitle').textContent=`${a.class_name} — ${a.subject} (${a.exam_type})`;
+  document.getElementById('paperContent').innerHTML=renderPaper(paper,a);
+  document.getElementById('previewModal').classList.add('open');
+}
+function closePreview(){document.getElementById('previewModal').classList.remove('open');currentA=null;}
+document.getElementById('previewModal').addEventListener('click',e=>{if(e.target.id==='previewModal')closePreview();});
+
+const PCSS=`@page{size:A4;margin:0}body{font-family:'Montserrat',sans-serif;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.pw{width:210mm;padding:0 0 10mm;font-family:'Montserrat',sans-serif;font-size:11pt;line-height:1.65;color:#000}.pb{padding:8mm 18mm 0}.a4-hdr-img{width:100%;display:block;border-bottom:2pt solid #000}.a4-exam{text-align:center;font-weight:800;letter-spacing:.04em;border-top:2pt solid #000;border-bottom:1.5pt solid #000;padding:4pt 0;margin-top:3pt;margin-bottom:3pt;font-size:13.5pt}.a4-meta{display:flex;justify-content:space-between;font-size:11pt;font-weight:600;margin-bottom:5pt}.a4-student{display:flex;justify-content:space-between;font-size:10.5pt;font-weight:600;margin-bottom:5pt}.a4-comp{text-align:center;font-weight:700;border-top:1.2pt solid #000;border-bottom:1.2pt solid #000;padding:3pt 0;margin:4pt 0 7pt;font-size:11pt}.a4-passage-title{font-weight:800;font-size:12pt;text-align:center;margin:5pt 0 3pt}.a4-passage{font-size:11pt;line-height:1.7;text-align:justify;margin-bottom:7pt}.a4-qblock{margin-bottom:10pt}.a4-qhead{display:flex;justify-content:space-between;font-weight:700;font-size:11pt;margin-bottom:2pt;border-bottom:.6pt dotted #ccc;padding-bottom:2pt}.a4-sub{display:flex;gap:5pt;margin-bottom:4pt;font-size:11pt}.a4-sub-no{font-weight:700;min-width:20pt}.a4-opts{display:flex;flex-wrap:wrap;gap:2pt 18pt;margin:2pt 0 2pt 24pt;font-size:11pt}.a4-ans-line{border-bottom:.8pt solid #bbb;margin-bottom:5pt;height:16pt}.blank-line{display:inline-block;border-bottom:.8pt solid #000;min-width:60pt;vertical-align:bottom}`;
+
+function openPrintWin(html,booklet=false,a=null){
+  const dirBase=new URL('.',location.href).href;
+  const absUrl=(u)=>u.startsWith('http')?u:(u.startsWith('./')?dirBase+u.slice(2):(u.startsWith('/')?location.origin+u:u));
+  html=html.replace(/src="\.\//g,`src="${dirBase}`).replace(/src="\/(?!\/)/g,`src="${location.origin}/`);
+  const win=window.open('','_blank');
+  if(booklet&&a){
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Montserrat',sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{size:A4 landscape;margin:0}.wrap{display:flex;width:297mm;height:210mm}.cover{width:148.5mm;height:210mm;border-right:1.5pt dashed #ccc;padding:12mm 10mm;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}.content{width:148.5mm;height:210mm;overflow:hidden;padding:7mm 8mm}.inner{transform:scale(0.63);transform-origin:top left;width:159%}${PCSS}</style></head><body><div class="wrap"><div class="cover"><img src="${absUrl('./Title_copy.png')}" style="height:70px;margin-bottom:10pt" onerror="this.style.display='none'"/><div style="font-size:14pt;font-weight:800;text-transform:uppercase;color:#0e3b91;letter-spacing:.04em">S.D. Public School</div><div style="font-size:8pt;color:#666;margin:3pt 0 14pt">Maurya Colony, Patna-07</div><div style="font-size:11pt;font-weight:800;color:#0e3b91;border:2pt solid #0e3b91;padding:4pt 14pt;border-radius:4pt">${a.subject}</div><div style="margin-top:14pt;font-size:9pt;font-weight:600;line-height:2.2;color:#374151">Std: ${stdLabel(a.class_name)}<br/>${a.exam_type} — ${a.session_name}</div><div style="margin-top:18pt;font-size:9pt;font-weight:600;line-height:2.6;text-align:left;border-top:1pt solid #ddd;padding-top:8pt">Name: ……………………………<br/>Section: ………&nbsp;&nbsp;Roll No: ………<br/>Date: ………………</div></div><div class="content"><div class="inner"><div class="pb">${html}</div></div></div></div><script>window.onload=()=>{setTimeout(()=>window.print(),300);}<\/script></body></html>`);
+  }else{
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/><style>${PCSS}</style></head><body><div class="pw"><div class="pb">${html}</div></div><script>window.onload=()=>{setTimeout(()=>window.print(),300);}<\/script></body></html>`);
+  }
+  win.document.close();
+}
+
+function doPrint(){
+  const html=document.getElementById('paperContent').innerHTML;
+  openPrintWin(html,false,currentA);
+}
+function doBooklet(){
+  const html=document.getElementById('paperContent').innerHTML;
+  openPrintWin(html,true,currentA);
+}
+
+async function printSingle(id){
+  const a=allAssignments.find(x=>x.id===id);
+  const paper=await apiFetch(`/papers/${id}`);
+  if(!paper||!Object.keys(paper).length){toast('No paper content','error');return;}
+  openPrintWin(renderPaper(paper,a),false,a);
+}
+
+async function printAll(){
+  const rows=allAssignments.filter(a=>['approved','printing'].includes(a.status));
+  if(!rows.length){toast('No papers to print','error');return;}
+  const win=window.open('','_blank');
+  let allHTML='';
+  for(const a of rows){
+    const paper=await apiFetch(`/papers/${a.id}`);
+    if(paper&&Object.keys(paper).length){
+      allHTML+=`<div class="pw" style="page-break-after:always"><div class="pb">${renderPaper(paper,a)}</div></div>`;
+    }
+  }
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/><style>${PCSS}</style></head><body>${allHTML}<script>window.onload=()=>{window.print();}<\/script></body></html>`);
+  win.document.close();
+}
+</script>
+</body>
+</html>

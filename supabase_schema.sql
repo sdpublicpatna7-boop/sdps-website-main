@@ -1,0 +1,695 @@
+-- =============================================================================
+-- SDPS Question Paper Portal - Supabase DB Schema
+-- Import this script into the Supabase SQL Editor to set up tables and RLS policies.
+-- =============================================================================
+
+-- Enable extension
+create extension if not exists "uuid-ossp";
+
+-- 1. Profiles Table (Holds metadata for auth.users)
+create table if not exists public.qp_profiles (
+  id uuid references auth.users on delete cascade primary key,
+  username text unique not null,
+  name text not null,
+  email text unique,
+  phone text,
+  role text not null check (role in ('teacher', 'incharge', 'printing_head', 'qp_admin')),
+  password_set boolean default false,
+  incharge_classes text[] default '{}',
+  can_review boolean default false,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Enable RLS on Profiles
+alter table public.qp_profiles enable row level security;
+
+-- 2. Archives Table
+create table if not exists public.qp_archives (
+  id text primary key,
+  session_name text not null,
+  exam_type text not null,
+  is_open boolean default true not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.qp_archives enable row level security;
+
+-- 3. Assignments Table
+create table if not exists public.qp_assignments (
+  id text primary key,
+  archive_id text references public.qp_archives(id) on delete cascade,
+  session_name text not null,
+  exam_type text not null,
+  class_name text not null,
+  subject text not null,
+  teacher_id uuid references public.qp_profiles(id),
+  teacher_name text not null,
+  status text not null default 'draft' check (status in ('draft', 'submitted', 'incharge_approved', 'approved', 'printing')),
+  submitted_at timestamp with time zone,
+  rejection_reason text,
+  rejected_by text,
+  rejected_at timestamp with time zone
+);
+
+alter table public.qp_assignments enable row level security;
+
+-- 4. Papers Table
+create table if not exists public.qp_papers (
+  id text primary key,
+  assignment_id text references public.qp_assignments(id) on delete cascade unique,
+  questions jsonb default '[]'::jsonb not null,
+  sections jsonb default '[]'::jsonb not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.qp_papers enable row level security;
+
+-- 5. Notifications Table
+create table if not exists public.qp_notifications (
+  id text primary key,
+  user_id uuid references public.qp_profiles(id) on delete cascade,
+  title text not null,
+  message text not null,
+  type text not null,
+  assignment_id text,
+  is_read boolean default false not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.qp_notifications enable row level security;
+
+-- 6. OTPs Table (Security-restricted, bypassed by service-role functions)
+create table if not exists public.qp_otps (
+  username text primary key,
+  phone text not null,
+  code text not null,
+  expires_at timestamp with time zone not null,
+  attempts integer not null default 0,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.qp_otps enable row level security;
+
+-- =============================================================================
+-- ROW LEVEL SECURITY (RLS) POLICIES
+-- =============================================================================
+
+-- Global helper function to check if the user is a qp_admin
+create or replace function public.is_qp_admin()
+returns boolean security definer as $$
+begin
+  return exists (
+    select 1 from public.qp_profiles 
+    where id = auth.uid() and role = 'qp_admin'
+  );
+end;
+$$ language plpgsql;
+
+-- ── DROP EXISTING POLICIES (allows re-running this script repeatedly without errors) ──
+drop policy if exists "Users can view their own profile" on public.qp_profiles;
+drop policy if exists "Admins have full access to profiles" on public.qp_profiles;
+drop policy if exists "Anyone authenticated can view open archives" on public.qp_archives;
+drop policy if exists "Admins have full access to archives" on public.qp_archives;
+drop policy if exists "Teachers can view their own assignments" on public.qp_assignments;
+drop policy if exists "Incharges can view assignments for classes they oversee" on public.qp_assignments;
+drop policy if exists "Printing heads can view approved/printing assignments" on public.qp_assignments;
+drop policy if exists "Admins have full access to assignments" on public.qp_assignments;
+drop policy if exists "Teachers can read and update their draft papers" on public.qp_papers;
+drop policy if exists "Incharges can read submitted papers for classes they oversee" on public.qp_papers;
+drop policy if exists "Printing heads can read approved papers" on public.qp_papers;
+drop policy if exists "Users can read and update their own notifications" on public.qp_notifications;
+drop policy if exists "Admins can manage all notifications" on public.qp_notifications;
+
+-- ── PROFILES POLICIES ──
+create policy "Users can view their own profile" on public.qp_profiles
+  for select using (auth.uid() = id or public.is_qp_admin());
+
+create policy "Admins have full access to profiles" on public.qp_profiles
+  for all using (public.is_qp_admin());
+
+-- ── ARCHIVES POLICIES ──
+create policy "Anyone authenticated can view open archives" on public.qp_archives
+  for select using (auth.role() = 'authenticated');
+
+create policy "Admins have full access to archives" on public.qp_archives
+  for all using (public.is_qp_admin());
+
+-- ── ASSIGNMENTS POLICIES ──
+create policy "Teachers can view their own assignments" on public.qp_assignments
+  for select using (auth.uid() = teacher_id or public.is_qp_admin());
+
+create policy "Incharges can view assignments for classes they oversee" on public.qp_assignments
+  for select using (
+    exists (
+      select 1 from public.qp_profiles
+      where id = auth.uid() and role = 'incharge' and class_name = any(incharge_classes)
+    ) or public.is_qp_admin()
+  );
+
+create policy "Printing heads can view approved/printing assignments" on public.qp_assignments
+  for select using (
+    (exists (select 1 from public.qp_profiles where id = auth.uid() and role = 'printing_head')
+     and status in ('approved', 'printing'))
+    or public.is_qp_admin()
+  );
+
+create policy "Admins have full access to assignments" on public.qp_assignments
+  for all using (public.is_qp_admin());
+
+-- ── PAPERS POLICIES ──
+create policy "Teachers can read and update their draft papers" on public.qp_papers
+  for all using (
+    exists (
+      select 1 from public.qp_assignments
+      where id = assignment_id and (teacher_id = auth.uid() or public.is_qp_admin())
+    )
+  );
+
+create policy "Incharges can read submitted papers for classes they oversee" on public.qp_papers
+  for select using (
+    exists (
+      select 1 from public.qp_assignments a
+      join public.qp_profiles p on p.id = auth.uid()
+      where a.id = assignment_id 
+        and p.role = 'incharge' 
+        and a.class_name = any(p.incharge_classes)
+        and a.status in ('submitted', 'incharge_approved', 'approved', 'printing')
+    ) or public.is_qp_admin()
+  );
+
+create policy "Printing heads can read approved papers" on public.qp_papers
+  for select using (
+    exists (
+      select 1 from public.qp_assignments a
+      where a.id = assignment_id
+        and a.status in ('approved', 'printing')
+    ) and exists (
+      select 1 from public.qp_profiles
+      where id = auth.uid() and role = 'printing_head'
+    ) or public.is_qp_admin()
+  );
+
+-- ── NOTIFICATIONS POLICIES ──
+create policy "Users can read and update their own notifications" on public.qp_notifications
+  for all using (auth.uid() = user_id or public.is_qp_admin());
+
+create policy "Admins can manage all notifications" on public.qp_notifications
+  for all using (public.is_qp_admin());
+
+-- =============================================================================
+-- PUBLIC WEBSITE TABLES
+-- =============================================================================
+
+-- 7. News & Notices Table
+create table if not exists public.site_news (
+  id text primary key,
+  title text not null,
+  content text not null,
+  date date default current_date not null,
+  category text not null check (category in ('news', 'notice', 'event')),
+  attachment_url text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.site_news enable row level security;
+
+-- 8. Gallery Table
+create table if not exists public.site_gallery (
+  id text primary key,
+  title text not null,
+  image_url text not null,
+  category text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.site_gallery enable row level security;
+
+-- 9. Videos Table
+create table if not exists public.site_videos (
+  id text primary key,
+  title text not null,
+  youtube_id text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.site_videos enable row level security;
+
+-- 10. Calendar Events Table
+create table if not exists public.site_calendar (
+  id text primary key,
+  title text not null,
+  start_date timestamp with time zone not null,
+  end_date timestamp with time zone not null,
+  color text default '#3b82f6',
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.site_calendar enable row level security;
+
+-- 11. Holidays Table
+create table if not exists public.site_holidays (
+  id text primary key,
+  title text not null,
+  date date not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.site_holidays enable row level security;
+
+-- 12. Student Council Profiles Table
+create table if not exists public.site_council_profiles (
+  id text primary key,
+  name text not null,
+  post text not null,
+  class_name text not null,
+  image_url text,
+  votes integer default 0 not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.site_council_profiles enable row level security;
+
+create table if not exists public.site_council_posters (
+  id text primary key,
+  candidate_name text not null,
+  post text not null,
+  image_url text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.site_council_posters enable row level security;
+
+create table if not exists public.site_council_results (
+  id text primary key,
+  candidate_name text not null,
+  post text not null,
+  votes integer not null,
+  is_winner boolean default false not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.site_council_results enable row level security;
+
+-- 13. Admissions Enquiry Table
+create table if not exists public.admission_enquiries (
+  id text primary key,
+  parent_name text not null,
+  phone text not null,
+  email text not null,
+  child_name text not null,
+  child_class text not null,
+  message text,
+  status text default 'pending' check (status in ('pending', 'contacted', 'resolved')),
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.admission_enquiries enable row level security;
+
+-- 14. Admissions Application Table
+create table if not exists public.admission_applications (
+  id text primary key,
+  student_name text not null,
+  father_name text not null,
+  mother_name text not null,
+  dob date not null,
+  class_applied text not null,
+  email text not null,
+  phone text not null,
+  address text not null,
+  status text default 'pending' check (status in ('pending', 'approved', 'rejected')),
+  payment_status text default 'unpaid' check (payment_status in ('unpaid', 'paid')),
+  payment_id text,
+  order_id text,
+  amount_inr integer default 500 not null,
+  receipt_sent boolean default false not null,
+  receipt_url text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.admission_applications enable row level security;
+
+-- 15. Career Applications Table
+create table if not exists public.career_applications (
+  id text primary key,
+  name text not null,
+  email text not null,
+  phone text not null,
+  post text not null,
+  resume_url text not null,
+  experience text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.career_applications enable row level security;
+
+-- 16. Alumni Members Table
+create table if not exists public.alumni_members (
+  id text primary key,
+  name text not null,
+  email text unique not null,
+  phone text,
+  batch_year integer not null,
+  current_occupation text,
+  location text,
+  approved boolean default false not null,
+  payment_status text default 'unpaid' check (payment_status in ('unpaid', 'paid')),
+  payment_id text,
+  order_id text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.alumni_members enable row level security;
+
+create table if not exists public.alumni_meets (
+  id text primary key,
+  title text not null,
+  date date not null,
+  location text not null,
+  description text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.alumni_meets enable row level security;
+
+-- 17. Transfer Certificate (TC) Records Table
+create table if not exists public.tc_records (
+  id text primary key,
+  student_name text not null,
+  admission_no text not null,
+  issue_date date not null,
+  status text default 'active' check (status in ('active', 'cancelled')),
+  file_url text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.tc_records enable row level security;
+
+-- 18. Testimonials Table
+create table if not exists public.site_testimonials (
+  id text primary key,
+  author text not null,
+  role text default 'Parent' not null,
+  content text not null,
+  rating integer default 5 not null check (rating >= 1 and rating <= 5),
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.site_testimonials enable row level security;
+
+-- 19. Legal Pages Table
+create table if not exists public.site_legal_pages (
+  id text primary key,
+  title text not null,
+  content text not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.site_legal_pages enable row level security;
+
+-- 20. Annual Exam Papers Table
+create table if not exists public.site_exam_papers (
+  id text primary key,
+  title text not null,
+  class_name text not null,
+  subject text not null,
+  file_url text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.site_exam_papers enable row level security;
+
+-- 21. Holiday Homework Table
+create table if not exists public.site_holiday_homework (
+  id text primary key,
+  title text not null,
+  class_name text not null,
+  subject text not null,
+  file_url text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.site_holiday_homework enable row level security;
+
+-- 22. Site Settings Table
+create table if not exists public.site_settings (
+  key text primary key,
+  value jsonb not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.site_settings enable row level security;
+
+-- 23. Birthday Students Table
+create table if not exists public.birthday_students (
+  id text primary key,
+  student_name text not null,
+  class_name text not null,
+  dob date not null,
+  phone text,
+  email text,
+  roll_no text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.birthday_students enable row level security;
+
+-- 24. Election Posts
+create table if not exists public.election_posts (
+  key text primary key,
+  title text not null,
+  order_index integer not null default 0
+);
+alter table public.election_posts enable row level security;
+
+-- 25. Election Voters
+create table if not exists public.election_voters (
+  admission_no text primary key,
+  name text not null,
+  role text default 'student' not null,
+  father_name text,
+  class_name text,
+  subject text,
+  designation text,
+  already_voted boolean default false not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.election_voters enable row level security;
+
+-- 26. Election Candidates
+create table if not exists public.election_candidates (
+  id uuid primary key default gen_random_uuid(),
+  post_key text references public.election_posts(key) on delete cascade not null,
+  name text not null,
+  photo text,
+  symbol text,
+  symbol_image text,
+  adjustment integer default 0 not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.election_candidates enable row level security;
+
+-- 27. Election Votes
+create table if not exists public.election_votes (
+  id serial primary key,
+  voter_admission_no text references public.election_voters(admission_no) on delete cascade unique,
+  selections jsonb not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.election_votes enable row level security;
+
+-- 28. Election Settings
+create table if not exists public.election_settings (
+  key text primary key,
+  value text not null
+);
+alter table public.election_settings enable row level security;
+
+-- 29. Election Results Archive
+create table if not exists public.election_results_archive (
+  id uuid primary key default gen_random_uuid(),
+  session_name text not null,
+  post_key text not null,
+  post_title text not null,
+  candidate_name text not null,
+  candidate_symbol text,
+  votes_count integer not null default 0,
+  is_winner boolean default false not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.election_results_archive enable row level security;
+
+-- =============================================================================
+-- PUBLIC WEBSITE RLS SECURITY POLICIES
+-- =============================================================================
+
+-- ── DROP EXISTING PUBLIC POLICIES (allows clean re-runs) ──
+drop policy if exists "Anyone can read news" on public.site_news;
+drop policy if exists "Admins can manage news" on public.site_news;
+drop policy if exists "Anyone can read gallery" on public.site_gallery;
+drop policy if exists "Admins can manage gallery" on public.site_gallery;
+drop policy if exists "Anyone can read videos" on public.site_videos;
+drop policy if exists "Admins can manage videos" on public.site_videos;
+drop policy if exists "Anyone can read calendar" on public.site_calendar;
+drop policy if exists "Admins can manage calendar" on public.site_calendar;
+drop policy if exists "Anyone can read holidays" on public.site_holidays;
+drop policy if exists "Admins can manage holidays" on public.site_holidays;
+drop policy if exists "Anyone can read council profiles" on public.site_council_profiles;
+drop policy if exists "Admins can manage council profiles" on public.site_council_profiles;
+drop policy if exists "Anyone can read council posters" on public.site_council_posters;
+drop policy if exists "Admins can manage council posters" on public.site_council_posters;
+drop policy if exists "Anyone can read council results" on public.site_council_results;
+drop policy if exists "Admins can manage council results" on public.site_council_results;
+drop policy if exists "Anyone can read approved alumni" on public.alumni_members;
+drop policy if exists "Admins can manage alumni" on public.alumni_members;
+drop policy if exists "Anyone can read alumni meets" on public.alumni_meets;
+drop policy if exists "Admins can manage alumni meets" on public.alumni_meets;
+drop policy if exists "Anyone can read testimonials" on public.site_testimonials;
+drop policy if exists "Admins can manage testimonials" on public.site_testimonials;
+drop policy if exists "Anyone can read legal pages" on public.site_legal_pages;
+drop policy if exists "Admins can manage legal pages" on public.site_legal_pages;
+drop policy if exists "Anyone can view TCs" on public.tc_records;
+drop policy if exists "Admins can manage TCs" on public.tc_records;
+drop policy if exists "Anyone can read exam papers" on public.site_exam_papers;
+drop policy if exists "Admins can manage exam papers" on public.site_exam_papers;
+drop policy if exists "Anyone can read holiday homework" on public.site_holiday_homework;
+drop policy if exists "Admins can manage holiday homework" on public.site_holiday_homework;
+drop policy if exists "Anyone can read site settings" on public.site_settings;
+drop policy if exists "Admins can manage site settings" on public.site_settings;
+drop policy if exists "Public can submit admission enquiries" on public.admission_enquiries;
+drop policy if exists "Admins can manage enquiries" on public.admission_enquiries;
+drop policy if exists "Public can submit admission applications" on public.admission_applications;
+drop policy if exists "Public can view their own application status" on public.admission_applications;
+drop policy if exists "Admins can manage applications" on public.admission_applications;
+drop policy if exists "Public can apply for careers" on public.career_applications;
+drop policy if exists "Admins can manage career applications" on public.career_applications;
+drop policy if exists "Public can register for alumni" on public.alumni_members;
+drop policy if exists "Admins can manage birthday students" on public.birthday_students;
+drop policy if exists "Anyone authenticated can view birthday students" on public.birthday_students;
+drop policy if exists "Anyone can view election posts" on public.election_posts;
+drop policy if exists "Admins can manage election posts" on public.election_posts;
+drop policy if exists "Voters can view their own details" on public.election_voters;
+drop policy if exists "Admins can manage election voters" on public.election_voters;
+drop policy if exists "Anyone can view election candidates" on public.election_candidates;
+drop policy if exists "Admins can manage election candidates" on public.election_candidates;
+drop policy if exists "Admins can view election votes" on public.election_votes;
+drop policy if exists "Anyone can view election settings" on public.election_settings;
+drop policy if exists "Anyone can view non-sensitive election settings" on public.election_settings;
+drop policy if exists "Admins can manage election settings" on public.election_settings;
+drop policy if exists "Anyone can view election results archive" on public.election_results_archive;
+drop policy if exists "Admins can manage election results archive" on public.election_results_archive;
+
+
+-- ── READ FOR EVERYONE, WRITE FOR ADMINS POLICIES ──
+create policy "Anyone can read news" on public.site_news for select using (true);
+create policy "Admins can manage news" on public.site_news for all using (public.is_qp_admin());
+
+create policy "Anyone can read gallery" on public.site_gallery for select using (true);
+create policy "Admins can manage gallery" on public.site_gallery for all using (public.is_qp_admin());
+
+create policy "Anyone can read videos" on public.site_videos for select using (true);
+create policy "Admins can manage videos" on public.site_videos for all using (public.is_qp_admin());
+
+create policy "Anyone can read calendar" on public.site_calendar for select using (true);
+create policy "Admins can manage calendar" on public.site_calendar for all using (public.is_qp_admin());
+
+create policy "Anyone can read holidays" on public.site_holidays for select using (true);
+create policy "Admins can manage holidays" on public.site_holidays for all using (public.is_qp_admin());
+
+create policy "Anyone can read council profiles" on public.site_council_profiles for select using (true);
+create policy "Admins can manage council profiles" on public.site_council_profiles for all using (public.is_qp_admin());
+
+create policy "Anyone can read council posters" on public.site_council_posters for select using (true);
+create policy "Admins can manage council posters" on public.site_council_posters for all using (public.is_qp_admin());
+
+create policy "Anyone can read council results" on public.site_council_results for select using (true);
+create policy "Admins can manage council results" on public.site_council_results for all using (public.is_qp_admin());
+
+create policy "Anyone can read approved alumni" on public.alumni_members for select using (approved = true or public.is_qp_admin());
+create policy "Admins can manage alumni" on public.alumni_members for all using (public.is_qp_admin());
+
+create policy "Anyone can read alumni meets" on public.alumni_meets for select using (true);
+create policy "Admins can manage alumni meets" on public.alumni_meets for all using (public.is_qp_admin());
+
+create policy "Anyone can read testimonials" on public.site_testimonials for select using (true);
+create policy "Admins can manage testimonials" on public.site_testimonials for all using (public.is_qp_admin());
+
+create policy "Anyone can read legal pages" on public.site_legal_pages for select using (true);
+create policy "Admins can manage legal pages" on public.site_legal_pages for all using (public.is_qp_admin());
+
+-- NOTE: no public select policy. The full TC registry (student names +
+-- admission numbers) must not be enumerable. Verification requires an exact
+-- admission number via the verify_tc_record() RPC below.
+create policy "Admins can manage TCs" on public.tc_records for all using (public.is_qp_admin());
+
+-- Secure TC verification: exact admission number required, returns only the
+-- fields needed to verify a certificate.
+create or replace function public.verify_tc_record(p_admission_no text)
+returns table (student_name text, admission_no text, issue_date date, status text, file_url text)
+language sql
+security definer
+set search_path = public
+as $$
+  select t.student_name, t.admission_no, t.issue_date, t.status, t.file_url
+  from public.tc_records t
+  where t.admission_no = p_admission_no;
+$$;
+
+create policy "Anyone can read exam papers" on public.site_exam_papers for select using (true);
+create policy "Admins can manage exam papers" on public.site_exam_papers for all using (public.is_qp_admin());
+
+create policy "Anyone can read holiday homework" on public.site_holiday_homework for select using (true);
+create policy "Admins can manage holiday homework" on public.site_holiday_homework for all using (public.is_qp_admin());
+
+create policy "Anyone can read site settings" on public.site_settings for select using (true);
+create policy "Admins can manage site settings" on public.site_settings for all using (public.is_qp_admin());
+
+-- ── WRITE/INSERT BY PUBLIC, READ/MANAGE BY ADMIN POLICIES ──
+create policy "Public can submit admission enquiries" on public.admission_enquiries for insert with check (true);
+create policy "Admins can manage enquiries" on public.admission_enquiries for all using (public.is_qp_admin());
+
+create policy "Public can submit admission applications" on public.admission_applications for insert with check (true);
+-- NOTE: no public select policy. Applications contain PII (child name, DOB,
+-- address, phone, payment ids). Status lookups must go through the backend
+-- (service role) or the lookup_admission_application() RPC below, which
+-- requires the application id AND a matching contact detail.
+create policy "Admins can manage applications" on public.admission_applications for all using (public.is_qp_admin());
+
+-- Secure status lookup: requires both the application reference and a
+-- matching phone or email, so applications cannot be enumerated.
+create or replace function public.lookup_admission_application(p_app_id text, p_contact text)
+returns table (id text, student_name text, class_applied text, status text, payment_status text, created_at timestamptz)
+language sql
+security definer
+set search_path = public
+as $$
+  select a.id::text, a.student_name, a.class_applied, a.status, a.payment_status, a.created_at
+  from public.admission_applications a
+  where a.id::text = p_app_id
+    and (a.phone = p_contact or lower(a.email) = lower(p_contact));
+$$;
+
+create policy "Public can apply for careers" on public.career_applications for insert with check (true);
+create policy "Admins can manage career applications" on public.career_applications for all using (public.is_qp_admin());
+
+create policy "Public can register for alumni" on public.alumni_members for insert with check (true);
+
+create policy "Admins can manage birthday students" on public.birthday_students for all using (public.is_qp_admin());
+create policy "Anyone authenticated can view birthday students" on public.birthday_students for select using (auth.role() = 'authenticated');
+
+-- ── ELECTION POLICIES ──
+create policy "Anyone can view election posts" on public.election_posts for select using (true);
+create policy "Admins can manage election posts" on public.election_posts for all using (public.is_qp_admin());
+
+-- NOTE: no public select policy. The voter roster (names, father's name,
+-- class) must not be enumerable with the anon key. Voter check-in requires an
+-- exact admission number via the election_voter_lookup() RPC below.
+create policy "Admins can manage election voters" on public.election_voters for all using (public.is_qp_admin());
+
+-- Secure voter check-in lookup: exact admission number required.
+create or replace function public.election_voter_lookup(p_admission_no text)
+returns table (admission_no text, name text, role text, already_voted boolean, class_name text, father_name text)
+language sql
+security definer
+set search_path = public
+as $$
+  select v.admission_no, v.name, v.role, v.already_voted, v.class_name, v.father_name
+  from public.election_voters v
+  where v.admission_no = p_admission_no;
+$$;
+
+create policy "Anyone can view election candidates" on public.election_candidates for select using (true);
+create policy "Admins can manage election candidates" on public.election_candidates for all using (public.is_qp_admin());
+
+create policy "Admins can view election votes" on public.election_votes for select using (public.is_qp_admin());
+
+-- Sensitive keys (e.g. the booth voting access code) are excluded from the
+-- public read policy.
+create policy "Anyone can view non-sensitive election settings" on public.election_settings
+  for select using (key not in ('voting_access_code'));
+create policy "Admins can manage election settings" on public.election_settings for all using (public.is_qp_admin());
+
+create policy "Anyone can view election results archive" on public.election_results_archive for select using (true);
+create policy "Admins can manage election results archive" on public.election_results_archive for all using (public.is_qp_admin());
+
+
+

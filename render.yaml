@@ -1,0 +1,81 @@
+services:
+  # ── Backend (FastAPI Web Service) ───────────────────────────────────
+  - type: web
+    name: sdps-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: MONGO_URL
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: JWT_EXPIRY_HOURS
+        value: "24"
+      - key: QP_JWT_EXPIRY_HOURS
+        value: "12"
+      - key: ADMIN_SEED_EMAIL
+        value: admin@sdpublic.org
+      - key: ADMIN_SEED_PASSWORD
+        sync: false
+      - key: STAFF_SEED_EMAIL
+        value: staff@sdpublic.org
+      - key: STAFF_SEED_PASSWORD
+        sync: false
+      - key: QP_ADMIN_EMAIL
+        value: qpadmin@sdpublic.org
+      - key: QP_ADMIN_PASSWORD
+        sync: false
+      - key: MAILERCLOUD_API_KEY
+        sync: false
+      - key: SENDER_EMAIL
+        value: noreply@sdpublic.org
+      - key: SENDER_NAME
+        value: S.D. Public School
+      - key: BULKSMS_API_URL
+        sync: false
+      - key: BULKSMS_API_KEY
+        sync: false
+      - key: BULKSMS_SENDER_ID
+        value: SDPUBP
+      - key: BULKSMS_TEMPLATE_ID
+        sync: false
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: WA_SERVICE_URL
+        value: http://localhost:3001
+      - key: WA_API_SECRET
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: ERP_LOGIN_URL
+        value: https://sdpublic.gungunerp.in
+
+  # ── Frontend (React static) ────────────────────────────────────────
+  - type: web
+    name: sdps-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install --legacy-peer-deps && npm run build
+    staticPublishPath: build
+    routes:
+      # Redirect bare /qp-portal (no trailing slash) → index so relative paths resolve correctly
+      - type: redirect
+        source: /qp-portal
+        destination: /qp-portal/index.html
+        # All other paths → React SPA
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: REACT_APP_BACKEND_URL
+        sync: false

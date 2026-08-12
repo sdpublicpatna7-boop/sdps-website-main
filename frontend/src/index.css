@@ -1,0 +1,520 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    margin: 0;
+    font-family: "DM Sans", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    color: #0a0f24;
+    background: #fafafa;
+}
+
+/* Force 100% transparent background for OBS Studio Browser Source */
+html.obs-transparent-mode,
+body.obs-transparent-mode,
+#root.obs-transparent-mode {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
+code {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
+        monospace;
+}
+
+@layer base {
+    :root {
+        --background: 0 0% 100%;
+        --foreground: 224 56% 9%;
+        --card: 0 0% 100%;
+        --card-foreground: 224 56% 9%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 224 56% 9%;
+        --primary: 222 82% 32%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 24 94% 51%;
+        --secondary-foreground: 0 0% 100%;
+        --muted: 220 14% 95%;
+        --muted-foreground: 215 16% 47%;
+        --accent: 220 14% 96%;
+        --accent-foreground: 224 56% 9%;
+        --destructive: 0 84% 60%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 220 13% 91%;
+        --input: 220 13% 91%;
+        --ring: 222 82% 32%;
+        --chart-1: 222 82% 32%;
+        --chart-2: 24 94% 51%;
+        --chart-3: 35 47% 57%;
+        --chart-4: 327 67% 74%;
+        --chart-5: 27 87% 67%;
+        --radius: 0.75rem;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground;
+    }
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        @apply font-headline tracking-tight;
+        color: inherit;
+    }
+}
+
+/* ---------- Distinctive utility classes ---------- */
+
+.glass-card {
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgba(14, 59, 145, 0.08);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.8) inset,
+        0 8px 30px rgba(14, 59, 145, 0.06);
+}
+
+.brand-gradient-text {
+    background: linear-gradient(
+        135deg,
+        #0e3b91 0%,
+        #1e4cb8 40%,
+        #f87d0e 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    display: inline-block;
+    padding-bottom: 0.15em;
+    margin-bottom: -0.15em;
+}
+
+.gold-gradient-text {
+    background: linear-gradient(to right, #c7a15b, #e2c792, #c7a15b);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+    padding-bottom: 0.15em;
+    margin-bottom: -0.15em;
+}
+
+
+.btn-primary {
+    @apply bg-brand-blue text-white rounded-full px-6 py-3 font-headline font-medium tracking-wide shadow-sm transition-all hover:bg-brand-blue-light active:scale-95;
+}
+
+.btn-secondary {
+    @apply bg-brand-orange text-white rounded-full px-6 py-3 font-headline font-medium tracking-wide shadow-sm transition-all hover:bg-orange-600 active:scale-95;
+}
+
+.btn-glass {
+    @apply rounded-full px-5 py-2.5 font-headline font-medium tracking-wide border border-white/40 text-brand-ink bg-white/60 backdrop-blur-md transition-all hover:bg-white/80 active:scale-95;
+}
+
+.btn-gold {
+    background: linear-gradient(to right, #c7a15b, #e2c792);
+    @apply text-white rounded-full px-6 py-3 font-headline font-medium shadow-md transition-all hover:shadow-lg active:scale-95;
+}
+
+.section-title {
+    @apply font-headline text-3xl sm:text-4xl lg:text-5xl tracking-tight text-brand-ink;
+}
+
+.legacy-title {
+    @apply font-legacy text-4xl sm:text-5xl lg:text-6xl leading-normal pb-1;
+}
+
+
+.overline {
+    @apply uppercase tracking-[0.22em] text-xs font-bold text-brand-orange font-headline;
+}
+
+/* Tracing beam border on hover for cards */
+.beam-card {
+    position: relative;
+    transition: all 0.3s ease;
+}
+.beam-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+        135deg,
+        rgba(14, 59, 145, 0),
+        rgba(14, 59, 145, 0.15),
+        rgba(248, 125, 14, 0.4),
+        rgba(14, 59, 145, 0)
+    );
+    -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+}
+.beam-card:hover::before {
+    opacity: 1;
+}
+
+/* Subtle grain texture overlay */
+.grain {
+    position: relative;
+}
+.grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Marquee */
+.marquee {
+    display: flex;
+    overflow: hidden;
+    user-select: none;
+    gap: 3rem;
+}
+.marquee__inner {
+    flex-shrink: 0;
+    display: flex;
+    gap: 3rem;
+    animation: marquee 40s linear infinite;
+}
+@keyframes marquee {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-50%);
+    }
+}
+
+/* Pre-school floating shapes */
+.preschool-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(28px);
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Admin sidebar active link */
+.admin-link-active {
+    background: linear-gradient(90deg, rgba(14, 59, 145, 0.15) 0%, transparent 100%);
+    color: #fff;
+    border-left: 3px solid #f87d0e;
+}
+
+@layer base {
+    [data-debug-wrapper="true"] {
+        display: contents !important;
+    }
+    [data-debug-wrapper="true"] > * {
+        margin-left: inherit;
+        margin-right: inherit;
+        margin-top: inherit;
+        margin-bottom: inherit;
+        padding-left: inherit;
+        padding-right: inherit;
+        padding-top: inherit;
+        padding-bottom: inherit;
+        column-gap: inherit;
+        row-gap: inherit;
+        gap: inherit;
+        border-left-width: inherit;
+        border-right-width: inherit;
+        border-top-width: inherit;
+        border-bottom-width: inherit;
+        border-left-style: inherit;
+        border-right-style: inherit;
+        border-top-style: inherit;
+        border-bottom-style: inherit;
+        border-left-color: inherit;
+        border-right-color: inherit;
+        border-top-color: inherit;
+        border-bottom-color: inherit;
+    }
+}
+
+.skip-link {
+    position: absolute;
+    top: -100%;
+    left: 16px;
+    z-index: 9999;
+    padding: 12px 24px;
+    background: #0E3B91;
+    color: white;
+    border-radius: 0 0 8px 8px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: top 0.2s;
+}
+.skip-link:focus {
+    top: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ==========================================================================
+   Election Kiosk Portal Styles
+   ========================================================================== */
+
+:root {
+    --sdps-blue: #0F3C8A;
+    --sdps-blue-deep: #0A2A66;
+    --sdps-blue-soft: #4A78D6;
+    --sdps-gold: #D4AF37;
+    --sdps-gold-soft: #F3E5AB;
+    --sdps-ink: #0A1128;
+    --sdps-muted: #5C6A82;
+}
+
+/* Display face for election headlines (two-font system: Outfit + DM Sans) */
+.font-display {
+    font-family: 'Outfit', sans-serif;
+    letter-spacing: -0.01em;
+}
+
+/* 3D gradient kiosk background */
+.kiosk-bg {
+    position: relative;
+    background:
+        radial-gradient(circle at 12% 18%, rgba(15, 60, 138, 0.10) 0%, transparent 55%),
+        radial-gradient(circle at 88% 78%, rgba(212, 175, 55, 0.18) 0%, transparent 55%),
+        radial-gradient(circle at 50% 50%, rgba(74, 120, 214, 0.06) 0%, transparent 70%),
+        linear-gradient(180deg, #FFFFFF 0%, #EEF3FB 60%, #E2EAFA 100%);
+    overflow: hidden;
+}
+
+/* Floating ambient orbs */
+.orb {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(72px);
+    opacity: 0.55;
+    pointer-events: none;
+    animation: orb-float 14s ease-in-out infinite;
+}
+.orb.b { background: var(--sdps-blue); }
+.orb.g { background: var(--sdps-gold); }
+.orb.s { background: var(--sdps-blue-soft); }
+
+@keyframes orb-float {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(20px, -28px) scale(1.08); }
+}
+
+/* Glassmorphic card */
+.glass {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(22px) saturate(160%);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow:
+        0 1px 0 rgba(255,255,255,0.9) inset,
+        0 18px 50px -12px rgba(15, 60, 138, 0.20),
+        0 4px 14px -4px rgba(15, 60, 138, 0.10);
+}
+
+/* Gold gradient text */
+.gold-text {
+    background: linear-gradient(135deg, #8a6212 0%, #B9892B 30%, #D4AF37 55%, #8a6212 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter:
+        drop-shadow(0 1px 0 rgba(255,255,255,0.6))
+        drop-shadow(0 2px 0 rgba(122, 86, 19, 0.45))
+        drop-shadow(0 8px 18px rgba(212, 175, 55, 0.35));
+}
+
+/* Blue 3D heading text */
+.hero-3d {
+    color: #0A2A66;
+    background: linear-gradient(180deg, #1c4cb0 0%, #0F3C8A 50%, #07204f 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter:
+        drop-shadow(0 1px 0 rgba(255,255,255,0.7))
+        drop-shadow(0 2px 0 rgba(15, 60, 138, 0.25))
+        drop-shadow(0 10px 22px rgba(15, 60, 138, 0.30));
+}
+
+/* Primary 3D CTA button */
+.btn-primary-3d {
+    background: linear-gradient(180deg, #1A55B6 0%, #0F3C8A 100%);
+    color: #fff;
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.35),
+        0 14px 30px -10px rgba(15, 60, 138, 0.55),
+        0 4px 10px -2px rgba(15, 60, 138, 0.35);
+    transition: transform 180ms ease, box-shadow 180ms ease;
+}
+.btn-primary-3d:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 18px 36px -10px rgba(15, 60, 138, 0.60);
+}
+.btn-primary-3d:active { transform: translateY(0); }
+
+/* Gold 3D button */
+.btn-gold-3d {
+    background: linear-gradient(180deg, #F4D571 0%, #D4AF37 60%, #B9892B 100%);
+    color: #1A1A1A;
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.55),
+        0 12px 28px -8px rgba(212, 175, 55, 0.55),
+        0 4px 10px -2px rgba(212, 175, 55, 0.30);
+    transition: transform 180ms ease, box-shadow 180ms ease;
+}
+.btn-gold-3d:hover { transform: translateY(-2px); }
+
+/* Candidate selection card */
+.candidate-card {
+    transition: transform 280ms cubic-bezier(.2,.8,.2,1), box-shadow 280ms ease, border-color 200ms ease;
+    border: 2px solid rgba(15, 60, 138, 0.08);
+    background: rgba(255,255,255,0.78);
+    backdrop-filter: blur(18px);
+}
+.candidate-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 28px 60px -16px rgba(15, 60, 138, 0.30);
+}
+.candidate-card.selected {
+    border-color: var(--sdps-gold);
+    box-shadow:
+        0 0 0 6px rgba(212, 175, 55, 0.20),
+        0 28px 60px -10px rgba(212, 175, 55, 0.45);
+    transform: translateY(-6px);
+    background: linear-gradient(135deg, #FFFDF5 0%, #FFFFFF 100%);
+}
+
+/* Step pill indicator */
+.step-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    background: rgba(15, 60, 138, 0.08);
+    color: var(--sdps-blue);
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    font-size: 11px;
+    text-transform: uppercase;
+}
+
+/* Stagger reveal animations */
+@keyframes rise-in {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.rise { animation: rise-in 600ms cubic-bezier(.2,.8,.2,1) both; }
+.delay-1 { animation-delay: 80ms; }
+.delay-2 { animation-delay: 160ms; }
+.delay-3 { animation-delay: 240ms; }
+.delay-4 { animation-delay: 320ms; }
+
+/* Confetti animation */
+@keyframes confetti-fall {
+    0% { transform: translate3d(var(--x,0), -10vh, 0) rotate(0); opacity: 1; }
+    100% { transform: translate3d(var(--x,0), 110vh, 0) rotate(720deg); opacity: 0.9; }
+}
+.confetti-piece {
+    position: absolute;
+    top: 0;
+    width: 10px;
+    height: 16px;
+    border-radius: 2px;
+    animation: confetti-fall linear forwards;
+    pointer-events: none;
+}
+
+/* Election text selection */
+.kiosk-bg ::selection {
+    background: rgba(212,175,55,0.35);
+    color: var(--sdps-ink);
+}
+
+/* ==========================================================================
+   Animated Bouncing Logo & Light Sweep Sheen Utility Classes
+   ========================================================================== */
+@keyframes logo-bounce {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes logo-shine-sweep {
+  0% {
+    transform: translateX(-150%) rotate(25deg);
+  }
+  40%, 100% {
+    transform: translateX(250%) rotate(25deg);
+  }
+}
+
+.animate-logo-bounce {
+  animation: logo-bounce 2.6s ease-in-out infinite;
+}
+
+.logo-shine-wrapper {
+  position: relative;
+  overflow: hidden;
+}
+
+.logo-shine-wrapper::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 60%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.8) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(25deg);
+  pointer-events: none;
+  animation: logo-shine-sweep 3.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+

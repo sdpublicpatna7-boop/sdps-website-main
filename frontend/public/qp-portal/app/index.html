@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+  <title>SDPS QP Builder</title>
+  <!-- Google Fonts: Outfit for headers, Inter for UI -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="./app.css"/>
+</head>
+<body>
+
+  <!-- Background Orbs -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <div class="app-shell">
+    
+    <!-- ── VIEW: LOGIN ── -->
+    <div id="view-login" class="view active">
+      <div class="login-card">
+        <div class="login-logo">
+          <div class="logo-wrap">
+            <img src="https://res.cloudinary.com/drx3kb809/image/upload/v1782313772/sdps/misc/hffxigjkpw7cbc7cmdm5.jpg" alt="SDPS Logo" onerror="this.onerror=null;this.src='/logo512.png'"/>
+          </div>
+          <h1>S.D. Public School</h1>
+          <p>QP Builder Mobile</p>
+          <span class="badge-secure">🔒 Secure Portal</span>
+        </div>
+
+        <div class="login-err" id="login-err"></div>
+
+        <form id="login-form">
+          <!-- Step 1: Username input -->
+          <div class="login-step active" id="step-username">
+            <div class="field">
+              <label for="login-username">Username or Email</label>
+              <input type="text" id="login-username" placeholder="Enter your username" required autocomplete="username"/>
+            </div>
+            <button type="button" class="btn-primary" id="btn-next-username">
+              <span>Next</span>
+            </button>
+          </div>
+
+          <!-- Step 2: Regular password input -->
+          <div class="login-step" id="step-password" style="display: none;">
+            <div class="field">
+              <label for="login-password">Password</label>
+              <input type="password" id="login-password" placeholder="Enter password" autocomplete="current-password"/>
+            </div>
+            <button type="button" class="btn-primary" id="btn-submit-login" style="margin-bottom: 12px;">
+              <span>Sign In</span>
+            </button>
+            <div style="display: flex; justify-content: space-between; font-size: 12px;">
+              <a href="#" id="link-forgot-pw" style="color: var(--primary); text-decoration: none; font-weight: 600;">Forgot Password?</a>
+              <a href="#" class="link-back-username" style="color: var(--text-muted); text-decoration: none;">← Change User</a>
+            </div>
+          </div>
+
+          <!-- Step 3: First login OTP setup -->
+          <div class="login-step" id="step-otp-setup" style="display: none;">
+            <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.5;">This is your first login. Enter the verification code sent to your registered WhatsApp and choose a password.</p>
+            <div class="field">
+              <label for="setup-otp">WhatsApp Verification Code</label>
+              <input type="text" id="setup-otp" placeholder="6-digit code" inputmode="numeric"/>
+            </div>
+            <div class="field">
+              <label for="setup-new-password">Choose Password</label>
+              <input type="password" id="setup-new-password" placeholder="Min 8 chars · 1 upper · 1 digit"/>
+            </div>
+            <button type="button" class="btn-primary" id="btn-submit-setup" style="margin-bottom: 12px;">
+              <span>Set Password & Sign In</span>
+            </button>
+            <div style="display: flex; justify-content: space-between; font-size: 12px;">
+              <a href="#" id="link-resend-setup-otp" style="color: var(--primary); text-decoration: none; font-weight: 600;">Resend Code</a>
+              <a href="#" class="link-back-username" style="color: var(--text-muted); text-decoration: none;">← Change User</a>
+            </div>
+          </div>
+
+          <!-- Step 4: Forgot password OTP reset -->
+          <div class="login-step" id="step-forgot-pw" style="display: none;">
+            <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.5;">Enter the password reset code sent to your WhatsApp and choose a new password.</p>
+            <div class="field">
+              <label for="forgot-otp">WhatsApp Verification Code</label>
+              <input type="text" id="forgot-otp" placeholder="6-digit code" inputmode="numeric"/>
+            </div>
+            <div class="field">
+              <label for="forgot-new-password">New Password</label>
+              <input type="password" id="forgot-new-password" placeholder="Min 8 chars · 1 upper · 1 digit"/>
+            </div>
+            <button type="button" class="btn-primary" id="btn-submit-forgot" style="margin-bottom: 12px;">
+              <span>Reset Password & Sign In</span>
+            </button>
+            <div style="display: flex; justify-content: space-between; font-size: 12px;">
+              <a href="#" id="link-resend-forgot-otp" style="color: var(--primary); text-decoration: none; font-weight: 600;">Resend Code</a>
+              <a href="#" class="link-back-username" style="color: var(--text-muted); text-decoration: none;">← Change User</a>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ── HEADER FOR LOGGED-IN VIEWS ── -->
+    <header class="app-header" id="main-header" style="display: none;">
+      <div class="header-left">
+        <img src="https://res.cloudinary.com/drx3kb809/image/upload/v1782313772/sdps/misc/hffxigjkpw7cbc7cmdm5.jpg" alt="Logo" class="header-logo" onerror="this.onerror=null;this.src='/logo512.png'"/>
+        <div>
+          <h2 id="header-user-name">Loading...</h2>
+          <span class="header-badge" id="header-user-role">Teacher</span>
+        </div>
+      </div>
+      <div class="header-right" style="display: flex; align-items: center; gap: 14px;">
+        <div class="notif-bell-container" id="btn-toggle-notifs" style="position: relative; cursor: pointer; padding: 4px;">
+          <span style="font-size: 20px;">🔔</span>
+          <span class="notif-badge" id="notif-unread-count" style="display: none;">0</span>
+        </div>
+        <span class="sync-status online" id="connection-indicator">● Online</span>
+      </div>
+    </header>
+
+    <!-- ── VIEW: PAPERS/ASSIGNMENTS ── -->
+    <div id="view-papers" class="view">
+      <div class="view-content">
+        <div class="section-title">
+          <h3>Your Assignments</h3>
+          <span class="count-badge" id="papers-count">0</span>
+        </div>
+        <div class="papers-list" id="papers-container">
+          <!-- Dynamically populated assignment cards -->
+          <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Loading assignments...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VIEW: QUESTION PAPER EDITOR ── -->
+    <div id="view-editor" class="view">
+      <div class="view-content editor-layout">
+        <!-- Editor Header (Info on active paper) -->
+        <div class="active-paper-bar">
+          <div class="paper-meta-summary">
+            <h4 id="editor-paper-title">Select a Paper</h4>
+            <p id="editor-paper-info">Go to the Papers tab to select an assignment</p>
+          </div>
+          <div class="paper-actions">
+            <button class="btn-action-outline" id="btn-submit-paper" style="display: none;">
+              📤 Submit
+            </button>
+          </div>
+        </div>
+
+        <div id="editor-placeholder" class="editor-placeholder-msg">
+          <div class="icon-illustration">📝</div>
+          <h4>No Paper Selected</h4>
+          <p>Please select a question paper from the <strong>Papers</strong> tab to start editing.</p>
+          <button class="btn-primary" onclick="showView('papers')" style="margin-top: 15px;">Go to Papers</button>
+        </div>
+
+        <!-- Question List -->
+        <div id="editor-workspace" style="display: none;">
+          <div class="question-list-header">
+            <h4>Questions (<span id="q-list-count">0</span>)</h4>
+            <button class="btn-sm-primary" id="btn-add-question">+ Add</button>
+          </div>
+
+          <div class="questions-container" id="questions-list-container">
+            <!-- Questions list populated dynamically -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VIEW: AI ASSISTANT ── -->
+    <div id="view-ai" class="view">
+      <div class="view-content">
+        <div class="section-title">
+          <h3>Claude Fable 5 AI</h3>
+          <span class="badge-ai">⚡ Claude Fable 5 Powered</span>
+        </div>
+
+        <div class="ai-box">
+          <div class="field">
+            <label for="ai-prompt-topic">Topic / Topic Description</label>
+            <input type="text" id="ai-prompt-topic" placeholder="e.g. Photosynthesis, Trigonometry, Sound waves"/>
+          </div>
+
+          <div class="ai-presets">
+            <label>Question Type Preset</label>
+            <div class="presets-grid">
+              <button class="btn-preset active" data-type="MCQ">MCQ</button>
+              <button class="btn-preset" data-type="Short">Short Answer</button>
+              <button class="btn-preset" data-type="FIB">Fill in Blanks</button>
+              <button class="btn-preset" data-type="TrueFalse">True/False</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="ai-prompt-count">Number of Questions</label>
+            <select id="ai-prompt-count">
+              <option value="3">3 Questions</option>
+              <option value="5" selected>5 Questions</option>
+              <option value="10">10 Questions</option>
+            </select>
+          </div>
+
+          <button class="btn-primary-gradient" id="btn-generate-ai">
+            <span>✨ Generate Questions</span>
+          </button>
+        </div>
+
+        <!-- AI Output Results -->
+        <div class="ai-results" id="ai-results-panel" style="display: none;">
+          <div class="results-header">
+            <h4>Generated Questions</h4>
+            <button class="btn-text-action" id="btn-close-ai-results">Clear</button>
+          </div>
+          <div class="results-list" id="ai-results-container"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VIEW: SETTINGS ── -->
+    <div id="view-settings" class="view">
+      <div class="view-content">
+        <div class="section-title">
+          <h3>Settings</h3>
+        </div>
+
+        <div class="settings-group">
+          <h4>Account Details</h4>
+          <div class="settings-card">
+            <div class="user-profile">
+              <div class="avatar-large" id="avatar-initials">U</div>
+              <div class="user-details">
+                <h3 id="settings-user-name">User Name</h3>
+                <p id="settings-user-email">email@sdpublic.org</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <h4>Profile Details</h4>
+          <div class="settings-card info-card">
+            <div class="info-row">
+              <span>User ID</span>
+              <strong id="settings-user-id">-</strong>
+            </div>
+            <div class="info-row">
+              <span>Phone No.</span>
+              <strong id="settings-user-phone">-</strong>
+            </div>
+            <div class="info-row">
+              <span>Total Assignments</span>
+              <strong id="settings-user-assignments-count">0</strong>
+            </div>
+            <div id="settings-assignments-list" style="margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; font-size: 11px; display: flex; flex-direction: column; gap: 6px;">
+              <!-- List of assigned papers -->
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-logout" id="btn-logout">
+          🚪 Sign Out
+        </button>
+      </div>
+    </div>
+
+    <!-- ── MOBILE BOTTOM NAVIGATION BAR ── -->
+    <nav class="bottom-nav" id="main-navigation" style="display: none;">
+      <a class="nav-item active" data-view="papers">
+        <span class="nav-icon">📁</span>
+        <span class="nav-label">Papers</span>
+      </a>
+      <a class="nav-item" data-view="editor">
+        <span class="nav-icon">📝</span>
+        <span class="nav-label">Editor</span>
+      </a>
+      <a class="nav-item" data-view="ai">
+        <span class="nav-icon">🤖</span>
+        <span class="nav-label">Claude Fable 5</span>
+      </a>
+      <a class="nav-item" data-view="settings">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">Settings</span>
+      </a>
+    </nav>
+
+  </div>
+
+  <!-- ── MODAL SHEET: EDIT / ADD QUESTION (SLIDES UP FROM BOTTOM) ── -->
+  <div class="modal-backdrop" id="question-modal-backdrop" style="display: none;">
+    <div class="bottom-sheet" id="question-bottom-sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <h4 id="sheet-title">Add Question</h4>
+        <button class="btn-close-circle" id="btn-close-sheet">×</button>
+      </div>
+
+      <div class="sheet-body">
+        <form id="question-form">
+          <div class="field">
+            <label for="q-input-type">Question Type</label>
+            <select id="q-input-type" required></select>
+          </div>
+
+          <div class="field">
+            <label for="q-input-text">Question Text</label>
+            <textarea id="q-input-text" rows="3" placeholder="Enter question description..." required></textarea>
+            
+            <!-- ── FLOATING MATHEMATICAL SYMBOL KEYBOARD ── -->
+            <div class="math-keyboard" id="math-keyboard-panel">
+              <button type="button" class="btn-math" data-symbol="√">√</button>
+              <button type="button" class="btn-math" data-symbol="π">π</button>
+              <button type="button" class="btn-math" data-symbol="÷">÷</button>
+              <button type="button" class="btn-math" data-symbol="×">×</button>
+              <button type="button" class="btn-math" data-symbol="²">²</button>
+              <button type="button" class="btn-math" data-symbol="³">³</button>
+              <button type="button" class="btn-math" data-symbol="±">±</button>
+              <button type="button" class="btn-math" data-symbol="θ">θ</button>
+              <button type="button" class="btn-math" data-symbol="α">α</button>
+              <button type="button" class="btn-math" data-symbol="β">β</button>
+              <button type="button" class="btn-math" data-symbol="λ">λ</button>
+              <button type="button" class="btn-math" data-symbol="∞">∞</button>
+              <button type="button" class="btn-math" data-symbol="≈">≈</button>
+              <button type="button" class="btn-math" data-symbol="≠">≠</button>
+              <button type="button" class="btn-math" data-symbol="______">___</button>
+            </div>
+          </div>
+
+          <div class="field" id="marks-field">
+            <label for="q-input-marks">Marks</label>
+            <input type="number" id="q-input-marks" min="0" max="100" step="0.5" value="1" required/>
+          </div>
+
+          <!-- Section Option (For IX / X) -->
+          <div class="field" id="section-field" style="display: none;">
+            <label for="q-input-section">Section</label>
+            <select id="q-input-section">
+              <option value="Section A">Section A</option>
+              <option value="Section B">Section B</option>
+              <option value="Section C">Section C</option>
+              <option value="Section D">Section D</option>
+            </select>
+          </div>
+
+          <!-- Options Fields (MCQ / TrueFalse / Assertion) -->
+          <div class="options-group" id="options-panel" style="display: none;">
+            <label>Options / Sub-items</label>
+            <div class="opt-field">
+              <span>A</span>
+              <input type="text" id="q-opt-a" placeholder="Option A"/>
+            </div>
+            <div class="opt-field">
+              <span>B</span>
+              <input type="text" id="q-opt-b" placeholder="Option B"/>
+            </div>
+            <div class="opt-field" id="opt-c-row">
+              <span>C</span>
+              <input type="text" id="q-opt-c" placeholder="Option C"/>
+            </div>
+            <div class="opt-field" id="opt-d-row">
+              <span>D</span>
+              <input type="text" id="q-opt-d" placeholder="Option D"/>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary" id="btn-save-question" style="margin-top: 15px;">
+            Save Question
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MODAL SHEET: NOTIFICATIONS INBOX ── -->
+  <div class="modal-backdrop" id="notif-modal-backdrop" style="display: none;">
+    <div class="bottom-sheet" id="notif-bottom-sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <h4 style="margin: 0; font-size: 16px; font-weight: 700;">Notifications</h4>
+        <div style="display: flex; align-items: center; gap: 12px; margin-left: auto; margin-right: 8px;">
+          <button class="btn-text-action" id="btn-mark-all-read" style="background: none; border: none; font-size: 12px; color: var(--primary); font-weight: 600; cursor: pointer; padding: 4px;">Mark All Read</button>
+        </div>
+        <button class="btn-close-circle" id="btn-close-notifs" style="background: rgba(255,255,255,0.08); border: none; color: #fff; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; line-height: 1;">×</button>
+      </div>
+      <div class="sheet-body" id="notifs-container" style="max-height: 350px; overflow-y: auto; padding: 16px 0;">
+        <!-- Dynamically populated notifications list -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Shared JavaScript modules -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./config.js"></script>
+  <script src="./qp-common-mobile.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

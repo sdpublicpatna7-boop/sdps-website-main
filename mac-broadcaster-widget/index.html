@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SDPS Broadcaster Desktop Widget</title>
+  <style>
+    /* Native macOS Sonoma Squircle Desktop Widget Theme */
+    :root {
+      --mac-bg: rgba(22, 28, 44, 0.94);
+      --mac-card: rgba(255, 255, 255, 0.08);
+      --mac-border: rgba(255, 255, 255, 0.14);
+      --mac-accent: #f59e0b;
+      --mac-blue: #2563eb;
+      --mac-red: #ef4444;
+      --mac-emerald: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: transparent !important;
+      color: #f8fafc !important;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+      overflow: hidden;
+    }
+
+    .squircle-widget {
+      width: 100%;
+      height: 100vh;
+      background: linear-gradient(150deg, rgba(20, 26, 42, 0.95), rgba(28, 36, 54, 0.92));
+      backdrop-filter: blur(40px) saturate(200%);
+      -webkit-backdrop-filter: blur(40px) saturate(200%);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 28px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+      position: relative;
+    }
+
+    /* Top Row: Title & Online Pill */
+    .widget-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      -webkit-app-region: drag;
+    }
+
+    .widget-brand {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .widget-title {
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: #e2e8f0;
+    }
+
+    .status-pill {
+      font-size: 9px;
+      font-weight: 800;
+      padding: 3px 9px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      -webkit-app-region: no-drag;
+    }
+
+    .status-online {
+      background: rgba(16, 185, 129, 0.22);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.45);
+    }
+
+    .status-offline {
+      background: rgba(239, 68, 68, 0.22);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.45);
+    }
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+    .dot.online { background: #34d399; box-shadow: 0 0 8px #34d399; animation: pulse 1.5s infinite; }
+    .dot.offline { background: #f87171; }
+
+    @keyframes pulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    /* IP Configuration Row */
+    .ip-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 4px 8px;
+      -webkit-app-region: no-drag;
+    }
+
+    .ip-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #ffffff;
+      font-family: SFMono-Regular, Consolas, monospace;
+      font-size: 11px;
+      font-weight: 700;
+      outline: none;
+    }
+
+    .ip-save-btn {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      border: none;
+      color: #ffffff;
+      font-size: 9px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 7px;
+      cursor: pointer;
+    }
+
+    /* Push-to-Talk Mic Center Area */
+    .mic-center-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 2px 0;
+      -webkit-app-region: no-drag;
+    }
+
+    .mic-circle-btn {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      border: 3px solid rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      cursor: pointer;
+      box-shadow: 0 10px 25px -4px rgba(37, 99, 235, 0.55);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .mic-circle-btn.active {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      box-shadow: 0 0 35px rgba(239, 68, 68, 0.95);
+      animation: micPulse 1s infinite alternate;
+    }
+
+    @keyframes micPulse {
+      0% { transform: scale(1); border-color: rgba(255, 255, 255, 0.4); }
+      100% { transform: scale(1.06); border-color: rgba(255, 255, 255, 1); }
+    }
+
+    .mic-subtext {
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .volume-meter {
+      width: 100%;
+      height: 5px;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .volume-meter-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #10b981, #f59e0b, #ef4444);
+      border-radius: 3px;
+      transition: width 0.08s ease-out;
+    }
+
+    /* Instant Bell Shortcuts Grid */
+    .chimes-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      -webkit-app-region: no-drag;
+    }
+
+    .chime-tile {
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 7px 8px;
+      color: #f8fafc;
+      font-size: 10px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .chime-tile:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.28);
+      transform: translateY(-1px);
+    }
+
+    .chime-icon {
+      font-size: 14px;
+    }
+
+    .btn-stop-all {
+      grid-column: span 2;
+      background: linear-gradient(135deg, #dc2626, #991b1b);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 900;
+      padding: 8px;
+      border-radius: 10px;
+      cursor: pointer;
+      text-align: center;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      box-shadow: 0 6px 15px rgba(220, 38, 38, 0.4);
+    }
+
+    /* Bottom Selectors */
+    .controls-bottom-row {
+      display: flex;
+      gap: 6px;
+      -webkit-app-region: no-drag;
+    }
+
+    .select-mini {
+      flex: 1;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 5px 6px;
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 700;
+      outline: none;
+    }
+
+    .toast-mini {
+      position: absolute;
+      top: 42px;
+      left: 16px;
+      right: 16px;
+      background: rgba(16, 185, 129, 0.95);
+      color: #ffffff;
+      font-size: 9px;
+      font-weight: 800;
+      padding: 5px 10px;
+      border-radius: 8px;
+      text-align: center;
+      display: none;
+      z-index: 20;
+    }
+    .toast-mini.error {
+      background: rgba(239, 68, 68, 0.95);
+    }
+  </style>
+</head>
+<body>
+  <div className="squircle-widget">
+    
+    <!-- Top Header: Title & Online Status -->
+    <div className="widget-top">
+      <div className="widget-brand">
+        <span style="font-size: 12px;">🎙️</span>
+        <span className="widget-title">SDPS Broadcaster</span>
+      </div>
+      <div className="status-pill status-offline" id="statusBadge">
+        <div className="dot offline" id="pulseDot"></div>
+        <span id="statusText">CHECKING...</span>
+      </div>
+    </div>
+
+    <!-- Toast Notification Banner -->
+    <div className="toast-mini" id="toastBar"></div>
+
+    <!-- IP Input Row -->
+    <div className="ip-row">
+      <input type="text" id="ipInput" className="ip-input" placeholder="Broadcaster IP..." value="192.168.29.252" />
+      <button className="ip-save-btn" id="btnSaveIp">Save IP</button>
+    </div>
+
+    <!-- Push-to-Talk Mic Center Area -->
+    <div className="mic-center-area">
+      <button className="mic-circle-btn" id="btnMic">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="22"/>
+        </svg>
+        <span className="mic-subtext" id="micBtnLabel">SPEAK</span>
+      </button>
+
+      <div className="volume-meter">
+        <div className="volume-meter-fill" id="volumeFill"></div>
+      </div>
+    </div>
+
+    <!-- Instant Bell Shortcuts Grid -->
+    <div className="chimes-grid">
+      <button className="chime-tile" data-track="1" data-name="Assembly">
+        <span className="chime-icon">🔔</span>
+        <span>Assembly</span>
+      </button>
+      <button className="chime-tile" data-track="2" data-name="Period">
+        <span className="chime-icon">⏰</span>
+        <span>Period</span>
+      </button>
+      <button className="chime-tile" data-track="3" data-name="Lunch">
+        <span className="chime-icon">🍽️</span>
+        <span>Lunch</span>
+      </button>
+      <button className="chime-tile" data-track="4" data-name="Dispersal">
+        <span className="chime-icon">🎓</span>
+        <span>Dispersal</span>
+      </button>
+      <button className="btn-stop-all" id="btnEmergencyCancel">
+        🛑 CANCEL ALL BROADCASTS
+      </button>
+    </div>
+
+    <!-- Zone & Schedule Selector Row -->
+    <div className="controls-bottom-row">
+      <select id="sourceSelect" className="select-mini">
+        <option value="sMic">🎙️ Mic</option>
+        <option value="sFile">📻 MP3</option>
+        <option value="sAux">🔌 Aux</option>
+      </select>
+      <select id="zonePreset" className="select-mini">
+        <option value="1-200">🏫 All Rooms</option>
+        <option value="1-50">👶 Primary</option>
+        <option value="51-120">🎓 Senior</option>
+        <option value="custom">✏️ Custom Room</option>
+      </select>
+    </div>
+
+    <!-- Custom Room Input Box (shown when 'Custom Room' is chosen) -->
+    <div id="customRoomRow" style="display: none; margin-top: 5px; -webkit-app-region: no-drag;">
+      <input type="text" id="customRoomInput" className="ip-input" style="width: 100%; border: 1px solid rgba(245, 158, 11, 0.6); background: rgba(0, 0, 0, 0.6); padding: 4px 8px; border-radius: 8px; font-size: 10px; color: #f59e0b; font-family: monospace; font-weight: bold; outline: none;" placeholder="e.g. 5, 12-25, 101" value="1" />
+    </div>
+
+  </div>
+
+  <script src="widget.js"></script>
+</body>
+</html>

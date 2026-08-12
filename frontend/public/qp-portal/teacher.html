@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Teacher — QP Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+body{font-family:'Inter',sans-serif;background:#090d16;color:#e2e8f0;min-height:100vh;display:flex;flex-direction:column;overflow:hidden;position:relative;user-select:none;-webkit-user-select:none}
+input,textarea,[contenteditable="true"]{user-select:text!important;-webkit-user-select:text!important}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.25)}
+body::before{content:'';position:fixed;inset:0;background:linear-gradient(135deg,#090d16 0%,#0c1630 50%,#090d16 100%);z-index:-2}
+.orb {position:absolute;border-radius:50%;filter:blur(90px);z-index:-1;pointer-events:none}
+.orb-1 {top:-100px;right:-100px;width:350px;height:350px;background:rgba(59,130,246,0.06)}
+.orb-2 {bottom:-100px;left:-100px;width:300px;height:300px;background:rgba(124,58,237,0.05)}
+
+/* Layout */
+.shell{display:flex;flex:1;height:calc(100vh - 56px);overflow:hidden;z-index:1}
+.left-panel{width:360px;min-width:320px;min-height:0;background:rgba(15,23,42,0.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-right:1px solid rgba(255,255,255,0.06);overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;flex-shrink:0}
+.left-panel::-webkit-scrollbar{width:4px}.left-panel::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:4px}
+.preview-panel{flex:1;min-height:0;background:linear-gradient(135deg,rgba(15,23,42,0.2) 0%,rgba(9,13,22,0.4) 100%);overflow-y:auto;overscroll-behavior:contain;padding:24px 20px;display:flex;flex-direction:column;align-items:center}
+.preview-panel::-webkit-scrollbar{width:6px}.preview-panel::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:3px}
+
+/* Sidebar */
+.sb-head{padding:16px 20px;background:rgba(255,255,255,0.02);border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between}
+.sb-head h2{font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#fff}
+.sb-sec{padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.sb-sec h3{font-family:'Outfit',sans-serif;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#60a5fa;margin-bottom:10px}
+.field{margin-bottom:12px}
+.field label,.lbl{display:block;font-size:9.5px;font-weight:700;color:#94a3b8;margin-bottom:5px;text-transform:uppercase;letter-spacing:.08em}
+.field input,.field select,.field textarea{width:100%;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:#f8fafc;font-family:'Inter',sans-serif;font-size:12px;padding:8px 12px;outline:none;transition:all 0.2s ease}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#3b82f6;background:rgba(255,255,255,0.06);box-shadow:0 0 0 3px rgba(59,130,246,0.15)}
+.field select option{background:#0f172a;color:#fff}
+.field textarea{resize:vertical;min-height:52px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* Question sections */
+.q-block{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:12px;margin-bottom:12px;position:relative;transition:border-color 0.2s}
+.q-block:hover{border-color:rgba(255,255,255,0.12)}
+.q-block-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.q-block-head select{flex:1;min-width:0;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#f8fafc;font-family:'Inter',sans-serif;font-size:11.5px;padding:6px 8px;outline:none;transition:all 0.2s}
+.q-block-head select:focus{border-color:#3b82f6;background:rgba(255,255,255,0.06)}
+.q-block-head input{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#f8fafc;font-family:'Inter',sans-serif;font-size:11.5px;padding:6px 8px;outline:none;transition:all 0.2s}
+.q-block-head input:focus{border-color:#3b82f6;background:rgba(255,255,255,0.06)}
+.q-item{background:rgba(0,0,0,0.15);border-radius:10px;padding:10px;margin-bottom:8px;border:1px solid rgba(255,255,255,0.04)}
+.q-item-row{display:flex;gap:6px;align-items:flex-start}
+.q-item-no{font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;color:#f87d0e;padding-top:8px;min-width:20px}
+.q-item textarea{flex:1;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:8px;color:#f8fafc;font-family:'Inter',sans-serif;font-size:11.5px;padding:6px 10px;resize:vertical;min-height:38px;outline:none;transition:all 0.2s}
+.q-item textarea:focus{border-color:#3b82f6;background:rgba(255,255,255,0.05)}
+.marks-inp{width:50px!important;text-align:center;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:8px;color:#f8fafc;font-family:'Inter',sans-serif;font-size:11.5px;padding:6px;outline:none;transition:all 0.2s}
+.marks-inp:focus{border-color:#3b82f6;background:rgba(255,255,255,0.05)}
+
+.btn-del{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.25);color:#fca5a5;border-radius:6px;padding:4px 8px;font-size:10px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;flex-shrink:0;transition:all 0.2s ease}
+.btn-del:hover{background:rgba(239,68,68,0.3);border-color:rgba(239,68,68,0.4);transform:translateY(-0.5px)}
+.btn-sm{background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.2);color:#93c5fd;border-radius:6px;padding:5px 10px;font-size:10.5px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;white-space:nowrap;transition:all 0.2s ease}
+.btn-sm:hover{background:rgba(59,130,246,0.25);border-color:rgba(59,130,246,0.35);transform:translateY(-0.5px)}
+.btn-ai{background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.25);color:#d8b4fe;border-radius:6px;padding:5px 10px;font-size:10.5px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;transition:all 0.2s ease}
+.btn-ai:hover{background:rgba(139,92,246,0.3);border-color:rgba(139,92,246,0.4);transform:translateY(-0.5px)}
+.btn-add-sec{width:100%;background:rgba(255,255,255,0.01);border:1.5px dashed rgba(255,255,255,0.1);color:#60a5fa;border-radius:10px;padding:10px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s ease}
+.btn-add-sec:hover{background:rgba(59,130,246,0.05);border-color:#60a5fa}
+
+/* Actions */
+.actions{padding:18px 20px;border-top:1px solid rgba(255,255,255,0.06);background:rgba(9,13,22,0.5);display:flex;flex-direction:column;gap:10px}
+.btn-submit{width:100%;padding:11px;border:none;border-radius:10px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#10b981,#059669);color:#fff;letter-spacing:.02em;transition:all 0.2s ease;box-shadow:0 4px 12px rgba(16,185,129,0.15)}
+.btn-submit:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(16,185,129,0.25);opacity:0.95}
+.btn-save{width:100%;padding:10px;border:1px solid rgba(59,130,246,0.3);border-radius:10px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer;background:rgba(59,130,246,0.1);color:#93c5fd;transition:all 0.2s ease}
+.btn-save:hover{background:rgba(59,130,246,0.2);border-color:rgba(59,130,246,0.4);transform:translateY(-0.5px)}
+.autosave{font-size:9.5px;color:#64748b;text-align:center;letter-spacing:.04em}
+
+/* A4 Paper */
+.a4{width:794px;min-height:1123px;background:#fff;font-family:'Montserrat',sans-serif;color:#000;box-shadow:0 20px 60px rgba(0,0,0,.4);margin-bottom:20px;position:relative;border-radius:4px}
+.a4-inner{padding:12px 42px 42px}
+.a4-header-img{width:100%;display:block;border-bottom:2px solid #000}
+.a4-divider-line{border:none;border-top:2px solid #000;margin:0 0 0}
+.a4-exam-row{display:flex;justify-content:space-between;padding:5px 0;font-size:11px;font-weight:700;border-bottom:1.5px solid #000;margin-bottom:6px}
+.a4-meta-row{display:flex;justify-content:space-between;font-size:11.5px;font-weight:600;margin-bottom:5px}
+.a4-student-row{display:flex;justify-content:space-between;font-size:11px;font-weight:600;margin-bottom:6px;gap:20px}
+.a4-compulsory{font-weight:700;text-align:center;font-size:11.5px;border-top:1.5px solid #000;border-bottom:1.5px solid #000;padding:3px 0;margin:4px 0 8px}
+.a4-passage-title{font-weight:800;font-size:12px;text-align:center;margin:6px 0 4px}
+.a4-passage{font-size:11.5px;line-height:1.7;text-align:justify;margin-bottom:8px}
+.a4-q-block{margin-bottom:12px}
+.a4-q-head{display:flex;justify-content:space-between;font-weight:700;font-size:11.5px;margin-bottom:3px;border-bottom:1px dotted #ccc;padding-bottom:2px}
+.a4-sub{display:flex;gap:6px;margin-bottom:4px;font-size:11.5px}
+.a4-sub-no{font-weight:700;min-width:22px}
+.a4-mcq-opts{display:flex;flex-wrap:wrap;gap:3px 20px;margin:3px 0 3px 28px;font-size:11.5px}
+.a4-ans-line{border-bottom:.8px solid #bbb;margin-bottom:5px;height:17px}
+.a4-img-box{border:1.5px dashed #999;background:#fafafa;display:flex;align-items:center;justify-content:center;font-size:10px;color:#999;margin:6px 0;border-radius:3px}
+.blank-line{display:inline-block;border-bottom:1px solid #000;min-width:70px;vertical-align:bottom}
+
+/* AI Panel */
+.ai-panel{background:rgba(124,58,237,0.04);border:1px solid rgba(124,58,237,0.15);border-radius:12px;padding:12px;margin-top:10px;display:none}
+.ai-panel.open{display:block}
+.ai-output{background:rgba(0,0,0,0.25);border:1px solid rgba(124,58,237,0.15);border-radius:8px;padding:10px;font-size:11.5px;color:#d8b4fe;margin-top:8px;max-height:180px;overflow-y:auto;white-space:pre-wrap;line-height:1.6}
+.ai-output::-webkit-scrollbar{width:4px}.ai-output::-webkit-scrollbar-thumb{background:rgba(124,58,237,0.25);border-radius:2px}
+
+/* Drawing modal */
+.draw-modal{position:fixed;inset:0;background:rgba(9,13,22,0.65);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:200;display:none;align-items:center;justify-content:center}
+.draw-modal.open{display:flex}
+.draw-box{background:rgba(15,23,42,0.95);border-radius:20px;padding:20px;width:600px;border:1px solid rgba(255,255,255,0.08);box-shadow:0 25px 50px rgba(0,0,0,0.5)}
+.draw-toolbar{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+canvas{border:1.5px solid rgba(255,255,255,0.1);border-radius:10px;cursor:crosshair;background:#fff;display:block}
+
+/* Notify bar */
+.notify{padding:10px 16px;font-size:11.5px;font-weight:600;text-align:center;border-bottom:1px solid rgba(255,255,255,0.08);display:none}
+.notify.error{background:rgba(239,68,68,0.2);color:#fca5a5;border-color:rgba(239,68,68,0.3);display:block}
+.notify.success{background:rgba(16,185,129,0.2);color:#6ee7b7;border-color:rgba(16,185,129,0.3);display:block}
+.notify.warn{background:rgba(245,158,11,0.2);color:#fcd34d;border-color:rgba(245,158,11,0.3);display:block}
+
+/* Tabs */
+.assign-tabs{display:flex;gap:4px;padding:12px 20px 0;background:rgba(255,255,255,0.01)}
+.assign-tab{padding:8px 16px;font-size:11.5px;font-weight:700;cursor:pointer;border-radius:8px 8px 0 0;color:#64748b;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-bottom:none;transition:all 0.2s}
+.assign-tab.active{color:#60a5fa;background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.08);border-bottom:none}
+
+/* Mobile preview toggle button (shown only on small screens) */
+.mobile-preview-toggle{display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:150;background:#2563eb;color:#fff;border:none;border-radius:24px;padding:11px 22px;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.4);cursor:pointer;align-items:center;gap:6px}
+.mobile-preview-toggle:active{transform:translateX(-50%) scale(.97)}
+
+/* ── MOBILE RESPONSIVE ── */
+@media (max-width: 768px) {
+  body { overflow: hidden; height: 100vh; }
+  .shell { flex-direction: column; height: calc(100vh - 104px); overflow: hidden; }
+  #nav { display: none !important; }
+  .mobile-header { display: flex !important; }
+  .mobile-nav { display: flex !important; }
+  
+  .left-panel { width: 100%; min-width: 0; flex: 1; overflow-y: auto; border-right: none; border-bottom: none; padding-bottom: 80px; }
+  .preview-panel { display: none; width: 100%; flex: 1; overflow-y: auto; padding: 14px 12px 80px; }
+  
+  /* Tabs toggling */
+  body.show-editor-tab .left-panel { display: flex !important; }
+  body.show-editor-tab .left-panel #builderPanel { display: flex !important; }
+  body.show-editor-tab .left-panel #aiSec { display: none !important; }
+  body.show-editor-tab .preview-panel { display: none !important; }
+  
+  body.show-preview-tab .left-panel { display: none !important; }
+  body.show-preview-tab .preview-panel { display: flex !important; }
+  
+  body.show-ai-tab .left-panel { display: flex !important; }
+  body.show-ai-tab .left-panel #builderPanel { display: flex !important; }
+  body.show-ai-tab .left-panel #builderPanel > :not(#aiSec) { display: none !important; }
+  body.show-ai-tab .left-panel #assignmentSelector,
+  body.show-ai-tab .left-panel #welcomeBanner,
+  body.show-ai-tab .left-panel .sb-head { display: none !important; }
+  body.show-ai-tab .left-panel #aiSec { display: block !important; }
+  body.show-ai-tab .preview-panel { display: none !important; }
+
+  .row2 { grid-template-columns: 1fr; }
+  .a4 { width: 100%; min-width: 0; min-height: auto; transform: none; margin: 8px auto 16px; }
+  .a4-inner { padding: 18px 16px; }
+  .draw-box { width: 95vw; padding: 12px; }
+  #drawCanvas { width: 100%; height: 220px; }
+  .btn-sm { padding: 6px 10px; font-size: 10px; }
+  .ai-panel { padding: 8px; }
+}
+@media (max-width: 480px) {
+  .sb-head h2 { font-size: 11px; }
+  .q-block-head { flex-wrap: wrap; gap: 4px; }
+  .q-block-head select { min-width: 0; font-size: 10px; }
+  .actions .btn-submit, .actions .btn-save { font-size: 11px; padding: 8px; }
+}
+/* ── DESKTOP scroll fix ── */
+@media (min-width: 769px) {
+  body { overflow-y: auto; height: auto; }
+  .shell { height: auto; min-height: 0; overflow: visible; align-items: flex-start; }
+  .left-panel { display: block; height: auto; max-height: none; min-height: 0; overflow: visible; overscroll-behavior: auto; }
+  .preview-panel { position: sticky; top: 0; align-self: flex-start; height: calc(100vh - 56px); overflow-y: auto; }
+}
+
+/* ── SECURE ANTI-LEAK STYLES ── */
+.a4 {
+  position: relative;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+}
+.a4::before {
+  content: 'CONFIDENTIAL - SDPS QP PORTAL';
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-30deg);
+  font-size: 3.2rem;
+  font-weight: 900;
+  color: rgba(0, 0, 0, 0.02);
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 10;
+}
+.a4::after {
+  content: 'CONFIDENTIAL - SDPS QP PORTAL';
+  position: absolute;
+  top: 70%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-30deg);
+  font-size: 3.2rem;
+  font-weight: 900;
+  color: rgba(0, 0, 0, 0.02);
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 10;
+}
+.preview-panel {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+@media print {
+  body { display: none !important; }
+}
+
+/* ── WELCOME BANNER & MOBILE FORMATTING BAR ── */
+.welcome-banner {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  border-radius: 16px;
+  padding: 20px;
+  margin: 16px 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+.welcome-banner h2 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 8px;
+  letter-spacing: -0.2px;
+}
+.welcome-banner p {
+  font-size: 11.5px;
+  color: #94a3b8;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+.welcome-banner ol {
+  font-size: 11px;
+  color: #cbd5e1;
+  padding-left: 16px;
+  line-height: 1.8;
+}
+
+.formatting-toolbar {
+  display: none;
+  position: fixed;
+  bottom: 56px;
+  left: 0;
+  right: 0;
+  height: 44px;
+  background: #0f172a;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 180;
+  align-items: center;
+  padding: 0 8px;
+  box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.25);
+}
+.toolbar-scroll {
+  display: flex;
+  overflow-x: auto;
+  gap: 8px;
+  padding: 0 4px;
+  flex: 1;
+  height: 100%;
+  align-items: center;
+}
+.toolbar-scroll::-webkit-scrollbar { display: none; }
+.tool-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  padding: 5px 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.tool-btn:active {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: #3b82f6;
+  color: #fff;
+}
+
+/* Mobile Bottom Navigation */
+.mobile-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: #090d16;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 190;
+  justify-content: space-around;
+  align-items: center;
+  box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.3);
+}
+.tab-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-family: 'Inter', sans-serif;
+  font-size: 10.5px;
+  font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  flex: 1;
+  height: 100%;
+  justify-content: center;
+  transition: color 0.15s;
+}
+.tab-btn.active {
+  color: #60a5fa;
+}
+.tab-icon {
+  font-size: 16px;
+}
+
+/* Mobile Header */
+.mobile-header {
+  display: none;
+  height: 48px;
+  background: #0d1527;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0 16px;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 200;
+  flex-shrink: 0;
+  font-family: 'Outfit', sans-serif;
+}
+.mobile-header span {
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.mobile-header button {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+</style>
+</head>
+<body class="show-editor-tab">
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="mobile-header">
+  <span>SDPS QP Builder</span>
+  <button onclick="logout()">Sign Out ➡️</button>
+</div>
+<div id="nav"></div>
+<div id="notify" class="notify"></div>
+
+<div class="shell">
+<!-- LEFT PANEL -->
+<div class="left-panel" id="leftPanel">
+  <div class="sb-head">
+    <h2 id="sbTitle">Select Assignment</h2>
+    <div style="font-size:9px;color:#64748b" id="statusBadgeSmall"></div>
+  </div>
+
+  <!-- Onboarding welcome banner -->
+  <div class="welcome-banner" id="welcomeBanner">
+    <h2>Welcome to SDPS QP Builder</h2>
+    <p>Create exam papers securely. Your session auto-saves drafts to the cloud.</p>
+    <ol>
+      <li>Select an active assignment from the list below.</li>
+      <li>Set paper details and write your questions.</li>
+      <li>Preview the final A4 output layout.</li>
+      <li>Submit draft for reviewer approval.</li>
+    </ol>
+  </div>
+
+  <!-- Assignment selector -->
+  <div class="sb-sec" id="assignmentSelector">
+    <h3>My Assignments</h3>
+    <div id="assignmentList" style="font-size:11px;color:#64748b">Loading...</div>
+  </div>
+
+  <!-- Paper builder (hidden until assignment selected) -->
+  <div id="builderPanel" style="display:none;flex:1;display:none;flex-direction:column">
+    <!-- Header settings -->
+    <div class="sb-sec">
+      <h3>Paper Header</h3>
+      <label style="display:flex;align-items:center;gap:7px;font-size:11px;cursor:pointer;margin-bottom:8px;color:#e2e8f0">
+        <input type="checkbox" id="showHeader" checked onchange="render()"/> Show School Header Image
+      </label>
+      <div class="row2">
+        <div class="field"><label>Duration</label><input id="pDuration" value="2 Hours" oninput="render()"/></div>
+        <div class="field"><label>Total Marks</label><input id="pMarks" value="60" oninput="render()"/></div>
+      </div>
+      <div class="field"><label>Compulsory Note</label>
+        <input id="pCompulsory" value="ALL QUESTIONS ARE COMPULSORY" oninput="render()"/>
+      </div>
+    </div>
+
+    <!-- Passage -->
+    <div class="sb-sec">
+      <h3>Reading Passage <span style="font-size:9px;color:#475569;font-weight:400">(optional)</span></h3>
+      <div class="field"><label>Passage Title</label><input id="pPassageTitle" placeholder="e.g. A Yummy Cake" oninput="render()"/></div>
+      <div class="field"><label>Passage Text</label><textarea id="pPassageText" rows="3" placeholder="Paste passage here..." oninput="render()"></textarea></div>
+    </div>
+
+    <!-- Questions -->
+    <div class="sb-sec" style="flex:1">
+      <h3>Question Sections</h3>
+      <div id="sectionsContainer"></div>
+      <button class="btn-add-sec" onclick="addSection()">+ Add Question Section</button>
+    </div>
+
+    <!-- AI Assist -->
+    <div class="sb-sec" id="aiSec">
+      <h3>🤖 AI Assist</h3>
+      <div class="field"><label>Topic / Instruction</label>
+        <input id="aiPrompt" placeholder="e.g. 5 MCQ on water cycle Class V" style="width:100%"/>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+        <button class="btn-ai" onclick="aiGenQuestions()">✨ Generate Questions</button>
+        <button class="btn-ai" onclick="aiCheckGrammar()">📝 Check Grammar</button>
+        <button class="btn-ai" onclick="aiMathHelper()">∑ Math Helper</button>
+      </div>
+      <div class="ai-panel open">
+        <div style="font-size:9px;color:#7c3aed;font-weight:700;margin-bottom:4px">AI OUTPUT</div>
+        <div class="ai-output" id="aiOutput">AI responses will appear here. Select a section question first, then use AI tools above.</div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <div class="autosave" id="autoSaveLabel">Auto-saves every 60 seconds</div>
+      <button class="btn-save" onclick="savePaper()">💾 Save Draft</button>
+      <button class="btn-submit" onclick="submitPaper()">✅ Submit for Review</button>
+    </div>
+  </div>
+</div>
+
+<!-- PREVIEW PANEL -->
+<div class="preview-panel">
+  <div style="font-family:'Outfit',sans-serif;font-size:11px;color:#94a3b8;margin-bottom:18px;font-weight:800;letter-spacing:.12em;text-transform:uppercase">Live A4 Preview</div>
+  <div id="a4paper" class="a4">
+    <div style="display:flex;align-items:center;justify-content:center;height:200px;color:#64748b;font-size:13px;font-family:'Inter',sans-serif">
+      ← Select an assignment to start building
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Mobile Bottom Navigation Tab Bar -->
+<div class="mobile-nav" id="mobileNav">
+  <button onclick="switchMobileTab('editor')" id="tabEditor" class="tab-btn active"><span class="tab-icon">📝</span><span>Editor</span></button>
+  <button onclick="switchMobileTab('preview')" id="tabPreview" class="tab-btn"><span class="tab-icon">👁️</span><span>A4 Preview</span></button>
+  <button onclick="switchMobileTab('ai')" id="tabAI" class="tab-btn"><span class="tab-icon">🤖</span><span>AI Assist</span></button>
+</div>
+
+<!-- Floating Keyboard Formatting/Math Toolbar -->
+<div class="formatting-toolbar" id="formattingToolbar">
+  <div style="font-size:8px;font-weight:800;color:#64748b;padding:0 6px;border-right:1px solid rgba(255,255,255,0.1);height:100%;display:flex;align-items:center;letter-spacing:0.04em">TOOL</div>
+  <div class="toolbar-scroll">
+    <button type="button" class="tool-btn" onclick="insertFormat('**')"><b>B</b></button>
+    <button type="button" class="tool-btn" onclick="insertFormat('<u>')"><u>U</u></button>
+    <button type="button" class="tool-btn" onclick="insertFormat('______')">Blank</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('√')">√</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('π')">π</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('÷')">÷</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('×')">×</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('±')">±</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('²')">²</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('³')">³</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('∑')">∑</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('Δ')">Δ</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('θ')">θ</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('α')">α</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('β')">β</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('λ')">λ</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('∞')">∞</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('≈')">≈</button>
+    <button type="button" class="tool-btn" onclick="insertSymbol('≠')">≠</button>
+  </div>
+</div>
+
+<!-- DRAWING MODAL -->
+<div class="draw-modal" id="drawModal">
+<div class="draw-box">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <span style="font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;color:#fff">✏️ Draw Diagram</span>
+    <button onclick="closeDrawModal()" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:#9ca3af;border-radius:8px;padding:6px 12px;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;outline:none" onmouseover="this.style.background='rgba(255,255,255,0.1)';this.style.color='#fff'" onmouseout="this.style.background='rgba(255,255,255,0.05)';this.style.color='#9ca3af'">Close</button>
+  </div>
+  <div class="draw-toolbar">
+    <label style="font-size:10px;color:#94a3b8;font-weight:700;font-family:'Inter',sans-serif;margin-right:2px">TOOL:</label>
+    <button onclick="setTool('pen')" id="toolPen" style="background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);color:#93c5fd;border-radius:6px;padding:5px 10px;font-size:10.5px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:700;transition:all 0.2s">✏ Pen</button>
+    <button onclick="setTool('line')" id="toolLine" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:#cbd5e1;border-radius:6px;padding:5px 10px;font-size:10.5px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:700;transition:all 0.2s">/ Line</button>
+    <button onclick="setTool('rect')" id="toolRect" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:#cbd5e1;border-radius:6px;padding:5px 10px;font-size:10.5px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:700;transition:all 0.2s">□ Rect</button>
+    <button onclick="setTool('circle')" id="toolCircle" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:#cbd5e1;border-radius:6px;padding:5px 10px;font-size:10.5px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:700;transition:all 0.2s">○ Circle</button>
+    <button onclick="setTool('text')" id="toolText" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:#cbd5e1;border-radius:6px;padding:5px 10px;font-size:10.5px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:700;transition:all 0.2s">T Text</button>
+    <input type="color" id="drawColor" value="#000000" style="width:28px;height:24px;border:none;border-radius:4px;cursor:pointer;background:none"/>
+    <input type="range" id="drawSize" min="1" max="12" value="2" style="width:60px;cursor:pointer"/>
+    <button onclick="clearCanvas()" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.25);color:#fca5a5;border-radius:6px;padding:5px 10px;font-size:10.5px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;transition:all 0.2s" onmouseover="this.style.background='rgba(239,68,68,0.25)';this.style.borderColor='rgba(239,68,68,0.35)'" onmouseout="this.style.background='rgba(239,68,68,0.15)';this.style.borderColor='rgba(239,68,68,0.25)'">Clear</button>
+    <button onclick="undoCanvas()" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:#cbd5e1;border-radius:6px;padding:5px 10px;font-size:10.5px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;transition:all 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">Undo</button>
+  </div>
+  <canvas id="drawCanvas" width="560" height="280"></canvas>
+  <div style="display:flex;gap:12px;margin-top:14px;align-items:center">
+    <span style="font-size:11px;color:#94a3b8;font-family:'Inter',sans-serif;flex:1">Draw diagram above, then insert into the selected question.</span>
+    <button onclick="insertDrawing()" style="background:linear-gradient(135deg,#10b981,#059669);border:none;color:#fff;border-radius:8px;padding:9px 18px;font-family:'Inter',sans-serif;font-size:11.5px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(16,185,129,0.15);transition:all 0.2s" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 16px rgba(16,185,129,0.25)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 4px 12px rgba(16,185,129,0.15)'">Insert into Question</button>
+  </div>
+</div>
+</div>
+
+<script src="./config.js"></script>
+<script src="./qp-common.js"></script>
+<script>
+const ROMAN=['i','ii','iii','iv','v','vi','vii','viii','ix','x','xi','xii','xiii','xiv','xv'];
+let sections=[], secCount=0, currentAssignment=null, currentDrawTarget=null;
+let drawTool='pen', drawHistory=[], isDrawing=false, startX=0, startY=0, snapshot=null;
+
+let lastFocusedInput = null;
+
+window.addEventListener('DOMContentLoaded', async()=>{
+  const u=getUser();
+  if(!u||u.role!=='teacher'){location.href='./index.html';return;}
+  document.getElementById('nav').innerHTML=navBar('Teacher','Question Paper Builder');
+  await loadMyAssignments();
+  startAutoSave();
+
+  // SECURE: Disable copy & contextmenu on A4 preview
+  const paperEl = document.getElementById('a4paper');
+  if (paperEl) {
+    paperEl.addEventListener('contextmenu', e => e.preventDefault());
+    paperEl.addEventListener('copy', e => e.preventDefault());
+  }
+
+  // Mobile: Track active input for symbols formatting toolbar
+  document.addEventListener('focusin', (e)=>{
+    if(e.target.tagName==='INPUT' || e.target.tagName==='TEXTAREA'){
+      lastFocusedInput = e.target;
+      document.getElementById('formattingToolbar').style.display='flex';
+    }
+  });
+  document.addEventListener('click', (e)=>{
+    if(!e.target.closest('.formatting-toolbar') && !e.target.closest('input') && !e.target.closest('textarea')){
+      document.getElementById('formattingToolbar').style.display='none';
+    }
+  });
+});
+
+// ── Mobile Bottom Navigation Tab Switching ──
+function switchMobileTab(tab) {
+  document.body.classList.remove('show-editor-tab', 'show-preview-tab', 'show-ai-tab');
+  document.getElementById('tabEditor').classList.remove('active');
+  document.getElementById('tabPreview').classList.remove('active');
+  document.getElementById('tabAI').classList.remove('active');
+  
+  if (tab === 'editor') {
+    document.body.classList.add('show-editor-tab');
+    document.getElementById('tabEditor').classList.add('active');
+  } else if (tab === 'preview') {
+    document.body.classList.add('show-preview-tab');
+    document.getElementById('tabPreview').classList.add('active');
+    try { render(); } catch(e) {}
+  } else if (tab === 'ai') {
+    document.body.classList.add('show-ai-tab');
+    document.getElementById('tabAI').classList.add('active');
+  }
+  window.scrollTo(0,0);
+}
+
+// ── MS Word Style Formatting Helpers ──
+function insertSymbol(sym) {
+  if (!lastFocusedInput) return;
+  const input = lastFocusedInput;
+  const start = input.selectionStart || 0;
+  const end = input.selectionEnd || 0;
+  const text = input.value;
+  input.value = text.substring(0, start) + sym + text.substring(end);
+  input.selectionStart = input.selectionEnd = start + sym.length;
+  input.focus();
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+function insertFormat(wrapper) {
+  if (!lastFocusedInput) return;
+  const input = lastFocusedInput;
+  const start = input.selectionStart || 0;
+  const end = input.selectionEnd || 0;
+  const text = input.value;
+  const selectedText = text.substring(start, end);
+  
+  let newText = '';
+  let cursorOffset = 0;
+  if (wrapper === '**') {
+    newText = '**' + selectedText + '**';
+    cursorOffset = selectedText ? newText.length : 2;
+  } else if (wrapper === '<u>') {
+    newText = '<u>' + selectedText + '</u>';
+    cursorOffset = selectedText ? newText.length : 3;
+  } else {
+    newText = wrapper;
+    cursorOffset = wrapper.length;
+  }
+  
+  input.value = text.substring(0, start) + newText + text.substring(end);
+  input.selectionStart = input.selectionEnd = start + cursorOffset;
+  input.focus();
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+// ── Assignments ────────────────────────────────────────────────────────────
+async function loadMyAssignments(){
+  const list=await apiFetch('/assignments')||[];
+  const el=document.getElementById('assignmentList');
+  if(!list.length){el.innerHTML='<div style="color:#475569;padding:8px 0">No assignments yet. Contact QP Admin.</div>';return;}
+  el.innerHTML=list.map(a=>`
+    <div onclick="selectAssignment(${JSON.stringify(a).replace(/"/g,'&quot;')})"
+      style="padding:12px;margin-bottom:8px;background:${a.status==='draft'?'rgba(255,255,255,0.03)':'rgba(255,255,255,0.01)'};border-radius:10px;cursor:pointer;border:1px solid ${a.status==='draft'?'rgba(59, 130, 246, 0.2)':'rgba(255,255,255,0.06)'};transition:all .2s ease"
+      onmouseover="this.style.borderColor='#3b82f6';this.style.background='rgba(59,130,246,0.06)'"
+      onmouseout="this.style.borderColor='${a.status==='draft'?'rgba(59, 130, 246, 0.2)':'rgba(255, 255, 255, 0.06)'}';this.style.background='${a.status==='draft'?'rgba(255,255,255,0.03)':'rgba(255,255,255,0.01)'}'">
+      <div style="font-size:11.5px;font-weight:700;color:#fff">${a.class_name} — ${a.subject}</div>
+      <div style="font-size:10px;color:#94a3b8;margin-top:3px">${a.session_name} · ${a.exam_type}</div>
+      <div style="margin-top:6px">${statusBadge(a.status)}</div>
+      ${a.rejection_reason?`<div style="font-size:10px;color:#fca5a5;margin-top:6px;font-weight:600">⚠ ${a.rejection_reason}</div>`:''}
+    </div>`).join('');
+}
+
+async function selectAssignment(a){
+  currentAssignment=a;
+  document.getElementById('assignmentSelector').style.display='none';
+  document.getElementById('welcomeBanner').style.display='none'; // Hide welcome banner on selection
+  const bp=document.getElementById('builderPanel');
+  bp.style.display='flex';bp.style.flexDirection='column';
+  document.getElementById('sbTitle').textContent=`${a.class_name} · ${a.subject}`;
+  document.getElementById('statusBadgeSmall').innerHTML=statusBadge(a.status);
+  // Load existing paper
+  const paper=await apiFetch(`/papers/${a.id}`)||{};
+  loadPaperIntoBuilder(paper, a);
+  render();
+  notify('','');
+  if(a.status!=='draft'){
+    notify(`This paper is "${STATUS_LABELS[a.status]}". Contact admin to unlock for editing.`,'warn');
+  }
+  // Check if there is a rejection reason to display as a red alert banner
+  if(a.rejection_reason){
+    notify(`⚠️ Rejection Feedback: "${a.rejection_reason}"`,'error');
+  }
+}
+
+function loadPaperIntoBuilder(paper, a){
+  document.getElementById('showHeader').checked = paper.show_header_image!==false;
+  document.getElementById('pDuration').value   = paper.duration||'2 Hours';
+  document.getElementById('pMarks').value      = paper.total_marks||'60';
+  document.getElementById('pCompulsory').value = paper.compulsory_note||'ALL QUESTIONS ARE COMPULSORY';
+  document.getElementById('pPassageTitle').value= paper.passage_title||'';
+  document.getElementById('pPassageText').value = paper.passage_text||'';
+  sections = (paper.sections||[]).map(s=>({...s, qItems:(s.questions||[]).map(q=>({...q,id:q.id||Date.now()+Math.random()}))}));
+  secCount = sections.length;
+  renderSidebar();
+}
+
+// ── Sidebar Render ─────────────────────────────────────────────────────────
+function renderSidebar(){
+  const isEditable = !currentAssignment || currentAssignment.status==='draft';
+  document.getElementById('sectionsContainer').innerHTML=sections.map((s,si)=>`
+  <div class="q-block">
+    <div class="q-block-head">
+      <span style="font-family:'Outfit',sans-serif;font-size:12px;font-weight:800;color:#60a5fa;white-space:nowrap;margin-right:2px">Q${si+1}</span>
+      <select onchange="updateSection(${s.id},'type',this.value)" ${isEditable?'':'disabled'}>
+        ${Object.entries(QUESTION_TYPES).map(([k,v])=>`<option value="${k}"${s.type===k?' selected':''}>${v}</option>`).join('')}
+      </select>
+      <input style="width:52px" placeholder="Marks" value="${s.marks||''}" oninput="updateSection(${s.id},'marks',this.value)" ${isEditable?'':'disabled'}/>
+      ${isEditable?`<button class="btn-del" onclick="removeSection(${s.id})">✕</button>`:''}
+    </div>
+    <div class="field"><label>Instruction</label>
+      <textarea rows="2" oninput="updateSection(${s.id},'instruction',this.value)" ${isEditable?'':'disabled'}>${s.instruction||''}</textarea>
+    </div>
+    ${s.qItems.map((q,qi)=>renderQField(s,q,qi,isEditable)).join('')}
+    ${isEditable?`<div style="display:flex;gap:6px;margin-top:8px">
+      <button class="btn-sm" onclick="addQuestion(${s.id})">+ Question</button>
+      <button class="btn-ai" onclick="openAIForSection(${s.id})">🤖 AI</button>
+    </div>`:''}
+  </div>`).join('');
+}
+
+function renderQField(s,q,qi,editable){
+  const showOpts=['MCQ','Assertion'].includes(s.type);
+  const showSub=['Comprehension','Short','Long','Grammar','Poem'].includes(s.type);
+  return `
+  <div class="q-item">
+    <div class="q-item-row">
+      <span class="q-item-no">${ROMAN[qi]}.</span>
+      <textarea oninput="updateQ(${s.id},${JSON.stringify(q.id)},'question',this.value)" ${editable?'':'disabled'}
+        placeholder="Question text...">${q.question||''}</textarea>
+      <input type="number" class="marks-inp" value="${q.marks||1}" oninput="updateQ(${s.id},${JSON.stringify(q.id)},'marks',this.value)" ${editable?'':'disabled'} title="Marks"/>
+      ${editable?`<button class="btn-del" onclick="removeQuestion(${s.id},${JSON.stringify(q.id)})">✕</button>`:''}
+    </div>
+    ${editable?`<div style="display:flex;gap:6px;margin-top:8px;padding-left:20px;flex-wrap:wrap">
+      <button class="btn-sm" onclick="openImageUpload(${s.id},${JSON.stringify(q.id)})">🖼 Image</button>
+      <button class="btn-sm" onclick="openDrawModal(${s.id},${JSON.stringify(q.id)})">✏️ Draw</button>
+    </div>`:''}
+    ${q.image_url?`<div style="padding-left:20px;margin-top:6px"><img src="${q.image_url.startsWith('http')?q.image_url:'${API}'+q.image_url}" style="max-width:100%;max-height:80px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);object-fit:contain"/></div>`:''}
+    ${q.image_data?`<div style="padding-left:20px;margin-top:6px"><img src="${q.image_data}" style="max-width:100%;max-height:80px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);object-fit:contain"/></div>`:''}
+    ${showOpts&&editable?`<div style="padding-left:18px;margin-top:8px">
+      ${(q.options||[]).map((o,oi)=>`<div style="display:flex;gap:6px;margin-bottom:5px;align-items:center">
+        <span style="font-size:10.5px;font-weight:700;color:#f59e0b;min-width:16px">${String.fromCharCode(97+oi)}.</span>
+        <input style="flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:6px;color:#f8fafc;font-family:'Inter',sans-serif;font-size:11px;padding:4px 8px;outline:none;transition:all 0.2s" value="${o}" oninput="updateOpt(${s.id},${JSON.stringify(q.id)},${oi},this.value)" onfocus="this.style.borderColor='#3b82f6';this.style.background='rgba(255,255,255,0.06)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.background='rgba(255,255,255,0.03)'"/>
+        <button class="btn-del" onclick="removeOpt(${s.id},${JSON.stringify(q.id)},${oi})">✕</button>
+      </div>`).join('')}
+      <button class="btn-sm" onclick="addOpt(${s.id},${JSON.stringify(q.id)})">+ Option</button>
+    </div>`:''}
+    ${showSub&&editable?`<div style="padding-left:18px;margin-top:8px">
+      ${(q.sub_questions||[]).map((sq,sqi)=>`<div style="display:flex;gap:6px;margin-bottom:5px">
+        <span style="font-size:10.5px;color:#9ca3af;padding-top:5px;min-width:16px">${String.fromCharCode(97+sqi)}.</span>
+        <input style="flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:6px;color:#f8fafc;font-family:'Inter',sans-serif;font-size:11px;padding:4px 8px;outline:none;transition:all 0.2s" value="${sq.text||sq||''}" oninput="updateSubQ(${s.id},${JSON.stringify(q.id)},${sqi},this.value)" onfocus="this.style.borderColor='#3b82f6';this.style.background='rgba(255,255,255,0.06)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)';this.style.background='rgba(255,255,255,0.03)'"/>
+        <button class="btn-del" onclick="removeSubQ(${s.id},${JSON.stringify(q.id)},${sqi})">✕</button>
+      </div>`).join('')}
+      <button class="btn-sm" onclick="addSubQ(${s.id},${JSON.stringify(q.id)})">+ Sub-question</button>
+    </div>`:''}
+  </div>`;
+}
+
+// ── Data mutations ─────────────────────────────────────────────────────────
+function markUnsaved(){
+  if(currentAssignment && currentAssignment.status==='draft'){
+    hasUnsavedChanges=true;
+    document.getElementById('autoSaveLabel').innerHTML='⚠️ Unsaved changes';
+  }
+}
+function addSection(){ secCount++; sections.push({id:secCount,type:'MCQ',instruction:'',marks:'',qItems:[]}); renderSidebar();render(); markUnsaved(); }
+function removeSection(id){ sections=sections.filter(s=>s.id!==id);renderSidebar();render(); markUnsaved(); }
+function updateSection(id,k,v){ const s=sections.find(s=>s.id===id);if(s){s[k]=v;if(k==='type')renderSidebar();render(); markUnsaved();} }
+function addQuestion(sid){ const s=sections.find(s=>s.id===sid);if(s){s.qItems.push({id:Date.now()+Math.random(),question:'',marks:1,options:['','',''],sub_questions:[],image_url:'',image_data:''});renderSidebar();render(); markUnsaved();} }
+function removeQuestion(sid,qid){ const s=sections.find(s=>s.id===sid);if(s){s.qItems=s.qItems.filter(q=>q.id!=qid);renderSidebar();render(); markUnsaved();} }
+function updateQ(sid,qid,k,v){ const s=sections.find(s=>s.id===sid);if(!s)return;const q=s.qItems.find(q=>q.id==qid);if(q){q[k]=v;if(k==='question')return;render(); markUnsaved();} }
+function updateOpt(sid,qid,i,v){ const s=sections.find(s=>s.id===sid);if(!s)return;const q=s.qItems.find(q=>q.id==qid);if(q){q.options[i]=v;render(); markUnsaved();} }
+function addOpt(sid,qid){ const s=sections.find(s=>s.id===sid);if(!s)return;const q=s.qItems.find(q=>q.id==qid);if(q){q.options.push('');renderSidebar();render(); markUnsaved();} }
+function removeOpt(sid,qid,i){ const s=sections.find(s=>s.id===sid);if(!s)return;const q=s.qItems.find(q=>q.id==qid);if(q){q.options.splice(i,1);renderSidebar();render(); markUnsaved();} }
+function addSubQ(sid,qid){ const s=sections.find(s=>s.id===sid);if(!s)return;const q=s.qItems.find(q=>q.id==qid);if(q){q.sub_questions.push({text:'',marks:0});renderSidebar();render(); markUnsaved();} }
+function updateSubQ(sid,qid,i,v){ const s=sections.find(s=>s.id===sid);if(!s)return;const q=s.qItems.find(q=>q.id==qid);if(q){q.sub_questions[i]={text:v,marks:0};render(); markUnsaved();} }
+function removeSubQ(sid,qid,i){ const s=sections.find(s=>s.id===sid);if(!s)return;const q=s.qItems.find(q=>q.id==qid);if(q){q.sub_questions.splice(i,1);renderSidebar();render(); markUnsaved();} }
+
+// ── Image Upload ────────────────────────────────────────────────────────────
+function openImageUpload(sid,qid){
+  const inp=document.createElement('input');inp.type='file';inp.accept='image/*';
+  inp.onchange=async(e)=>{
+    const file=e.target.files[0];if(!file)return;
+    const fd=new FormData();fd.append('image',file);
+    try{
+      const r=await fetch(`${API}/api/qp/upload-image`,{method:'POST',credentials:'include',headers:getToken()?{Authorization:`Bearer ${getToken()}`}:{},body:fd});
+      const d=await r.json();
+      const s=sections.find(s=>s.id===sid);if(!s)return;
+      const q=s.qItems.find(q=>q.id==qid);if(!q)return;
+      q.image_url=d.url;q.image_data='';
+      renderSidebar();render();toast('Image uploaded');
+    }catch(e){toast('Upload failed: '+e.message,'error');}
+  };
+  inp.click();
+}
+
+// ── Drawing Tool ───────────────────────────────────────────────────────────
+function openDrawModal(sid,qid){ currentDrawTarget={sid,qid};document.getElementById('drawModal').classList.add('open');clearCanvas(); }
+function closeDrawModal(){ document.getElementById('drawModal').classList.remove('open');currentDrawTarget=null; }
+function setTool(t){
+  drawTool=t;
+  ['Pen','Line','Rect','Circle','Text'].forEach(n=>{
+    const btn = document.getElementById('tool'+n);
+    if(btn){
+      btn.style.background = 'rgba(255, 255, 255, 0.05)';
+      btn.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+      btn.style.color = '#cbd5e1';
+    }
+  });
+  const act = document.getElementById('tool'+t.charAt(0).toUpperCase()+t.slice(1));
+  if(act){
+    act.style.background = 'rgba(59, 130, 246, 0.15)';
+    act.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+    act.style.color = '#93c5fd';
+  }
+}
+function clearCanvas(){ const c=document.getElementById('drawCanvas'),ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);drawHistory=[]; }
+function undoCanvas(){
+  const c=document.getElementById('drawCanvas'),ctx=c.getContext('2d');
+  drawHistory.pop();ctx.clearRect(0,0,c.width,c.height);
+  drawHistory.forEach(img=>{const i=new Image();i.onload=()=>ctx.drawImage(i,0,0);i.src=img;});
+}
+function insertDrawing(){
+  const c=document.getElementById('drawCanvas');
+  const dataURL=c.toDataURL('image/png');
+  if(currentDrawTarget){
+    const {sid,qid}=currentDrawTarget;
+    const s=sections.find(s=>s.id===sid);if(!s)return;
+    const q=s.qItems.find(q=>q.id==qid);if(!q)return;
+    q.image_data=dataURL;q.image_url='';
+    renderSidebar();render();
+  }
+  closeDrawModal();toast('Drawing inserted');
+}
+// Canvas events
+window.addEventListener('DOMContentLoaded',()=>{
+  const canvas=document.getElementById('drawCanvas');
+  const ctx=canvas.getContext('2d');
+  canvas.addEventListener('mousedown',e=>{
+    isDrawing=true;
+    const r=canvas.getBoundingClientRect();
+    startX=e.clientX-r.left;startY=e.clientY-r.top;
+    if(drawTool==='pen'){ctx.beginPath();ctx.moveTo(startX,startY);}
+    snapshot=ctx.getImageData(0,0,canvas.width,canvas.height);
+    if(drawTool==='text'){
+      const txt=prompt('Enter text:');if(!txt)return;
+      ctx.font=`${document.getElementById('drawSize').value*4+8}px Montserrat`;
+      ctx.fillStyle=document.getElementById('drawColor').value;
+      ctx.fillText(txt,startX,startY);
+      drawHistory.push(canvas.toDataURL());isDrawing=false;
+    }
+  });
+  canvas.addEventListener('mousemove',e=>{
+    if(!isDrawing)return;
+    const r=canvas.getBoundingClientRect();
+    const x=e.clientX-r.left,y=e.clientY-r.top;
+    const color=document.getElementById('drawColor').value;
+    const size=parseInt(document.getElementById('drawSize').value);
+    ctx.strokeStyle=color;ctx.lineWidth=size;ctx.lineCap='round';
+    if(drawTool==='pen'){ctx.lineTo(x,y);ctx.stroke();}
+    else{
+      ctx.putImageData(snapshot,0,0);
+      ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=size;
+      if(drawTool==='line'){ctx.moveTo(startX,startY);ctx.lineTo(x,y);ctx.stroke();}
+      else if(drawTool==='rect'){ctx.strokeRect(startX,startY,x-startX,y-startY);}
+      else if(drawTool==='circle'){const r2=Math.sqrt(Math.pow(x-startX,2)+Math.pow(y-startY,2));ctx.arc(startX,startY,r2,0,2*Math.PI);ctx.stroke();}
+    }
+  });
+  canvas.addEventListener('mouseup',()=>{isDrawing=false;if(snapshot)drawHistory.push(canvas.toDataURL());});
+  canvas.addEventListener('mouseleave',()=>{isDrawing=false;});
+});
+
+// ── AI Assist ──────────────────────────────────────────────────────────────
+async function callAI(prompt){
+  const out=document.getElementById('aiOutput');
+  out.textContent='🤖 Thinking...';
+  try{
+    const d=await apiFetch('/ai',{method:'POST',body:JSON.stringify({prompt})});
+    out.textContent=(d && d.text) ? d.text : 'No response';
+  }catch(e){out.textContent='AI error: '+(e.message||'request failed');}
+}
+
+let aiTargetSection=null;
+function openAIForSection(sid){ aiTargetSection=sid; document.getElementById('aiPrompt').focus(); }
+
+function aiGenQuestions(){
+  const a=currentAssignment;if(!a)return toast('Select assignment first','error');
+  const s=aiTargetSection?sections.find(sec=>sec.id===aiTargetSection):null;
+  const prompt=document.getElementById('aiPrompt').value||`Generate 5 questions`;
+  const type=s?s.type:'MCQ';
+  const subject=a.subject;const cls=a.class_name;
+  callAI(`You are a school teacher assistant for S.D. Public School, Patna. Generate ${prompt} for ${subject}, ${cls}. Format as: question | option1 | option2 | option3 | option4 (for MCQ) or just question (for others). Type: ${type}. Be concise, age-appropriate, curriculum-aligned. Return only the questions, numbered.`);
+}
+
+function aiCheckGrammar(){
+  const questions=sections.flatMap(s=>s.qItems.map(q=>q.question)).filter(Boolean).join('\n');
+  if(!questions)return toast('No questions to check yet','error');
+  callAI(`You are a grammar and spelling expert. Check the following exam questions for grammar, spelling and punctuation errors. List each error and suggest correction. Questions:\n\n${questions}`);
+}
+
+function aiMathHelper(){
+  const prompt=document.getElementById('aiPrompt').value||'Generate 5 arithmetic questions for Class V';
+  const a=currentAssignment;
+  callAI(`You are a mathematics teacher for ${a?.class_name||'primary school'}. ${prompt}. Format clearly with proper mathematical notation. For each question provide the marks in [brackets]. Be concise.`);
+}
+
+// ── A4 Render ─────────────────────────────────────────────────────────────
+function render(){
+  if(!currentAssignment)return;
+  const a=currentAssignment;
+  const showHdr=document.getElementById('showHeader').checked;
+  const dur=document.getElementById('pDuration').value;
+  const marks=document.getElementById('pMarks').value;
+  const comp=document.getElementById('pCompulsory').value;
+  const pTitle=document.getElementById('pPassageTitle').value;
+  const pText=document.getElementById('pPassageText').value;
+
+  let html='';
+  if(showHdr){
+    html+=`<img class="a4-header-img" src="./Title_copy.png" alt="SDPS Header" style="width:95%;margin:0 auto;border-bottom:none" onerror="this.style.display='none'"/>`;
+    html+=`<div style="border-bottom:2px solid #000;margin-top:3px"></div>`;
+  }
+  // Header OFF → no header/image/text at all; the paper starts at the exam name.
+
+  html+=`<div class="a4-inner">
+  <div style="text-align:center;font-size:18px;font-weight:800;letter-spacing:.04em;${showHdr?'':'border-top:2px solid #000;'}border-bottom:1.5px solid #000;padding:4px 0;margin-bottom:3px">
+    ${a.exam_type} Examination ${a.session_name}
+  </div>
+  <div class="a4-meta-row">
+    <div>
+      <div><strong>STD – ${stdLabel(a.class_name)}</strong></div>
+      <div><strong>SUBJECT – ${a.subject}</strong></div>
+    </div>
+    <div style="text-align:right">
+      <div><strong>F.M. – ${marks} MARKS</strong></div>
+      <div><strong>TIME – ${dur}</strong></div>
+    </div>
+  </div>
+  <div class="a4-student-row">
+    <span><strong>NAME OF STUDENT :</strong> &nbsp;…………………………………</span>
+    <span style="white-space:nowrap"><strong>SECTION :</strong> &nbsp;……………</span>
+    <span style="white-space:nowrap"><strong>ROLL NO :</strong> &nbsp;…………</span>
+  </div>`;
+
+  if(comp) html+=`<div class="a4-compulsory">★ &nbsp;${comp}&nbsp; ★</div>`;
+
+  if(pTitle||pText){
+    html+=`<hr style="border:none;border-top:1px solid #bbb;margin:8px 0"/>`;
+    html+=`<div style="font-weight:700;font-size:11.5px;margin-bottom:4px">Read the passage carefully –</div>`;
+    if(pTitle) html+=`<div class="a4-passage-title">${pTitle}</div>`;
+    if(pText)  html+=`<div class="a4-passage">${pText}</div>`;
+  }
+
+  if(sections.length) html+=`<hr style="border:none;border-top:1px solid #bbb;margin:8px 0"/>`;
+  sections.forEach((s,si)=>{ html+=renderA4Section(s,si); });
+  html+='</div>';
+  document.getElementById('a4paper').innerHTML=html;
+}
+
+function renderA4Section(s,si){
+  let html=`<div class="a4-q-block"><div class="a4-q-head"><span>Q${si+1}. ${s.instruction||QUESTION_TYPES[s.type]||''}</span>${s.marks?`<span>(${s.marks})</span>`:''}</div>`;
+  if(!s.qItems.length){
+    if(['Short','Long','Poem','Grammar','Comprehension'].includes(s.type))
+      html+=`<div style="margin:3px 0 3px 22px">${'<div class="a4-ans-line"></div>'.repeat(s.type==='Long'||s.type==='Poem'?6:3)}</div>`;
+    else if(s.type==='Map')
+      html+=`<div class="a4-img-box" style="height:180px">[ Map / Picture — Mark as instructed ]</div>`;
+  } else {
+    s.qItems.forEach((q,qi)=>{html+=renderA4Q(s,q,qi);});
+  }
+  return html+'</div>';
+}
+
+function renderA4Q(s,q,qi){
+  const t=s.type;
+  let html=`<div class="a4-sub"><span class="a4-sub-no">${ROMAN[qi]}.</span><div style="flex:1">`;
+  if(t==='MCQ'){
+    html+=`<div>${q.question||'…………………………………………………………'}</div>`;
+    const opts=q.options?.filter(o=>o).length?q.options:['……………','……………','……………'];
+    html+=`<div class="a4-mcq-opts">${opts.map((o,i)=>`<div style="min-width:120px">${String.fromCharCode(97+i)}. ${o}</div>`).join('')}</div>`;
+  } else if(t==='FIB'){
+    html+=`<div>${(q.question||'…………').replace(/_{3,}/g,'<span class="blank-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>')}</div>`;
+  } else if(t==='TrueFalse'){
+    html+=`<div>${q.question||'…………………………………………'}</div><div style="display:flex;gap:16px;margin:3px 0 3px 0;font-size:11.5px"><label><input type="checkbox" disabled/> True</label><label><input type="checkbox" disabled/> False</label></div>`;
+  } else if(t==='Assertion'){
+    html+=`<div><strong>Assertion (A):</strong> ${q.question||'…………'}</div>`;
+    if(q.options?.[0]) html+=`<div style="margin-top:2px"><strong>Reason (R):</strong> ${q.options[0]}</div>`;
+    const ao=['Both A and R are true and R is correct explanation','Both A and R are true but R is NOT correct explanation','A is true but R is false','A is false but R is true'];
+    html+=`<div class="a4-mcq-opts" style="margin-top:4px">${ao.map((o,i)=>`<div style="width:48%;font-size:10.5px">${String.fromCharCode(97+i)}. ${o}</div>`).join('')}</div>`;
+  } else if(t==='Map'){
+    html+=`<div>${q.question||'Mark the following on the map.'}</div>`;
+    html+=`<div class="a4-img-box" style="height:${q.image_height||160}px">[ Map ]</div>`;
+  } else {
+    html+=`<div>${q.question||'…………………………………………………………'}</div>`;
+    if(q.sub_questions?.length) html+=`<div style="margin-top:4px">${q.sub_questions.map((sq,i)=>`<div style="margin-left:16px;margin-bottom:2px">${String.fromCharCode(97+i)}. ${sq.text||sq||'…………………'}</div>`).join('')}</div>`;
+    html+=`<div style="margin:3px 0 3px 22px">${'<div class="a4-ans-line"></div>'.repeat(t==='Long'||t==='Poem'?6:t==='Short'?3:2)}</div>`;
+  }
+  if(q.image_url) html+=`<div style="margin:5px 0"><img src="${q.image_url.startsWith('http')?q.image_url:API+q.image_url}" style="max-width:100%;max-height:120px;object-fit:contain"/></div>`;
+  if(q.image_data) html+=`<div style="margin:5px 0"><img src="${q.image_data}" style="max-width:100%;max-height:120px;object-fit:contain"/></div>`;
+  if(q.marks>0) html+=`<div style="text-align:right;font-size:10px;color:#555;margin-top:2px">[${q.marks}]</div>`;
+  return html+'</div></div>';
+}
+
+// ── Save / Submit ──────────────────────────────────────────────────────────
+function buildPaperPayload(){
+  return {
+    show_header_image: document.getElementById('showHeader').checked,
+    duration: document.getElementById('pDuration').value,
+    total_marks: parseInt(document.getElementById('pMarks').value)||60,
+    compulsory_note: document.getElementById('pCompulsory').value,
+    passage_title: document.getElementById('pPassageTitle').value,
+    passage_text: document.getElementById('pPassageText').value,
+    sections: sections.map(s=>({
+      id: s.id, section_label:`Section ${s.id}`,
+      question_type: s.type, instructions: s.instruction||'',
+      total_marks: parseInt(s.marks)||0,
+      questions: s.qItems.map(q=>({
+        id: q.id, question: q.question||'', marks: parseInt(q.marks)||1,
+        options: q.options||[], sub_questions: q.sub_questions||[],
+        image_url: q.image_url||'', image_data: q.image_data||''
+      }))
+    }))
+  };
+}
+
+let hasUnsavedChanges = false;
+
+window.addEventListener('beforeunload', (e) => {
+  if (hasUnsavedChanges) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
+async function savePaper(){
+  if(!currentAssignment)return toast('No assignment selected','error');
+  if(currentAssignment.status!=='draft')return toast('Paper is locked','error');
+  document.getElementById('autoSaveLabel').innerHTML = '⏳ Saving draft...';
+  try{
+    await apiFetch(`/papers/${currentAssignment.id}`,{method:'PUT',body:JSON.stringify(buildPaperPayload())});
+    hasUnsavedChanges = false;
+    const t=new Date().toLocaleTimeString();
+    document.getElementById('autoSaveLabel').innerHTML = `✅ All changes saved to cloud (${t})`;
+    notify('Paper saved successfully','success');
+    setTimeout(()=>notify('',''),3000);
+  }catch(e){
+    document.getElementById('autoSaveLabel').innerHTML = '<span style="color:#ef4444">⚠️ Save failed. Check connection.</span>';
+    toast('Save failed: '+e.message,'error');
+  }
+}
+
+async function submitPaper(){
+  if(!currentAssignment)return;
+  if(currentAssignment.status!=='draft'){toast('Paper is not in draft state','error');return;}
+  if(!confirm('Submit this paper for review? You will not be able to edit it unless the admin rejects it.'))return;
+  await savePaper();
+  try{
+    await apiFetch(`/assignments/${currentAssignment.id}/submit`,{method:'POST'});
+    hasUnsavedChanges = false;
+    currentAssignment.status='submitted';
+    document.getElementById('statusBadgeSmall').innerHTML=statusBadge('submitted');
+    notify('Paper submitted for review ✓','success');
+    toast('Submitted successfully');
+    renderSidebar();
+    setTimeout(()=>{ location.reload(); },2000);
+  }catch(e){toast('Submit failed: '+e.message,'error');}
+}
+
+// Auto-save every 60 seconds
+function startAutoSave(){
+  setInterval(async()=>{
+    if(!currentAssignment||currentAssignment.status!=='draft')return;
+    document.getElementById('autoSaveLabel').innerHTML = '⏳ Auto-saving...';
+    try{
+      await apiFetch(`/papers/${currentAssignment.id}`,{method:'PUT',body:JSON.stringify(buildPaperPayload())});
+      hasUnsavedChanges = false;
+      const t=new Date().toLocaleTimeString();
+      document.getElementById('autoSaveLabel').innerHTML = `✅ Auto-saved to Cloud (${t})`;
+    }catch(e){
+      document.getElementById('autoSaveLabel').innerHTML = '<span style="color:#ef4444">⚠️ Auto-save failed.</span>';
+    }
+  }, 60000);
+}
+
+// ── PDF Export ─────────────────────────────────────────────────────────────
+const PRINT_CSS=`*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Montserrat',sans-serif;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{size:A4;margin:0}.a4-wrap{width:210mm;padding:0 0 10mm;font-family:'Montserrat',sans-serif;font-size:11pt;line-height:1.65;color:#000}.a4-header-img{width:100%;display:block}.a4-inner{padding:8mm 18mm 0}.a4-exam-row{display:flex;justify-content:space-between;padding:4pt 0;font-size:11pt;font-weight:700;border-top:2pt solid #000;border-bottom:1.5pt solid #000;margin-bottom:5pt}.a4-meta-row{display:flex;justify-content:space-between;font-size:11pt;font-weight:600;margin-bottom:5pt}.a4-student-row{display:flex;justify-content:space-between;font-size:10.5pt;font-weight:600;margin-bottom:5pt}.a4-compulsory{font-weight:700;text-align:center;font-size:11pt;border-top:1.2pt solid #000;border-bottom:1.2pt solid #000;padding:3pt 0;margin:4pt 0 7pt}.a4-passage-title{font-weight:800;font-size:12pt;text-align:center;margin:5pt 0 3pt}.a4-passage{font-size:11pt;line-height:1.7;text-align:justify;margin-bottom:7pt}.a4-q-block{margin-bottom:10pt}.a4-q-head{display:flex;justify-content:space-between;font-weight:700;font-size:11pt;margin-bottom:2pt;border-bottom:.8pt dotted #ccc;padding-bottom:2pt}.a4-sub{display:flex;gap:5pt;margin-bottom:4pt;font-size:11pt}.a4-sub-no{font-weight:700;min-width:20pt}.a4-mcq-opts{display:flex;flex-wrap:wrap;gap:2pt 18pt;margin:2pt 0 2pt 24pt;font-size:11pt}.a4-ans-line{border-bottom:.8pt solid #bbb;margin-bottom:5pt;height:16pt}.blank-line{display:inline-block;border-bottom:.8pt solid #000;min-width:60pt;vertical-align:bottom}`;
+
+// Make relative image URLs (header, uploaded question images) absolute so they
+// resolve inside the about:blank print window.
+function _absolutizeImgs(html){
+  const dirBase = new URL('.', location.href).href;   // .../qp-portal/
+  return html
+    .replace(/src="\.\//g, `src="${dirBase}`)
+    .replace(/src="\/(?!\/)/g, `src="${location.origin}/`);
+}
+
+function printPDF(){
+  const content=_absolutizeImgs(document.getElementById('a4paper').innerHTML);
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/><style>${PRINT_CSS}</style></head><body><div class="a4-wrap">${content}</div><script>window.onload=()=>{setTimeout(()=>window.print(),300);}<\/script></body></html>`);
+  win.document.close();
+}
+
+function printBooklet(){
+  const a=currentAssignment;
+  const content=_absolutizeImgs(document.getElementById('a4paper').innerHTML);
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Montserrat',sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{size:A4 landscape;margin:0}.wrap{display:flex;width:297mm;height:210mm}.cover{width:148.5mm;height:210mm;border-right:1.5pt dashed #bbb;padding:12mm 10mm;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}.content{width:148.5mm;height:210mm;overflow:hidden;padding:8mm 9mm}.inner{transform:scale(0.64);transform-origin:top left;width:156.25%}${PRINT_CSS.replace('@page{size:A4;margin:0}','')}</style></head><body><div class="wrap"><div class="cover"><img src="https://sdpublic.org/assets/img/logo.png" style="height:70px;margin-bottom:12pt" onerror="this.style.display='none'"/><div style="font-size:16pt;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#0e3b91">S.D. Public School</div><div style="font-size:10pt;font-weight:600;color:#64748b;margin:3pt 0 16pt">Maurya Colony, Patna-07</div><div style="font-size:12pt;font-weight:800;color:#0e3b91;border:2pt solid #0e3b91;padding:5pt 16pt;border-radius:4pt">${a?.subject||''}</div><div style="margin-top:16pt;font-size:9.5pt;font-weight:600;line-height:2.2;color:#374151">Std: ${stdLabel(a?.class_name||'')}<br/>${a?.exam_type||''} — ${a?.session_name||''}<br/></div><div style="margin-top:20pt;font-size:9.5pt;font-weight:600;line-height:2.6;text-align:left;border-top:1pt solid #ddd;padding-top:8pt">Name: ………………………………………<br/>Section: ………&nbsp;&nbsp;Roll No: ……………<br/>Date: ………………</div></div><div class="content"><div class="inner">${content}</div></div></div><script>window.onload=()=>{setTimeout(()=>window.print(),300);}<\/script></body></html>`);
+  win.document.close();
+}
+
+function notify(msg, type){
+  const n=document.getElementById('notify');
+  n.className='notify'+(type?' '+type:'');
+  n.textContent=msg;
+  n.style.display=msg?'block':'none';
+}
+
+/* Mobile: toggle between the editor and the A4 preview */
+function toggleMobilePreview(){
+  const showing = document.body.classList.toggle('show-preview');
+  const btn = document.getElementById('mobilePreviewToggle');
+  if(btn) btn.textContent = showing ? '✏️ Back to Editor' : '👁 Preview Paper';
+  if(showing){ try{ render(); }catch(e){} }
+  window.scrollTo(0,0);
+}
+</script>
+</body>
+</html>
