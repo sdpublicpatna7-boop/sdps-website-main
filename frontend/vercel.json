@@ -6,11 +6,6 @@
       "permanent": false
     },
     {
-      "source": "/p/:slug",
-      "destination": "https://api.sdpublic.org/api/gdrive-folders/:slug/og-html",
-      "permanent": false
-    },
-    {
       "source": "/index.html",
       "destination": "/",
       "permanent": true
@@ -68,6 +63,17 @@
   ],
   "rewrites": [
     {
+      "source": "/p/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(WhatsApp|facebookexternalhit|Twitterbot|LinkedInBot|TelegramBot|Slackbot|SkypeUriPreview|discordbot|Applebot|Googlebot).*"
+        }
+      ],
+      "destination": "https://api.sdpublic.org/api/gdrive-folders/:slug/og-html"
+    },
+    {
       "source": "/photos/:slug",
       "has": [
         {
@@ -90,7 +96,7 @@
       "destination": "https://api.sdpublic.org/api/gdrive-folders/:slug/og-html"
     },
     {
-      "source": "/((?!api|s|p|static|assets|qp-portal|favicon.ico|robots.txt|sitemap.xml|paper-builder.html).*)",
+      "source": "/((?!api|s|static|assets|qp-portal|favicon.ico|robots.txt|sitemap.xml|paper-builder.html).*)",
       "destination": "/index.html"
     }
   ]
