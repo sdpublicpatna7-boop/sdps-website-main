@@ -60,11 +60,11 @@ export default function AdminLetterMaker() {
     return today.toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" });
   });
 
-  const [recipient, setRecipient] = useState("Aarav Kumar");
-  const [details, setDetails] = useState("Class X - Sec A (Adm No: 2024-892)");
-  const [subject, setSubject] = useState(TEMPLATES.custom.subject);
-  const [salutation, setSalutation] = useState(TEMPLATES.custom.salutation);
-  const [body, setBody] = useState(TEMPLATES.custom.body);
+  const [recipient, setRecipient] = useState("The Management\nHindustan Ventures Pvt. Ltd.");
+  const [details, setDetails] = useState("Patna, Bihar");
+  const [subject, setSubject] = useState("REQUEST FOR INDUSTRIAL VISIT TO YOUR PRINTING FACILITY");
+  const [salutation, setSalutation] = useState("Respected Sir/Madam,");
+  const [body, setBody] = useState(`We would like to request your kind permission to organise an educational industrial visit for our students to your printing facility on 20 August 2026.\n\nThe purpose of this visit is to provide our students with practical exposure to the printing industry, modern printing machinery, production workflow, quality control, and related technologies. We believe that witnessing these processes will enhance their understanding beyond the classroom and help them gain valuable insight into real-world industrial operations.\n\nWe would be grateful if your organisation could kindly permit our students and accompanying teachers to visit the facility and, if possible, arrange a brief orientation and interaction with your team.\n\nWe assure you that all participating students will maintain proper discipline and strictly follow the safety instructions and guidelines provided by your organisation throughout the visit.\n\nWe sincerely hope you will consider our request and provide our students with this valuable learning opportunity.\n\nThank you for your time and consideration. We look forward to your positive response.`);
   const [signatory, setSignatory] = useState("principal"); // principal, director, management, custom
   const [customSignatoryTitle, setCustomSignatoryTitle] = useState("Authorized Signatory");
   const [showStamp, setShowStamp] = useState(true);
@@ -229,6 +229,48 @@ export default function AdminLetterMaker() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 font-sans text-slate-800 bg-slate-50 min-h-screen print:bg-white print:text-black print:p-0 print:m-0">
+      {/* Strict CSS for A4 printing */}
+      <style>{`
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 0;
+          }
+          html, body {
+            width: 210mm !important;
+            height: 297mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            overflow: hidden !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          header, aside, nav, footer, .print\\:hidden {
+            display: none !important;
+          }
+          .letterhead-print-area {
+            width: 210mm !important;
+            height: 297mm !important;
+            min-height: 297mm !important;
+            max-height: 297mm !important;
+            padding: 12mm 15mm !important;
+            margin: 0 auto !important;
+            box-sizing: border-box !important;
+            border: none !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            page-break-after: avoid !important;
+            page-break-inside: avoid !important;
+            overflow: hidden !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+          }
+        }
+      `}</style>
+
       {/* Non-printable Controls & Header */}
       <div className="print:hidden space-y-6">
         <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
@@ -528,7 +570,7 @@ export default function AdminLetterMaker() {
 
           <div
             ref={letterRef}
-            className="bg-white text-slate-900 rounded-2xl shadow-xl p-8 sm:p-12 min-h-[1020px] aspect-[210/297] flex flex-col justify-between relative overflow-hidden border border-slate-200 print:shadow-none print:border-none print:rounded-none print:p-8 print:w-[210mm] print:h-[297mm] print:max-h-[297mm] mx-auto"
+            className="letterhead-print-area bg-white text-slate-900 rounded-2xl shadow-xl p-8 sm:p-10 min-h-[1020px] aspect-[210/297] flex flex-col justify-between relative overflow-hidden border border-slate-200 print:shadow-none print:border-none print:rounded-none print:p-0 print:m-0 mx-auto"
             style={{ fontFamily: "'Times New Roman', Georgia, serif" }}
           >
             {/* Top Navy/Gold Accent Bar */}
@@ -536,12 +578,12 @@ export default function AdminLetterMaker() {
 
             {/* School Header */}
             <div className="space-y-4">
-              <div className="flex items-center justify-between border-b-2 border-[#0B1E40] pb-4">
-                <div className="flex items-center gap-4">
+              <div className="flex items-center justify-between border-b-2 border-[#0B1E40] pb-3">
+                <div className="flex items-center gap-3.5">
                   <img
                     src="https://res.cloudinary.com/drx3kb809/image/upload/v1782313772/sdps/misc/hffxigjkpw7cbc7cmdm5.jpg"
                     alt="SDPS Official Seal Logo"
-                    className="w-20 h-20 object-contain shrink-0 rounded-full shadow-sm"
+                    className="w-18 h-18 object-contain shrink-0 rounded-full shadow-sm"
                   />
                   <div className="space-y-0.5">
                     <h1 className="text-xl sm:text-2xl font-black text-[#0B1E40] tracking-tight uppercase" style={{ fontFamily: "serif" }}>
@@ -553,13 +595,13 @@ export default function AdminLetterMaker() {
                     <p className="text-[9.5px] text-slate-600 font-sans font-medium">
                       Operated by The Suryamuni Devi Foundation Trust
                     </p>
-                    <p className="text-[9.5px] text-slate-500 font-sans">
+                    <p className="text-[9px] text-slate-500 font-sans max-w-md leading-tight">
                       Maurya Colony Near R.O.B Kumhrar Biscoman Golambar, Gulzarbagh Road, Patna, Bihar 800007
                     </p>
                   </div>
                 </div>
 
-                <div className="text-right text-[10px] font-sans text-slate-600 space-y-0.5 hidden sm:block">
+                <div className="text-right text-[9.5px] font-sans text-slate-600 space-y-0.5 block shrink-0">
                   <div className="font-bold text-[#0B1E40]">Contact Desk:</div>
                   <div>Phone: +91 99551 90262</div>
                   <div>Email: helpdesk@sdpublic.org</div>
@@ -570,11 +612,11 @@ export default function AdminLetterMaker() {
               {/* Ref No & Date */}
               <div className="flex justify-between items-center text-xs font-sans font-bold text-slate-700 pt-1">
                 <div>
-                  <span className="text-slate-500 uppercase text-[10px] block font-mono">Reference No:</span>
+                  <span className="text-slate-500 uppercase text-[10px] block font-mono">REFERENCE NO:</span>
                   <span className="font-mono text-[#0B1E40]">{refNo}</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-slate-500 uppercase text-[10px] block">Date of Issue:</span>
+                  <span className="text-slate-500 uppercase text-[10px] block">DATE OF ISSUE:</span>
                   <span className="text-slate-900">{letterDate}</span>
                 </div>
               </div>
@@ -586,11 +628,11 @@ export default function AdminLetterMaker() {
             </div>
 
             {/* Letter Content Body */}
-            <div className="my-6 space-y-5 relative z-10 text-slate-900 leading-relaxed text-sm">
+            <div className="my-4 space-y-4 relative z-10 text-slate-900 leading-relaxed text-sm">
               {/* To Recipient Address Block */}
               {(recipient || details) && (
                 <div className="space-y-0.5 font-sans text-xs text-slate-800 font-medium border-l-2 border-[#0B1E40] pl-3 py-1">
-                  <div className="font-bold text-[#0B1E40] uppercase text-[11px] tracking-wider">To,</div>
+                  <div className="font-bold text-[#0B1E40] uppercase text-[11px] tracking-wider">TO,</div>
                   {recipient && <div className="font-bold text-slate-900 text-sm whitespace-pre-line">{recipient}</div>}
                   {details && <div className="text-slate-600 whitespace-pre-line">{details}</div>}
                 </div>
@@ -611,16 +653,16 @@ export default function AdminLetterMaker() {
               </div>
 
               {/* Formatted Body Paragraphs */}
-              <div className="space-y-4 text-justify whitespace-pre-line text-sm leading-relaxed text-slate-800">
+              <div className="space-y-3 text-justify whitespace-pre-line text-[13px] leading-relaxed text-slate-800">
                 {formattedBody()}
               </div>
             </div>
 
             {/* Bottom Footer & Signatures */}
-            <div className="space-y-6 relative z-10 pt-8 border-t border-slate-200">
+            <div className="space-y-4 relative z-10 pt-4 border-t border-slate-200">
               <div className="flex justify-between items-end">
                 {/* Left Seal / Verification Note */}
-                <div className="space-y-1 text-[10px] font-sans text-slate-500 max-w-xs">
+                <div className="space-y-1 text-[9.5px] font-sans text-slate-500 max-w-xs">
                   <div className="flex items-center gap-1 text-emerald-700 font-bold">
                     <ShieldCheck className="w-3.5 h-3.5" /> Official Verified Document
                   </div>

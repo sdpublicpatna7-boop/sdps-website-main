@@ -549,7 +549,7 @@ export default function AdminLayout() {
       <SEO title={activeTitle} />
       <Toaster position="top-right" richColors closeButton />
       {/* Mobile Top Bar Header */}
-      <header className="md:hidden flex items-center justify-between px-4 py-3 bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-40">
+      <header className="md:hidden print:hidden flex items-center justify-between px-4 py-3 bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-40">
         <div className="flex items-center gap-3">
           <button
             onClick={() => setSidebarOpen(true)}
@@ -670,7 +670,7 @@ export default function AdminLayout() {
 
       {/* Desktop Sticky Sidebar (hidden on mobile) */}
       <aside
-        className={`hidden md:flex ${
+        className={`hidden md:flex print:hidden ${
           collapsed ? "w-20" : "w-66"
         } transition-all duration-300 ease-in-out bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 text-white flex-shrink-0 sticky top-0 h-screen overflow-y-auto no-scrollbar border-r border-slate-800/80 flex-col justify-between`}
       >
