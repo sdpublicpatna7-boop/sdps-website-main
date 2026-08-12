@@ -643,7 +643,8 @@ export default function AdminLetterMaker() {
                   <img
                     src="https://res.cloudinary.com/drx3kb809/image/upload/v1782313772/sdps/misc/hffxigjkpw7cbc7cmdm5.jpg"
                     alt="SDPS Official Seal Logo"
-                    className="w-18 h-18 object-contain shrink-0 rounded-full shadow-sm"
+                    className="object-contain shrink-0 rounded-full shadow-sm"
+                    style={{ width: "72px", height: "72px", minWidth: "72px", minHeight: "72px", maxWidth: "72px", maxHeight: "72px" }}
                   />
                   <div className="space-y-0.5">
                     <h1 className="text-xl sm:text-2xl font-black text-[#0B1E40] tracking-tight uppercase" style={{ fontFamily: "serif" }}>
