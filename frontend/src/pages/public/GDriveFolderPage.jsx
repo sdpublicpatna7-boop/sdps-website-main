@@ -159,7 +159,7 @@ export default function GDriveFolderPage() {
               onClick={() => handleDownloadTrack("zip-all")}
               className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 hover:brightness-110 text-slate-950 font-bold text-xs transition flex items-center gap-1.5 shadow-lg"
             >
-              <Archive className="w-4 h-4" /> Download All ({files.length} Photos)
+              <Archive className="w-4 h-4" /> Download Selected ({files.length} Photos)
             </a>
           )}
         </div>
@@ -169,10 +169,14 @@ export default function GDriveFolderPage() {
       <section className="relative py-10 text-center bg-gradient-to-br from-[#0B1E40] via-[#0E3B91] to-[#050E1F] border-b border-amber-400/10 shadow-2xl">
         <div className="max-w-4xl mx-auto px-6 space-y-2 relative z-10">
           <h1 className="text-3xl sm:text-5xl font-headline font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-200">
-            {folder?.title || "Investiture Ceremony 2026-27"}
+            {loading ? (
+              <span className="inline-block w-64 h-10 bg-slate-800/80 animate-pulse rounded-2xl"></span>
+            ) : (
+              folder?.title || "Photo Album"
+            )}
           </h1>
 
-          {folder?.description && (
+          {!loading && folder?.description && (
             <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto font-medium leading-relaxed">
               {folder.description}
             </p>

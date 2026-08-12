@@ -2058,27 +2058,23 @@ async def track_gdrive_photo_download(slug: str, payload: Dict[str, Any] = Body(
 
 @public_router.get("/gdrive-folders/{slug}/zip")
 async def download_gdrive_folder_zip(slug: str):
-    """Stream all photos in a folder as a single ZIP archive."""
+    """Stream selected photos in a folder as a single ZIP archive."""
     import zipfile
     import io
     import httpx
+    import re
     from server import db
 
     folder = await db.gdrive_folders.find_one({"$or": [{"slug": slug}, {"id": slug}]}, {"_id": 0})
-    if not folder or not folder.get("files"):
-        try:
-            folder = await get_gdrive_folder_public(slug)
-        except Exception:
-            folder = None
     if not folder or not folder.get("files"):
         raise HTTPException(status_code=404, detail="Folder empty or not found")
 
     zip_buffer = io.BytesIO()
     files = folder.get("files", [])
 
-    async with httpx.AsyncClient(follow_redirects=True, timeout=15.0) as client:
+    async with httpx.AsyncClient(follow_redirects=True, timeout=20.0) as client:
         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-            for idx, f in enumerate(files[:50]):
+            for idx, f in enumerate(files):
                 file_id = f.get("file_id")
                 if not file_id:
                     continue
