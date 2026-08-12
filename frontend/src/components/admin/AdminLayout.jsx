@@ -545,7 +545,7 @@ export default function AdminLayout() {
     : "SDPS Admin Control Panel";
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col md:flex-row">
       <SEO title={activeTitle} />
       <Toaster position="top-right" richColors closeButton />
       {/* Mobile Top Bar Header */}
@@ -793,7 +793,7 @@ export default function AdminLayout() {
       </aside>
 
       {/* Main Page Area */}
-      <main className="flex-1 p-4 sm:p-6 md:p-8 max-w-full overflow-x-hidden bg-slate-50/50">
+      <main className="flex-1 p-4 sm:p-6 md:p-8 max-w-full overflow-x-hidden bg-slate-950">
         {isStaff && (
           <div className="mb-6 bg-emerald-50 border border-emerald-200 rounded-2xl px-5 py-3 flex items-center gap-3 shadow-sm">
             <Lock className="w-5 h-5 text-emerald-600 shrink-0" />

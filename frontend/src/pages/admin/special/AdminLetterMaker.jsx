@@ -119,7 +119,7 @@ export default function AdminLetterMaker() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8 font-sans text-slate-100 print:p-0 print:m-0 print:bg-white print:text-black">
+    <div className="p-6 max-w-7xl mx-auto space-y-8 font-sans text-slate-100 bg-slate-950 min-h-screen print:bg-white print:text-black print:p-0 print:m-0">
       {/* Non-printable Controls & Header */}
       <div className="print:hidden space-y-6">
         <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
