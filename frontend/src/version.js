@@ -1,2 +1,2 @@
-export const SYSTEM_VERSION = "v2.6.4";
+export const SYSTEM_VERSION = "v2.7.0";
 export default SYSTEM_VERSION;
