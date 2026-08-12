@@ -90,7 +90,7 @@ export default function AdminLetterMaker() {
   };
 
   const handleCopyText = () => {
-    const fullText = `S.D. PUBLIC SCHOOL, PATNA\nRef No: ${refNo}\nDate: ${letterDate}\n\nSubject: ${subject}\n\n${salutation}\n\n${formattedBody()}\n\nSincerely,\n${getSignatoryTitle()}`;
+    const fullText = `S.D. PUBLIC SCHOOL, PATNA\nRef No: ${refNo}\nDate: ${letterDate}\n\nTo,\n${recipient}\n${details}\n\nSubject: ${subject}\n\n${salutation}\n\n${formattedBody()}\n\nSincerely,\n${getSignatoryTitle()}`;
     navigator.clipboard.writeText(fullText);
     toast.success("Letter content copied to clipboard!");
   };
@@ -119,18 +119,18 @@ export default function AdminLetterMaker() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8 font-sans text-slate-100 bg-slate-950 min-h-screen print:bg-white print:text-black print:p-0 print:m-0">
+    <div className="p-6 max-w-7xl mx-auto space-y-8 font-sans text-slate-800 bg-slate-50 min-h-screen print:bg-white print:text-black print:p-0 print:m-0">
       {/* Non-printable Controls & Header */}
       <div className="print:hidden space-y-6">
-        <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
+        <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
           <div className="space-y-1">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/10 text-amber-400 border border-amber-400/20 text-xs font-bold uppercase tracking-wider">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold uppercase tracking-wider">
               <Sparkles className="w-3.5 h-3.5" /> Official Document Generator
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white font-headline">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 font-headline">
               Official School Letterhead & Certificate Maker
             </h1>
-            <p className="text-xs sm:text-sm text-slate-400 max-w-2xl">
+            <p className="text-xs sm:text-sm text-slate-600 max-w-2xl font-medium">
               Generate, customize, and print official S.D. Public School letters, bonafide certificates, conduct documents, and notices with custom branding and digital seals.
             </p>
           </div>
@@ -138,14 +138,14 @@ export default function AdminLetterMaker() {
           <div className="flex items-center gap-2">
             <button
               onClick={handleCopyText}
-              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-slate-700 transition flex items-center gap-1.5 cursor-pointer shadow-md"
+              className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs border border-slate-300 transition flex items-center gap-1.5 cursor-pointer shadow-sm"
             >
-              <Copy className="w-4 h-4 text-amber-400" /> Copy Text
+              <Copy className="w-4 h-4 text-blue-600" /> Copy Text
             </button>
 
             <button
               onClick={handlePrint}
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 hover:brightness-110 text-slate-950 font-bold text-xs transition flex items-center gap-2 shadow-lg cursor-pointer"
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 text-white font-bold text-xs transition flex items-center gap-2 shadow-md cursor-pointer"
             >
               <Printer className="w-4 h-4" /> Print Official Letter
             </button>
@@ -153,9 +153,9 @@ export default function AdminLetterMaker() {
         </div>
 
         {/* Template Selector Bar */}
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-3">
-          <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block flex items-center gap-2">
-            <FileSpreadsheet className="w-4 h-4 text-amber-400" /> Choose Official Document Template
+        <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-3">
+          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block flex items-center gap-2">
+            <FileSpreadsheet className="w-4 h-4 text-blue-600" /> Choose Official Document Template
           </label>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
@@ -166,13 +166,13 @@ export default function AdminLetterMaker() {
                 onClick={() => handleTemplateChange(t.id)}
                 className={`p-3 rounded-2xl border text-left text-xs font-bold transition cursor-pointer flex flex-col justify-between ${
                   templateKey === t.id
-                    ? "bg-amber-400/20 border-amber-400 text-amber-300 shadow-md ring-1 ring-amber-400/50"
-                    : "bg-slate-950/60 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700"
+                    ? "bg-blue-50 border-blue-500 text-blue-900 shadow-sm ring-1 ring-blue-500/30"
+                    : "bg-slate-50 border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300"
                 }`}
               >
                 <span>{t.name}</span>
                 {templateKey === t.id && (
-                  <CheckCircle2 className="w-4 h-4 text-amber-400 self-end mt-2" />
+                  <CheckCircle2 className="w-4 h-4 text-blue-600 self-end mt-2" />
                 )}
               </button>
             ))}
@@ -184,25 +184,25 @@ export default function AdminLetterMaker() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 print:block">
         {/* Left Form Inputs (Hidden in Print) */}
         <div className="lg:col-span-5 space-y-5 print:hidden">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 border-b border-slate-800 pb-3">
-              <User className="w-4 h-4 text-amber-400" /> Letter Metadata & Details
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-sm">
+            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
+              <User className="w-4 h-4 text-blue-600" /> Letter Metadata & Details
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-300">Reference Number</label>
+                <label className="text-[11px] font-bold text-slate-700">Reference Number</label>
                 <div className="flex gap-1.5">
                   <input
                     type="text"
                     value={refNo}
                     onChange={(e) => setRefNo(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs font-mono focus:outline-none focus:border-amber-400"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-xs font-mono focus:outline-none focus:border-blue-600"
                   />
                   <button
                     type="button"
                     onClick={generateRefNo}
-                    className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 transition"
+                    className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-blue-600 border border-slate-300 transition"
                     title="Generate Random Ref No"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
@@ -211,76 +211,76 @@ export default function AdminLetterMaker() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-300">Date of Issue</label>
+                <label className="text-[11px] font-bold text-slate-700">Date of Issue</label>
                 <input
                   type="text"
                   value={letterDate}
                   onChange={(e) => setLetterDate(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-400"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-xs focus:outline-none focus:border-blue-600"
                 />
               </div>
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-300">Recipient Name / Student Name</label>
+              <label className="text-[11px] font-bold text-slate-700">Recipient Name / Student Name</label>
               <input
                 type="text"
                 value={recipient}
                 onChange={(e) => setRecipient(e.target.value)}
                 placeholder="e.g. Aarav Kumar"
-                className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-400"
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-xs focus:outline-none focus:border-blue-600"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-300">Class / Roll No / Designation</label>
+              <label className="text-[11px] font-bold text-slate-700">Class / Roll No / Designation</label>
               <input
                 type="text"
                 value={details}
                 onChange={(e) => setDetails(e.target.value)}
                 placeholder="e.g. Class X - Sec A (Adm No: 2024-892)"
-                className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-400"
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-xs focus:outline-none focus:border-blue-600"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-300">Subject Heading</label>
+              <label className="text-[11px] font-bold text-slate-700">Subject Heading</label>
               <input
                 type="text"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs font-bold focus:outline-none focus:border-amber-400"
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-xs font-bold focus:outline-none focus:border-blue-600"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-300">Salutation Line</label>
+              <label className="text-[11px] font-bold text-slate-700">Salutation Line</label>
               <input
                 type="text"
                 value={salutation}
                 onChange={(e) => setSalutation(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-400"
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-xs focus:outline-none focus:border-blue-600"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-300">Letter Body Paragraphs</label>
+              <label className="text-[11px] font-bold text-slate-700">Letter Body Paragraphs</label>
               <textarea
                 rows={7}
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs leading-relaxed focus:outline-none focus:border-amber-400 resize-y"
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-xs leading-relaxed focus:outline-none focus:border-blue-600 resize-y"
               />
-              <span className="text-[10px] text-slate-400">Use &#123;recipient&#125;, &#123;details&#125;, &#123;date&#125; variables to auto-insert recipient details.</span>
+              <span className="text-[10px] text-slate-500">Use &#123;recipient&#125;, &#123;details&#125;, &#123;date&#125; variables to auto-insert recipient details.</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-800">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100">
               <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-300">Authorized Signatory</label>
+                <label className="text-[11px] font-bold text-slate-700">Authorized Signatory</label>
                 <select
                   value={signatory}
                   onChange={(e) => setSignatory(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-400"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-xs focus:outline-none focus:border-blue-600 font-medium"
                 >
                   <option value="Principal">Principal</option>
                   <option value="Coordinator">Academic Coordinator</option>
@@ -290,14 +290,14 @@ export default function AdminLetterMaker() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-300">Official Stamp Overlay</label>
+                <label className="text-[11px] font-bold text-slate-700">Official Stamp Overlay</label>
                 <button
                   type="button"
                   onClick={() => setShowStamp(!showStamp)}
                   className={`w-full px-3 py-2 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
                     showStamp
-                      ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
-                      : "bg-slate-950 border-slate-800 text-slate-400"
+                      ? "bg-emerald-50 border-emerald-300 text-emerald-800"
+                      : "bg-slate-50 border-slate-300 text-slate-600"
                   }`}
                 >
                   <Stamp className="w-3.5 h-3.5" />
@@ -311,17 +311,17 @@ export default function AdminLetterMaker() {
         {/* Right A4 Official Letterhead Live Preview */}
         <div className="lg:col-span-7 print:w-full print:m-0">
           <div className="print:hidden flex justify-between items-center mb-3">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Eye className="w-4 h-4 text-amber-400" /> A4 Letterhead Live Preview
+            <span className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+              <Eye className="w-4 h-4 text-blue-600" /> A4 Letterhead Live Preview
             </span>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
-              210mm x 297mm (A4 Print Standard)
+            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-white border border-slate-200 text-slate-600 shadow-xs">
+              210mm x 297mm (A4 Standard)
             </span>
           </div>
 
           <div
             ref={letterRef}
-            className="bg-white text-slate-900 rounded-2xl shadow-2xl p-8 sm:p-12 min-h-[780px] flex flex-col justify-between relative overflow-hidden border border-slate-200 print:shadow-none print:border-none print:rounded-none print:p-8"
+            className="bg-white text-slate-900 rounded-2xl shadow-xl p-8 sm:p-12 min-h-[780px] flex flex-col justify-between relative overflow-hidden border border-slate-200 print:shadow-none print:border-none print:rounded-none print:p-8"
             style={{ fontFamily: "'Times New Roman', Georgia, serif" }}
           >
             {/* Top Navy/Gold Accent Bar */}

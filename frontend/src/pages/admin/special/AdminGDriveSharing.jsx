@@ -7,8 +7,6 @@ import {
   Award, BarChart3, Share2, CheckSquare, Square, Star, Check, Plus, X, Edit3, SlidersHorizontal
 } from "lucide-react";
 
-const API_BASE = process.env.REACT_APP_BACKEND_URL || "";
-
 export default function AdminGDriveSharing() {
   const [folders, setFolders] = useState([]);
   const [analytics, setAnalytics] = useState(null);
@@ -62,7 +60,6 @@ export default function AdminGDriveSharing() {
     loadData();
   }, []);
 
-  // Fetch / extract photos from Google Drive link before saving
   const handleExtractPhotos = async () => {
     if (!driveUrl.trim() && !manualUrls.trim()) {
       toast.error("Please enter a Google Drive folder link or photo links first.");
@@ -125,7 +122,6 @@ export default function AdminGDriveSharing() {
 
     setCreating(true);
     try {
-      // Build selected files payload
       let selectedFilesList = [];
       if (extractedPhotos.length > 0) {
         selectedFilesList = extractedPhotos.filter((f) => selectedPhotoIds.has(f.file_id));
@@ -165,7 +161,6 @@ export default function AdminGDriveSharing() {
     }
   };
 
-  // Open Edit Modal for existing album
   const openEditModal = (folder) => {
     setEditingFolder(folder);
     setEditTitle(folder.title || "");
@@ -208,7 +203,6 @@ export default function AdminGDriveSharing() {
     }
   };
 
-  // Append photos from an additional Google Drive folder in Edit Modal
   const handleAppendFolderInModal = async () => {
     if (!extraFolderUrl.trim()) {
       toast.error("Please enter an additional Google Drive folder link or photo links.");
@@ -309,24 +303,24 @@ export default function AdminGDriveSharing() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8 font-sans text-slate-100">
+    <div className="p-6 max-w-7xl mx-auto space-y-8 font-sans text-slate-800 bg-slate-50 min-h-screen">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl relative overflow-hidden">
-        <div className="space-y-1 relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/10 text-amber-400 border border-amber-400/20 text-xs font-bold uppercase tracking-wider">
+      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold uppercase tracking-wider">
             <Sparkles className="w-3.5 h-3.5" /> High-Performance Media Drive
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-white font-headline tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 font-headline tracking-tight">
             Google Drive Photo Sharing & Picker
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 max-w-2xl">
+          <p className="text-xs sm:text-sm text-slate-600 max-w-2xl font-medium">
             Paste Google Drive links, combine multiple folders, extract photos instantly, pick which photos to publish, set cover images, and generate custom domain albums.
           </p>
         </div>
 
         <button
           onClick={loadData}
-          className="self-start md:self-auto px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition flex items-center gap-2 border border-slate-700 cursor-pointer"
+          className="self-start md:self-auto px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center gap-2 border border-slate-300 cursor-pointer shadow-xs"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Refresh Analytics
         </button>
@@ -334,99 +328,59 @@ export default function AdminGDriveSharing() {
 
       {/* Analytics KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <div className="bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 p-6 rounded-3xl shadow-xl flex items-center justify-between">
+        <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm flex items-center justify-between">
           <div className="space-y-1">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Total Album Views</span>
-            <div className="text-3xl font-black text-white font-headline">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Total Album Views</span>
+            <div className="text-3xl font-black text-slate-900 font-headline">
               {analytics?.total_views || 0}
             </div>
-            <span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+            <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
               <TrendingUp className="w-3 h-3" /> Live Visitor Count
             </span>
           </div>
-          <div className="p-3.5 bg-indigo500/10 text-indigo-400 rounded-2xl border border-indigo-500/20">
+          <div className="p-3.5 bg-indigo-50 text-indigo-600 rounded-2xl border border-indigo-100">
             <Eye className="w-6 h-6" />
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 p-6 rounded-3xl shadow-xl flex items-center justify-between">
+        <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm flex items-center justify-between">
           <div className="space-y-1">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Total Photo Downloads</span>
-            <div className="text-3xl font-black text-amber-400 font-headline">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Total Photo Downloads</span>
+            <div className="text-3xl font-black text-amber-600 font-headline">
               {analytics?.total_downloads || 0}
             </div>
-            <span className="text-[11px] text-amber-300/80 font-medium flex items-center gap-1">
+            <span className="text-[11px] text-amber-700 font-semibold flex items-center gap-1">
               <Award className="w-3 h-3" /> Original Full-Res Exports
             </span>
           </div>
-          <div className="p-3.5 bg-amber-400/10 text-amber-400 rounded-2xl border border-amber-400/20">
+          <div className="p-3.5 bg-amber-50 text-amber-600 rounded-2xl border border-amber-100">
             <Download className="w-6 h-6" />
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 p-6 rounded-3xl shadow-xl flex items-center justify-between">
+        <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm flex items-center justify-between">
           <div className="space-y-1">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Active Albums</span>
-            <div className="text-3xl font-black text-white font-headline">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Active Albums</span>
+            <div className="text-3xl font-black text-slate-900 font-headline">
               {folders.length}
             </div>
-            <span className="text-[11px] text-slate-400 font-medium">
+            <span className="text-[11px] text-slate-500 font-medium">
               Hosted on custom domain
             </span>
           </div>
-          <div className="p-3.5 bg-blue-500/10 text-blue-400 rounded-2xl border border-blue-500/20">
+          <div className="p-3.5 bg-blue-50 text-blue-600 rounded-2xl border border-blue-100">
             <Folder className="w-6 h-6" />
           </div>
         </div>
       </div>
 
-      {/* Top Downloaded Photos Analytics Section */}
-      {analytics?.top_photos && analytics.top_photos.length > 0 && (
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-amber-400" />
-              <h2 className="text-lg font-bold text-white">Most Downloaded Photos Ranking</h2>
-            </div>
-            <span className="text-xs font-bold text-slate-400">Top {analytics.top_photos.length} Photos</span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {analytics.top_photos.slice(0, 8).map((photo, idx) => (
-              <div
-                key={photo.file_id || idx}
-                className="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden p-3 flex gap-3 items-center"
-              >
-                <img
-                  src={`https://lh3.googleusercontent.com/d/${photo.file_id}=w500`}
-                  alt={photo.title}
-                  className="w-14 h-14 object-cover rounded-xl shrink-0 bg-slate-900"
-                />
-                <div className="space-y-0.5 overflow-hidden flex-1">
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-xs font-bold text-white truncate">{photo.title}</span>
-                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30">
-                      #{idx + 1}
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-slate-400 truncate">{photo.folder_title}</p>
-                  <div className="text-xs font-black text-amber-400 flex items-center gap-1 pt-1">
-                    <Download className="w-3 h-3" /> {photo.downloads} Downloads
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Main Creation & Photo Selection Section */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
         <div className="space-y-1">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <FolderPlus className="w-5 h-5 text-amber-400" /> Create Photo Album with Custom Selection
+          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <FolderPlus className="w-5 h-5 text-blue-600" /> Create Photo Album with Custom Selection
           </h2>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500">
             Paste Google Drive links (one or multiple folders), extract photo previews, select which photos to show, choose a cover photo, and host instantly.
           </p>
         </div>
@@ -434,43 +388,43 @@ export default function AdminGDriveSharing() {
         <form onSubmit={handleCreateFolder} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-300">Folder / Album Title *</label>
+              <label className="text-xs font-bold text-slate-700">Folder / Album Title *</label>
               <input
                 type="text"
                 placeholder="e.g. Annual Sports Day 2026"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-400 transition"
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-xs focus:outline-none focus:border-blue-600 transition"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-300">Custom URL Slug (Optional)</label>
+              <label className="text-xs font-bold text-slate-700">Custom URL Slug (Optional)</label>
               <input
                 type="text"
                 placeholder="e.g. sports-day-2026"
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-400 transition"
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-xs focus:outline-none focus:border-blue-600 transition"
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-300">Google Drive Folder Link(s) * (Supports multiple links separated by space/newline)</label>
+            <label className="text-xs font-bold text-slate-700">Google Drive Folder Link(s) * (Supports multiple links separated by space/newline)</label>
             <div className="flex gap-2">
               <input
                 type="text"
                 placeholder="https://drive.google.com/drive/folders/1abcxyz... https://drive.google.com/drive/folders/2def..."
                 value={driveUrl}
                 onChange={(e) => setDriveUrl(e.target.value)}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-400 transition"
+                className="flex-1 px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-xs focus:outline-none focus:border-blue-600 transition"
               />
               <button
                 type="button"
                 onClick={handleExtractPhotos}
                 disabled={extracting}
-                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-xs border border-amber-400/30 transition flex items-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-50"
+                className="px-4 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs border border-blue-200 transition flex items-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-50"
               >
                 {extracting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
                 Fetch Photos
@@ -479,51 +433,51 @@ export default function AdminGDriveSharing() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-300">Additional Photo Links (Optional - one per line)</label>
+            <label className="text-xs font-bold text-slate-700">Additional Photo Links (Optional - one per line)</label>
             <textarea
               rows={2}
               placeholder="https://drive.google.com/file/d/1abc...&#10;https://drive.google.com/file/d/2xyz..."
               value={manualUrls}
               onChange={(e) => setManualUrls(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-400 transition resize-none"
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-xs focus:outline-none focus:border-blue-600 transition resize-none"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-300">Album Description (Optional)</label>
+            <label className="text-xs font-bold text-slate-700">Album Description (Optional)</label>
             <textarea
               rows={2}
               placeholder="Brief description of the event or photographs..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-400 transition resize-none"
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-xs focus:outline-none focus:border-blue-600 transition resize-none"
             />
           </div>
 
           {/* Extracted Photo Picker Grid */}
           {extractedPhotos.length > 0 && (
-            <div className="space-y-4 pt-4 border-t border-slate-800">
-              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+            <div className="space-y-4 pt-4 border-t border-slate-200">
+              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
                 <div>
-                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                    <CheckSquare className="w-4 h-4 text-emerald-400" />
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <CheckSquare className="w-4 h-4 text-emerald-600" />
                     Select Photos to Show ({selectedPhotoIds.size} of {extractedPhotos.length} selected)
                   </h3>
-                  <p className="text-[11px] text-slate-400">Click individual photos to select or unselect. Star a photo to set as cover.</p>
+                  <p className="text-[11px] text-slate-500">Click individual photos to select or unselect. Star a photo to set as cover.</p>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={selectAllPhotos}
-                    className="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 text-xs font-bold border border-emerald-500/20 transition cursor-pointer"
+                    className="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-bold border border-emerald-200 transition cursor-pointer"
                   >
                     Select All
                   </button>
                   <button
                     type="button"
                     onClick={deselectAllPhotos}
-                    className="px-3 py-1.5 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 text-xs font-bold border border-rose-500/20 transition cursor-pointer"
+                    className="px-3 py-1.5 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-bold border border-rose-200 transition cursor-pointer"
                   >
                     Deselect All
                   </button>
@@ -539,33 +493,31 @@ export default function AdminGDriveSharing() {
                     <div
                       key={photo.file_id}
                       onClick={() => toggleSelectPhoto(photo.file_id)}
-                      className={`relative aspect-square rounded-2xl overflow-hidden border-2 cursor-pointer transition group shadow-md ${
+                      className={`relative aspect-square rounded-2xl overflow-hidden border-2 cursor-pointer transition group shadow-xs ${
                         isSelected
-                          ? "border-emerald-400 ring-2 ring-emerald-400/30"
-                          : "border-slate-800 opacity-40 hover:opacity-75"
+                          ? "border-emerald-500 ring-2 ring-emerald-500/20"
+                          : "border-slate-200 opacity-40 hover:opacity-75"
                       }`}
                     >
                       <img
                         src={`https://lh3.googleusercontent.com/d/${photo.file_id}=w500`}
                         alt={`Photo #${idx + 1}`}
-                        className="w-full h-full object-cover bg-slate-950"
+                        className="w-full h-full object-cover bg-slate-100"
                         loading="lazy"
                       />
 
-                      {/* Top Checkbox Badge */}
                       <div className="absolute top-2 left-2 z-10">
                         {isSelected ? (
-                          <span className="w-6 h-6 rounded-lg bg-emerald-500 text-slate-950 flex items-center justify-center shadow-md">
+                          <span className="w-6 h-6 rounded-lg bg-emerald-500 text-white flex items-center justify-center shadow-md">
                             <Check className="w-4 h-4 stroke-[3]" />
                           </span>
                         ) : (
-                          <span className="w-6 h-6 rounded-lg bg-slate-900/80 text-slate-400 flex items-center justify-center border border-slate-700">
+                          <span className="w-6 h-6 rounded-lg bg-white/90 text-slate-500 flex items-center justify-center border border-slate-300">
                             <Plus className="w-3.5 h-3.5" />
                           </span>
                         )}
                       </div>
 
-                      {/* Cover Photo Badge Button */}
                       <button
                         type="button"
                         onClick={(e) => {
@@ -576,18 +528,17 @@ export default function AdminGDriveSharing() {
                           }
                           toast.success("Cover photo set!");
                         }}
-                        className={`absolute top-2 right-2 z-10 p-1.5 rounded-lg backdrop-blur-md transition shadow-md ${
+                        className={`absolute top-2 right-2 z-10 p-1.5 rounded-lg backdrop-blur-md transition shadow-sm ${
                           isCover
                             ? "bg-amber-400 text-slate-950 font-bold"
-                            : "bg-slate-900/70 text-slate-400 hover:text-amber-300"
+                            : "bg-white/80 text-slate-600 hover:text-amber-600"
                         }`}
                         title={isCover ? "Album Cover Photo" : "Set as Album Cover"}
                       >
                         <Star className={`w-3.5 h-3.5 ${isCover ? "fill-slate-950" : ""}`} />
                       </button>
 
-                      {/* Bottom Title bar */}
-                      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent p-2 pt-4">
+                      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-900/90 via-slate-900/60 to-transparent p-2 pt-4">
                         <p className="text-[10px] font-bold text-white truncate">Photo #{idx + 1}</p>
                       </div>
                     </div>
@@ -600,7 +551,7 @@ export default function AdminGDriveSharing() {
           <button
             type="submit"
             disabled={creating}
-            className="px-6 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs transition flex items-center gap-2 shadow-lg disabled:opacity-50 cursor-pointer"
+            className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 text-white font-bold text-xs transition flex items-center gap-2 shadow-md disabled:opacity-50 cursor-pointer"
           >
             {creating ? (
               <>
@@ -616,21 +567,21 @@ export default function AdminGDriveSharing() {
       </div>
 
       {/* Album Management Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-sm">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <Layers className="w-5 h-5 text-amber-400" /> Hosted Photo Albums ({folders.length})
+          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <Layers className="w-5 h-5 text-blue-600" /> Hosted Photo Albums ({folders.length})
           </h2>
         </div>
 
         {folders.length === 0 ? (
-          <div className="text-center py-12 text-slate-400 text-xs">
+          <div className="text-center py-12 text-slate-500 text-xs">
             No photo folders created yet. Use the form above to add your first folder.
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
+            <table className="w-full text-left text-xs text-slate-700">
+              <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] tracking-wider border-b border-slate-200">
                 <tr>
                   <th className="p-3.5">Album Title & Slug</th>
                   <th className="p-3.5">Selected Photos</th>
@@ -639,31 +590,31 @@ export default function AdminGDriveSharing() {
                   <th className="p-3.5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-slate-100">
                 {folders.map((f) => (
-                  <tr key={f.id || f.slug} className="hover:bg-slate-800/40 transition">
+                  <tr key={f.id || f.slug} className="hover:bg-slate-50 transition">
                     <td className="p-3.5">
-                      <div className="font-bold text-white text-sm flex items-center gap-2">
+                      <div className="font-bold text-slate-900 text-sm flex items-center gap-2">
                         {f.title}
                         {f.cover_file_id && (
-                          <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-300 border border-amber-400/30 flex items-center gap-1">
-                            <Star className="w-2.5 h-2.5 fill-amber-300" /> Cover
+                          <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1">
+                            <Star className="w-2.5 h-2.5 fill-amber-700" /> Cover
                           </span>
                         )}
                       </div>
-                      <div className="text-[11px] text-amber-400/80 font-mono">/photos/{f.slug}</div>
+                      <div className="text-[11px] text-blue-600 font-mono">/photos/{f.slug}</div>
                     </td>
-                    <td className="p-3.5 font-semibold text-slate-200">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-xs font-bold text-amber-400">
-                        <ImageIcon className="w-3.5 h-3.5" /> {f.file_count || f.files?.length || 0} Photos
+                    <td className="p-3.5 font-semibold text-slate-800">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-xs font-bold text-slate-800">
+                        <ImageIcon className="w-3.5 h-3.5 text-blue-600" /> {f.file_count || f.files?.length || 0} Photos
                       </span>
                     </td>
-                    <td className="p-3.5 font-bold text-indigo-400">
+                    <td className="p-3.5 font-bold text-indigo-600">
                       <span className="flex items-center gap-1">
                         <Eye className="w-3.5 h-3.5" /> {f.views || 0}
                       </span>
                     </td>
-                    <td className="p-3.5 font-bold text-amber-400">
+                    <td className="p-3.5 font-bold text-amber-600">
                       <span className="flex items-center gap-1">
                         <Download className="w-3.5 h-3.5" /> {f.downloads || 0}
                       </span>
@@ -671,7 +622,7 @@ export default function AdminGDriveSharing() {
                     <td className="p-3.5 text-right space-x-2">
                       <button
                         onClick={() => openEditModal(f)}
-                        className="px-2.5 py-1.5 rounded-lg bg-amber-400/20 hover:bg-amber-400 text-amber-300 hover:text-slate-950 text-[11px] font-bold transition inline-flex items-center gap-1 cursor-pointer"
+                        className="px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] font-bold border border-blue-200 transition inline-flex items-center gap-1 cursor-pointer"
                         title="Edit album & select photos to show"
                       >
                         <Edit3 className="w-3 h-3" /> Select Photos
@@ -679,16 +630,16 @@ export default function AdminGDriveSharing() {
 
                       <button
                         onClick={() => copyShareLink(f.slug)}
-                        className="px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold transition inline-flex items-center gap-1 cursor-pointer"
+                        className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold border border-slate-300 transition inline-flex items-center gap-1 cursor-pointer"
                         title="Copy WhatsApp share link"
                       >
-                        <Share2 className="w-3 h-3 text-amber-400" /> Share Link
+                        <Share2 className="w-3 h-3 text-blue-600" /> Share Link
                       </button>
 
                       <button
                         onClick={() => handleResync(f.slug)}
                         disabled={syncingSlug === f.slug}
-                        className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold transition inline-flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                        className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold border border-slate-300 transition inline-flex items-center gap-1 cursor-pointer disabled:opacity-50"
                         title="Re-sync folder with Google Drive"
                       >
                         <RefreshCw className={`w-3 h-3 ${syncingSlug === f.slug ? "animate-spin" : ""}`} /> Sync
@@ -698,14 +649,14 @@ export default function AdminGDriveSharing() {
                         href={`/photos/${f.slug}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="px-2.5 py-1.5 rounded-lg bg-blue-500/20 hover:bg-blue-500 text-blue-300 hover:text-white text-[11px] font-bold transition inline-flex items-center gap-1"
+                        className="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[11px] font-bold border border-emerald-200 transition inline-flex items-center gap-1"
                       >
                         <ExternalLink className="w-3 h-3" /> View
                       </a>
 
                       <button
                         onClick={() => handleDelete(f.slug)}
-                        className="px-2.5 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500 text-rose-300 hover:text-white text-[11px] font-bold transition inline-flex items-center gap-1 cursor-pointer"
+                        className="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-[11px] font-bold border border-rose-200 transition inline-flex items-center gap-1 cursor-pointer"
                       >
                         <Trash2 className="w-3 h-3" />
                       </button>
@@ -720,20 +671,20 @@ export default function AdminGDriveSharing() {
 
       {/* Edit & Photo Selection Modal */}
       {editModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto space-y-6 shadow-2xl relative">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto space-y-6 shadow-2xl relative text-slate-800">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-4">
               <div className="space-y-1">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <SlidersHorizontal className="w-5 h-5 text-amber-400" />
+                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <SlidersHorizontal className="w-5 h-5 text-blue-600" />
                   Manage Photos & Album: {editingFolder?.title}
                 </h3>
-                <p className="text-xs text-slate-400">Toggle photos to show or hide, select cover photo, or add photos from extra Google Drive folders.</p>
+                <p className="text-xs text-slate-500">Toggle photos to show or hide, select cover photo, or add photos from extra Google Drive folders.</p>
               </div>
 
               <button
                 onClick={() => setEditModalOpen(false)}
-                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer"
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -742,39 +693,39 @@ export default function AdminGDriveSharing() {
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-300">Album Title</label>
+                  <label className="text-xs font-bold text-slate-700">Album Title</label>
                   <input
                     type="text"
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-400"
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-xs focus:outline-none focus:border-blue-600"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-300">Google Drive Link(s)</label>
+                  <label className="text-xs font-bold text-slate-700">Google Drive Link(s)</label>
                   <input
                     type="text"
                     value={editDriveUrl}
                     onChange={(e) => setEditDriveUrl(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-400"
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-xs focus:outline-none focus:border-blue-600"
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300">Album Description</label>
+                <label className="text-xs font-bold text-slate-700">Album Description</label>
                 <textarea
                   rows={2}
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-400 resize-none"
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-xs focus:outline-none focus:border-blue-600 resize-none"
                 />
               </div>
 
               {/* Add Extra Folder Section */}
-              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
-                <label className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+                <label className="text-xs font-bold text-blue-700 flex items-center gap-1.5">
                   <FolderPlus className="w-4 h-4" /> Add Photos from Another Google Drive Folder or Link
                 </label>
                 <div className="flex gap-2">
@@ -783,13 +734,13 @@ export default function AdminGDriveSharing() {
                     placeholder="https://drive.google.com/drive/folders/1abcxyz... (Paste new folder link to merge photos)"
                     value={extraFolderUrl}
                     onChange={(e) => setExtraFolderUrl(e.target.value)}
-                    className="flex-1 px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-400"
+                    className="flex-1 px-4 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs focus:outline-none focus:border-blue-600"
                   />
                   <button
                     type="button"
                     onClick={handleAppendFolderInModal}
                     disabled={appendingFolder}
-                    className="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs transition flex items-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-50"
+                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition flex items-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-50"
                   >
                     {appendingFolder ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5 stroke-[3]" />}
                     Fetch & Append Folder
@@ -799,9 +750,9 @@ export default function AdminGDriveSharing() {
 
               {/* Photo Selection Grid in Modal */}
               <div className="space-y-3 pt-2">
-                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
-                  <span className="text-xs font-bold text-white flex items-center gap-2">
-                    <CheckSquare className="w-4 h-4 text-emerald-400" />
+                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+                  <span className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                    <CheckSquare className="w-4 h-4 text-emerald-600" />
                     Selected Photos: {editSelectedIds.size} of {editPhotos.length}
                   </span>
 
@@ -809,14 +760,14 @@ export default function AdminGDriveSharing() {
                     <button
                       type="button"
                       onClick={() => setEditSelectedIds(new Set(editPhotos.map((f) => f.file_id)))}
-                      className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 text-xs font-bold border border-emerald-500/20 transition cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-bold border border-emerald-200 transition cursor-pointer"
                     >
                       Select All
                     </button>
                     <button
                       type="button"
                       onClick={() => setEditSelectedIds(new Set())}
-                      className="px-2.5 py-1 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 text-xs font-bold border border-rose-500/20 transition cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-bold border border-rose-200 transition cursor-pointer"
                     >
                       Deselect All
                     </button>
@@ -824,7 +775,7 @@ export default function AdminGDriveSharing() {
                       type="button"
                       onClick={handleResyncInModal}
                       disabled={syncingSlug === editingFolder?.slug}
-                      className="px-2.5 py-1 rounded-lg bg-amber-400/10 text-amber-300 hover:bg-amber-400/20 text-xs font-bold border border-amber-400/20 transition cursor-pointer flex items-center gap-1"
+                      className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold border border-blue-200 transition cursor-pointer flex items-center gap-1"
                     >
                       <RefreshCw className={`w-3 h-3 ${syncingSlug === editingFolder?.slug ? "animate-spin" : ""}`} /> Re-sync Drive
                     </button>
@@ -840,26 +791,26 @@ export default function AdminGDriveSharing() {
                       <div
                         key={photo.file_id}
                         onClick={() => toggleEditSelectPhoto(photo.file_id)}
-                        className={`relative aspect-square rounded-2xl overflow-hidden border-2 cursor-pointer transition group shadow-md ${
+                        className={`relative aspect-square rounded-2xl overflow-hidden border-2 cursor-pointer transition group shadow-xs ${
                           isSelected
-                            ? "border-emerald-400 ring-2 ring-emerald-400/30"
-                            : "border-slate-800 opacity-40 hover:opacity-75"
+                            ? "border-emerald-500 ring-2 ring-emerald-500/20"
+                            : "border-slate-200 opacity-40 hover:opacity-75"
                         }`}
                       >
                         <img
                           src={`https://lh3.googleusercontent.com/d/${photo.file_id}=w500`}
                           alt={`Photo #${idx + 1}`}
-                          className="w-full h-full object-cover bg-slate-950"
+                          className="w-full h-full object-cover bg-slate-100"
                           loading="lazy"
                         />
 
                         <div className="absolute top-2 left-2 z-10">
                           {isSelected ? (
-                            <span className="w-6 h-6 rounded-lg bg-emerald-500 text-slate-950 flex items-center justify-center shadow-md">
+                            <span className="w-6 h-6 rounded-lg bg-emerald-500 text-white flex items-center justify-center shadow-md">
                               <Check className="w-4 h-4 stroke-[3]" />
                             </span>
                           ) : (
-                            <span className="w-6 h-6 rounded-lg bg-slate-900/80 text-slate-400 flex items-center justify-center border border-slate-700">
+                            <span className="w-6 h-6 rounded-lg bg-white/90 text-slate-500 flex items-center justify-center border border-slate-300">
                               <Plus className="w-3.5 h-3.5" />
                             </span>
                           )}
@@ -875,17 +826,17 @@ export default function AdminGDriveSharing() {
                             }
                             toast.success("Cover photo set!");
                           }}
-                          className={`absolute top-2 right-2 z-10 p-1.5 rounded-lg backdrop-blur-md transition shadow-md ${
+                          className={`absolute top-2 right-2 z-10 p-1.5 rounded-lg backdrop-blur-md transition shadow-sm ${
                             isCover
                               ? "bg-amber-400 text-slate-950 font-bold"
-                              : "bg-slate-900/70 text-slate-400 hover:text-amber-300"
+                              : "bg-white/80 text-slate-600 hover:text-amber-600"
                           }`}
                           title={isCover ? "Album Cover Photo" : "Set as Album Cover"}
                         >
                           <Star className={`w-3.5 h-3.5 ${isCover ? "fill-slate-950" : ""}`} />
                         </button>
 
-                        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent p-2 pt-4">
+                        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-900/90 via-slate-900/60 to-transparent p-2 pt-4">
                           <p className="text-[10px] font-bold text-white truncate">Photo #{idx + 1}</p>
                         </div>
                       </div>
@@ -895,11 +846,11 @@ export default function AdminGDriveSharing() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 border-t border-slate-800 pt-4">
+            <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
               <button
                 type="button"
                 onClick={() => setEditModalOpen(false)}
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
               >
                 Cancel
               </button>
@@ -908,7 +859,7 @@ export default function AdminGDriveSharing() {
                 type="button"
                 onClick={handleUpdateFolder}
                 disabled={updating}
-                className="px-6 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                className="px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {updating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                 Save Changes ({editSelectedIds.size} Photos)
