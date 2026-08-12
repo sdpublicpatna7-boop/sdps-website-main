@@ -159,7 +159,7 @@ export default function GDriveFolderPage() {
               onClick={() => handleDownloadTrack("zip-all")}
               className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 hover:brightness-110 text-slate-950 font-bold text-xs transition flex items-center gap-1.5 shadow-lg"
             >
-              <Archive className="w-4 h-4" /> Download Selected ({files.length} Photos)
+              <Archive className="w-4 h-4" /> Download All ({files.length} Photos)
             </a>
           )}
         </div>
