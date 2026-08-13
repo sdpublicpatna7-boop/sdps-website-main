@@ -53,7 +53,7 @@ public_router = APIRouter(prefix="/api", tags=["public"])
 @public_router.get("/version")
 async def get_system_version():
     """Return current system version."""
-    return {"version": "v2.8.4"}
+    return {"version": "v2.8.5"}
 
 def get_real_ip(request: Request) -> str:
     forwarded = request.headers.get("X-Forwarded-For")
@@ -2058,78 +2058,10 @@ async def track_gdrive_photo_download(slug: str, payload: Dict[str, Any] = Body(
 
 @public_router.get("/gdrive-folders/{slug}/zip")
 async def download_gdrive_folder_zip(slug: str):
-    """Stream selected photos in a folder as a single ZIP archive ultra-fast using parallel async downloads."""
-    import zipfile
-    import io
-    import httpx
-    import re
-    import asyncio
-    import logging
-    from server import db
-
-    folder = await db.gdrive_folders.find_one({"$or": [{"slug": slug}, {"id": slug}]}, {"_id": 0})
-    if not folder or not folder.get("files"):
-        raise HTTPException(status_code=404, detail="Folder empty or not found")
-
-    files = folder.get("files", [])
-    if not files:
-        raise HTTPException(status_code=404, detail="No photos in album")
-
-    sem = asyncio.Semaphore(15)
-
-    async def fetch_photo(client, idx, f):
-        file_id = f.get("file_id")
-        if not file_id:
-            return None
-        
-        orig_url = f"https://drive.google.com/uc?export=download&id={file_id}"
-        fallback_url = f"https://lh3.googleusercontent.com/d/{file_id}=w4000"
-        
-        async with sem:
-            # 1. Try 100% original camera quality download
-            try:
-                resp = await client.get(orig_url)
-                if resp.status_code == 200 and len(resp.content) > 500 and "text/html" not in resp.headers.get("content-type", "").lower():
-                    raw_title = f.get('title', f"photo_{idx + 1}")
-                    safe_title = re.sub(r'[^a-zA-Z0-9_.-]', '_', raw_title)
-                    filename = f"Photo_{idx + 1:03d}_{safe_title}.jpg"
-                    return (filename, resp.content)
-            except Exception as e:
-                logging.warning(f"Failed original download for {file_id}: {e}")
-            
-            # 2. Fallback to 4000px ultra high-res CDN
-            try:
-                resp = await client.get(fallback_url)
-                if resp.status_code == 200 and len(resp.content) > 500:
-                    raw_title = f.get('title', f"photo_{idx + 1}")
-                    safe_title = re.sub(r'[^a-zA-Z0-9_.-]', '_', raw_title)
-                    filename = f"Photo_{idx + 1:03d}_{safe_title}.jpg"
-                    return (filename, resp.content)
-            except Exception as e:
-                logging.warning(f"Failed fallback download for {file_id}: {e}")
-
-        return None
-
-    async with httpx.AsyncClient(follow_redirects=True, timeout=30.0) as client:
-        tasks = [fetch_photo(client, idx, f) for idx, f in enumerate(files)]
-        results = await asyncio.gather(*tasks)
-
-    zip_buffer = io.BytesIO()
-    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_STORED) as zf:
-        for item in results:
-            if item:
-                filename, content = item
-                zf.writestr(filename, content)
-
-    zip_buffer.seek(0)
-    clean_title = re.sub(r'[^a-zA-Z0-9_.-]', '_', folder.get("title", "sdps-photos"))
-    return StreamingResponse(
-        zip_buffer,
-        media_type="application/zip",
-        headers={
-            "Content-Disposition": f'attachment; filename="{clean_title}.zip"',
-            "Cache-Control": "no-cache"
-        }
+    """Batch ZIP download disabled to prevent server memory spikes. Users download individual photos directly."""
+    raise HTTPException(
+        status_code=400,
+        detail="Batch ZIP download is disabled to optimize server memory. Please download individual photos directly from the gallery."
     )
 
 
