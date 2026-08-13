@@ -2,6 +2,7 @@
 import os
 import asyncio
 import logging
+import datetime
 import httpx
 from pathlib import Path
 from contextlib import asynccontextmanager
@@ -42,22 +43,43 @@ SELF_URL = (os.environ.get("RENDER_EXTERNAL_URL") or os.environ.get("SELF_URL", 
 WA_URL = os.environ.get("WA_SERVICE_URL", "https://wa.sdpublic.org").rstrip("/")
 
 
+async def _is_night_quiet_window_ist() -> bool:
+    """
+    Check if current time is within 01:00 AM IST to 05:30 AM IST.
+    During this window, pinger pauses so Render server can sleep & conserve 750 free hours!
+    """
+    try:
+        ist = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
+        now_ist = datetime.datetime.now(ist)
+        minutes_since_midnight = now_ist.hour * 60 + now_ist.minute
+        # 01:00 AM = 60 mins, 05:30 AM = 330 mins
+        return 60 <= minutes_since_midnight < 330
+    except Exception:
+        return False
+
+
 async def _keepalive_loop():
-    """Every ~12 min, ping this service and the WhatsApp service so neither
-    Render instance spins down for inactivity (24x7 warm)."""
+    """
+    Every ~12 min (from 05:30 AM to 01:00 AM IST), ping this service and WhatsApp service.
+    From 01:00 AM IST to 05:30 AM IST, pinger pauses so Render instance sleeps & saves free hours!
+    """
     await asyncio.sleep(45)  # let startup finish first
     async with httpx.AsyncClient(timeout=20.0) as c:
         while True:
-            targets = []
-            if SELF_URL:
-                targets.append(f"{SELF_URL}/api/ping")
-            if WA_URL:
-                targets.append(f"{WA_URL}/ping")
-            for url in targets:
-                try:
-                    await c.get(url)
-                except Exception as e:
-                    logger.debug(f"[keepalive] {url} failed: {e}")
+            if await _is_night_quiet_window_ist():
+                logger.info("[keepalive] Night quiet window (01:00 AM - 05:30 AM IST active). Pausing pings to allow Render server sleep & conserve 750h quota.")
+            else:
+                targets = []
+                if SELF_URL:
+                    targets.append(f"{SELF_URL}/api/ping")
+                if WA_URL:
+                    targets.append(f"{WA_URL}/ping")
+                for url in targets:
+                    try:
+                        await c.get(url)
+                    except Exception as e:
+                        logger.debug(f"[keepalive] {url} failed: {e}")
+
             await asyncio.sleep(KEEPALIVE_INTERVAL_SEC)
 
 

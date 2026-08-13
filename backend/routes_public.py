@@ -53,7 +53,7 @@ public_router = APIRouter(prefix="/api", tags=["public"])
 @public_router.get("/version")
 async def get_system_version():
     """Return current system version."""
-    return {"version": "v2.8.5"}
+    return {"version": "v2.8.6"}
 
 def get_real_ip(request: Request) -> str:
     forwarded = request.headers.get("X-Forwarded-For")
