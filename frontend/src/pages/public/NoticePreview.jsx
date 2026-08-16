@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import api, { getBackendUrl } from "@/lib/api";
 import { Printer, FileText } from "lucide-react";
+import DOMPurify from "dompurify";
 
 export function NoticePreview() {
   const { id } = useParams();
@@ -320,20 +321,20 @@ function renderMarkdown(text) {
 
     if (line.startsWith("* ") || line.startsWith("- ")) {
       rendered.push(
-        <li key={i} className="ml-5 list-disc text-slate-800" dangerouslySetInnerHTML={{ __html: line.substring(2) }} />
+        <li key={i} className="ml-5 list-disc text-slate-800" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(line.substring(2)) }} />
       );
       continue;
     }
 
     if (/^\d+\.\s/.test(line)) {
       rendered.push(
-        <li key={i} className="ml-5 list-decimal text-slate-800" dangerouslySetInnerHTML={{ __html: line.replace(/^\d+\.\s/, '') }} />
+        <li key={i} className="ml-5 list-decimal text-slate-800" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(line.replace(/^\d+\.\s/, '')) }} />
       );
       continue;
     }
 
     rendered.push(
-      <div key={i} className="text-justify text-slate-800 leading-relaxed" dangerouslySetInnerHTML={{ __html: line }} />
+      <div key={i} className="text-justify text-slate-800 leading-relaxed" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(line) }} />
     );
   }
 
