@@ -24,7 +24,7 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
   const [dotStyle, setDotStyle] = useState("rounded"); // 'rounded' | 'square' | 'dots'
   const [includeLogo, setIncludeLogo] = useState(true);
   const [logoShape, setLogoShape] = useState("circle"); // 'circle' | 'rounded'
-  const [logoSize, setLogoSize] = useState(0.22); // 0.18, 0.22, 0.25
+  const [logoSize, setLogoSize] = useState(0.20); // 0.18, 0.20, 0.24
   const [viewMode, setViewMode] = useState("card"); // 'card' | 'qr'
   const [copied, setCopied] = useState(false);
   const [urlCopied, setUrlCopied] = useState(false);
@@ -47,7 +47,7 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
     try {
       await renderQRToCanvas(canvasRef.current, shortUrl, {
         size: 1024,
-        margin: 3,
+        margin: 4,
         color: selectedColor,
         bgColor: "#FFFFFF",
         dotStyle,
@@ -55,7 +55,7 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
         logoUrl: schoolLogoUrl,
         logoShape,
         logoSizeRatio: logoSize,
-        logoPaddingRatio: 0.035,
+        logoPaddingRatio: 0.03,
       });
     } catch (err) {
       console.error("QR render error:", err);
@@ -92,6 +92,7 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
     try {
       const svgString = generateQRSVG(shortUrl, {
         size: 512,
+        margin: 4,
         color: selectedColor,
         bgColor: "#FFFFFF",
         includeLogo,
@@ -192,7 +193,7 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
               width: 100%;
               border: 3.5px solid #0E3B91;
               border-radius: 32px;
-              padding: 40px 32px;
+              padding: 42px 36px;
               text-align: center;
               background: #ffffff;
               box-shadow: 0 10px 30px rgba(0,0,0,0.05);
@@ -201,28 +202,29 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
               display: flex;
               align-items: center;
               justify-content: center;
-              gap: 14px;
+              gap: 16px;
               margin-bottom: 24px;
             }
             .school-logo {
-              width: 60px;
-              height: 60px;
+              width: 64px;
+              height: 64px;
               object-fit: contain;
             }
             .school-name {
-              font-size: 22px;
+              font-size: 23px;
               font-weight: 900;
               color: #0E3B91;
               letter-spacing: -0.5px;
               text-transform: uppercase;
+              line-height: 1.2;
             }
             .school-tag {
-              font-size: 11px;
+              font-size: 11.5px;
               font-weight: 800;
               color: #F87D0E;
               letter-spacing: 1.2px;
               text-transform: uppercase;
-              margin-top: 2px;
+              margin-top: 4px;
             }
             .title {
               font-size: 24px;
@@ -232,7 +234,7 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
               line-height: 1.3;
             }
             .subtitle {
-              font-size: 13.5px;
+              font-size: 14px;
               color: #64748b;
               font-weight: 600;
               margin-bottom: 24px;
@@ -324,7 +326,7 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
 
   return (
     <div
-      className="fixed inset-0 bg-slate-950/75 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-200"
+      className="fixed inset-0 bg-slate-950/75 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-in fade-in duration-200"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -332,10 +334,10 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
       <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-5xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[94vh]">
         
         {/* Header */}
-        <div className="bg-gradient-to-r from-slate-900 via-slate-850 to-indigo-950 px-6 py-4.5 text-white flex items-center justify-between shrink-0 border-b border-white/10">
+        <div className="bg-gradient-to-r from-slate-900 via-slate-850 to-indigo-950 px-7 py-5 text-white flex items-center justify-between shrink-0 border-b border-white/10">
           <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center border border-white/15 shadow-inner">
-              <Sparkles className="w-5 h-5 text-amber-400" />
+            <div className="w-11 h-11 rounded-2xl bg-white/10 flex items-center justify-center border border-white/15 shadow-inner shrink-0">
+              <Sparkles className="w-5.5 h-5.5 text-amber-400" />
             </div>
             <div>
               <h2 className="text-lg font-black tracking-tight text-white flex items-center gap-2">
@@ -357,17 +359,17 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
         </div>
 
         {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-7 grid grid-cols-1 lg:grid-cols-12 gap-7 bg-slate-50/60">
+        <div className="flex-1 overflow-y-auto p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 bg-slate-50/70">
           
           {/* Left Column: Live Preview with Persistent Canvas */}
-          <div className="lg:col-span-6 flex flex-col items-center justify-start space-y-5">
+          <div className="lg:col-span-6 flex flex-col items-center justify-start space-y-6">
             
             {/* View Mode Toggle Pill */}
             <div className="flex items-center p-1.5 bg-slate-200/80 rounded-2xl w-full max-w-md shadow-inner">
               <button
                 type="button"
                 onClick={() => setViewMode("card")}
-                className={`flex-1 py-2 px-4 rounded-xl text-xs font-black transition cursor-pointer flex items-center justify-center gap-2 ${
+                className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black transition cursor-pointer flex items-center justify-center gap-2 ${
                   viewMode === "card"
                     ? "bg-white text-slate-900 shadow-sm"
                     : "text-slate-600 hover:text-slate-900"
@@ -378,7 +380,7 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
               <button
                 type="button"
                 onClick={() => setViewMode("qr")}
-                className={`flex-1 py-2 px-4 rounded-xl text-xs font-black transition cursor-pointer flex items-center justify-center gap-2 ${
+                className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black transition cursor-pointer flex items-center justify-center gap-2 ${
                   viewMode === "qr"
                     ? "bg-white text-slate-900 shadow-sm"
                     : "text-slate-600 hover:text-slate-900"
@@ -388,51 +390,51 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
               </button>
             </div>
 
-            {/* Single Persistent Preview Box (Canvas is NEVER destroyed on toggle) */}
+            {/* Single Persistent Preview Box */}
             <div
               className={`w-full max-w-md bg-white rounded-3xl transition-all duration-200 ${
                 viewMode === "card"
-                  ? "border-2 border-slate-200/90 shadow-[0_8px_30px_rgba(0,0,0,0.06)] p-6 text-center space-y-4"
-                  : "border border-slate-200/90 shadow-md p-7 text-center space-y-5"
+                  ? "border-2 border-slate-200/90 shadow-[0_8px_30px_rgba(0,0,0,0.06)] p-7 text-center space-y-5"
+                  : "border border-slate-200/90 shadow-md p-8 text-center space-y-6"
               }`}
             >
               {viewMode === "card" ? (
                 <>
-                  {/* School Header */}
-                  <div className="flex items-center justify-center gap-3 pb-3 border-b border-slate-100">
+                  {/* School Header - Clean & Spacious */}
+                  <div className="flex items-center justify-center gap-3.5 pb-4 pt-1 border-b border-slate-100">
                     <img
                       src="/logo512.png"
                       alt="SDPS Logo"
-                      className="w-8 h-8 object-contain rounded-full bg-slate-50 p-0.5 border border-slate-150"
+                      className="w-10 h-10 object-contain rounded-full bg-slate-50 p-1 border border-slate-200 shrink-0"
                     />
-                    <div className="text-left">
-                      <div className="text-sm font-black text-slate-900 tracking-tight leading-tight">
+                    <div className="text-left flex flex-col justify-center">
+                      <div className="text-base font-black text-slate-900 tracking-tight leading-snug">
                         S.D. PUBLIC SCHOOL
                       </div>
-                      <div className="text-[10px] font-extrabold text-orange-600 uppercase tracking-wider">
-                        Patna • Official Portal
+                      <div className="text-[11px] font-extrabold text-orange-600 uppercase tracking-widest leading-normal mt-0.5">
+                        PATNA • OFFICIAL PORTAL
                       </div>
                     </div>
                   </div>
 
                   {/* Link Title & Destination */}
-                  <div className="space-y-1">
-                    <h3 className="text-base font-black text-slate-900 leading-snug px-2">
+                  <div className="space-y-1.5 pt-1">
+                    <h3 className="text-base font-black text-slate-900 leading-snug px-3">
                       {link?.title || "Shortened Link Portal"}
                     </h3>
-                    <p className="text-xs font-semibold text-slate-400 truncate max-w-xs mx-auto">
+                    <p className="text-xs font-medium text-slate-500 truncate max-w-xs mx-auto">
                       {link?.url || shortUrl}
                     </p>
                   </div>
                 </>
               ) : (
-                <div className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
+                <div className="text-xs font-extrabold text-slate-400 uppercase tracking-wider pt-1">
                   Clean QR Code Preview
                 </div>
               )}
 
               {/* SINGLE PERSISTENT CANVAS */}
-              <div className="relative inline-block mx-auto bg-slate-50/80 p-3 rounded-2xl border border-slate-200/70 shadow-inner">
+              <div className="relative inline-block mx-auto bg-slate-50/80 p-3.5 rounded-2xl border border-slate-200/80 shadow-inner">
                 <canvas
                   ref={canvasRef}
                   className={`${
@@ -447,8 +449,8 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
               </div>
 
               {/* URL Chip */}
-              <div>
-                <div className="inline-flex items-center justify-between gap-2 px-4 py-2 bg-indigo-50/80 border border-indigo-150 rounded-2xl max-w-full">
+              <div className="pt-1">
+                <div className="inline-flex items-center justify-between gap-2.5 px-4 py-2.5 bg-indigo-50/80 border border-indigo-150 rounded-2xl max-w-full">
                   <span className="font-mono text-xs font-black text-indigo-700 truncate select-all">
                     {shortUrl}
                   </span>
@@ -458,13 +460,13 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
                     className="p-1 hover:bg-indigo-100 rounded-lg text-indigo-600 transition cursor-pointer shrink-0"
                     title="Copy URL"
                   >
-                    {urlCopied ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    {urlCopied ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
 
               {viewMode === "card" && (
-                <div className="text-[10.5px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center justify-center gap-1.5 pt-1">
+                <div className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center justify-center gap-1.5 pt-1">
                   <Smartphone className="w-3.5 h-3.5 text-blue-500" />
                   Scan with Camera to Visit
                 </div>
@@ -483,14 +485,14 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
           </div>
 
           {/* Right Column: Customization Studio Controls */}
-          <div className="lg:col-span-6 space-y-5">
+          <div className="lg:col-span-6 space-y-6">
             
             {/* 1. Center School Logo Section */}
-            <div className="bg-white rounded-3xl p-5 border border-slate-200/90 shadow-sm space-y-3.5">
-              <div className="flex items-center justify-between pb-1 border-b border-slate-100">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                    <ShieldCheck className="w-4 h-4" />
+            <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-sm space-y-4">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <ShieldCheck className="w-4.5 h-4.5" />
                   </div>
                   <div>
                     <label className="text-xs font-black uppercase tracking-wider text-slate-800 block">
@@ -515,11 +517,11 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
               </div>
 
               {includeLogo && (
-                <div className="space-y-3.5 animate-in fade-in duration-200">
+                <div className="space-y-4 animate-in fade-in duration-200 pt-1">
                   {/* Badge Shape */}
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <span className="text-xs font-bold text-slate-500">Badge Shield Shape</span>
-                    <div className="grid grid-cols-2 gap-2.5">
+                    <div className="grid grid-cols-2 gap-3">
                       <button
                         type="button"
                         onClick={() => setLogoShape("circle")}
@@ -546,16 +548,16 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
                   </div>
 
                   {/* Logo Size */}
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <div className="flex justify-between items-center text-xs font-bold text-slate-500">
                       <span>Logo Scale Size</span>
                       <span className="text-slate-800 font-black">{Math.round(logoSize * 100)}%</span>
                     </div>
-                    <div className="grid grid-cols-3 gap-2.5">
+                    <div className="grid grid-cols-3 gap-3">
                       {[
                         { label: "Compact (18%)", val: 0.18 },
-                        { label: "Standard (22%)", val: 0.22 },
-                        { label: "Bold (25%)", val: 0.25 },
+                        { label: "Standard (20%)", val: 0.20 },
+                        { label: "Bold (24%)", val: 0.24 },
                       ].map((item) => (
                         <button
                           key={item.val}
@@ -577,11 +579,11 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
             </div>
 
             {/* 2. Color Themes Section */}
-            <div className="bg-white rounded-3xl p-5 border border-slate-200/90 shadow-sm space-y-3.5">
-              <div className="flex items-center justify-between pb-1 border-b border-slate-100">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                    <Palette className="w-4 h-4" />
+            <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-sm space-y-4">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                    <Palette className="w-4.5 h-4.5" />
                   </div>
                   <div>
                     <label className="text-xs font-black uppercase tracking-wider text-slate-800 block">
@@ -609,13 +611,13 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
               </div>
 
               {/* Spacious 3-column Preset Color Cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {COLOR_PRESETS.map((preset) => (
                   <button
                     key={preset.value}
                     type="button"
                     onClick={() => setSelectedColor(preset.value)}
-                    className={`py-2.5 px-3 rounded-2xl text-xs font-bold border flex items-center gap-2.5 transition cursor-pointer ${
+                    className={`py-3 px-3.5 rounded-2xl text-xs font-bold border flex items-center gap-2.5 transition cursor-pointer ${
                       selectedColor.toLowerCase() === preset.value.toLowerCase()
                         ? "border-blue-600 bg-blue-50/80 shadow-2xs font-extrabold text-blue-900 ring-1 ring-blue-500/20"
                         : "border-slate-200 bg-slate-50/70 hover:bg-slate-100 text-slate-700"
@@ -629,10 +631,10 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
             </div>
 
             {/* 3. Pattern Style Section */}
-            <div className="bg-white rounded-3xl p-5 border border-slate-200/90 shadow-sm space-y-3.5">
-              <div className="flex items-center gap-2.5 pb-1 border-b border-slate-100">
-                <div className="w-7 h-7 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                  <QrCode className="w-4 h-4" />
+            <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-sm space-y-4">
+              <div className="flex items-center gap-3 pb-2 border-b border-slate-100">
+                <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                  <QrCode className="w-4.5 h-4.5" />
                 </div>
                 <div>
                   <label className="text-xs font-black uppercase tracking-wider text-slate-800 block">
@@ -644,7 +646,7 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-2.5">
+              <div className="grid grid-cols-3 gap-3">
                 {[
                   { id: "rounded", label: "Smooth Rounded" },
                   { id: "square", label: "Classic Square" },
@@ -654,7 +656,7 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
                     key={s.id}
                     type="button"
                     onClick={() => setDotStyle(s.id)}
-                    className={`py-2.5 px-2.5 rounded-2xl text-xs font-bold border transition cursor-pointer text-center ${
+                    className={`py-2.5 px-3 rounded-2xl text-xs font-bold border transition cursor-pointer text-center ${
                       dotStyle === s.id
                         ? "border-blue-600 bg-blue-50/80 text-blue-700 font-extrabold shadow-2xs ring-1 ring-blue-500/20"
                         : "border-slate-200 bg-slate-50/70 text-slate-600 hover:bg-slate-100"
@@ -667,7 +669,7 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
             </div>
 
             {/* 4. Action Export Buttons */}
-            <div className="space-y-3 pt-1">
+            <div className="space-y-3 pt-2">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   type="button"
