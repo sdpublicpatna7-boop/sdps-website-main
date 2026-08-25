@@ -84,7 +84,7 @@ function AnimatedStat({ raw, label, suffix = "+" }) {
       <div className="font-headline text-3xl sm:text-5xl lg:text-6xl text-brand-blue font-bold tracking-tight bg-gradient-to-br from-brand-blue via-brand-blue-light to-brand-blue bg-clip-text text-transparent whitespace-nowrap">
         {display}{suffix}
       </div>
-      <div className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 mt-2 sm:mt-3">{label}</div>
+      <div className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-slate-400 mt-2 sm:mt-3">{label}</div>
     </motion.div>
   );
 }
@@ -207,12 +207,15 @@ export default function Home() {
   }, []);
 
   const stats = settings?.stats || { years: "30+", educators: "75+", students: "50000+", alumni: "5000+" };
+  const erpUrl = settings?.erp_url || "https://sdpublic.gungunerp.in";
+  const playStoreUrl = settings?.play_store_url || "https://play.google.com/store/apps/details?id=com.gungunerp.appsdpublicschool";
   const preschoolBannerRaw = settings?.preschool_banner_image_url || "https://sdpublic.org/assets/img/banner.jpg";
   const { style: preschoolStyle, cleanUrl: cleanPreschool } = parseImageTransform(preschoolBannerRaw);
   const preschoolBanner = cleanPreschool;
   const youtubeUrl = settings?.youtube_channel || "https://youtube.com";
   const instagramUrl = settings?.instagram_url || "https://instagram.com";
   const facebookUrl = settings?.facebook_url || "https://facebook.com";
+
 
   const getYouTubeId = (url) => {
     if (!url) return null;
@@ -268,6 +271,7 @@ export default function Home() {
     
     return { src, style };
   };
+
 
   const heroFeatureRaw = settings?.hero_feature_image_url || "https://sdpublic.org/img/feature.jpg";
   const { style: heroFeatureStyle, cleanUrl: cleanHeroFeature } = parseImageTransform(heroFeatureRaw);
@@ -332,9 +336,10 @@ export default function Home() {
           <div className="lg:col-span-7">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: "easeOut" }}>
               <div className="overline mb-4 text-brand-orange font-bold tracking-[0.25em]">Empowering Generations Since 1994</div>
-              <h1 className="legacy-title text-brand-ink leading-tight text-3xl sm:text-5xl lg:text-6xl font-black">
-                Welcome to <span className="text-brand-blue">S.D. Public School</span>, Patna
-                <span className="block text-xs sm:text-sm font-bold text-brand-orange mt-2.5 tracking-wide bg-brand-orange/10 px-3.5 py-1.5 rounded-full w-max">
+              <h1 className="legacy-title text-brand-ink leading-tight">
+                Welcome to <span className="brand-gradient-text italic font-bold pr-2">S.D. Public</span>
+                <br /> School, <span className="gold-gradient-text">Patna</span>
+                <span className="block text-xs sm:text-sm font-bold text-brand-orange mt-2 tracking-wider uppercase bg-brand-orange/10 px-3 py-1 rounded-full w-max">
                   🏆 Top School in Patna, Bihar
                 </span>
               </h1>
@@ -343,14 +348,25 @@ export default function Home() {
                 moral values, and creative learning with a legacy of <strong className="text-brand-blue">30+ years</strong>.
               </p>
               
-              {/* Primary & Secondary Conversion Actions */}
               <div className="mt-8 flex flex-wrap gap-4">
-                <Link to="/admissions" className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-brand-blue to-brand-blue-light text-white font-bold hover:scale-[1.02] hover:shadow-[0_8px_25px_rgba(14,59,145,0.25)] transition duration-200" data-testid="hero-admissions-btn">
+                <Link to="/admissions" className="px-7 py-3.5 rounded-2xl bg-gradient-to-r from-brand-blue to-brand-blue-light text-white font-bold hover:scale-[1.02] hover:shadow-[0_8px_25px_rgba(14,59,145,0.25)] transition duration-200" data-testid="hero-admissions-btn">
                   Begin Admission
                 </Link>
-                <Link to="/about" className="px-8 py-3.5 rounded-2xl bg-white/80 border border-slate-200/80 text-brand-blue font-bold backdrop-blur-sm hover:bg-white hover:scale-[1.02] transition duration-200" data-testid="hero-about-btn">
+                <Link to="/about" className="px-7 py-3.5 rounded-2xl bg-white/80 border border-slate-200/80 text-brand-blue font-bold backdrop-blur-sm hover:bg-white hover:scale-[1.02] transition duration-200" data-testid="hero-about-btn">
                   Discover SDPS
                 </Link>
+              </div>
+
+              {/* ERP + App quick links */}
+              <div className="mt-6 flex flex-wrap gap-3">
+                <a href={erpUrl} target="_blank" rel="noreferrer"
+                  className="inline-flex items-center gap-2 text-sm text-brand-blue border border-brand-blue/20 bg-white/60 hover:bg-white px-4 py-2.5 rounded-xl transition hover:shadow-sm">
+                  <GraduationCap className="w-4 h-4 text-brand-orange" /> Student ERP Login
+                </a>
+                <a href={playStoreUrl} target="_blank" rel="noreferrer"
+                  className="inline-flex items-center gap-2 text-sm text-brand-ink/70 border border-black/10 bg-white/60 hover:bg-white px-4 py-2.5 rounded-xl transition hover:shadow-sm">
+                  <Smartphone className="w-4 h-4 text-brand-gold" /> Download App
+                </a>
               </div>
 
               <div className="mt-10 flex items-center gap-6 text-sm">
@@ -377,8 +393,8 @@ export default function Home() {
             transition={{ delay: 0.2, duration: 0.8, ease: "easeOut" }} 
             className="lg:col-span-5 relative"
           >
-            <div className="relative aspect-[4/5] rounded-3xl overflow-hidden bg-white/40 border border-white/60 backdrop-blur-sm p-3 shadow-2xl group hover:-translate-y-2 hover:shadow-[0_30px_60px_rgba(8,32,82,0.1)] transition-all duration-500">
-              <div className="w-full h-full rounded-2xl overflow-hidden">
+            <div className="relative aspect-[4/5] rounded-[2.5rem] overflow-hidden bg-white/40 border border-white/60 backdrop-blur-sm p-3 shadow-2xl group hover:-translate-y-2 hover:shadow-[0_30px_60px_rgba(8,32,82,0.1)] transition-all duration-500">
+              <div className="w-full h-full rounded-[2rem] overflow-hidden">
                 <img
                   src={formattedHeroFeature}
                   alt="SDPS School"
@@ -401,7 +417,7 @@ export default function Home() {
             </div>
             {/* Floating accent badge */}
             <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-gradient-to-br from-brand-gold to-brand-gold-light shadow-[0_10px_25px_rgba(199,161,91,0.3)] hover:scale-110 transition-transform duration-300 animate-float-slow flex items-center justify-center cursor-default z-20">
-              <span className="text-white font-headline font-bold text-sm text-center leading-tight">30+<br /><span className="text-xs tracking-wider opacity-90 font-extrabold">YEARS</span></span>
+              <span className="text-white font-headline font-bold text-sm text-center leading-tight">30+<br /><span className="text-[10px] tracking-wider opacity-90 font-extrabold">YEARS</span></span>
             </div>
           </motion.div>
         </div>
@@ -427,12 +443,12 @@ export default function Home() {
       {/* WHY CHOOSE */}
       <section className="py-24 bg-gradient-to-b from-white to-slate-50/30">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
             <div>
-              <div className="overline mb-2 text-brand-orange font-bold tracking-wider">Why Choose SDPS</div>
+              <div className="overline mb-3 text-brand-orange font-bold tracking-wider">Why Choose SDPS</div>
               <h2 className="section-title">A blend of <em className="font-legacy text-brand-orange not-italic">tradition</em> and <span className="brand-gradient-text">innovation</span></h2>
             </div>
-            <p className="md:max-w-md text-slate-600 text-sm leading-relaxed border-l-2 border-brand-orange/40 pl-4">
+            <p className="md:max-w-md text-slate-500 leading-relaxed">
               Founded in 1994 by The Suryamuni Devi Foundation Trust, SDPS continues to shape the leaders of tomorrow.
             </p>
           </div>
@@ -463,11 +479,11 @@ export default function Home() {
       {/* FEATURE IMAGE STRIP */}
       <section className="py-10 bg-white/50">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="rounded-3xl overflow-hidden shadow-2xl border border-white/60 p-2 bg-white/30 backdrop-blur-sm">
+          <div className="rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/60 p-2 bg-white/30 backdrop-blur-sm">
             <img
               src="/sdps-annual-sports.jpg"
               alt="SDPS Annual Sports Meet"
-              className="w-full h-96 object-cover rounded-2xl hover:scale-[1.005] transition-transform duration-500"
+              className="w-full h-96 object-cover rounded-[2rem] hover:scale-[1.005] transition-transform duration-500"
               loading="lazy"
               onError={(e) => { e.target.style.display = "none"; }}
             />
@@ -479,89 +495,65 @@ export default function Home() {
       <section className="py-24 bg-gradient-to-b from-brand-paper to-white">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12">
           {/* Calendar */}
-          <div className="lg:col-span-5 flex flex-col justify-between">
-            <div>
-              <div className="overline mb-3 text-brand-orange font-bold">Stay informed</div>
-              <h2 className="section-title mb-2"><Calendar className="inline w-8 h-8 text-brand-orange mr-2 shrink-0" />Academic Calendar</h2>
-              <p className="text-sm text-slate-500 mb-6">Important dates for session 2025-26:</p>
-              <div className="space-y-3.5">
-                {calendar.length === 0 && (
-                  <div className="p-6 bg-white/50 backdrop-blur-sm rounded-2xl border border-slate-100 text-center text-sm text-slate-400 italic">
-                    No upcoming dates posted yet. Please check back soon.
-                  </div>
-                )}
-                {calendar.map((c, i) => (
-                  <div key={c.id || i} className="flex items-center gap-4.5 p-4 bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-100/80 hover:border-brand-orange/30 shadow-[0_4px_20px_rgba(0,0,0,0.01)] hover:shadow-[0_10px_25px_rgba(248,125,14,0.04)] hover:-translate-y-0.5 transition-all duration-300 group">
-                    {c.icon_url ? (
-                      <img src={c.icon_url.startsWith("http") ? c.icon_url : `${process.env.REACT_APP_BACKEND_URL}${c.icon_url}`} alt="" className="w-11 h-11 rounded-xl object-cover border border-slate-50" loading="lazy" />
-                    ) : (
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-blue/10 to-brand-orange/10 flex flex-col items-center justify-center text-xs uppercase tracking-wider text-brand-blue font-extrabold shrink-0">
-                        {parseDate(c.date).toLocaleDateString("en-US", { month: "short" })}
-                        <div className="text-base text-brand-ink leading-none mt-0.5">{parseDate(c.date).getDate()}</div>
-                      </div>
-                    )}
-                    <div className="flex-1 overflow-hidden">
-                      <div className="font-headline font-semibold text-slate-800 truncate">{c.name}</div>
-                      {c.description && <div className="text-xs text-slate-500 truncate">{c.description}</div>}
+          <div className="lg:col-span-5">
+            <div className="overline mb-3 text-brand-orange font-bold">Stay informed</div>
+            <h2 className="section-title mb-2"><Calendar className="inline w-8 h-8 text-brand-orange mr-2 shrink-0" />Academic Calendar</h2>
+            <p className="text-sm text-slate-500 mb-6">Important dates for session 2025-26:</p>
+            <div className="space-y-3.5">
+              {calendar.length === 0 && (
+                <div className="p-6 bg-white/50 backdrop-blur-sm rounded-2xl border border-slate-100 text-center text-sm text-slate-400 italic">
+                  No upcoming dates posted yet. Please check back soon.
+                </div>
+              )}
+              {calendar.map((c, i) => (
+                <div key={c.id || i} className="flex items-center gap-4.5 p-4 bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-100/80 hover:border-brand-orange/30 shadow-[0_4px_20px_rgba(0,0,0,0.01)] hover:shadow-[0_10px_25px_rgba(248,125,14,0.04)] hover:-translate-y-0.5 transition-all duration-300 group">
+                  {c.icon_url ? (
+                    <img src={c.icon_url.startsWith("http") ? c.icon_url : `${process.env.REACT_APP_BACKEND_URL}${c.icon_url}`} alt="" className="w-11 h-11 rounded-xl object-cover border border-slate-50" loading="lazy" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-blue/10 to-brand-orange/10 flex flex-col items-center justify-center text-[10px] uppercase tracking-wider text-brand-blue font-extrabold shrink-0">
+                      {parseDate(c.date).toLocaleDateString("en-US", { month: "short" })}
+                      <div className="text-base text-brand-ink leading-none mt-0.5">{parseDate(c.date).getDate()}</div>
                     </div>
-                    <span className="text-xs uppercase tracking-wider text-brand-orange font-bold shrink-0">{c.type}</span>
+                  )}
+                  <div className="flex-1 overflow-hidden">
+                    <div className="font-headline font-semibold text-slate-800 truncate">{c.name}</div>
+                    {c.description && <div className="text-xs text-slate-500 truncate">{c.description}</div>}
                   </div>
-                ))}
-              </div>
+                  <span className="text-xs uppercase tracking-wider text-brand-orange font-bold shrink-0">{c.type}</span>
+                </div>
+              ))}
             </div>
-            <Link to="/calendar" className="inline-flex items-center gap-1.5 mt-auto pt-6 text-brand-blue font-headline font-bold hover:gap-2.5 transition-all">
+            <Link to="/calendar" className="inline-flex items-center gap-1.5 mt-6 text-brand-blue font-headline font-bold hover:gap-2.5 transition-all">
               View Full Calendar <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
 
           {/* News */}
-          <div className="lg:col-span-7 flex flex-col justify-between">
-            <div>
-              <div className="overline mb-3 text-brand-orange font-bold">Latest from SDPS</div>
-              <h2 className="section-title mb-2"><Newspaper className="inline w-8 h-8 text-brand-orange mr-2 shrink-0" />News & Events</h2>
-              <p className="text-sm text-slate-500 mb-6">Stay updated with our latest stories & campus achievements:</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                {news.length === 0 && (
-                  <>
-                    <Link to="/news" className="beam-card group bg-white/80 backdrop-blur-sm rounded-3xl p-5 border border-slate-100 hover:border-brand-blue/30 shadow-[0_8px_30px_rgba(0,0,0,0.01)] hover:shadow-[0_15px_35px_rgba(14,59,145,0.04)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between">
-                      <div>
-                        <div className="overflow-hidden rounded-2xl bg-white mb-4 shadow-sm border border-slate-50">
-                          <img src="/sdps-annual-sports.jpg" alt="SDPS Annual Sports" className="w-full object-cover h-40 group-hover:scale-105 transition-transform duration-500" loading="lazy" />
-                        </div>
-                        <div className="text-xs text-brand-orange font-bold uppercase tracking-wider mb-1.5">Ongoing Session</div>
-                        <div className="font-headline font-semibold text-slate-800 mb-1.5 group-hover:text-brand-blue transition-colors duration-200">Admissions Open 2026-27</div>
-                        <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">Enrollment and registration is currently open for Pre-School through Class XII.</p>
+          <div className="lg:col-span-7">
+            <div className="overline mb-3 text-brand-orange font-bold">Latest from SDPS</div>
+            <h2 className="section-title mb-6"><Newspaper className="inline w-8 h-8 text-brand-orange mr-2 shrink-0" />News & Events</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              {news.length === 0 && (
+                <div className="sm:col-span-2 p-6 bg-white/50 backdrop-blur-sm rounded-2xl border border-slate-100 text-center text-sm text-slate-400 italic">
+                  No news or events posted yet. Please check back soon.
+                </div>
+              )}
+              {news.map((n) => (
+                <Link key={n.id} to="/news" className="beam-card group bg-white/80 backdrop-blur-sm rounded-3xl p-5 border border-slate-100 hover:border-brand-blue/30 shadow-[0_8px_30px_rgba(0,0,0,0.01)] hover:shadow-[0_15px_35px_rgba(14,59,145,0.04)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between">
+                  <div>
+                    {n.image_url && (
+                      <div className="overflow-hidden rounded-2xl bg-white mb-4 shadow-sm border border-slate-50">
+                        <img src={n.image_url.startsWith("http") ? n.image_url : `${process.env.REACT_APP_BACKEND_URL}${n.image_url}`} alt="" className="w-full object-cover h-40 group-hover:scale-105 transition-transform duration-500" loading="lazy" />
                       </div>
-                    </Link>
-                    <Link to="/news" className="beam-card group bg-white/80 backdrop-blur-sm rounded-3xl p-5 border border-slate-100 hover:border-brand-blue/30 shadow-[0_8px_30px_rgba(0,0,0,0.01)] hover:shadow-[0_15px_35px_rgba(14,59,145,0.04)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between">
-                      <div>
-                        <div className="overflow-hidden rounded-2xl bg-white mb-4 shadow-sm border border-slate-50">
-                          <img src="/img/feature.jpg" alt="SDPS Campus" className="w-full object-cover h-40 group-hover:scale-105 transition-transform duration-500" loading="lazy" onError={(e) => { e.target.src = "/sdps-annual-sports.jpg"; }} />
-                        </div>
-                        <div className="text-xs text-brand-orange font-bold uppercase tracking-wider mb-1.5">Campus Highlights</div>
-                        <div className="font-headline font-semibold text-slate-800 mb-1.5 group-hover:text-brand-blue transition-colors duration-200">Smart Classrooms & STEAM Labs</div>
-                        <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">Upgraded digital infrastructure and experiential science learning spaces.</p>
-                      </div>
-                    </Link>
-                  </>
-                )}
-                {news.map((n) => (
-                  <Link key={n.id} to="/news" className="beam-card group bg-white/80 backdrop-blur-sm rounded-3xl p-5 border border-slate-100 hover:border-brand-blue/30 shadow-[0_8px_30px_rgba(0,0,0,0.01)] hover:shadow-[0_15px_35px_rgba(14,59,145,0.04)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between">
-                    <div>
-                      {n.image_url && (
-                        <div className="overflow-hidden rounded-2xl bg-white mb-4 shadow-sm border border-slate-50">
-                          <img src={n.image_url.startsWith("http") ? n.image_url : `${process.env.REACT_APP_BACKEND_URL}${n.image_url}`} alt="" className="w-full object-cover h-40 group-hover:scale-105 transition-transform duration-500" loading="lazy" />
-                        </div>
-                      )}
-                      <div className="text-xs text-brand-orange font-bold uppercase tracking-wider mb-1.5">{n.date}</div>
-                      <div className="font-headline font-semibold text-slate-800 mb-1.5 group-hover:text-brand-blue transition-colors duration-200">{n.title}</div>
-                      <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{n.content}</p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
+                    )}
+                    <div className="text-xs text-brand-orange font-bold uppercase tracking-wider mb-1.5">{n.date}</div>
+                    <div className="font-headline font-semibold text-slate-800 mb-1.5 group-hover:text-brand-blue transition-colors duration-200">{n.title}</div>
+                    <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{n.content}</p>
+                  </div>
+                </Link>
+              ))}
             </div>
-            <Link to="/news" className="inline-flex items-center gap-1.5 mt-auto pt-6 text-brand-blue font-headline font-bold hover:gap-2.5 transition-all">
+            <Link to="/news" className="inline-flex items-center gap-1.5 mt-6 text-brand-blue font-headline font-bold hover:gap-2.5 transition-all">
               View All News <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -573,8 +565,8 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="overline mb-3 text-center text-brand-orange font-bold">Know Us Better</div>
           <h2 className="section-title text-center mb-10">Demystified</h2>
-          <div className="rounded-3xl overflow-hidden shadow-2xl border border-white/60 p-3 bg-white/40 backdrop-blur-sm">
-            <div className="w-full rounded-2xl overflow-hidden">
+          <div className="rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/60 p-3 bg-white/40 backdrop-blur-sm">
+            <div className="w-full rounded-[2rem] overflow-hidden">
               <img
                 src={formattedDemystified}
                 alt="SDPS Demystified"
@@ -598,8 +590,8 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative">
           <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
             <div className="overline text-brand-lotus font-bold mb-3">Tiny Tots Section</div>
-            <h2 className="font-playful text-4xl sm:text-5xl lg:text-6xl text-brand-blue leading-tight">
-              Where <span className="text-brand-orange font-bold">tiny dreams</span> take their first <span className="text-brand-lotus font-bold">flight</span> <Sparkles className="inline-block w-8 h-8 text-brand-lotus animate-pulse align-middle ml-1.5" />
+            <h2 className="font-playful text-5xl sm:text-6xl text-brand-blue leading-tight flex flex-wrap items-center gap-x-2 gap-y-1">
+              Where <span className="text-brand-orange font-bold">tiny dreams</span> take their first <span className="text-brand-lotus font-bold">flight</span> <Sparkles className="inline-block w-8 h-8 text-brand-lotus animate-pulse" />
             </h2>
             <p className="mt-5 text-slate-600 leading-relaxed max-w-lg">
               Our Pre-School is a vibrant world of stories, songs, art and play — where curious little ones
@@ -612,12 +604,12 @@ export default function Home() {
           <motion.div 
             animate={{ rotate: [0, 1.5, -1.5, 0], y: [0, -6, 6, 0] }} 
             transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }} 
-            className="relative p-3 bg-white/40 border border-white/60 backdrop-blur-sm rounded-3xl shadow-2xl"
+            className="relative p-3 bg-white/40 border border-white/60 backdrop-blur-sm rounded-[3rem] shadow-2xl"
           >
-            <div className="rounded-2xl overflow-hidden bg-white shadow-sm p-2">
+            <div className="rounded-[2.5rem] overflow-hidden bg-white shadow-sm p-2">
               <img src={preschoolBanner.startsWith("http") ? preschoolBanner : `${process.env.REACT_APP_BACKEND_URL || ''}${preschoolBanner}`} alt="Pre-School"
                 style={preschoolStyle}
-                className="w-full object-contain max-h-[450px] rounded-2xl"
+                className="w-full object-contain max-h-[450px] rounded-[2rem]"
                 loading="lazy"
                 onError={(e) => { e.target.src = "https://sdpublic.org/img/feature.jpg"; }}
               />
@@ -669,10 +661,10 @@ export default function Home() {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-headline font-bold text-xs text-slate-900 line-clamp-1">
+                  <h4 className="font-headline font-bold text-xs text-slate-900 line-clamp-1">
                     {member.name}
-                  </h3>
-                  <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-xs font-bold text-amber-800 tracking-wide">
+                  </h4>
+                  <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-[9.5px] font-extrabold text-amber-800 uppercase tracking-wide">
                     {member.role}
                   </span>
                 </div>
@@ -750,7 +742,7 @@ export default function Home() {
                               </svg>
                             </div>
                           </button>
-                          <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm text-white px-2.5 py-1 rounded-md text-xs font-bold tracking-wider uppercase flex items-center gap-1.5 pointer-events-none">
+                          <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm text-white px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase flex items-center gap-1.5 pointer-events-none">
                             <span className={`w-2 h-2 rounded-full animate-pulse ${t.type === "youtube" ? "bg-red-500" : "bg-pink-500"}`} />
                             {t.type} Video
                           </div>

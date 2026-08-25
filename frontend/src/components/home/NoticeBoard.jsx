@@ -49,24 +49,24 @@ export default function NoticeBoard() {
 
   return (
     <section aria-labelledby="notice-board-title" className="py-12 sm:py-16 bg-section-grad">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-end justify-between gap-4 mb-6">
           <div>
             <div className="overline mb-1">Stay Updated</div>
             <h2 id="notice-board-title" className="section-title text-balance">
-              <Bell className="inline w-7 h-7 text-brand-orange mr-2 shrink-0" aria-hidden="true" />
+              <Bell className="inline w-8 h-8 text-brand-orange mr-2 shrink-0" aria-hidden="true" />
               Latest Circulars
             </h2>
           </div>
           <Link
             to="/notices"
-            className="hidden sm:inline-flex items-center gap-1.5 text-brand-blue font-headline font-bold hover:gap-2.5 transition-all shrink-0 text-sm"
+            className="hidden sm:inline-flex items-center gap-1.5 text-brand-blue font-headline font-bold hover:gap-2.5 transition-all shrink-0"
           >
             All notices <ArrowRight className="w-4 h-4" aria-hidden="true" />
           </Link>
         </div>
 
-        <ul className="flex flex-col gap-3.5 list-none p-0 m-0 min-h-[300px]">
+        <ul className="flex flex-col gap-3 list-none p-0 m-0 min-h-[320px]">
           {!loaded ? (
             Array.from({ length: 4 }).map((_, i) => (
               <li key={i} className="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 flex items-center gap-4 animate-pulse">
@@ -97,21 +97,19 @@ export default function NoticeBoard() {
                   >
                     <div className="w-14 h-14 rounded-xl bg-brand-blue/5 border border-brand-blue/10 flex flex-col items-center justify-center shrink-0" aria-hidden="true">
                       <span className="font-headline font-bold text-lg text-brand-blue leading-none">{day}</span>
-                      <span className="text-xs font-bold uppercase tracking-wider text-brand-blue/70 mt-0.5">{month}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-brand-blue/60 mt-0.5">{month}</span>
                     </div>
                     <div className="min-w-0 flex-1">
                       {n.pinned && (
-                        <span className="inline-flex items-center gap-1 mb-1 px-2.5 py-0.5 bg-brand-orange text-white text-xs font-bold uppercase tracking-wider rounded-full">
+                        <span className="inline-flex items-center gap-1 mb-1 px-2 py-0.5 bg-brand-orange text-white text-[10px] font-bold uppercase tracking-wider rounded-full">
                           <Pin className="w-2.5 h-2.5" aria-hidden="true" /> Pinned
                         </span>
                       )}
-                      <p className="font-headline font-semibold text-slate-800 group-hover:text-brand-blue transition-colors duration-200 truncate m-0 text-sm sm:text-base">
+                      <p className="font-headline font-semibold text-slate-800 group-hover:text-brand-blue transition-colors duration-200 truncate m-0">
                         {n.title}
                       </p>
                     </div>
-                    <div className="w-9 h-9 rounded-xl bg-slate-100 group-hover:bg-brand-blue/10 group-hover:text-brand-blue text-slate-500 flex items-center justify-center transition-colors duration-200 shrink-0" aria-hidden="true">
-                      <FileText className="w-4.5 h-4.5" />
-                    </div>
+                    <FileText className="w-5 h-5 text-slate-300 group-hover:text-brand-orange transition-colors shrink-0" aria-hidden="true" />
                   </a>
                 </motion.li>
               );
@@ -121,7 +119,7 @@ export default function NoticeBoard() {
 
         <Link
           to="/notices"
-          className="sm:hidden inline-flex items-center gap-1.5 mt-5 text-brand-blue font-headline font-bold text-sm"
+          className="sm:hidden inline-flex items-center gap-1.5 mt-5 text-brand-blue font-headline font-bold"
         >
           All notices <ArrowRight className="w-4 h-4" aria-hidden="true" />
         </Link>

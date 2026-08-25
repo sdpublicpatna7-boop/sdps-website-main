@@ -32,7 +32,7 @@ export default function Footer({ settings }) {
             )}
             <div>
               <div className="font-legacy text-3xl">S.D. Public School</div>
-              <div className="text-xs tracking-widest opacity-80 uppercase">EMPOWERING GENERATIONS</div>
+              <div className="text-xs tracking-widest opacity-80">EMPOWERING GENERATIONS</div>
             </div>
           </div>
           <p className="text-sm opacity-80 leading-relaxed">
@@ -58,7 +58,7 @@ export default function Footer({ settings }) {
         </div>
 
         <div className="md:col-span-3">
-          <h3 className="text-sm uppercase tracking-[0.2em] text-brand-orange-light mb-4 font-headline font-bold">Quick Links</h3>
+          <h4 className="text-sm uppercase tracking-[0.2em] text-brand-orange-light mb-4 font-headline">Quick Links</h4>
           <ul className="space-y-2 text-sm">
             <li><Link to="/about" className="opacity-80 hover:opacity-100 hover:text-brand-orange-light">About</Link></li>
             <li><Link to="/academics" className="opacity-80 hover:opacity-100 hover:text-brand-orange-light">Academics</Link></li>
@@ -70,7 +70,7 @@ export default function Footer({ settings }) {
         </div>
 
         <div className="md:col-span-3">
-          <h3 className="text-sm uppercase tracking-[0.2em] text-brand-orange-light mb-4 font-headline font-bold">Services</h3>
+          <h4 className="text-sm uppercase tracking-[0.2em] text-brand-orange-light mb-4 font-headline">Services</h4>
           <ul className="space-y-2 text-sm">
             <li><Link to="/tc-download" className="opacity-80 hover:opacity-100 hover:text-brand-orange-light">Download TC</Link></li>
             <li><Link to="/fee-payment" className="opacity-80 hover:opacity-100 hover:text-brand-orange-light">Fee Payment</Link></li>
@@ -81,7 +81,7 @@ export default function Footer({ settings }) {
         </div>
 
         <div className="md:col-span-2">
-          <h3 className="text-sm uppercase tracking-[0.2em] text-brand-orange-light mb-4 font-headline font-bold">Get in Touch</h3>
+          <h4 className="text-sm uppercase tracking-[0.2em] text-brand-orange-light mb-4 font-headline">Get in Touch</h4>
           <div className="space-y-3 text-sm opacity-90">
             <div className="flex gap-2"><MapPin className="w-4 h-4 mt-0.5 shrink-0" /> {s.address || "Maurya Colony, Gulzarbagh Road, Patna 800007"}</div>
             <div className="flex gap-2"><Phone className="w-4 h-4 mt-0.5 shrink-0" /> {s.phone_primary || "+91 99551 90262"}</div>
