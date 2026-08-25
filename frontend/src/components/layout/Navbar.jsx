@@ -20,34 +20,41 @@ const NAV = [
     to: "/academics",
     children: [
       { label: "Curriculum", to: "/academics" },
+      { label: "Pre-School (Tiny Tots)", to: "/preschool" },
       { label: "Fee Structure", to: "/fee-structure" },
-      { label: "Admission Eligibility", to: "/admission-eligibility" },
     ],
   },
-  { label: "Pre-School", to: "/preschool" },
-  { label: "Admissions", to: "/admissions" },
+  {
+    label: "Admissions",
+    to: "/admissions",
+    children: [
+      { label: "Admission Process", to: "/admissions" },
+      { label: "Admission Eligibility", to: "/admission-eligibility" },
+      { label: "Admission Enquiry", to: "/admission-enquiry" },
+    ],
+  },
   {
     label: "Campus Life",
     children: [
-      { label: "House System", to: "/house-system" },
-      { label: "Hostel", to: "/hostel" },
       { label: "Student Council", to: "/student-council" },
-      { label: "Gallery", to: "/gallery" },
+      { label: "News & Events", to: "/news" },
+      { label: "Academic Calendar", to: "/calendar" },
+      { label: "Notices & Circulars", to: "/notices" },
+      { label: "Photo Gallery", to: "/gallery" },
       { label: "Videos", to: "/videos" },
+      { label: "Hostel Facility", to: "/hostel" },
+      { label: "House System", to: "/house-system" },
       { label: "SDPS × Khelo Patna", to: "/khelo-patna" },
     ],
   },
   {
-    label: "Updates",
+    label: "Contact",
     children: [
-      { label: "News", to: "/news" },
-      { label: "Notices", to: "/notices" },
-      { label: "Calendar", to: "/calendar" },
+      { label: "Contact Us", to: "/contact" },
+      { label: "Alumni Network", to: "/alumni" },
+      { label: "Careers", to: "/careers" },
     ],
   },
-  { label: "Career", to: "/careers" },
-  { label: "Alumni", to: "/alumni" },
-  { label: "Contact", to: "/contact" },
 ];
 
 export default function Navbar({ settings, hideAdmissionBanner = false }) {
@@ -88,7 +95,7 @@ export default function Navbar({ settings, hideAdmissionBanner = false }) {
             </a>
             <Link
               to="/fee-payment"
-              className="px-3 py-1.5 rounded-full bg-brand-orange hover:bg-orange-600 transition"
+              className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition border border-white/20"
               data-testid="fee-payment-btn"
             >
               Fee Payment
@@ -148,12 +155,13 @@ export default function Navbar({ settings, hideAdmissionBanner = false }) {
                       <div className="glass-card rounded-2xl p-2 min-w-[200px] shadow-xl">
                         {item.children.map((c) => (
                           <NavLink
-                            key={c.to}
+                            key={c.to + c.label}
                             to={c.to}
                             className={({ isActive }) =>
-                              `block px-4 py-2 rounded-xl hover:bg-brand-orange/10 ${isActive ? "text-brand-orange" : "text-brand-ink"}`
+                              `block px-3 py-2 rounded-xl transition text-sm ${
+                                isActive ? "bg-brand-blue text-white" : "hover:bg-brand-paper text-brand-ink"
+                              }`
                             }
-                            data-testid={`nav-sub-${c.label.toLowerCase().replace(" ", "-")}`}
                           >
                             {c.label}
                           </NavLink>
@@ -164,10 +172,12 @@ export default function Navbar({ settings, hideAdmissionBanner = false }) {
                 </div>
               ) : (
                 <NavLink
-                  key={item.to}
+                  key={item.label}
                   to={item.to}
                   className={({ isActive }) =>
-                    `px-3 py-2 rounded-full hover:bg-white/60 transition ${isActive ? "text-brand-orange font-semibold" : ""}`
+                    `px-3 py-2 rounded-full hover:bg-white/60 transition ${
+                      isActive ? "text-brand-orange font-semibold" : "text-brand-ink"
+                    }`
                   }
                   data-testid={`nav-${item.label.toLowerCase().replace(" ", "-")}`}
                 >
@@ -177,37 +187,75 @@ export default function Navbar({ settings, hideAdmissionBanner = false }) {
             )}
           </nav>
 
-          <button
-            className="lg:hidden p-2 rounded-full bg-white/70 border border-black/5"
-            onClick={() => setOpen(!open)}
-            data-testid="mobile-menu-toggle"
-          >
-            {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/admissions"
+              className="hidden sm:inline-block px-5 py-2.5 rounded-full bg-brand-orange text-white font-headline text-sm hover:bg-orange-600 transition shadow-md shadow-brand-orange/20"
+              data-testid="header-admissions-btn"
+            >
+              Admissions Open
+            </Link>
+            <button
+              onClick={() => setOpen(!open)}
+              className="lg:hidden p-2 rounded-full hover:bg-white/60 text-brand-blue"
+              aria-label="Toggle menu"
+            >
+              {open ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
         </div>
+      </div>
 
-        {/* Mobile menu */}
-        {open && (
-          <div className="lg:hidden border-t border-black/5 px-4 py-4 bg-white/95 max-h-[70vh] overflow-y-auto" data-testid="mobile-menu">
+      {/* Mobile nav */}
+      {open && (
+        <div className="lg:hidden glass-card border-b border-black/5 p-4 max-h-[80vh] overflow-y-auto">
+          <nav className="flex flex-col gap-1 font-headline">
             {NAV.map((item) =>
               item.children ? (
-                <div key={item.label} className="py-2">
-                  <div className="text-xs uppercase tracking-widest text-brand-orange font-bold mb-1">{item.label}</div>
+                <div key={item.label} className="border-b border-black/5 pb-2 mb-2">
+                  <div className="px-3 py-1 text-xs uppercase tracking-widest text-brand-orange font-bold">
+                    {item.label}
+                  </div>
                   {item.children.map((c) => (
-                    <Link key={c.to} to={c.to} onClick={() => setOpen(false)} className="block py-1.5 pl-2 text-sm">
+                    <NavLink
+                      key={c.to + c.label}
+                      to={c.to}
+                      onClick={() => setOpen(false)}
+                      className={({ isActive }) =>
+                        `block px-4 py-2 rounded-lg text-sm ${
+                          isActive ? "bg-brand-blue text-white" : "hover:bg-white text-brand-ink"
+                        }`
+                      }
+                    >
                       {c.label}
-                    </Link>
+                    </NavLink>
                   ))}
                 </div>
               ) : (
-                <Link key={item.to} to={item.to} onClick={() => setOpen(false)} className="block py-2 font-medium">
+                <NavLink
+                  key={item.label}
+                  to={item.to}
+                  onClick={() => setOpen(false)}
+                  className={({ isActive }) =>
+                    `px-3 py-2 rounded-lg text-sm ${
+                      isActive ? "bg-brand-blue text-white" : "hover:bg-white text-brand-ink"
+                    }`
+                  }
+                >
                   {item.label}
-                </Link>
+                </NavLink>
               )
             )}
-          </div>
-        )}
-      </div>
+            <Link
+              to="/admissions"
+              onClick={() => setOpen(false)}
+              className="mt-3 block text-center px-4 py-3 rounded-xl bg-brand-orange text-white font-bold"
+            >
+              Apply for Admission
+            </Link>
+          </nav>
+        </div>
+      )}
     </header>
   );
 }
