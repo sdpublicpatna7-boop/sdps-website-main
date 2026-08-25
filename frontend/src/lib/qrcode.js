@@ -104,7 +104,6 @@ const ALIGNMENT_COORDS = [
 ];
 
 // EC Block Specs: [totalDataCodewords, ecCodewordsPerBlock, group1Blocks, group1DataPerBlock, group2Blocks, group2DataPerBlock]
-// Format: TABLE[version][ec_index (0:L, 1:M, 2:Q, 3:H)]
 const EC_SPECS = [
   null,
   // V1
@@ -165,14 +164,13 @@ function pickVersion(dataByteLength, ecLevel) {
     const spec = EC_SPECS[v]?.[ecLevel.index];
     if (!spec) continue;
     const capacity = spec[0];
-    // 4 bits mode indicator + character count indicator (8 bits for v1-9, 16 bits for v10+)
     const charCountBits = v < 10 ? 8 : 16;
     const overheadBytes = Math.ceil((4 + charCountBits) / 8);
     if (dataByteLength + overheadBytes <= capacity) {
       return v;
     }
   }
-  return 20; // fallback to V20 for large URLs
+  return 20;
 }
 
 // Build encoded bitstream and pad to required length
@@ -187,27 +185,27 @@ function encodeData(dataBytes, version, ecLevel) {
     }
   };
 
-  // 1. Mode indicator: Byte mode = 0100 (4 bits)
+  // Mode indicator: Byte mode = 0100 (4 bits)
   appendBits(0b0100, 4);
 
-  // 2. Character count indicator
+  // Character count indicator
   const charCountBits = version < 10 ? 8 : 16;
   appendBits(dataBytes.length, charCountBits);
 
-  // 3. Data bytes
+  // Data bytes
   for (let i = 0; i < dataBytes.length; i++) {
     appendBits(dataBytes[i], 8);
   }
 
-  // 4. Terminator (up to 4 zeroes)
+  // Terminator (up to 4 zeroes)
   const maxBits = totalDataCodewords * 8;
   const termLen = Math.min(4, maxBits - bits.length);
   for (let i = 0; i < termLen; i++) bits.push(0);
 
-  // 5. Pad to multiple of 8
+  // Pad to multiple of 8
   while (bits.length % 8 !== 0) bits.push(0);
 
-  // 6. Convert to bytes
+  // Convert to bytes
   const bytes = [];
   for (let i = 0; i < bits.length; i += 8) {
     let b = 0;
@@ -217,7 +215,7 @@ function encodeData(dataBytes, version, ecLevel) {
     bytes.push(b);
   }
 
-  // 7. Pad bytes with alternating 0xEC and 0x11
+  // Pad bytes with alternating 0xEC and 0x11
   let padToggle = false;
   while (bytes.length < totalDataCodewords) {
     bytes.push(padToggle ? 0x11 : 0xec);
@@ -285,7 +283,6 @@ const MASKS = [
 function evaluateMaskPenalty(matrix, size) {
   let penalty = 0;
 
-  // 1. Horizontal & Vertical 5+ identical runs
   for (let r = 0; r < size; r++) {
     let runColor = -1;
     let runLen = 0;
@@ -318,7 +315,6 @@ function evaluateMaskPenalty(matrix, size) {
     }
   }
 
-  // 2. 2x2 blocks of same color
   for (let r = 0; r < size - 1; r++) {
     for (let c = 0; c < size - 1; c++) {
       const v = matrix[r][c];
@@ -355,7 +351,6 @@ export function generateQRMatrix(text, options = {}) {
   const version = pickVersion(rawBytes.length, ec);
   const size = 17 + 4 * version;
 
-  // Initialize matrix and reserved flags
   const matrix = Array.from({ length: size }, () => new Array(size).fill(false));
   const isFunction = Array.from({ length: size }, () => new Array(size).fill(false));
 
@@ -390,7 +385,7 @@ export function generateQRMatrix(text, options = {}) {
     for (let j = 0; j < alignCoords.length; j++) {
       const cr = alignCoords[i];
       const cc = alignCoords[j];
-      if (isFunction[cr][cc]) continue; // Skip if collides with finder
+      if (isFunction[cr][cc]) continue;
       for (let r = -2; r <= 2; r++) {
         for (let c = -2; c <= 2; c++) {
           const isSquare = Math.abs(r) === 2 || Math.abs(c) === 2 || (r === 0 && c === 0);
@@ -436,7 +431,7 @@ export function generateQRMatrix(text, options = {}) {
   let bitIndex = 0;
   let dirUp = true;
   for (let rightCol = size - 1; rightCol > 0; rightCol -= 2) {
-    if (rightCol === 6) rightCol = 5; // Skip timing column
+    if (rightCol === 6) rightCol = 5;
     const colA = rightCol;
     const colB = rightCol - 1;
 
@@ -491,20 +486,60 @@ export function generateQRMatrix(text, options = {}) {
 }
 
 /**
+ * Safe Image Loader with timeout & fallbacks (No CORS lockups)
+ */
+function safeLoadImage(url) {
+  return new Promise((resolve) => {
+    if (!url) {
+      resolve(null);
+      return;
+    }
+    const img = new Image();
+    // Only set crossOrigin for external remote domains (not relative paths)
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      img.crossOrigin = "anonymous";
+    }
+    let finished = false;
+    const done = (val) => {
+      if (!finished) {
+        finished = true;
+        resolve(val);
+      }
+    };
+    img.onload = () => done(img);
+    img.onerror = () => {
+      // If custom logo failed, attempt local fallback
+      if (url !== "/logo512.png" && url !== "/logo-original.png") {
+        const fb = new Image();
+        fb.onload = () => done(fb);
+        fb.onerror = () => done(null);
+        fb.src = "/logo512.png";
+      } else {
+        done(null);
+      }
+    };
+    setTimeout(() => done(null), 1800);
+    img.src = url;
+  });
+}
+
+/**
  * Render QR Code onto an HTML5 Canvas with centered school logo
  */
 export async function renderQRToCanvas(canvas, text, options = {}) {
+  if (!canvas || !text) return canvas;
+
   const {
     size = 1024,
     margin = 3,
     color = "#0E3B91",
     bgColor = "#FFFFFF",
-    dotStyle = "square", // 'square' | 'rounded' | 'dots'
+    dotStyle = "rounded",
     includeLogo = true,
     logoUrl = "/logo512.png",
-    logoShape = "circle", // 'circle' | 'rounded'
-    logoSizeRatio = 0.22, // 22% of total size (well within 30% EC 'H' tolerance)
-    logoPaddingRatio = 0.035, // White badge surrounding logo
+    logoShape = "circle",
+    logoSizeRatio = 0.22,
+    logoPaddingRatio = 0.035,
   } = options;
 
   const qr = generateQRMatrix(text, { ecLevel: "H" });
@@ -515,11 +550,11 @@ export async function renderQRToCanvas(canvas, text, options = {}) {
   canvas.height = size;
   const ctx = canvas.getContext("2d");
 
-  // Background
+  // 1. Draw Canvas Background
   ctx.fillStyle = bgColor;
   ctx.fillRect(0, 0, size, size);
 
-  // Draw QR Modules
+  // 2. Draw QR Matrix Modules
   ctx.fillStyle = color;
   const offset = margin * cellSize;
 
@@ -548,93 +583,87 @@ export async function renderQRToCanvas(canvas, text, options = {}) {
         ctx.arc(x + cellSize / 2, y + cellSize / 2, cellSize * 0.44, 0, Math.PI * 2);
         ctx.fill();
       } else {
-        // Classic crisp square
-        ctx.fillRect(x, y, cellSize + 0.15, cellSize + 0.15);
+        ctx.fillRect(x, y, cellSize + 0.2, cellSize + 0.2);
       }
     }
   }
 
-  // Draw Centered School Logo
-  if (includeLogo && logoUrl) {
-    try {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = () => {
-          // Fallback to local logo if external fails
-          img.src = "/logo512.png";
-          img.onload = resolve;
-          img.onerror = reject;
-        };
-        img.src = logoUrl;
-      });
+  // 3. Draw Centered School Logo & Shield
+  if (includeLogo) {
+    const centerX = size / 2;
+    const centerY = size / 2;
+    const badgeSize = size * (logoSizeRatio + logoPaddingRatio * 2);
+    const logoInnerSize = size * logoSizeRatio;
 
-      const centerX = size / 2;
-      const centerY = size / 2;
-      const badgeSize = size * (logoSizeRatio + logoPaddingRatio * 2);
-      const logoInnerSize = size * logoSizeRatio;
+    ctx.save();
 
-      ctx.save();
+    // Draw White Shield Badge
+    ctx.shadowColor = "rgba(0, 0, 0, 0.16)";
+    ctx.shadowBlur = 20;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 6;
 
-      // Draw clean white badge shield behind logo
-      ctx.shadowColor = "rgba(0, 0, 0, 0.12)";
-      ctx.shadowBlur = 16;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 4;
-
-      ctx.fillStyle = "#FFFFFF";
-      ctx.beginPath();
-      if (logoShape === "circle") {
-        ctx.arc(centerX, centerY, badgeSize / 2, 0, Math.PI * 2);
+    ctx.fillStyle = "#FFFFFF";
+    ctx.beginPath();
+    if (logoShape === "circle") {
+      ctx.arc(centerX, centerY, badgeSize / 2, 0, Math.PI * 2);
+    } else {
+      const radius = badgeSize * 0.22;
+      const bx = centerX - badgeSize / 2;
+      const by = centerY - badgeSize / 2;
+      if (typeof ctx.roundRect === "function") {
+        ctx.roundRect(bx, by, badgeSize, badgeSize, radius);
       } else {
-        const radius = badgeSize * 0.22;
-        const x = centerX - badgeSize / 2;
-        const y = centerY - badgeSize / 2;
-        if (typeof ctx.roundRect === "function") {
-          ctx.roundRect(x, y, badgeSize, badgeSize, radius);
-        } else {
-          ctx.rect(x, y, badgeSize, badgeSize);
-        }
+        ctx.rect(bx, by, badgeSize, badgeSize);
       }
-      ctx.fill();
+    }
+    ctx.fill();
 
-      // Reset shadow for border & logo
-      ctx.shadowColor = "transparent";
+    // Reset shadow
+    ctx.shadowColor = "transparent";
 
-      // Subtle badge ring
-      ctx.strokeStyle = "rgba(14, 59, 145, 0.18)";
-      ctx.lineWidth = Math.max(2, size * 0.004);
-      ctx.stroke();
+    // Ring Border
+    ctx.strokeStyle = color || "#0E3B91";
+    ctx.lineWidth = Math.max(2.5, size * 0.005);
+    ctx.stroke();
 
-      // Clip and draw logo
+    // Load Logo Image
+    const loadedImg = await safeLoadImage(logoUrl);
+
+    if (loadedImg) {
+      // Clip image to shield shape
       ctx.beginPath();
       if (logoShape === "circle") {
         ctx.arc(centerX, centerY, logoInnerSize / 2, 0, Math.PI * 2);
       } else {
         const radius = logoInnerSize * 0.2;
-        const x = centerX - logoInnerSize / 2;
-        const y = centerY - logoInnerSize / 2;
+        const lx = centerX - logoInnerSize / 2;
+        const ly = centerY - logoInnerSize / 2;
         if (typeof ctx.roundRect === "function") {
-          ctx.roundRect(x, y, logoInnerSize, logoInnerSize, radius);
+          ctx.roundRect(lx, ly, logoInnerSize, logoInnerSize, radius);
         } else {
-          ctx.rect(x, y, logoInnerSize, logoInnerSize);
+          ctx.rect(lx, ly, logoInnerSize, logoInnerSize);
         }
       }
       ctx.clip();
 
       ctx.drawImage(
-        img,
+        loadedImg,
         centerX - logoInnerSize / 2,
         centerY - logoInnerSize / 2,
         logoInnerSize,
         logoInnerSize
       );
-
-      ctx.restore();
-    } catch (err) {
-      console.warn("Logo overlay render failed:", err);
+    } else {
+      // Fallback Emblem Monogram if image loading was blocked
+      ctx.fillStyle = color || "#0E3B91";
+      ctx.font = `900 ${Math.round(logoInnerSize * 0.38)}px system-ui, -apple-system, sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("SDPS", centerX, centerY);
     }
+
+    ctx.restore();
   }
 
   return canvas;
@@ -673,9 +702,9 @@ export function generateQRSVG(text, options = {}) {
   const center = size / 2;
 
   let logoSvg = "";
-  if (includeLogo && logoUrl) {
+  if (includeLogo) {
     logoSvg = `
-      <circle cx="${center}" cy="${center}" r="${(badgeSize / 2).toFixed(2)}" fill="#FFFFFF" stroke="${color}" stroke-width="2" />
+      <circle cx="${center}" cy="${center}" r="${(badgeSize / 2).toFixed(2)}" fill="#FFFFFF" stroke="${color}" stroke-width="2.5" />
       <image href="${logoUrl}" x="${(center - logoInnerSize / 2).toFixed(2)}" y="${(center - logoInnerSize / 2).toFixed(2)}" width="${logoInnerSize.toFixed(2)}" height="${logoInnerSize.toFixed(2)}" preserveAspectRatio="xMidYMid meet" />
     `;
   }
@@ -686,4 +715,3 @@ export function generateQRSVG(text, options = {}) {
     ${logoSvg}
   </svg>`;
 }
-

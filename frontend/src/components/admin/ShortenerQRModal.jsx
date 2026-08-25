@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import {
   X, Download, Copy, Printer, ExternalLink, Sparkles,
   Check, RefreshCw, Layers, Palette, Eye, ShieldCheck,
-  Smartphone, Maximize2
+  Smartphone, CheckCircle2, QrCode
 } from "lucide-react";
 import { renderQRToCanvas, generateQRSVG } from "../../lib/qrcode";
 
@@ -18,16 +18,16 @@ const COLOR_PRESETS = [
 
 export default function ShortenerQRModal({ link, onClose, siteSettings }) {
   const canvasRef = useRef(null);
-  const cardRef = useRef(null);
   
   // Customization state
   const [selectedColor, setSelectedColor] = useState("#0E3B91");
-  const [dotStyle, setDotStyle] = useState("rounded"); // 'square' | 'rounded' | 'dots'
+  const [dotStyle, setDotStyle] = useState("rounded"); // 'rounded' | 'square' | 'dots'
   const [includeLogo, setIncludeLogo] = useState(true);
   const [logoShape, setLogoShape] = useState("circle"); // 'circle' | 'rounded'
   const [logoSize, setLogoSize] = useState(0.22); // 0.18, 0.22, 0.25
-  const [viewMode, setViewMode] = useState("card"); // 'qr' | 'card'
+  const [viewMode, setViewMode] = useState("card"); // 'card' | 'qr'
   const [copied, setCopied] = useState(false);
+  const [urlCopied, setUrlCopied] = useState(false);
   const [rendering, setRendering] = useState(false);
 
   // Determine short URL
@@ -129,12 +129,11 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
               new ClipboardItem({ "image/png": blob }),
             ]);
             setCopied(true);
-            toast.success("QR Code image copied to clipboard! You can paste it into WhatsApp, Canva, or Docs.");
+            toast.success("QR Code image copied to clipboard! Ready to paste into WhatsApp, Canva, or Word.");
             setTimeout(() => setCopied(false), 2500);
           } else {
-            // Fallback: copy link
             await navigator.clipboard.writeText(shortUrl);
-            toast.info("Image copy not supported by browser. Short URL copied instead.");
+            toast.info("Image copy not supported by your browser. Shortened link copied instead.");
           }
         } catch (clipErr) {
           console.warn("ClipboardItem write failed:", clipErr);
@@ -144,6 +143,17 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
       }, "image/png");
     } catch (e) {
       toast.error("Unable to copy image");
+    }
+  };
+
+  const handleCopyUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(shortUrl);
+      setUrlCopied(true);
+      toast.success("Short URL copied!");
+      setTimeout(() => setUrlCopied(false), 2000);
+    } catch (e) {
+      toast.error("Failed to copy URL");
     }
   };
 
@@ -157,7 +167,6 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
     }
 
     const titleText = link?.title || "SDPS Portal Access";
-    const codeText = link?.code ? `/s/${link.code}` : "";
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -167,7 +176,7 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
           <style>
             @page {
               size: A4 portrait;
-              margin: 15mm;
+              margin: 12mm;
             }
             * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
             body {
@@ -179,28 +188,29 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
               color: #0f172a;
             }
             .card {
-              max-width: 480px;
+              max-width: 520px;
               width: 100%;
-              border: 3px solid #0E3B91;
-              border-radius: 28px;
-              padding: 36px 28px;
+              border: 3.5px solid #0E3B91;
+              border-radius: 32px;
+              padding: 40px 32px;
               text-align: center;
               background: #ffffff;
-              box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+              box-shadow: 0 10px 30px rgba(0,0,0,0.05);
             }
             .header-badge {
-              display: inline-flex;
+              display: flex;
               align-items: center;
-              gap: 12px;
-              margin-bottom: 20px;
+              justify-content: center;
+              gap: 14px;
+              margin-bottom: 24px;
             }
             .school-logo {
-              width: 56px;
-              height: 56px;
+              width: 60px;
+              height: 60px;
               object-fit: contain;
             }
             .school-name {
-              font-size: 20px;
+              font-size: 22px;
               font-weight: 900;
               color: #0E3B91;
               letter-spacing: -0.5px;
@@ -208,20 +218,21 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
             }
             .school-tag {
               font-size: 11px;
-              font-weight: 700;
+              font-weight: 800;
               color: #F87D0E;
-              letter-spacing: 1px;
+              letter-spacing: 1.2px;
               text-transform: uppercase;
+              margin-top: 2px;
             }
             .title {
-              font-size: 22px;
+              font-size: 24px;
               font-weight: 800;
               color: #0f172a;
               margin-bottom: 8px;
-              line-height: 1.25;
+              line-height: 1.3;
             }
             .subtitle {
-              font-size: 13px;
+              font-size: 13.5px;
               color: #64748b;
               font-weight: 600;
               margin-bottom: 24px;
@@ -229,45 +240,43 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
             .qr-wrapper {
               background: #f8fafc;
               border: 2px dashed #cbd5e1;
-              border-radius: 24px;
-              padding: 20px;
+              border-radius: 26px;
+              padding: 22px;
               display: inline-block;
-              margin-bottom: 20px;
+              margin-bottom: 22px;
             }
             .qr-img {
-              width: 240px;
-              height: 240px;
+              width: 250px;
+              height: 250px;
               display: block;
               margin: 0 auto;
             }
             .link-pill {
               display: inline-block;
               background: #eff6ff;
-              border: 1px solid #bfdbfe;
+              border: 1.5px solid #bfdbfe;
               color: #1d4ed8;
               font-size: 14px;
               font-weight: 800;
               font-family: monospace;
-              padding: 6px 16px;
-              border-radius: 12px;
-              margin-bottom: 18px;
+              padding: 8px 18px;
+              border-radius: 14px;
+              margin-bottom: 20px;
+              word-break: break-all;
+              max-width: 90%;
             }
             .scan-callout {
               font-size: 12px;
-              font-weight: 700;
+              font-weight: 800;
               color: #475569;
               text-transform: uppercase;
               letter-spacing: 1px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              gap: 6px;
             }
             .footer-info {
-              margin-top: 24px;
+              margin-top: 26px;
               padding-top: 18px;
               border-top: 1px solid #e2e8f0;
-              font-size: 10.5px;
+              font-size: 11px;
               color: #94a3b8;
               font-weight: 600;
             }
@@ -284,7 +293,7 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
             </div>
 
             <div class="title">${titleText}</div>
-            <div class="subtitle">Point your mobile camera to quickly open this resource</div>
+            <div class="subtitle">Scan the QR code below with any smartphone camera to visit</div>
 
             <div class="qr-wrapper">
               <img src="${qrDataUrl}" class="qr-img" alt="QR Code" />
@@ -295,7 +304,7 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
             </div>
 
             <div class="scan-callout">
-              📷 Instant Scan with Any Camera / Scanner
+              📷 Instant Scan with Any Phone Camera
             </div>
 
             <div class="footer-info">
@@ -315,17 +324,17 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
 
   return (
     <div
-      className="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200"
+      className="fixed inset-0 bg-slate-950/75 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-200"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-2xl w-full max-w-4xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[92vh]">
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-5xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[94vh]">
         
         {/* Header */}
-        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 px-6 py-4.5 text-white flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center border border-white/10 shadow-sm">
+        <div className="bg-gradient-to-r from-slate-900 via-slate-850 to-indigo-950 px-6 py-4.5 text-white flex items-center justify-between shrink-0 border-b border-white/10">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center border border-white/15 shadow-inner">
               <Sparkles className="w-5 h-5 text-amber-400" />
             </div>
             <div>
@@ -333,7 +342,7 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
                 QR Code Studio with Centered School Logo
               </h2>
               <p className="text-xs font-semibold text-slate-300">
-                Generate high-definition, scannable QR codes with SDPS emblem
+                High-definition, scannable QR codes with SDPS emblem & customizable themes
               </p>
             </div>
           </div>
@@ -348,139 +357,149 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
         </div>
 
         {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 bg-slate-50/50">
+        <div className="flex-1 overflow-y-auto p-5 sm:p-7 grid grid-cols-1 lg:grid-cols-12 gap-7 bg-slate-50/60">
           
-          {/* Left Column: QR Code Preview Canvas */}
-          <div className="lg:col-span-6 flex flex-col items-center justify-center space-y-4">
+          {/* Left Column: Live Preview with Persistent Canvas */}
+          <div className="lg:col-span-6 flex flex-col items-center justify-start space-y-5">
             
-            {/* View Mode Toggle */}
-            <div className="flex items-center p-1 bg-slate-200/70 rounded-2xl w-full max-w-sm">
+            {/* View Mode Toggle Pill */}
+            <div className="flex items-center p-1.5 bg-slate-200/80 rounded-2xl w-full max-w-md shadow-inner">
               <button
                 type="button"
                 onClick={() => setViewMode("card")}
-                className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                className={`flex-1 py-2 px-4 rounded-xl text-xs font-black transition cursor-pointer flex items-center justify-center gap-2 ${
                   viewMode === "card"
                     ? "bg-white text-slate-900 shadow-sm"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                <Layers className="w-3.5 h-3.5" /> Branded Card
+                <Layers className="w-4 h-4 text-blue-600" /> Branded School Card
               </button>
               <button
                 type="button"
                 onClick={() => setViewMode("qr")}
-                className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                className={`flex-1 py-2 px-4 rounded-xl text-xs font-black transition cursor-pointer flex items-center justify-center gap-2 ${
                   viewMode === "qr"
                     ? "bg-white text-slate-900 shadow-sm"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                <Eye className="w-3.5 h-3.5" /> Clean QR Only
+                <Eye className="w-4 h-4 text-indigo-600" /> Clean QR Only
               </button>
             </div>
 
-            {/* Preview Container */}
-            {viewMode === "card" ? (
-              /* Branded Card View */
-              <div
-                ref={cardRef}
-                className="w-full max-w-sm bg-white rounded-3xl border-2 border-slate-200/80 shadow-[0_8px_30px_rgba(0,0,0,0.06)] p-5 text-center space-y-3.5 relative overflow-hidden"
-              >
-                {/* Top School Branding Header */}
-                <div className="flex items-center justify-center gap-2.5 pb-1 border-b border-slate-100">
-                  <img
-                    src="/logo512.png"
-                    alt="SDPS Logo"
-                    className="w-7 h-7 object-contain rounded-full bg-slate-50"
-                  />
-                  <div className="text-left">
-                    <div className="text-xs font-black text-slate-900 tracking-tight leading-none">
-                      S.D. PUBLIC SCHOOL
-                    </div>
-                    <div className="text-[9px] font-extrabold text-orange-600 uppercase tracking-wider mt-0.5">
-                      Patna • Official Portal
+            {/* Single Persistent Preview Box (Canvas is NEVER destroyed on toggle) */}
+            <div
+              className={`w-full max-w-md bg-white rounded-3xl transition-all duration-200 ${
+                viewMode === "card"
+                  ? "border-2 border-slate-200/90 shadow-[0_8px_30px_rgba(0,0,0,0.06)] p-6 text-center space-y-4"
+                  : "border border-slate-200/90 shadow-md p-7 text-center space-y-5"
+              }`}
+            >
+              {viewMode === "card" ? (
+                <>
+                  {/* School Header */}
+                  <div className="flex items-center justify-center gap-3 pb-3 border-b border-slate-100">
+                    <img
+                      src="/logo512.png"
+                      alt="SDPS Logo"
+                      className="w-8 h-8 object-contain rounded-full bg-slate-50 p-0.5 border border-slate-150"
+                    />
+                    <div className="text-left">
+                      <div className="text-sm font-black text-slate-900 tracking-tight leading-tight">
+                        S.D. PUBLIC SCHOOL
+                      </div>
+                      <div className="text-[10px] font-extrabold text-orange-600 uppercase tracking-wider">
+                        Patna • Official Portal
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Link Title */}
-                <div>
-                  <h3 className="text-sm font-black text-slate-900 line-clamp-1 leading-snug">
-                    {link?.title || "Shortened Link"}
-                  </h3>
-                  <p className="text-[11px] font-semibold text-slate-400 truncate mt-0.5">
-                    {link?.url || shortUrl}
-                  </p>
+                  {/* Link Title & Destination */}
+                  <div className="space-y-1">
+                    <h3 className="text-base font-black text-slate-900 leading-snug px-2">
+                      {link?.title || "Shortened Link Portal"}
+                    </h3>
+                    <p className="text-xs font-semibold text-slate-400 truncate max-w-xs mx-auto">
+                      {link?.url || shortUrl}
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <div className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
+                  Clean QR Code Preview
                 </div>
+              )}
 
-                {/* QR Canvas Render */}
-                <div className="relative inline-block mx-auto bg-slate-50 p-2.5 rounded-2xl border border-slate-150 shadow-inner">
-                  <canvas
-                    ref={canvasRef}
-                    className="w-52 h-52 sm:w-56 sm:h-56 mx-auto rounded-xl object-contain block shadow-xs"
-                  />
-                  {rendering && (
-                    <div className="absolute inset-0 bg-white/70 backdrop-blur-[1px] flex items-center justify-center rounded-2xl">
-                      <RefreshCw className="w-6 h-6 text-blue-600 animate-spin" />
-                    </div>
-                  )}
-                </div>
+              {/* SINGLE PERSISTENT CANVAS */}
+              <div className="relative inline-block mx-auto bg-slate-50/80 p-3 rounded-2xl border border-slate-200/70 shadow-inner">
+                <canvas
+                  ref={canvasRef}
+                  className={`${
+                    viewMode === "card" ? "w-60 h-60 sm:w-64 sm:h-64" : "w-64 h-64 sm:w-72 sm:h-72"
+                  } mx-auto rounded-xl object-contain block shadow-xs bg-white`}
+                />
+                {rendering && (
+                  <div className="absolute inset-0 bg-white/75 backdrop-blur-[1px] flex items-center justify-center rounded-2xl">
+                    <RefreshCw className="w-7 h-7 text-blue-600 animate-spin" />
+                  </div>
+                )}
+              </div>
 
-                {/* Short Code Badge */}
-                <div>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 border border-indigo-100 rounded-xl text-indigo-700 font-mono text-xs font-black tracking-wide">
-                    {shortUrl.replace(/^https?:\/\//, "")}
+              {/* URL Chip */}
+              <div>
+                <div className="inline-flex items-center justify-between gap-2 px-4 py-2 bg-indigo-50/80 border border-indigo-150 rounded-2xl max-w-full">
+                  <span className="font-mono text-xs font-black text-indigo-700 truncate select-all">
+                    {shortUrl}
                   </span>
+                  <button
+                    type="button"
+                    onClick={handleCopyUrl}
+                    className="p-1 hover:bg-indigo-100 rounded-lg text-indigo-600 transition cursor-pointer shrink-0"
+                    title="Copy URL"
+                  >
+                    {urlCopied ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
                 </div>
+              </div>
 
-                {/* Scan Helper Footer */}
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center justify-center gap-1 pt-1">
-                  <Smartphone className="w-3.5 h-3.5 text-slate-400" />
+              {viewMode === "card" && (
+                <div className="text-[10.5px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center justify-center gap-1.5 pt-1">
+                  <Smartphone className="w-3.5 h-3.5 text-blue-500" />
                   Scan with Camera to Visit
                 </div>
-              </div>
-            ) : (
-              /* Minimal QR Preview */
-              <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-md text-center space-y-3">
-                <div className="relative inline-block">
-                  <canvas
-                    ref={canvasRef}
-                    className="w-56 h-56 sm:w-64 sm:h-64 mx-auto rounded-2xl object-contain block shadow-sm"
-                  />
-                  {rendering && (
-                    <div className="absolute inset-0 bg-white/70 backdrop-blur-[1px] flex items-center justify-center rounded-2xl">
-                      <RefreshCw className="w-6 h-6 text-blue-600 animate-spin" />
-                    </div>
-                  )}
-                </div>
-                <div className="text-xs font-mono font-bold text-slate-600 bg-slate-100 py-1.5 px-3 rounded-xl truncate max-w-xs mx-auto">
-                  {shortUrl}
-                </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Test Link Button */}
             <a
               href={shortUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline transition"
+              className="inline-flex items-center gap-2 text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline transition py-1"
             >
-              <ExternalLink className="w-3.5 h-3.5" /> Test Short Link in New Tab
+              <ExternalLink className="w-4 h-4" /> Open Short Link in New Tab
             </a>
           </div>
 
           {/* Right Column: Customization Studio Controls */}
           <div className="lg:col-span-6 space-y-5">
             
-            {/* 1. School Logo Center Settings */}
-            <div className="bg-white rounded-2xl p-4.5 border border-slate-200/80 shadow-xs space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-blue-600" />
-                  <label className="text-xs font-black uppercase tracking-wider text-slate-700">
-                    Center School Logo
-                  </label>
+            {/* 1. Center School Logo Section */}
+            <div className="bg-white rounded-3xl p-5 border border-slate-200/90 shadow-sm space-y-3.5">
+              <div className="flex items-center justify-between pb-1 border-b border-slate-100">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <ShieldCheck className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-black uppercase tracking-wider text-slate-800 block">
+                      Center School Logo
+                    </label>
+                    <span className="text-[11px] font-semibold text-slate-400">
+                      Official emblem embedded in QR center
+                    </span>
+                  </div>
                 </div>
                 
                 {/* Toggle Logo */}
@@ -491,23 +510,23 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
                     onChange={(e) => setIncludeLogo(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                  <div className="w-10 h-5.5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:bg-blue-600"></div>
                 </label>
               </div>
 
               {includeLogo && (
-                <div className="pt-2 border-t border-slate-100 space-y-3 animate-in fade-in duration-200">
+                <div className="space-y-3.5 animate-in fade-in duration-200">
                   {/* Badge Shape */}
                   <div className="space-y-1.5">
-                    <span className="text-[11px] font-bold text-slate-400">Badge Shield Shape</span>
-                    <div className="grid grid-cols-2 gap-2">
+                    <span className="text-xs font-bold text-slate-500">Badge Shield Shape</span>
+                    <div className="grid grid-cols-2 gap-2.5">
                       <button
                         type="button"
                         onClick={() => setLogoShape("circle")}
-                        className={`py-2 px-3 rounded-xl text-xs font-bold border transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                        className={`py-2.5 px-3.5 rounded-2xl text-xs font-bold border transition cursor-pointer flex items-center justify-center gap-2 ${
                           logoShape === "circle"
-                            ? "border-blue-600 bg-blue-50/70 text-blue-700 shadow-2xs"
-                            : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
+                            ? "border-blue-600 bg-blue-50/80 text-blue-700 shadow-2xs font-extrabold"
+                            : "border-slate-200 bg-slate-50/70 text-slate-600 hover:bg-slate-100"
                         }`}
                       >
                         Circular Shield
@@ -515,10 +534,10 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
                       <button
                         type="button"
                         onClick={() => setLogoShape("rounded")}
-                        className={`py-2 px-3 rounded-xl text-xs font-bold border transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                        className={`py-2.5 px-3.5 rounded-2xl text-xs font-bold border transition cursor-pointer flex items-center justify-center gap-2 ${
                           logoShape === "rounded"
-                            ? "border-blue-600 bg-blue-50/70 text-blue-700 shadow-2xs"
-                            : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
+                            ? "border-blue-600 bg-blue-50/80 text-blue-700 shadow-2xs font-extrabold"
+                            : "border-slate-200 bg-slate-50/70 text-slate-600 hover:bg-slate-100"
                         }`}
                       >
                         Squircle Badge
@@ -528,11 +547,11 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
 
                   {/* Logo Size */}
                   <div className="space-y-1.5">
-                    <div className="flex justify-between items-center text-[11px] font-bold text-slate-400">
+                    <div className="flex justify-between items-center text-xs font-bold text-slate-500">
                       <span>Logo Scale Size</span>
-                      <span className="text-slate-700 font-extrabold">{Math.round(logoSize * 100)}%</span>
+                      <span className="text-slate-800 font-black">{Math.round(logoSize * 100)}%</span>
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-2.5">
                       {[
                         { label: "Compact (18%)", val: 0.18 },
                         { label: "Standard (22%)", val: 0.22 },
@@ -542,10 +561,10 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
                           key={item.val}
                           type="button"
                           onClick={() => setLogoSize(item.val)}
-                          className={`py-1.5 px-2 rounded-xl text-[11px] font-bold border transition cursor-pointer ${
+                          className={`py-2 px-2.5 rounded-2xl text-xs font-bold border transition cursor-pointer ${
                             logoSize === item.val
-                              ? "border-blue-600 bg-blue-50 text-blue-700 font-black"
-                              : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
+                              ? "border-blue-600 bg-blue-50/80 text-blue-700 font-extrabold shadow-2xs"
+                              : "border-slate-200 bg-slate-50/70 text-slate-600 hover:bg-slate-100"
                           }`}
                         >
                           {item.label}
@@ -553,65 +572,79 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
                       ))}
                     </div>
                   </div>
-
-                  <p className="text-[10px] font-medium text-slate-400 leading-relaxed">
-                    Rendered with Error Correction Level H (30% redundancy) to guarantee rapid mobile scanning with the center emblem intact.
-                  </p>
                 </div>
               )}
             </div>
 
-            {/* 2. Color Themes */}
-            <div className="bg-white rounded-2xl p-4.5 border border-slate-200/80 shadow-xs space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Palette className="w-4 h-4 text-indigo-600" />
-                  <label className="text-xs font-black uppercase tracking-wider text-slate-700">
-                    QR Foreground Color
-                  </label>
+            {/* 2. Color Themes Section */}
+            <div className="bg-white rounded-3xl p-5 border border-slate-200/90 shadow-sm space-y-3.5">
+              <div className="flex items-center justify-between pb-1 border-b border-slate-100">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                    <Palette className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-black uppercase tracking-wider text-slate-800 block">
+                      QR Foreground Color
+                    </label>
+                    <span className="text-[11px] font-semibold text-slate-400">
+                      Choose brand presets or custom hex
+                    </span>
+                  </div>
                 </div>
                 
                 {/* Custom Color Input */}
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   <input
                     type="color"
                     value={selectedColor}
                     onChange={(e) => setSelectedColor(e.target.value)}
-                    className="w-7 h-7 rounded-lg border border-slate-200 p-0.5 cursor-pointer bg-white shadow-xs"
-                    title="Custom Color"
+                    className="w-8 h-8 rounded-xl border border-slate-250 p-0.5 cursor-pointer bg-white shadow-xs"
+                    title="Custom Color Picker"
                   />
-                  <span className="text-[11px] font-mono font-bold text-slate-500 uppercase">
+                  <span className="text-xs font-mono font-bold text-slate-600 uppercase">
                     {selectedColor}
                   </span>
                 </div>
               </div>
 
-              {/* Preset Color Chips */}
-              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 pt-1">
+              {/* Spacious 3-column Preset Color Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                 {COLOR_PRESETS.map((preset) => (
                   <button
                     key={preset.value}
                     type="button"
                     onClick={() => setSelectedColor(preset.value)}
-                    className={`py-2 px-1 rounded-xl text-[10px] font-bold border flex flex-col items-center gap-1.5 transition cursor-pointer ${
+                    className={`py-2.5 px-3 rounded-2xl text-xs font-bold border flex items-center gap-2.5 transition cursor-pointer ${
                       selectedColor.toLowerCase() === preset.value.toLowerCase()
-                        ? "border-blue-600 bg-blue-50/50 shadow-2xs"
-                        : "border-slate-200 bg-slate-50 hover:bg-slate-100"
+                        ? "border-blue-600 bg-blue-50/80 shadow-2xs font-extrabold text-blue-900 ring-1 ring-blue-500/20"
+                        : "border-slate-200 bg-slate-50/70 hover:bg-slate-100 text-slate-700"
                     }`}
                   >
-                    <span className={`w-4 h-4 rounded-full ${preset.bg} shadow-xs`} />
-                    <span className="truncate max-w-full text-slate-700">{preset.name}</span>
+                    <span className={`w-4.5 h-4.5 rounded-full shrink-0 ${preset.bg} shadow-xs border border-white/40`} />
+                    <span className="truncate">{preset.name}</span>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* 3. Module Dot Styling */}
-            <div className="bg-white rounded-2xl p-4.5 border border-slate-200/80 shadow-xs space-y-3">
-              <label className="text-xs font-black uppercase tracking-wider text-slate-700 block">
-                Pattern Style
-              </label>
-              <div className="grid grid-cols-3 gap-2">
+            {/* 3. Pattern Style Section */}
+            <div className="bg-white rounded-3xl p-5 border border-slate-200/90 shadow-sm space-y-3.5">
+              <div className="flex items-center gap-2.5 pb-1 border-b border-slate-100">
+                <div className="w-7 h-7 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                  <QrCode className="w-4 h-4" />
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-wider text-slate-800 block">
+                    Pattern Module Style
+                  </label>
+                  <span className="text-[11px] font-semibold text-slate-400">
+                    Geometric corner curvature
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2.5">
                 {[
                   { id: "rounded", label: "Smooth Rounded" },
                   { id: "square", label: "Classic Square" },
@@ -621,10 +654,10 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
                     key={s.id}
                     type="button"
                     onClick={() => setDotStyle(s.id)}
-                    className={`py-2 px-2 rounded-xl text-xs font-bold border transition cursor-pointer text-center ${
+                    className={`py-2.5 px-2.5 rounded-2xl text-xs font-bold border transition cursor-pointer text-center ${
                       dotStyle === s.id
-                        ? "border-blue-600 bg-blue-50/70 text-blue-700 font-extrabold shadow-2xs"
-                        : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
+                        ? "border-blue-600 bg-blue-50/80 text-blue-700 font-extrabold shadow-2xs ring-1 ring-blue-500/20"
+                        : "border-slate-200 bg-slate-50/70 text-slate-600 hover:bg-slate-100"
                     }`}
                   >
                     {s.label}
@@ -633,13 +666,13 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
               </div>
             </div>
 
-            {/* 4. Export & Download Actions */}
-            <div className="space-y-2.5 pt-1">
-              <div className="grid grid-cols-2 gap-2.5">
+            {/* 4. Action Export Buttons */}
+            <div className="space-y-3 pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={handleDownloadPNG}
-                  className="py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl font-bold text-xs shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
+                  className="py-3.5 px-5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl font-black text-xs shadow-md shadow-blue-500/25 flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
                 >
                   <Download className="w-4 h-4" /> Download PNG (1024px)
                 </button>
@@ -647,28 +680,28 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
                 <button
                   type="button"
                   onClick={handleCopyImage}
-                  className="py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-bold text-xs shadow-sm flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
+                  className="py-3.5 px-5 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-black text-xs shadow-md flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
                 >
                   {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                   {copied ? "Copied Image!" : "Copy QR Image"}
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={handlePrint}
-                  className="py-2.5 px-4 bg-white hover:bg-slate-50 border border-slate-200/90 text-slate-700 rounded-2xl font-bold text-xs shadow-2xs flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
+                  className="py-3 px-5 bg-white hover:bg-slate-50 border border-slate-250 text-slate-800 rounded-2xl font-extrabold text-xs shadow-2xs flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
                 >
-                  <Printer className="w-4 h-4 text-slate-500" /> Print Flyer / Card
+                  <Printer className="w-4 h-4 text-slate-600" /> Print Flyer / Card
                 </button>
 
                 <button
                   type="button"
                   onClick={handleDownloadSVG}
-                  className="py-2.5 px-4 bg-white hover:bg-slate-50 border border-slate-200/90 text-slate-700 rounded-2xl font-bold text-xs shadow-2xs flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
+                  className="py-3 px-5 bg-white hover:bg-slate-50 border border-slate-250 text-slate-800 rounded-2xl font-extrabold text-xs shadow-2xs flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
                 >
-                  <Download className="w-4 h-4 text-slate-500" /> Download Vector SVG
+                  <Download className="w-4 h-4 text-slate-600" /> Download Vector SVG
                 </button>
               </div>
             </div>
@@ -681,4 +714,3 @@ export default function ShortenerQRModal({ link, onClose, siteSettings }) {
     </div>
   );
 }
-
