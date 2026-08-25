@@ -4,13 +4,14 @@ import {
   Link2, Plus, Search, Copy, Trash2, BarChart3, ExternalLink,
   Loader2, X, Calendar, Globe, Smartphone, Chrome, ShieldAlert,
   ArrowRight, Check, TrendingUp, MousePointerClick, Zap, MapPin,
-  Monitor, Clock, ArrowUpRight, ChevronLeft, ChevronRight
+  Monitor, Clock, ArrowUpRight, ChevronLeft, ChevronRight, QrCode
 } from "lucide-react";
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip,
   CartesianGrid, PieChart, Pie, Cell, BarChart, Bar, Legend
 } from "recharts";
 import api from "../../lib/api";
+import ShortenerQRModal from "../../components/admin/ShortenerQRModal";
 
 const PIE_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#64748b"];
 
@@ -19,6 +20,8 @@ export default function AdminShortener() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [creating, setCreating] = useState(false);
+  const [qrModalLink, setQrModalLink] = useState(null);
+  const [siteSettings, setSiteSettings] = useState(null);
 
   // New link form state
   const [title, setTitle] = useState("");
@@ -88,6 +91,20 @@ export default function AdminShortener() {
 
   useEffect(() => {
     fetchLinks();
+    try {
+      const cached = localStorage.getItem("sdps_site_settings");
+      if (cached) setSiteSettings(JSON.parse(cached));
+    } catch (e) {}
+    api.get("/site-settings")
+      .then((r) => {
+        if (r.data) {
+          setSiteSettings(r.data);
+          try {
+            localStorage.setItem("sdps_site_settings", JSON.stringify(r.data));
+          } catch (e) {}
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const handleCreate = async (e) => {
@@ -99,7 +116,7 @@ export default function AdminShortener() {
 
     setCreating(true);
     try {
-      await api.post("/admin/shortener", {
+      const { data: createdLink } = await api.post("/admin/shortener", {
         title: title.trim(),
         url: url.trim(),
         custom_code: customCode.trim() || null,
@@ -107,7 +124,13 @@ export default function AdminShortener() {
         image: previewData?.image || "",
         bypass_ads: bypassAds
       });
-      toast.success("Shortened link created successfully!");
+      toast.success("Shortened link created successfully!", {
+        action: {
+          label: "View QR Code",
+          onClick: () => setQrModalLink(createdLink)
+        },
+        duration: 8000
+      });
       setTitle("");
       setUrl("");
       setCustomCode("");
@@ -242,6 +265,15 @@ export default function AdminShortener() {
             <p className="text-sm font-semibold text-slate-500">Create, manage, and inspect engagement of shortened portal redirects</p>
           </div>
         </div>
+
+        <button
+          type="button"
+          onClick={() => setQrModalLink({ title: "S.D. Public School Patna", code: "", url: window.location.origin })}
+          className="py-3 px-5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl font-bold text-xs shadow-md shadow-blue-500/15 flex items-center gap-2 transition transform hover:scale-[1.01] active:scale-95 cursor-pointer shrink-0"
+        >
+          <QrCode className="w-4 h-4 text-amber-300" />
+          Quick QR Studio
+        </button>
       </div>
 
       {/* Global KPI Metrics Row */}
@@ -473,6 +505,14 @@ export default function AdminShortener() {
 
                     {/* Quick actions */}
                     <button
+                      onClick={() => setQrModalLink(link)}
+                      className="p-2.5 hover:bg-amber-50 border border-amber-200/80 hover:border-amber-300 rounded-xl text-amber-600 hover:text-amber-700 transition-colors shadow-sm bg-white active:scale-95 cursor-pointer"
+                      title="Generate QR Code with Centered School Logo"
+                    >
+                      <QrCode className="w-4.5 h-4.5" />
+                    </button>
+
+                    <button
                       onClick={() => copyToClipboard(link.code, link.id)}
                       className="p-2.5 hover:bg-slate-50 border border-slate-200/80 hover:border-slate-300 rounded-xl text-slate-600 hover:text-slate-900 transition-colors shadow-sm bg-white active:scale-95 cursor-pointer"
                       title="Copy short link"
@@ -569,6 +609,15 @@ export default function AdminShortener() {
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => setQrModalLink(selectedLink)}
+                    className="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    title="Generate QR Code"
+                  >
+                    <QrCode className="w-3.5 h-3.5" />
+                    QR Code
+                  </button>
+
                   <button
                     onClick={() => copyToClipboard(selectedLink.code, selectedLink.id)}
                     className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 border border-white/10 cursor-pointer"
@@ -754,6 +803,15 @@ export default function AdminShortener() {
 
           </div>
         </div>
+      )}
+
+      {/* QR Code Modal Studio with Centered School Logo */}
+      {qrModalLink && (
+        <ShortenerQRModal
+          link={qrModalLink}
+          onClose={() => setQrModalLink(null)}
+          siteSettings={siteSettings}
+        />
       )}
     </div>
   );
