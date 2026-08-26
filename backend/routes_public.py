@@ -3,6 +3,7 @@ import os
 import html
 import logging
 import httpx
+from pathlib import Path
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 
@@ -289,10 +290,13 @@ async def public_upload_file(
         )
 
     try:
-        res = save_raw_file(content, safe_sub_dir, file.filename)
+        res = save_raw_file(content, safe_sub_dir, file.filename or "upload.pdf")
+        return res
     except UnsafeUploadError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    return res
+    except Exception as e:
+        logger.error(f"Public upload failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
 
 @public_router.post("/career/apply")
