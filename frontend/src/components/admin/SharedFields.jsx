@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { Sliders, X, Upload, Link2, ImageIcon, Loader2, Lock, CheckCircle2, AlertTriangle, ShieldAlert, RefreshCw } from "lucide-react";
+import { Sliders, X, Upload, Link2, ImageIcon, Loader2, Lock, CheckCircle2, AlertTriangle, ShieldAlert, RefreshCw, ExternalLink } from "lucide-react";
 import { fullUrl, uploadImage, uploadFile } from "@/lib/admin";
 import { isDriveUrl, checkDrivePermission } from "@/lib/driveCheck";
 import DrivePermissionModal from "./DrivePermissionModal";
@@ -400,10 +400,10 @@ export function ImageOrUrlField({ value, onChange, subDir = "misc", aspect = "vi
         </label>
       ) : (
         <input
-          type="url"
+          type="text"
           placeholder="https://example.com/image.jpg"
           className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:border-brand-blue outline-none"
-          value={value && value.startsWith("http") ? value : ""}
+          value={value || ""}
           onChange={(e) => onChange(e.target.value)}
         />
       )}
@@ -689,10 +689,10 @@ export function FileOrUrlField({ value, onChange, subDir = "misc", maxMb = 5, is
         <div className="space-y-2">
           <div className="flex gap-2">
             <input
-              type="url"
+              type="text"
               placeholder="https://drive.google.com/file/d/... or any link"
               className="flex-1 px-3.5 py-2 border border-slate-300 rounded-xl text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 outline-none"
-              value={value && value.startsWith("http") ? value : ""}
+              value={value || ""}
               onChange={(e) => onChange(e.target.value)}
             />
             {isDriveUrl(value) && (
