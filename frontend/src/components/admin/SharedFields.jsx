@@ -549,7 +549,7 @@ export function ImageOrUrlField({ value, onChange, subDir = "misc", aspect = "vi
 }
 
 // Reusable dual-mode file field with automatic Google Drive permission checking & popout modal
-export function FileOrUrlField({ value, onChange, subDir = "misc", maxMb = 5, isPublic = false }) {
+export function FileOrUrlField({ value, onChange, subDir = "misc", maxMb = 5, isPublic = false, context }) {
   const [mode, setMode] = useState(value && value.startsWith("http") ? "url" : "upload");
   const [uploading, setUploading] = useState(false);
   const [checkingDrive, setCheckingDrive] = useState(false);
@@ -557,6 +557,8 @@ export function FileOrUrlField({ value, onChange, subDir = "misc", maxMb = 5, is
   const [showModal, setShowModal] = useState(false);
   const lastCheckedUrlRef = useRef("");
   const autoPoppedUrlRef = useRef("");
+
+  const activeContext = context || (subDir === "resumes" ? "career" : subDir === "admissions" ? "admissions" : "general");
 
   useEffect(() => {
     if (mode !== "url" || !value || typeof value !== "string") {
@@ -583,9 +585,12 @@ export function FileOrUrlField({ value, onChange, subDir = "misc", maxMb = 5, is
         if (res && res.is_public === false && autoPoppedUrlRef.current !== cleanUrl) {
           autoPoppedUrlRef.current = cleanUrl;
           setShowModal(true);
-          toast.warning("Google Drive link is Restricted! Please allow public view access.", {
-            duration: 5000,
-          });
+          const warnMsg = activeContext === "career"
+            ? "Your Google Drive resume is Restricted! SDPS HR cannot review your application."
+            : activeContext === "admissions"
+            ? "Your Google Drive document is Restricted! Admissions team cannot view it."
+            : "Google Drive link is Restricted! Please allow public view access.";
+          toast.warning(warnMsg, { duration: 5000 });
         }
       } catch (err) {
         console.warn("Drive check failed:", err);
@@ -595,7 +600,7 @@ export function FileOrUrlField({ value, onChange, subDir = "misc", maxMb = 5, is
     }, 600);
 
     return () => clearTimeout(timer);
-  }, [value, mode]);
+  }, [value, mode, activeContext]);
 
   const handleManualCheck = async () => {
     if (!value || !value.trim()) return;
@@ -723,7 +728,13 @@ export function FileOrUrlField({ value, onChange, subDir = "misc", maxMb = 5, is
                 <div className="flex items-center justify-between gap-2 text-xs font-bold text-emerald-800 bg-emerald-50 px-3.5 py-2 rounded-xl border border-emerald-200">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>✓ Public Google Drive Link (Verified accessible to all students)</span>
+                    <span>
+                      {activeContext === "career"
+                        ? "✓ Public Resume Link (Verified accessible to HR team)"
+                        : activeContext === "admissions"
+                        ? "✓ Public Document Link (Verified accessible to Admissions)"
+                        : "✓ Public Google Drive Link (Verified accessible to all)"}
+                    </span>
                   </div>
                   <button
                     type="button"
@@ -738,9 +749,19 @@ export function FileOrUrlField({ value, onChange, subDir = "misc", maxMb = 5, is
                   <div className="flex items-center gap-2">
                     <Lock className="w-4 h-4 text-rose-600 shrink-0 animate-pulse" />
                     <div>
-                      <div>🔒 Google Drive Access is Restricted!</div>
+                      <div>
+                        {activeContext === "career"
+                          ? "🔒 Google Drive Resume is Restricted!"
+                          : activeContext === "admissions"
+                          ? "🔒 Google Drive Document is Restricted!"
+                          : "🔒 Google Drive Access is Restricted!"}
+                      </div>
                       <div className="text-[11px] font-normal text-rose-700">
-                        Students & parents cannot open this document.
+                        {activeContext === "career"
+                          ? "SDPS HR & Recruitment team cannot review your resume."
+                          : activeContext === "admissions"
+                          ? "Admissions committee cannot view this document."
+                          : "Students & parents cannot open this document."}
                       </div>
                     </div>
                   </div>
@@ -764,6 +785,7 @@ export function FileOrUrlField({ value, onChange, subDir = "misc", maxMb = 5, is
         onClose={() => setShowModal(false)}
         url={value}
         checkResult={driveResult}
+        context={activeContext}
         onUpdateUrl={(newUrl) => {
           onChange(newUrl);
           setDriveResult(null);

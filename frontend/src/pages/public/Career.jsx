@@ -362,6 +362,7 @@ export default function Career() {
         onClose={() => setShowDriveModal(false)}
         url={resumeUrl}
         checkResult={driveCheckResult}
+        context="career"
         onUpdateUrl={(newUrl) => {
           setResumeUrl(newUrl);
           setDriveCheckResult(null);
