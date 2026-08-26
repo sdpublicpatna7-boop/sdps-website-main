@@ -31,9 +31,9 @@ export async function checkDrivePermission(url) {
     return {
       url: cleanUrl,
       is_drive: isDriveUrl(cleanUrl),
-      is_public: false,
-      status: "unknown",
-      message: "Could not automatically verify access. Please ensure link is public.",
+      is_public: true, // Do not hard-block submission on check errors
+      status: "unverified",
+      message: "Could not automatically probe access. Please make sure file is set to 'Anyone with the link can view'.",
     };
   }
 }

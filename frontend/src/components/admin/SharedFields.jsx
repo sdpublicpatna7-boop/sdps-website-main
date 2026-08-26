@@ -251,7 +251,7 @@ function MockupPreview({ aspect, imageUrl, scale, x, y }) {
 }
 
 // Reusable dual-mode image field (upload from device OR paste URL)
-export function ImageOrUrlField({ value, onChange, subDir = "misc", aspect = "video" }) {
+export function ImageOrUrlField({ value, onChange, subDir = "misc", aspect = "video", isPublic = false }) {
   const [mode, setMode] = useState(value && value.startsWith("http") ? "url" : "upload");
   const [uploading, setUploading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -339,7 +339,7 @@ export function ImageOrUrlField({ value, onChange, subDir = "misc", aspect = "vi
               onClick={() => onChange("")}
               className="text-left text-xs text-red-500 hover:text-red-700 font-semibold pl-1"
             >
-              Remove Image
+              Remove
             </button>
           </div>
         </div>
@@ -349,20 +349,20 @@ export function ImageOrUrlField({ value, onChange, subDir = "misc", aspect = "vi
         <button
           type="button"
           onClick={() => setMode("upload")}
-          className={`flex items-center gap-1 px-3 py-1.5 rounded-md font-semibold transition ${
+          className={`px-3 py-1.5 rounded-md font-semibold transition ${
             mode === "upload" ? "bg-white shadow text-brand-blue" : "text-slate-500"
           }`}
         >
-          <Upload className="w-3 h-3" /> Upload
+          📁 Upload Image
         </button>
         <button
           type="button"
           onClick={() => setMode("url")}
-          className={`flex items-center gap-1 px-3 py-1.5 rounded-md font-semibold transition ${
+          className={`px-3 py-1.5 rounded-md font-semibold transition ${
             mode === "url" ? "bg-white shadow text-brand-blue" : "text-slate-500"
           }`}
         >
-          <Link2 className="w-3 h-3" /> URL
+          🔗 URL
         </button>
       </div>
 
@@ -386,7 +386,7 @@ export function ImageOrUrlField({ value, onChange, subDir = "misc", aspect = "vi
               if (!f) return;
               setUploading(true);
               try {
-                const r = await uploadImage(f, subDir);
+                const r = await uploadImage(f, subDir, isPublic);
                 onChange(r.url);
                 toast.success(`Uploaded — ${r.size_kb} KB`);
               } catch {
@@ -549,7 +549,7 @@ export function ImageOrUrlField({ value, onChange, subDir = "misc", aspect = "vi
 }
 
 // Reusable dual-mode file field with automatic Google Drive permission checking & popout modal
-export function FileOrUrlField({ value, onChange, subDir = "misc", maxMb = 5 }) {
+export function FileOrUrlField({ value, onChange, subDir = "misc", maxMb = 5, isPublic = false }) {
   const [mode, setMode] = useState(value && value.startsWith("http") ? "url" : "upload");
   const [uploading, setUploading] = useState(false);
   const [checkingDrive, setCheckingDrive] = useState(false);
@@ -583,7 +583,7 @@ export function FileOrUrlField({ value, onChange, subDir = "misc", maxMb = 5 }) 
         if (res && res.is_public === false && autoPoppedUrlRef.current !== cleanUrl) {
           autoPoppedUrlRef.current = cleanUrl;
           setShowModal(true);
-          toast.warning("Google Drive link is Restricted! Students will not be able to open it.", {
+          toast.warning("Google Drive link is Restricted! Please allow public view access.", {
             duration: 5000,
           });
         }
@@ -672,12 +672,12 @@ export function FileOrUrlField({ value, onChange, subDir = "misc", maxMb = 5 }) 
               if (!f) return;
               setUploading(true);
               try {
-                const r = await uploadFile(f, subDir, maxMb);
+                const r = await uploadFile(f, subDir, maxMb, isPublic);
                 onChange(r.url);
                 setDriveResult(null);
                 toast.success("Uploaded successfully!");
               } catch (err) {
-                toast.error(err?.response?.data?.detail || "Upload failed");
+                toast.error(err?.response?.data?.detail || "Upload failed. Please check file size and format.");
               } finally {
                 setUploading(false);
                 e.target.value = "";

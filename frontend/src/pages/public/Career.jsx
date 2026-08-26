@@ -338,7 +338,7 @@ export default function Career() {
             <div className="border-t border-black/5 pt-5">
               <div className="font-headline font-semibold text-brand-blue mb-3">Upload Resume *</div>
               <p className="text-xs text-brand-ink/50 mb-3">Upload your resume from device (PDF/DOC) or paste a Google Drive / Dropbox link.</p>
-              <FileOrUrlField value={resumeUrl} onChange={setResumeUrl} subDir="resumes" maxMb={5} />
+              <FileOrUrlField value={resumeUrl} onChange={setResumeUrl} subDir="resumes" maxMb={5} isPublic={true} />
             </div>
 
             <button

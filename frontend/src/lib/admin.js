@@ -15,20 +15,24 @@ export function useAdminList(endpoint) {
   return { items, loading, reload };
 }
 
-export async function uploadImage(file, sub_dir = "gallery") {
+export async function uploadImage(file, sub_dir = "gallery", isPublic = false) {
   const fd = new FormData();
   fd.append("sub_dir", sub_dir);
   fd.append("file", file);
-  const r = await api.post("/admin/upload-image", fd, { headers: { "Content-Type": "multipart/form-data" } });
+  const token = localStorage.getItem("admin_token") || localStorage.getItem("token");
+  const endpoint = (!token || isPublic) ? "/public-upload-file" : "/admin/upload-image";
+  const r = await api.post(endpoint, fd, { headers: { "Content-Type": "multipart/form-data" } });
   return r.data;
 }
 
-export async function uploadFile(file, sub_dir = "misc", max_mb = 5) {
+export async function uploadFile(file, sub_dir = "misc", max_mb = 5, isPublic = false) {
   const fd = new FormData();
   fd.append("sub_dir", sub_dir);
   fd.append("max_mb", String(max_mb));
   fd.append("file", file);
-  const r = await api.post("/admin/upload-file", fd, { headers: { "Content-Type": "multipart/form-data" } });
+  const token = localStorage.getItem("admin_token") || localStorage.getItem("token");
+  const endpoint = (!token || isPublic) ? "/public-upload-file" : "/admin/upload-file";
+  const r = await api.post(endpoint, fd, { headers: { "Content-Type": "multipart/form-data" } });
   return r.data;
 }
 

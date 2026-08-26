@@ -260,6 +260,41 @@ async def list_career_questions():
     return items
 
 
+@public_router.post("/public-upload-file")
+@public_router.post("/career/upload-resume")
+@limiter.limit("30/minute")
+async def public_upload_file(
+    request: Request,
+    sub_dir: str = Form("resumes"),
+    file: UploadFile = File(...),
+    max_mb: int = Form(5),
+):
+    """
+    Public upload endpoint for career resumes and admission documents
+    without requiring admin authentication.
+    """
+    allowed_subdirs = {"resumes", "admissions", "career", "misc"}
+    safe_sub_dir = sub_dir if sub_dir in allowed_subdirs else "resumes"
+
+    content = await file.read()
+    if len(content) > max_mb * 1024 * 1024:
+        raise HTTPException(status_code=413, detail=f"File must be ≤ {max_mb}MB")
+
+    ext = Path(file.filename or "").suffix.lower()
+    allowed_exts = {".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png", ".webp", ".txt", ".rtf"}
+    if ext not in allowed_exts:
+        raise HTTPException(
+            status_code=400,
+            detail="File type not supported. Please upload a PDF, DOC, DOCX, or Image file."
+        )
+
+    try:
+        res = save_raw_file(content, safe_sub_dir, file.filename)
+    except UnsafeUploadError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return res
+
+
 @public_router.post("/career/apply")
 @limiter.limit("10/minute")
 async def submit_career_application(
@@ -281,13 +316,16 @@ async def submit_career_application(
     resume_url = None
     if resume:
         content = await resume.read()
-        if len(content) > 2 * 1024 * 1024:
-            raise HTTPException(status_code=413, detail="Resume must be ≤ 2MB")
+        if len(content) > 5 * 1024 * 1024:
+            raise HTTPException(status_code=413, detail="Resume must be ≤ 5MB")
         try:
             meta = save_raw_file(content, "resumes", resume.filename)
         except UnsafeUploadError as e:
             raise HTTPException(status_code=400, detail=str(e))
         resume_url = meta["url"]
+    elif ans.get("resume_url"):
+        resume_url = ans.get("resume_url")
+
     record = CareerApplication(
         post_id=post_id, name=name, email=email, phone=phone,
         subject=subject, answers=ans, resume_url=resume_url
@@ -2127,14 +2165,29 @@ async def get_gdrive_folder_og_html(slug: str):
 @public_router.get("/utils/check-drive-permission")
 async def check_drive_permission_endpoint(
     request: Request,
-    url: Optional[str] = None,
-    payload: Optional[Dict[str, Any]] = Body(default=None)
+    url: Optional[str] = None
 ):
     """
     Probe and verify whether a Google Drive, Google Docs, OneDrive or public link
     is publicly accessible or restricted (asking for login/permissions).
     """
-    target_url = (url or (payload.get("url") if payload else "") or "").strip()
+    target_url = (url or "").strip()
+    if not target_url:
+        try:
+            body = await request.json()
+            if isinstance(body, dict):
+                target_url = (body.get("url") or "").strip()
+        except Exception:
+            pass
+    if not target_url:
+        try:
+            form = await request.form()
+            target_url = (form.get("url") or "").strip()
+        except Exception:
+            pass
+    if not target_url:
+        target_url = (request.query_params.get("url") or "").strip()
+        
     if not target_url:
         raise HTTPException(status_code=400, detail="Missing url parameter")
     

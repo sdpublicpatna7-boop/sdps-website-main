@@ -371,11 +371,11 @@ export function AdmissionForm() {
             <SH title="Documents Upload"/>
             <p className="text-xs text-brand-ink/50 -mt-2 mb-3">Upload from device or paste a Google Drive / Dropbox link.</p>
             <div><label className="text-xs font-semibold uppercase tracking-wider text-brand-ink/60 block mb-1.5">Passport Size Photo *</label>
-              <ImageOrUrlField value={photoUrl} onChange={setPhotoUrl} subDir="admissions"/></div>
+              <ImageOrUrlField value={photoUrl} onChange={setPhotoUrl} subDir="admissions" isPublic={true}/></div>
             <div><label className="text-xs font-semibold uppercase tracking-wider text-brand-ink/60 block mb-1.5">Birth Certificate</label>
-              <FileOrUrlField value={birthCertUrl} onChange={setBirthCertUrl} subDir="admissions" maxMb={5}/></div>
+              <FileOrUrlField value={birthCertUrl} onChange={setBirthCertUrl} subDir="admissions" maxMb={5} isPublic={true}/></div>
             <div><label className="text-xs font-semibold uppercase tracking-wider text-brand-ink/60 block mb-1.5">Previous Marksheet / Report Card</label>
-              <FileOrUrlField value={prevMarksheetUrl} onChange={setPrevMarksheetUrl} subDir="admissions" maxMb={5}/></div>
+              <FileOrUrlField value={prevMarksheetUrl} onChange={setPrevMarksheetUrl} subDir="admissions" maxMb={5} isPublic={true}/></div>
 
             <div className="border-t border-black/5 pt-5">
               <button type="submit" disabled={submitting} className="btn-primary w-full flex items-center justify-center gap-2 text-base py-3 disabled:opacity-60">
