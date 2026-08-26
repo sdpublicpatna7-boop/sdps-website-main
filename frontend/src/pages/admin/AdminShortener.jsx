@@ -12,6 +12,8 @@ import {
 } from "recharts";
 import api from "../../lib/api";
 import ShortenerQRModal from "../../components/admin/ShortenerQRModal";
+import DrivePermissionModal from "../../components/admin/DrivePermissionModal";
+import { isDriveUrl, checkDrivePermission } from "../../lib/driveCheck";
 
 const PIE_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#64748b"];
 
@@ -31,6 +33,12 @@ export default function AdminShortener() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [bypassAds, setBypassAds] = useState(true);
 
+  // Drive Permission Check State
+  const [checkingDrive, setCheckingDrive] = useState(false);
+  const [driveCheckResult, setDriveCheckResult] = useState(null);
+  const [showDriveModal, setShowDriveModal] = useState(false);
+  const [bypassDriveWarning, setBypassDriveWarning] = useState(false);
+
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -39,6 +47,7 @@ export default function AdminShortener() {
     let cleanUrl = url.trim();
     if (!cleanUrl) {
       setPreviewData(null);
+      setDriveCheckResult(null);
       return;
     }
     
@@ -68,6 +77,29 @@ export default function AdminShortener() {
     }, 600);
 
     return () => clearTimeout(handler);
+  }, [url]);
+
+  // Drive Permission Probe
+  useEffect(() => {
+    const cleanUrl = url.trim();
+    if (!cleanUrl || !isDriveUrl(cleanUrl)) {
+      setDriveCheckResult(null);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setCheckingDrive(true);
+      try {
+        const res = await checkDrivePermission(cleanUrl);
+        setDriveCheckResult(res);
+      } catch (e) {
+        console.warn("Drive check failed:", e);
+      } finally {
+        setCheckingDrive(false);
+      }
+    }, 650);
+
+    return () => clearTimeout(timer);
   }, [url]);
 
   // Analytics modal state
@@ -108,9 +140,16 @@ export default function AdminShortener() {
   }, []);
 
   const handleCreate = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!title.trim() || !url.trim()) {
       toast.error("Title and original URL are required");
+      return;
+    }
+
+    // If it's a restricted Google Drive link, show modal warning first
+    if (isDriveUrl(url) && driveCheckResult && driveCheckResult.is_public === false && !bypassDriveWarning) {
+      setShowDriveModal(true);
+      toast.warning("Google Drive link is Restricted! Please set permission to 'Anyone with the link'.");
       return;
     }
 
@@ -135,6 +174,8 @@ export default function AdminShortener() {
       setUrl("");
       setCustomCode("");
       setPreviewData(null);
+      setDriveCheckResult(null);
+      setBypassDriveWarning(false);
       fetchLinks();
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Failed to create short link");
@@ -330,15 +371,85 @@ export default function AdminShortener() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Original Long URL</label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Original Long URL</label>
+                {isDriveUrl(url) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCheckingDrive(true);
+                      checkDrivePermission(url.trim())
+                        .then((res) => {
+                          setDriveCheckResult(res);
+                          if (res?.is_public === false) setShowDriveModal(true);
+                          else if (res?.is_public === true) toast.success("Google Drive link is verified public!");
+                        })
+                        .finally(() => setCheckingDrive(false));
+                    }}
+                    className="text-[10px] text-blue-600 hover:text-blue-800 font-extrabold flex items-center gap-1 cursor-pointer"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${checkingDrive ? "animate-spin" : ""}`} /> Check Drive Access
+                  </button>
+                )}
+              </div>
               <input
                 type="url"
                 placeholder="https://drive.google.com/file/d/..."
                 value={url}
-                onChange={(e) => setUrl(e.target.value)}
+                onChange={(e) => {
+                  setUrl(e.target.value);
+                  setBypassDriveWarning(false);
+                }}
                 className="w-full px-4 py-3.5 border border-slate-200/80 rounded-2xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/15 focus:border-blue-500 bg-slate-50/50 hover:bg-slate-50 focus:bg-white transition-all font-semibold text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]"
                 required
               />
+
+              {/* Drive Permission Live Status */}
+              {checkingDrive && (
+                <div className="flex items-center gap-2 text-xs font-semibold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-150 animate-pulse">
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  Checking Google Drive permissions...
+                </div>
+              )}
+
+              {!checkingDrive && driveCheckResult && driveCheckResult.is_drive && (
+                <>
+                  {driveCheckResult.is_public ? (
+                    <div className="flex items-center justify-between gap-2 text-xs font-bold text-emerald-800 bg-emerald-50 px-3.5 py-2 rounded-xl border border-emerald-200">
+                      <div className="flex items-center gap-1.5">
+                        <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>✓ Public Google Drive Link</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowDriveModal(true)}
+                        className="text-[11px] underline text-emerald-700 hover:text-emerald-900 cursor-pointer"
+                      >
+                        Details
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-rose-900 bg-rose-50 px-3.5 py-2.5 rounded-xl border border-rose-200">
+                      <div className="flex items-center gap-2">
+                        <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0 animate-pulse" />
+                        <div>
+                          <div>🔒 Google Drive Access is Restricted!</div>
+                          <div className="text-[10px] font-normal text-rose-700">
+                            Students will see "You need access" unless fixed.
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowDriveModal(true)}
+                        className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-extrabold transition cursor-pointer"
+                      >
+                        Fix Permission
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
             {/* Link Preview Card */}
@@ -813,6 +924,26 @@ export default function AdminShortener() {
           siteSettings={siteSettings}
         />
       )}
+
+      {/* Google Drive Permission Warning & Fix Modal */}
+      <DrivePermissionModal
+        isOpen={showDriveModal}
+        onClose={() => setShowDriveModal(false)}
+        url={url}
+        checkResult={driveCheckResult}
+        onUpdateUrl={(newUrl) => {
+          setUrl(newUrl);
+          setDriveCheckResult(null);
+        }}
+        onProceedAnyway={() => {
+          setBypassDriveWarning(true);
+          setShowDriveModal(false);
+          toast.info("Warning acknowledged. Proceeding with link creation.");
+          setTimeout(() => {
+            handleCreate();
+          }, 100);
+        }}
+      />
     </div>
   );
 }

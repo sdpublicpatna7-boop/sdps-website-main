@@ -2123,6 +2123,185 @@ async def get_gdrive_folder_og_html(slug: str):
     return HTMLResponse(content=html_content, status_code=200)
 
 
+@public_router.post("/utils/check-drive-permission")
+@public_router.get("/utils/check-drive-permission")
+async def check_drive_permission_endpoint(
+    request: Request,
+    url: Optional[str] = None,
+    payload: Optional[Dict[str, Any]] = Body(default=None)
+):
+    """
+    Probe and verify whether a Google Drive, Google Docs, OneDrive or public link
+    is publicly accessible or restricted (asking for login/permissions).
+    """
+    target_url = (url or (payload.get("url") if payload else "") or "").strip()
+    if not target_url:
+        raise HTTPException(status_code=400, detail="Missing url parameter")
+    
+    return await check_link_permissions(target_url)
+
+
+async def check_link_permissions(url: str) -> Dict[str, Any]:
+    url = url.strip()
+    
+    # 1. Detect provider and link structure
+    is_gdrive = "drive.google.com" in url or "docs.google.com" in url
+    is_onedrive = "1drv.ms" in url or "onedrive.live.com" in url or "sharepoint.com" in url
+    is_dropbox = "dropbox.com" in url
+    
+    if not (is_gdrive or is_onedrive or is_dropbox or url.startswith("http")):
+        return {
+            "url": url,
+            "is_drive": False,
+            "is_public": True,
+            "status": "valid",
+            "message": "Standard web link."
+        }
+
+    provider = "google_drive" if is_gdrive else ("onedrive" if is_onedrive else ("dropbox" if is_dropbox else "generic"))
+    file_id = None
+    file_type = "file"
+    title = None
+
+    probe_url = url
+    if is_gdrive:
+        if "/folders/" in url or "/drive/folders/" in url or "id=" in url and "folders" in url:
+            file_type = "folder"
+            m = re.search(r'/folders/([a-zA-Z0-9_-]+)', url)
+            if m: file_id = m.group(1)
+        elif "docs.google.com/document/d/" in url:
+            file_type = "document"
+            m = re.search(r'/document/d/([a-zA-Z0-9_-]+)', url)
+            if m: file_id = m.group(1)
+            if file_id: probe_url = f"https://docs.google.com/document/d/{file_id}/view"
+        elif "docs.google.com/spreadsheets/d/" in url:
+            file_type = "sheet"
+            m = re.search(r'/spreadsheets/d/([a-zA-Z0-9_-]+)', url)
+            if m: file_id = m.group(1)
+            if file_id: probe_url = f"https://docs.google.com/spreadsheets/d/{file_id}/view"
+        elif "docs.google.com/presentation/d/" in url:
+            file_type = "presentation"
+            m = re.search(r'/presentation/d/([a-zA-Z0-9_-]+)', url)
+            if m: file_id = m.group(1)
+            if file_id: probe_url = f"https://docs.google.com/presentation/d/{file_id}/view"
+        elif "docs.google.com/forms/d/" in url:
+            file_type = "form"
+            m = re.search(r'/forms/d/(?:e/)?([a-zA-Z0-9_-]+)', url)
+            if m: file_id = m.group(1)
+        else:
+            file_type = "file"
+            m = re.search(r'/file/d/([a-zA-Z0-9_-]+)', url) or re.search(r'[?&]id=([a-zA-Z0-9_-]+)', url)
+            if m: file_id = m.group(1)
+            if file_id: probe_url = f"https://drive.google.com/file/d/{file_id}/view"
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+    }
+
+    final_url = probe_url
+    status_code = 200
+    body = ""
+
+    try:
+        try:
+            import httpx
+            async with httpx.AsyncClient(follow_redirects=True, timeout=5.5) as client:
+                resp = await client.get(probe_url, headers=headers)
+                final_url = str(resp.url)
+                status_code = resp.status_code
+                body = resp.text[:12000]
+        except (ImportError, Exception):
+            import urllib.request
+            def _probe():
+                req = urllib.request.Request(probe_url, headers=headers)
+                opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor())
+                with opener.open(req, timeout=5.5) as r:
+                    return r.geturl(), r.getcode(), r.read(12000).decode('utf-8', errors='ignore')
+            final_url, status_code, body = await asyncio.to_thread(_probe)
+
+        # Try to extract title if public
+        title_match = re.search(r'<title>(.*?)</title>', body, re.IGNORECASE | re.DOTALL)
+        if title_match:
+            title = title_match.group(1).strip()
+            title = re.sub(r' - Google (Drive|Docs|Sheets|Slides|Forms)$', '', title)
+            if "Google Drive: Sign-in" in title or "Meet Google Drive" in title or "Sign in - Google Accounts" in title:
+                title = None
+
+        # Detect restricted access
+        is_signin_redirect = (
+            "accounts.google.com" in final_url or
+            "ServiceLogin" in final_url or
+            "login.live.com" in final_url or
+            "login.microsoftonline.com" in final_url
+        )
+        is_denied_text = any(phrase in body for phrase in [
+            "You need access",
+            "Ask for access",
+            "You need permission",
+            "Request access",
+            "Access denied",
+            "Sign in to continue to Google Drive",
+            "Sign in - Google Accounts"
+        ])
+        is_http_denied = status_code in (401, 403, 404)
+
+        if is_signin_redirect or is_denied_text or is_http_denied:
+            return {
+                "url": url,
+                "is_drive": is_gdrive or is_onedrive or is_dropbox,
+                "provider": provider,
+                "file_id": file_id,
+                "file_type": file_type,
+                "is_public": False,
+                "status": "restricted",
+                "status_code": status_code,
+                "final_url": final_url,
+                "title": title,
+                "message": "This Google Drive link is restricted (Private). Students and parents will NOT be able to view or download it.",
+                "how_to_fix": [
+                    "Open the file or folder in Google Drive.",
+                    "Click the blue 'Share' button at the top-right corner.",
+                    "Under 'General access', change from 'Restricted' to 'Anyone with the link'.",
+                    "Ensure the role dropdown is set to 'Viewer'.",
+                    "Click 'Copy link' and paste the new public link."
+                ],
+                "preview_url": f"https://drive.google.com/file/d/{file_id}/preview" if file_id and file_type == "file" else None,
+                "direct_download_url": f"https://drive.google.com/uc?export=download&id={file_id}" if file_id and file_type == "file" else None
+            }
+        else:
+            return {
+                "url": url,
+                "is_drive": is_gdrive or is_onedrive or is_dropbox,
+                "provider": provider,
+                "file_id": file_id,
+                "file_type": file_type,
+                "is_public": True,
+                "status": "public",
+                "status_code": status_code,
+                "final_url": final_url,
+                "title": title,
+                "message": "Verified! This link is public and accessible to all students and parents.",
+                "preview_url": f"https://drive.google.com/file/d/{file_id}/preview" if file_id and file_type == "file" else None,
+                "direct_download_url": f"https://drive.google.com/uc?export=download&id={file_id}" if file_id and file_type == "file" else None
+            }
+    except Exception as e:
+        logger.warning(f"Error checking link permissions for {url}: {e}")
+        return {
+            "url": url,
+            "is_drive": is_gdrive or is_onedrive or is_dropbox,
+            "provider": provider,
+            "file_id": file_id,
+            "file_type": file_type,
+            "is_public": False,
+            "status": "unknown",
+            "error": str(e),
+            "message": "Could not automatically verify public access. Please ensure the link is set to 'Anyone with the link can view'."
+        }
+
+
+
 
 
 

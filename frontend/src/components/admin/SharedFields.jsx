@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { Sliders, X, Upload, Link2, ImageIcon, Loader2 } from "lucide-react";
+import { Sliders, X, Upload, Link2, ImageIcon, Loader2, Lock, CheckCircle2, AlertTriangle, ShieldAlert, RefreshCw } from "lucide-react";
 import { fullUrl, uploadImage, uploadFile } from "@/lib/admin";
+import { isDriveUrl, checkDrivePermission } from "@/lib/driveCheck";
+import DrivePermissionModal from "./DrivePermissionModal";
 
 const ASPECT_PRESETS = {
   video: {
@@ -546,53 +548,118 @@ export function ImageOrUrlField({ value, onChange, subDir = "misc", aspect = "vi
   );
 }
 
-// Reusable dual-mode file field (upload from device OR paste URL)
+// Reusable dual-mode file field with automatic Google Drive permission checking & popout modal
 export function FileOrUrlField({ value, onChange, subDir = "misc", maxMb = 5 }) {
   const [mode, setMode] = useState(value && value.startsWith("http") ? "url" : "upload");
   const [uploading, setUploading] = useState(false);
+  const [checkingDrive, setCheckingDrive] = useState(false);
+  const [driveResult, setDriveResult] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const lastCheckedUrlRef = useRef("");
+  const autoPoppedUrlRef = useRef("");
+
+  useEffect(() => {
+    if (mode !== "url" || !value || typeof value !== "string") {
+      setDriveResult(null);
+      return;
+    }
+
+    const cleanUrl = value.trim();
+    if (!isDriveUrl(cleanUrl)) {
+      setDriveResult(null);
+      return;
+    }
+
+    if (cleanUrl === lastCheckedUrlRef.current) return;
+
+    const timer = setTimeout(async () => {
+      lastCheckedUrlRef.current = cleanUrl;
+      setCheckingDrive(true);
+      try {
+        const res = await checkDrivePermission(cleanUrl);
+        setDriveResult(res);
+
+        // Auto popout if restricted and not yet shown for this URL
+        if (res && res.is_public === false && autoPoppedUrlRef.current !== cleanUrl) {
+          autoPoppedUrlRef.current = cleanUrl;
+          setShowModal(true);
+          toast.warning("Google Drive link is Restricted! Students will not be able to open it.", {
+            duration: 5000,
+          });
+        }
+      } catch (err) {
+        console.warn("Drive check failed:", err);
+      } finally {
+        setCheckingDrive(false);
+      }
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [value, mode]);
+
+  const handleManualCheck = async () => {
+    if (!value || !value.trim()) return;
+    setCheckingDrive(true);
+    try {
+      const res = await checkDrivePermission(value.trim());
+      setDriveResult(res);
+      if (res?.is_public === false) {
+        setShowModal(true);
+      } else if (res?.is_public === true) {
+        toast.success("Verified! This Google Drive link is public.");
+      }
+    } catch (e) {
+      toast.error("Failed to check permission");
+    } finally {
+      setCheckingDrive(false);
+    }
+  };
+
   return (
-    <div className="space-y-2 mt-1">
+    <div className="space-y-2.5 mt-1">
       {value && (
         <div className="flex items-center gap-2">
           <a
             href={fullUrl(value)}
             target="_blank"
             rel="noreferrer"
-            className="text-brand-blue text-sm underline"
+            className="text-brand-blue text-sm underline font-medium flex items-center gap-1"
           >
-            📎 Current file
+            📎 Current file / link <ExternalLink className="w-3 h-3" />
           </a>
-          <button type="button" onClick={() => onChange("")} className="text-xs text-red-500">
+          <button type="button" onClick={() => { onChange(""); setDriveResult(null); }} className="text-xs text-red-500 hover:underline">
             Remove
           </button>
         </div>
       )}
-      <div className="flex gap-1 p-1 bg-slate-100 rounded-lg w-fit text-xs">
+
+      <div className="flex gap-1 p-1 bg-slate-100 rounded-xl w-fit text-xs">
         <button
           type="button"
           onClick={() => setMode("upload")}
-          className={`px-3 py-1.5 rounded-md font-semibold transition ${
-            mode === "upload" ? "bg-white shadow text-brand-blue" : "text-slate-500"
+          className={`px-3.5 py-1.5 rounded-lg font-bold transition cursor-pointer ${
+            mode === "upload" ? "bg-white shadow text-brand-blue" : "text-slate-500 hover:text-slate-800"
           }`}
         >
-          📁 Upload
+          📁 Upload File
         </button>
         <button
           type="button"
           onClick={() => setMode("url")}
-          className={`px-3 py-1.5 rounded-md font-semibold transition ${
-            mode === "url" ? "bg-white shadow text-brand-blue" : "text-slate-500"
+          className={`px-3.5 py-1.5 rounded-lg font-bold transition cursor-pointer ${
+            mode === "url" ? "bg-white shadow text-brand-blue" : "text-slate-500 hover:text-slate-800"
           }`}
         >
-          🔗 URL
+          🔗 Paste Link / Drive URL
         </button>
       </div>
+
       {mode === "upload" ? (
         <label
-          className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl cursor-pointer text-sm border-2 border-dashed transition ${
+          className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl cursor-pointer text-sm border-2 border-dashed transition ${
             uploading
               ? "border-brand-blue bg-brand-blue/5 text-brand-blue"
-              : "border-slate-300 bg-slate-50 hover:border-brand-blue text-slate-600"
+              : "border-slate-300 bg-slate-50 hover:border-brand-blue text-slate-600 hover:bg-slate-100/80"
           }`}
         >
           {uploading ? "Uploading..." : value ? "Replace file" : `Choose file (max ${maxMb}MB)`}
@@ -607,7 +674,8 @@ export function FileOrUrlField({ value, onChange, subDir = "misc", maxMb = 5 }) 
               try {
                 const r = await uploadFile(f, subDir, maxMb);
                 onChange(r.url);
-                toast.success("Uploaded");
+                setDriveResult(null);
+                toast.success("Uploaded successfully!");
               } catch (err) {
                 toast.error(err?.response?.data?.detail || "Upload failed");
               } finally {
@@ -618,14 +686,94 @@ export function FileOrUrlField({ value, onChange, subDir = "misc", maxMb = 5 }) 
           />
         </label>
       ) : (
-        <input
-          type="url"
-          placeholder="https://example.com/document.pdf"
-          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:border-brand-blue outline-none"
-          value={value && value.startsWith("http") ? value : ""}
-          onChange={(e) => onChange(e.target.value)}
-        />
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <input
+              type="url"
+              placeholder="https://drive.google.com/file/d/... or any link"
+              className="flex-1 px-3.5 py-2 border border-slate-300 rounded-xl text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10 outline-none"
+              value={value && value.startsWith("http") ? value : ""}
+              onChange={(e) => onChange(e.target.value)}
+            />
+            {isDriveUrl(value) && (
+              <button
+                type="button"
+                onClick={handleManualCheck}
+                disabled={checkingDrive}
+                className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-50"
+                title="Check Google Drive link public permission"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${checkingDrive ? "animate-spin text-blue-600" : ""}`} />
+                Check Access
+              </button>
+            )}
+          </div>
+
+          {/* Real-time Drive Permission Status Indicator */}
+          {checkingDrive && (
+            <div className="flex items-center gap-2 text-xs font-semibold text-blue-600 bg-blue-50/80 px-3 py-1.5 rounded-xl border border-blue-150 animate-pulse">
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              Checking Google Drive public access permissions...
+            </div>
+          )}
+
+          {!checkingDrive && driveResult && driveResult.is_drive && (
+            <>
+              {driveResult.is_public ? (
+                <div className="flex items-center justify-between gap-2 text-xs font-bold text-emerald-800 bg-emerald-50 px-3.5 py-2 rounded-xl border border-emerald-200">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>✓ Public Google Drive Link (Verified accessible to all students)</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(true)}
+                    className="text-[11px] underline text-emerald-700 hover:text-emerald-900 cursor-pointer"
+                  >
+                    Details
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-rose-900 bg-rose-50 px-3.5 py-2.5 rounded-xl border border-rose-200">
+                  <div className="flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-rose-600 shrink-0 animate-pulse" />
+                    <div>
+                      <div>🔒 Google Drive Access is Restricted!</div>
+                      <div className="text-[11px] font-normal text-rose-700">
+                        Students & parents cannot open this document.
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(true)}
+                    className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-extrabold transition shadow-xs cursor-pointer flex items-center gap-1"
+                  >
+                    Fix Permission <ExternalLink className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       )}
+
+      {/* Popout Guidance Modal */}
+      <DrivePermissionModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        url={value}
+        checkResult={driveResult}
+        onUpdateUrl={(newUrl) => {
+          onChange(newUrl);
+          setDriveResult(null);
+        }}
+        onProceedAnyway={() => {
+          setShowModal(false);
+          toast.info("Keeping current link. Please ensure to grant access in Google Drive later.");
+        }}
+      />
     </div>
   );
 }
+
