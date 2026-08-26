@@ -4,6 +4,8 @@ import api, { parseImageTransform } from "../../lib/api";
 import { toast, Toaster } from "sonner";
 import { Briefcase, Loader2, Check } from "lucide-react";
 import { FileOrUrlField } from "../../components/admin/ResourceManager";
+import DrivePermissionModal from "../../components/admin/DrivePermissionModal";
+import { isDriveUrl, checkDrivePermission } from "../../lib/driveCheck";
 import SEO from "../../components/layout/SEO";
 
 function Field({ label, required, children }) {
@@ -26,6 +28,9 @@ export default function Career() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [resumeUrl, setResumeUrl] = useState("");
+  const [driveCheckResult, setDriveCheckResult] = useState(null);
+  const [showDriveModal, setShowDriveModal] = useState(false);
+  const [bypassDriveWarning, setBypassDriveWarning] = useState(false);
 
   const careerHeroRawVal = settings?.career_hero_image_url || "/sdps-team.png";
   const { style: careerHeroStyle, cleanUrl: cleanCareerHero } = parseImageTransform(careerHeroRawVal);
@@ -62,8 +67,26 @@ export default function Career() {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   const submit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!resumeUrl) { toast.error("Please upload your resume or paste a link"); return; }
+    
+    // Check Drive link permission for resume
+    if (isDriveUrl(resumeUrl) && !bypassDriveWarning) {
+      setSubmitting(true);
+      try {
+        const res = await checkDrivePermission(resumeUrl);
+        setDriveCheckResult(res);
+        if (res && res.is_public === false) {
+          setShowDriveModal(true);
+          setSubmitting(false);
+          toast.warning("Your Google Drive resume is Restricted (Private). Please allow public view access so our HR team can review it.");
+          return;
+        }
+      } catch (err) {
+        console.warn("Drive check error:", err);
+      }
+    }
+
     setSubmitting(true);
     try {
       const payload = {
@@ -332,6 +355,26 @@ export default function Career() {
           </form>
         </div>
       </section>
+
+      {/* Google Drive Resume Permission Popout Modal */}
+      <DrivePermissionModal
+        isOpen={showDriveModal}
+        onClose={() => setShowDriveModal(false)}
+        url={resumeUrl}
+        checkResult={driveCheckResult}
+        onUpdateUrl={(newUrl) => {
+          setResumeUrl(newUrl);
+          setDriveCheckResult(null);
+        }}
+        onProceedAnyway={() => {
+          setBypassDriveWarning(true);
+          setShowDriveModal(false);
+          toast.info("Submitting application with current link.");
+          setTimeout(() => {
+            submit();
+          }, 100);
+        }}
+      />
     </>
   );
 }
