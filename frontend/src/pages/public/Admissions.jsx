@@ -419,22 +419,24 @@ export function AdmissionsLanding() {
       />
       {/* Hero */}
       <section className="bg-hero-grad py-16 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0 opacity-10 pointer-events-none">
           <img src={openButtonUrl} alt="" className="w-full h-full object-contain" />
         </div>
-        <div className="relative max-w-6xl mx-auto px-6 text-center">
-          <div className="inline-flex items-center gap-2 bg-brand-orange/10 text-brand-orange text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full mb-4">
-            Join Our Family
+        <div className="relative max-w-6xl mx-auto px-6 flex flex-col items-center justify-center text-center">
+          <div className="w-full flex justify-center mb-3">
+            <span className="inline-flex items-center gap-2 bg-brand-orange/10 text-brand-orange text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full shadow-xs">
+              Join Our Family
+            </span>
           </div>
-          <h1 className="legacy-title brand-gradient-text">Admissions Open for Session 2026-27</h1>
-          <p className="mt-4 text-brand-ink/70 max-w-2xl mx-auto text-lg">
+          <h1 className="legacy-title brand-gradient-text block w-full">Admissions Open for Session 2026-27</h1>
+          <p className="mt-4 text-brand-ink/70 max-w-2xl mx-auto text-base sm:text-lg leading-relaxed">
             Give your child the gift of quality education. Admissions are now open for <strong>Playgroup to Class VIII</strong>.
           </p>
           <div className="mt-6 flex flex-wrap gap-3 justify-center">
-            <a href="tel:+919955190262" className="btn-primary flex items-center gap-2">
+            <a href="tel:+919955190262" className="btn-primary flex items-center gap-2 shadow-md hover:scale-[1.02] transition-transform">
               <Phone className="w-4 h-4" /> 9955190262
             </a>
-            <a href="tel:+919955190162" className="btn-glass flex items-center gap-2">
+            <a href="tel:+919955190162" className="btn-glass flex items-center gap-2 shadow-xs hover:scale-[1.02] transition-transform">
               <Phone className="w-4 h-4" /> 9955190162
             </a>
           </div>

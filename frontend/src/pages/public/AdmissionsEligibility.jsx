@@ -41,10 +41,16 @@ export default function AdmissionsEligibility() {
   return (
     <>
       <section className="bg-hero-grad py-16">
-        <div className="max-w-5xl mx-auto px-6 text-center">
-          <div className="inline-flex items-center gap-2 bg-brand-blue/10 text-brand-blue text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full mb-4">Age Criteria</div>
-          <h1 className="legacy-title brand-gradient-text">Admission Eligibility</h1>
-          <p className="mt-4 text-brand-ink/70 max-w-xl mx-auto">Who Can Apply? Age criteria per class is listed below — updated each session by administration.</p>
+        <div className="max-w-5xl mx-auto px-6 flex flex-col items-center justify-center text-center">
+          <div className="w-full flex justify-center mb-3">
+            <span className="inline-flex items-center gap-2 bg-brand-blue/10 text-brand-blue text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full shadow-xs">
+              Age Criteria
+            </span>
+          </div>
+          <h1 className="legacy-title brand-gradient-text block w-full">Admission Eligibility</h1>
+          <p className="mt-4 text-brand-ink/70 max-w-xl mx-auto text-base leading-relaxed">
+            Who Can Apply? Age criteria per class is listed below — updated each session by administration.
+          </p>
         </div>
       </section>
 
