@@ -2078,12 +2078,88 @@ async def track_gdrive_folder_view(slug: str):
         return {"status": "error", "message": str(e)}
 
 
+def parse_device_info(ua: str) -> dict:
+    ua_lower = (ua or "").lower()
+    # Device type
+    if "mobile" in ua_lower or "android" in ua_lower or "iphone" in ua_lower or "ipod" in ua_lower:
+        device_type = "Mobile"
+    elif "ipad" in ua_lower or "tablet" in ua_lower:
+        device_type = "Tablet"
+    else:
+        device_type = "Desktop"
+
+    # Operating System
+    if "android" in ua_lower:
+        os_name = "Android"
+    elif "iphone" in ua_lower or "ipad" in ua_lower or "ipod" in ua_lower or "ios" in ua_lower:
+        os_name = "iOS"
+    elif "windows" in ua_lower:
+        os_name = "Windows"
+    elif "mac" in ua_lower or "macintosh" in ua_lower:
+        os_name = "macOS"
+    elif "linux" in ua_lower:
+        os_name = "Linux"
+    else:
+        os_name = "Other"
+
+    # Browser
+    if "edg" in ua_lower:
+        browser = "Edge"
+    elif "chrome" in ua_lower and "crios" not in ua_lower:
+        browser = "Chrome"
+    elif "crios" in ua_lower:
+        browser = "Chrome iOS"
+    elif "safari" in ua_lower and "chrome" not in ua_lower:
+        browser = "Safari"
+    elif "firefox" in ua_lower or "fxios" in ua_lower:
+        browser = "Firefox"
+    elif "whatsapp" in ua_lower:
+        browser = "WhatsApp"
+    else:
+        browser = "Browser"
+
+    return {
+        "device_type": device_type,
+        "os": os_name,
+        "browser": browser
+    }
+
+
 @public_router.post("/gdrive-folders/{slug}/track-download")
-async def track_gdrive_photo_download(slug: str, payload: Dict[str, Any] = Body(...)):
-    """Track single photo download and increment total folder downloads counter + photo download counter."""
+async def track_gdrive_photo_download(
+    slug: str,
+    request: Request,
+    payload: Optional[Dict[str, Any]] = Body(default={})
+):
+    """Track single photo download and increment total folder downloads counter + photo download counter + event log."""
     from server import db
+    from models import new_id, now_iso
+    import hashlib
+
+    payload = payload or {}
     file_id = payload.get("file_id")
+    photo_title = payload.get("photo_title") or payload.get("title")
+
+    ua = request.headers.get("user-agent", "")
+    dev_info = parse_device_info(ua)
+    if payload.get("device_type"):
+        dev_info["device_type"] = payload.get("device_type")
+
+    client_ip = request.client.host if request.client else ""
+    ip_hash = hashlib.sha256(client_ip.encode()).hexdigest()[:12] if client_ip else ""
+    now_str = now_iso()
+
     try:
+        folder = await db.gdrive_folders.find_one({"$or": [{"slug": slug}, {"id": slug}]})
+        folder_title = folder.get("title") if folder else slug
+        folder_id = folder.get("id") if folder else slug
+
+        if not photo_title and folder and file_id:
+            for f in folder.get("files", []):
+                if f.get("file_id") == file_id:
+                    photo_title = f.get("title")
+                    break
+
         await db.gdrive_folders.update_one(
             {"$or": [{"slug": slug}, {"id": slug}]},
             {"$inc": {"downloads": 1}}
@@ -2091,10 +2167,30 @@ async def track_gdrive_photo_download(slug: str, payload: Dict[str, Any] = Body(
         if file_id:
             await db.gdrive_folders.update_one(
                 {"$or": [{"slug": slug}, {"id": slug}], "files.file_id": file_id},
-                {"$inc": {"files.$.downloads": 1}}
+                {
+                    "$inc": {"files.$.downloads": 1},
+                    "$set": {"files.$.last_downloaded_at": now_str}
+                }
             )
-        return {"status": "ok"}
+
+        # Record event log in collection
+        log_doc = {
+            "id": new_id(),
+            "folder_id": folder_id,
+            "folder_slug": slug,
+            "folder_title": folder_title,
+            "file_id": file_id,
+            "photo_title": photo_title or (f"Photo ({file_id[:8]})" if file_id else "Photo"),
+            "timestamp": now_str,
+            "device_type": dev_info["device_type"],
+            "os": dev_info["os"],
+            "browser": dev_info["browser"],
+            "ip_hash": ip_hash
+        }
+        await db.gdrive_download_logs.insert_one(log_doc)
+        return {"status": "ok", "tracked": True}
     except Exception as e:
+        logging.error(f"Error in track_gdrive_photo_download for {slug}: {e}")
         return {"status": "error", "message": str(e)}
 
 

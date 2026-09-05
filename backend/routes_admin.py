@@ -1679,56 +1679,251 @@ async def delete_gdrive_folder_admin(slug: str, admin: TokenData = Depends(requi
 
 
 @admin_router.get("/gdrive-folders/analytics")
-async def get_gdrive_folders_analytics(admin: TokenData = Depends(require_permission("gallery"))):
-    """Return analytics for all Google Drive photo folders: total views, total downloads, and top downloaded photos across all albums."""
-    folders = await db.gdrive_folders.find({}, {"_id": 0}).to_list(500)
-    
+@admin_router.get("/gdrive-folders/analytics/deep")
+async def get_gdrive_folders_deep_analytics(
+    slug: Optional[str] = None,
+    time_range: str = "all",
+    search: Optional[str] = None,
+    admin: TokenData = Depends(require_permission("gallery"))
+):
+    """
+    Return comprehensive deep analytics for Google Drive photo downloads:
+    - Overall KPI metrics (views, downloads, unique photos downloaded, conversion rate)
+    - Time-filtered downloads (today, 7d, 30d, all-time)
+    - Ranked leaderboard of specific downloaded photos with Google CDN thumbnails and metadata
+    - Live recent downloads log stream with device / OS / browser info
+    - Device breakdown (Mobile vs Desktop vs Tablet, iOS vs Android)
+    - Folder by folder performance comparisons
+    """
+    from datetime import datetime, timezone, timedelta
+
+    # 1. Fetch folders
+    folder_query = {}
+    if slug:
+        folder_query = {"$or": [{"slug": slug}, {"id": slug}]}
+    folders = await db.gdrive_folders.find(folder_query, {"_id": 0}).to_list(500)
+
     total_views = sum(f.get("views", 0) for f in folders)
     total_downloads = sum(f.get("downloads", 0) for f in folders)
+    total_hosted_photos = sum(len(f.get("files", [])) for f in folders)
 
-    top_photos = []
+    # 2. Query download logs with optional time filter
+    now_dt = datetime.now(timezone.utc)
+    log_filter = {}
+    if slug:
+        log_filter["$or"] = [{"folder_slug": slug}, {"folder_id": slug}]
+
+    if time_range == "today":
+        start_today = now_dt.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+        log_filter["timestamp"] = {"$gte": start_today}
+    elif time_range == "7d":
+        start_7d = (now_dt - timedelta(days=7)).isoformat()
+        log_filter["timestamp"] = {"$gte": start_7d}
+    elif time_range == "30d":
+        start_30d = (now_dt - timedelta(days=30)).isoformat()
+        log_filter["timestamp"] = {"$gte": start_30d}
+
+    # Fetch recent download logs
+    recent_logs = await db.gdrive_download_logs.find(log_filter, {"_id": 0}).sort("timestamp", -1).to_list(100)
+
+    # Calculate time-scoped metrics
+    start_today_iso = now_dt.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    start_7d_iso = (now_dt - timedelta(days=7)).isoformat()
+    start_30d_iso = (now_dt - timedelta(days=30)).isoformat()
+
+    base_scope = {"folder_slug": slug} if slug else {}
+
+    downloads_today = await db.gdrive_download_logs.count_documents({**base_scope, "timestamp": {"$gte": start_today_iso}})
+    downloads_7d = await db.gdrive_download_logs.count_documents({**base_scope, "timestamp": {"$gte": start_7d_iso}})
+    downloads_30d = await db.gdrive_download_logs.count_documents({**base_scope, "timestamp": {"$gte": start_30d_iso}})
+
+    # Device & OS aggregation
+    all_logs = await db.gdrive_download_logs.find(log_filter, {"_id": 0, "device_type": 1, "os": 1, "browser": 1}).to_list(5000)
+    device_counts = {"Mobile": 0, "Desktop": 0, "Tablet": 0}
+    os_counts = {}
+    browser_counts = {}
+
+    for log in all_logs:
+        dtype = log.get("device_type") or "Mobile"
+        device_counts[dtype] = device_counts.get(dtype, 0) + 1
+
+        os_name = log.get("os") or "Other"
+        os_counts[os_name] = os_counts.get(os_name, 0) + 1
+
+        b_name = log.get("browser") or "Browser"
+        browser_counts[b_name] = browser_counts.get(b_name, 0) + 1
+
+    total_logged = len(all_logs) or 1
+    device_breakdown = {
+        "mobile_count": device_counts.get("Mobile", 0),
+        "mobile_pct": round((device_counts.get("Mobile", 0) / total_logged) * 100, 1),
+        "desktop_count": device_counts.get("Desktop", 0),
+        "desktop_pct": round((device_counts.get("Desktop", 0) / total_logged) * 100, 1),
+        "tablet_count": device_counts.get("Tablet", 0),
+        "tablet_pct": round((device_counts.get("Tablet", 0) / total_logged) * 100, 1),
+        "os": os_counts,
+        "browser": browser_counts
+    }
+
+    # 3. Extract and rank all specific photos across folders
+    all_photos_list = []
+    unique_downloaded_count = 0
+
     for f in folders:
-        folder_title = f.get("title", "Album")
-        folder_slug = f.get("slug", "")
-        for img in f.get("files", []):
-            dl_count = img.get("downloads", 0)
-            if dl_count > 0:
-                top_photos.append({
-                    "file_id": img.get("file_id"),
-                    "title": img.get("title") or "Photo",
-                    "folder_title": folder_title,
-                    "folder_slug": folder_slug,
-                    "downloads": dl_count,
-                    "proxy_url": f"/api/gdrive-proxy/{img.get('file_id')}?w=500"
-                })
+        f_title = f.get("title", "Album")
+        f_slug = f.get("slug", "")
+        f_views = f.get("views", 0)
 
-    top_photos.sort(key=lambda x: x["downloads"], reverse=True)
+        for idx, img in enumerate(f.get("files", [])):
+            fid = img.get("file_id")
+            if not fid:
+                continue
+            dl = img.get("downloads", 0)
+            if dl > 0:
+                unique_downloaded_count += 1
 
+            p_title = img.get("title") or f"Photo #{idx + 1}"
+
+            # Optional search filter
+            if search and search.lower() not in p_title.lower() and search.lower() not in f_title.lower():
+                continue
+
+            all_photos_list.append({
+                "file_id": fid,
+                "title": p_title,
+                "folder_title": f_title,
+                "folder_slug": f_slug,
+                "downloads": dl,
+                "last_downloaded_at": img.get("last_downloaded_at"),
+                "thumb_url": f"https://lh3.googleusercontent.com/d/{fid}=w500",
+                "preview_url": f"https://lh3.googleusercontent.com/d/{fid}=w1200",
+                "download_url": f"https://drive.google.com/uc?export=download&id={fid}",
+                "conversion_rate": round((dl / max(f_views, 1)) * 100, 1) if f_views else 0
+            })
+
+    # Sort top photos by downloads descending
+    all_photos_list.sort(key=lambda x: (x["downloads"], x.get("last_downloaded_at") or ""), reverse=True)
+
+    # Assign leaderboard ranks
+    for rank_idx, photo in enumerate(all_photos_list):
+        photo["rank"] = rank_idx + 1
+
+    # 4. Folder Summaries with individual top 5 photos per album
     folder_summaries = []
     for f in folders:
         files = f.get("files", [])
-        top_img = max(files, key=lambda x: x.get("downloads", 0), default=None) if files else None
+        f_views = f.get("views", 0)
+        f_downloads = f.get("downloads", 0)
+        f_downloaded_files = [img for img in files if img.get("downloads", 0) > 0]
+
+        sorted_files = sorted(files, key=lambda x: x.get("downloads", 0), reverse=True)
+        top_5_files = [
+            {
+                "file_id": img.get("file_id"),
+                "title": img.get("title") or "Photo",
+                "downloads": img.get("downloads", 0),
+                "last_downloaded_at": img.get("last_downloaded_at"),
+                "thumb_url": f"https://lh3.googleusercontent.com/d/{img.get('file_id')}=w500"
+            }
+            for img in sorted_files[:5] if img.get("file_id")
+        ]
+
         folder_summaries.append({
             "id": f.get("id"),
             "slug": f.get("slug"),
             "title": f.get("title"),
             "file_count": len(files),
-            "views": f.get("views", 0),
-            "downloads": f.get("downloads", 0),
-            "top_photo": {
-                "file_id": top_img.get("file_id"),
-                "title": top_img.get("title"),
-                "downloads": top_img.get("downloads", 0)
-            } if top_img and top_img.get("downloads", 0) > 0 else None,
+            "views": f_views,
+            "downloads": f_downloads,
+            "download_rate": round((f_downloads / max(f_views, 1)) * 100, 1) if f_views else 0,
+            "downloaded_photos_count": len(f_downloaded_files),
+            "top_photos": top_5_files,
+            "cover_file_id": f.get("cover_file_id"),
             "created_at": f.get("created_at")
         })
+
+    # Format recent download logs with image previews
+    formatted_recent_logs = []
+    for log in recent_logs:
+        fid = log.get("file_id")
+        formatted_recent_logs.append({
+            "id": log.get("id"),
+            "file_id": fid,
+            "photo_title": log.get("photo_title") or "Photo",
+            "folder_title": log.get("folder_title") or "Album",
+            "folder_slug": log.get("folder_slug") or "",
+            "timestamp": log.get("timestamp"),
+            "device_type": log.get("device_type") or "Mobile",
+            "os": log.get("os") or "Android",
+            "browser": log.get("browser") or "Browser",
+            "thumb_url": f"https://lh3.googleusercontent.com/d/{fid}=w500" if fid else None
+        })
+
+    # Top overall performing photo
+    top_overall_photo = all_photos_list[0] if all_photos_list and all_photos_list[0]["downloads"] > 0 else None
+
+    # Top overall performing album
+    top_overall_album = max(folder_summaries, key=lambda x: x["downloads"], default=None) if folder_summaries else None
 
     return {
         "total_views": total_views,
         "total_downloads": total_downloads,
-        "folder_count": len(folders),
-        "top_photos": top_photos[:20],
+        "total_hosted_photos": total_hosted_photos,
+        "unique_photos_downloaded": unique_downloaded_count,
+        "unique_download_pct": round((unique_downloaded_count / max(total_hosted_photos, 1)) * 100, 1) if total_hosted_photos else 0,
+        "downloads_today": downloads_today,
+        "downloads_7d": downloads_7d,
+        "downloads_30d": downloads_30d,
+        "top_overall_photo": top_overall_photo,
+        "top_overall_album": top_overall_album,
+        "device_breakdown": device_breakdown,
+        "top_photos": all_photos_list[:100],
+        "recent_downloads": formatted_recent_logs,
         "folders": folder_summaries
+    }
+
+
+@admin_router.get("/gdrive-folders/{slug}/photos-analytics")
+async def get_gdrive_folder_photo_analytics(slug: str, admin: TokenData = Depends(require_permission("gallery"))):
+    """Return photo-by-photo deep download analytics for a specific album."""
+    folder = await db.gdrive_folders.find_one({"$or": [{"slug": slug}, {"id": slug}]}, {"_id": 0})
+    if not folder:
+        raise HTTPException(status_code=404, detail="Photo album not found")
+
+    files = folder.get("files", [])
+    views = folder.get("views", 0)
+    total_downloads = folder.get("downloads", 0)
+
+    analyzed_photos = []
+    for idx, img in enumerate(files):
+        fid = img.get("file_id")
+        if not fid:
+            continue
+        dl = img.get("downloads", 0)
+        analyzed_photos.append({
+            "index": idx + 1,
+            "file_id": fid,
+            "title": img.get("title") or f"Photo #{idx + 1}",
+            "downloads": dl,
+            "last_downloaded_at": img.get("last_downloaded_at"),
+            "conversion_rate": round((dl / max(views, 1)) * 100, 1) if views else 0,
+            "thumb_url": f"https://lh3.googleusercontent.com/d/{fid}=w500",
+            "preview_url": f"https://lh3.googleusercontent.com/d/{fid}=w1200",
+            "download_url": f"https://drive.google.com/uc?export=download&id={fid}"
+        })
+
+    # Sort by downloads descending
+    analyzed_photos.sort(key=lambda x: (x["downloads"], x.get("last_downloaded_at") or ""), reverse=True)
+    for r_idx, p in enumerate(analyzed_photos):
+        p["rank"] = r_idx + 1
+
+    return {
+        "folder_title": folder.get("title"),
+        "folder_slug": folder.get("slug"),
+        "total_files": len(files),
+        "total_views": views,
+        "total_downloads": total_downloads,
+        "photos": analyzed_photos
     }
 
 

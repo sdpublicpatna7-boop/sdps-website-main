@@ -95,9 +95,14 @@ export default function GDriveFolderPage() {
     toast.success("WhatsApp preview share link copied to clipboard!");
   };
 
-  const handleDownloadTrack = (fileId) => {
+  const handleDownloadTrack = (fileId, photoTitle) => {
     if (slug && fileId) {
-      api.post(`/gdrive-folders/${slug}/track-download`, { file_id: fileId }).catch(() => {});
+      const deviceType = typeof window !== "undefined" && window.innerWidth < 768 ? "Mobile" : "Desktop";
+      api.post(`/gdrive-folders/${slug}/track-download`, {
+        file_id: fileId,
+        photo_title: photoTitle,
+        device_type: deviceType,
+      }).catch(() => {});
     }
   };
 
@@ -227,7 +232,7 @@ export default function GDriveFolderPage() {
                     download
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDownloadTrack(g.file_id);
+                      handleDownloadTrack(g.file_id, g.title || `Photo #${idx + 1}`);
                     }}
                     className="p-1.5 rounded-lg bg-amber-400/20 hover:bg-amber-400 text-amber-300 hover:text-slate-950 border border-amber-400/30 transition shrink-0"
                     title="Download Original Full High-Res Photo"
@@ -258,7 +263,7 @@ export default function GDriveFolderPage() {
                   {folder?.title || "SDPS PHOTO ALBUM"}
                 </span>
                 <h3 className="text-sm sm:text-base font-bold text-white truncate">
-                  Photo #{activeIdx + 1}
+                  {activeFile.title || `Photo #${activeIdx + 1}`}
                 </h3>
               </div>
 
@@ -270,7 +275,7 @@ export default function GDriveFolderPage() {
                   download
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleDownloadTrack(activeFile.file_id);
+                    handleDownloadTrack(activeFile.file_id, activeFile.title || `Photo #${activeIdx + 1}`);
                   }}
                   className="px-4 py-2 rounded-xl bg-[#F4D571] hover:bg-amber-300 text-[#0B1E40] font-headline font-bold text-xs transition flex items-center gap-1.5 shadow-lg"
                 >
