@@ -188,8 +188,41 @@ class AdmissionEnquiry(BaseDoc):
     email: EmailStr
     student_class: str
     answers: Dict[str, Any] = {}
-    status: str = "new"  # new/contacted/closed
+    status: str = "new"  # new/contacted/campus_visit_scheduled/visited_campus/form_purchased/admitted/cold
+    notes: List[Dict[str, Any]] = []  # [{"text": "...", "author": "...", "timestamp": "...", "status": "..."}]
+    campaign_slug: Optional[str] = None
+    visit_date: Optional[str] = None
+    follow_up_date: Optional[str] = None
+    source: Optional[str] = "website"  # website, campaign, walk_in, referral, social
     created_at: str = Field(default_factory=now_iso)
+    updated_at: str = Field(default_factory=now_iso)
+
+
+class AdmissionCampaign(BaseDoc):
+    id: str = Field(default_factory=new_id)
+    title: str
+    slug: str
+    badge: str = "Admissions Open 2026-27"
+    category: str = "general"  # general, preschool, fee_structure, activities, sports, infrastructure, scholarships
+    description: str = ""
+    cover_image: str = ""
+    video_url: Optional[str] = None
+    prospectus_url: Optional[str] = None
+    fee_pdf_url: Optional[str] = None
+    highlights: List[str] = []
+    activities: List[Dict[str, Any]] = []  # [{"title": "...", "description": "...", "image": "...", "category": "..."}]
+    fee_structure_summary: List[Dict[str, Any]] = []  # [{"class_range": "...", "monthly_fee": "...", "admission_fee": "...", "details": "..."}]
+    facilities: List[Dict[str, Any]] = []  # [{"title": "...", "icon": "...", "description": "..."}]
+    faqs: List[Dict[str, str]] = []  # [{"q": "...", "a": "..."}]
+    whatsapp_template: Optional[str] = None
+    contact_phone: str = "+91 99551 90262"
+    contact_whatsapp: str = "+91 99551 90262"
+    contact_email: str = "admissions@sdpublic.org"
+    is_active: bool = True
+    views_count: int = 0
+    enquiries_count: int = 0
+    created_at: str = Field(default_factory=now_iso)
+    updated_at: str = Field(default_factory=now_iso)
 
 
 class FullAdmission(BaseDoc):

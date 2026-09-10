@@ -38,6 +38,7 @@ const AdmissionEnquiry = lazy(() => import("@/pages/public/Admissions").then(m =
 const AdmissionForm = lazy(() => import("@/pages/public/Admissions").then(m => ({ default: m.AdmissionForm })));
 const AdmissionsLanding = lazy(() => import("@/pages/public/Admissions").then(m => ({ default: m.AdmissionsLanding })));
 const AdmissionsEligibility = lazy(() => import("@/pages/public/AdmissionsEligibility"));
+const AdmissionCampaignPage = lazy(() => import("@/pages/public/AdmissionCampaignPage"));
 const FeeStructure = lazy(() => import("@/pages/public/FeeStructure"));
 const Career = lazy(() => import("@/pages/public/Career"));
 const Alumni = lazy(() => import("@/pages/public/Alumni"));
@@ -196,6 +197,9 @@ function MainApp() {
         <Route path="/admission-enquiry" element={<AdmissionEnquiry />} />
         <Route path="/admission-form" element={<AdmissionForm />} />
         <Route path="/admission-eligibility" element={<AdmissionsEligibility />} />
+        <Route path="/explore" element={<AdmissionCampaignPage />} />
+        <Route path="/explore/:slug" element={<AdmissionCampaignPage />} />
+        <Route path="/admission-campaign/:slug" element={<AdmissionCampaignPage />} />
         <Route path="/fee-structure" element={<FeeStructure />} />
         <Route path="/careers" element={<Career />} />
         <Route path="/alumni" element={<Alumni />} />

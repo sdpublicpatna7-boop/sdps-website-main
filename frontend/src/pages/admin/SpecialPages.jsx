@@ -4,6 +4,7 @@ export { AdminPopup } from "./special/AdminPopup";
 export { AdminSiteSettings } from "./special/AdminSiteSettings";
 export { AdminAlumniSettings } from "./special/AdminAlumniSettings";
 export { AdminEnquiries } from "./special/AdminEnquiries";
+export { AdminEnquiryHub } from "./special/AdminEnquiryHub";
 export { AdminApplications } from "./special/AdminApplications";
 export { AdminCareerApps } from "./special/AdminCareerApps";
 export { AdminAlumniMembers } from "./special/AdminAlumniMembers";

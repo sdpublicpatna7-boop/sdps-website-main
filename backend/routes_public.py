@@ -35,7 +35,7 @@ from slowapi import Limiter
 from models import (
     News, Notice, GalleryImage, VideoItem, CalendarEvent, Holiday,
     CouncilMember, ElectionPoster, CouncilResult, FormQuestion,
-    AdmissionEnquiry, FullAdmission, CareerPost, CareerApplication,
+    AdmissionEnquiry, AdmissionCampaign, FullAdmission, CareerPost, CareerApplication,
     AlumniMember, AlumniMeet, AlumniSettings, TCRecord, TCDownloadRequest,
     PopupSettings, FeeVerifyRequest, SiteSettings,
     ContactMessage, now_iso, new_id,
@@ -177,12 +177,280 @@ async def list_enquiry_questions():
     return items
 
 
+DEFAULT_ADMISSION_CAMPAIGNS = [
+    {
+        "id": "camp_session_2026_27",
+        "title": "Session 2026-27 Admissions Open: Quality Education & Holistic Growth",
+        "slug": "session-2026-27-admissions",
+        "badge": "SESSION 2026-27 ADMISSIONS",
+        "category": "general",
+        "description": "S.D. Public School Patna offers a vibrant, nurturing educational journey from Playgroup to Class VIII. Discover our modern smart classrooms, STEM robotics lab, experienced faculty, and transparent fee structure.",
+        "cover_image": "https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=1200&q=80",
+        "video_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        "prospectus_url": "https://sdpublic.org/prospectus.pdf",
+        "fee_pdf_url": "/fee-structure",
+        "highlights": [
+            "CBSE Pattern Curriculum with Experiential Learning",
+            "Smart Interactive Digital Classrooms & Air-Cooled Campus",
+            "Dedicated STEM, Robotics & Science Innovation Labs",
+            "Safe GPS-Tracked School Bus Fleet Across Patna",
+            "Individual Attention with 1:25 Teacher-Student Ratio",
+            "Comprehensive Sports Complex & Martial Arts Coaching"
+        ],
+        "activities": [
+            {
+                "title": "STEM, AI & Robotics Lab",
+                "category": "Technology & Science",
+                "description": "Hands-on coding, practical robotics projects, and science experiments fostering young innovators.",
+                "image": "https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=800&q=80"
+            },
+            {
+                "title": "Annual Sports Meet & Khelo Patna",
+                "category": "Sports & Fitness",
+                "description": "Cricket nets, badminton, athletics, martial arts, and yoga training under certified NIS coaches.",
+                "image": "https://images.unsplash.com/photo-1576678927484-cc907957088c?auto=format&fit=crop&w=800&q=80"
+            },
+            {
+                "title": "Cultural Arts, Dance & Music",
+                "category": "Performing Arts",
+                "description": "Annual cultural extravaganza, Indian classical & Western dance, keyboard, and public speaking.",
+                "image": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=800&q=80"
+            },
+            {
+                "title": "Interactive Smart Classrooms",
+                "category": "Academics",
+                "description": "Audio-visual digital content, 3D animated learning modules, and engaging classroom interactions.",
+                "image": "https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=800&q=80"
+            }
+        ],
+        "fee_structure_summary": [
+            {
+                "class_range": "Playgroup, Nursery, LKG, UKG",
+                "monthly_fee": "₹1,850 / month",
+                "admission_fee": "₹5,000 (One-Time)",
+                "details": "Includes student activity kit, art supplies, and smart class access."
+            },
+            {
+                "class_range": "Class I to Class V",
+                "monthly_fee": "₹2,200 / month",
+                "admission_fee": "₹6,500 (One-Time)",
+                "details": "Includes computer laboratory, library, sports coaching, and science lab."
+            },
+            {
+                "class_range": "Class VI to Class VIII",
+                "monthly_fee": "₹2,600 / month",
+                "admission_fee": "₹7,500 (One-Time)",
+                "details": "Includes advanced STEM robotics, Olympiad preparation, and tournament sports."
+            }
+        ],
+        "facilities": [
+            { "title": "24x7 CCTV Surveillance", "description": "Complete campus and corridor safety monitoring." },
+            { "title": "GPS Transport Fleet", "description": "Safe pick & drop with live bus tracking." },
+            { "title": "Infirmary & First Aid", "description": "Dedicated medical room with trained staff." },
+            { "title": "Purified RO Water", "description": "Cold & clean drinking water stations on each floor." }
+        ],
+        "faqs": [
+            { "q": "What is the age criteria for Nursery & Class 1?", "a": "For Nursery, child must be 3+ years as on 1st April 2026. For Class 1, child must be 5+ years." },
+            { "q": "Is there a sibling discount available?", "a": "Yes! S.D. Public School provides a 25% concession on tuition fees for the younger sibling." },
+            { "q": "How can I book a campus visit?", "a": "You can click 'Schedule Campus Visit' or call our helpline at +91 99551 90262 (Monday to Saturday, 8 AM - 3 PM)." }
+        ],
+        "whatsapp_template": "🙏 *Namaste {parent_name}!*\\n\\nThank you for considering *S.D. Public School, Patna* for *{student_name}* (Class {student_class}).\\n\\n🌟 *Explore our School Showcase, Activities & Fee Details here:*\\n👉 {campaign_link}\\n\\n✅ *Key Highlights:*\\n• Modern Smart Classes & STEM Robotics Lab\\n• Safe GPS School Buses across Patna\\n• Transparent Fee Structure & Sibling Discounts\\n\\n📞 *Admission Helpline:* +91 99551 90262\\n🏫 *Campus:* Near Kumhrar, Patna",
+        "contact_phone": "+91 99551 90262",
+        "contact_whatsapp": "+91 99551 90262",
+        "contact_email": "admissions@sdpublic.org",
+        "is_active": True,
+        "views_count": 420,
+        "enquiries_count": 34,
+        "created_at": "2026-01-01T00:00:00+05:30",
+        "updated_at": "2026-01-01T00:00:00+05:30"
+    },
+    {
+        "id": "camp_curious_minds_preschool",
+        "title": "SDPS Curious Minds Pre-School: Joyful & Play-Based Early Learning",
+        "slug": "curious-minds-preschool",
+        "badge": "TOP RANKED PRE-SCHOOL",
+        "category": "preschool",
+        "description": "Give your little one the perfect joyful start. Curious Minds Pre-School at SDPS fosters creativity, sensory exploration, phonics, and confidence in a safe and loving environment.",
+        "cover_image": "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=1200&q=80",
+        "prospectus_url": "https://sdpublic.org/prospectus.pdf",
+        "fee_pdf_url": "/fee-structure",
+        "highlights": [
+            "Montessori & Play-Way Blended Early Childhood Method",
+            "Safe Soft-Play Zone & Colourful Activity Rooms",
+            "Phonics, Rhymes & Storytelling Theater",
+            "Caring, Motherly & Certified Early Educators",
+            "Nutritious Hygiene Habits & Gross Motor Development",
+            "Fun Friday Festivities & Parent-Child Engagement"
+        ],
+        "activities": [
+            {
+                "title": "Sensory & Play-Way Discovery",
+                "category": "Early Learning",
+                "description": "Sand play, water tables, building blocks, and tactile puzzles for cognitive development.",
+                "image": "https://images.unsplash.com/photo-1587654780291-39c9404d746b?auto=format&fit=crop&w=800&q=80"
+            },
+            {
+                "title": "Little Einstein Science & Nature",
+                "category": "Exploration",
+                "description": "Gardening, observing plants, magnifying glasses, and fun mini experiments.",
+                "image": "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=800&q=80"
+            },
+            {
+                "title": "Music, Rhymes & Stage Confidence",
+                "category": "Performing Arts",
+                "description": "Rhythm instruments, morning circle time, action songs, and annual costume parade.",
+                "image": "https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&w=800&q=80"
+            }
+        ],
+        "fee_structure_summary": [
+            {
+                "class_range": "Playgroup (Age 2-3)",
+                "monthly_fee": "₹1,750 / month",
+                "admission_fee": "₹4,500 (One-Time)",
+                "details": "Includes all sensory materials, play equipment, and welcome kit."
+            },
+            {
+                "class_range": "Nursery & LKG (Age 3-5)",
+                "monthly_fee": "₹1,850 / month",
+                "admission_fee": "₹5,000 (One-Time)",
+                "details": "Includes phonics worksheets, activity book, and digital audio-visual sessions."
+            },
+            {
+                "class_range": "UKG / Prep (Age 5-6)",
+                "monthly_fee": "₹1,950 / month",
+                "admission_fee": "₹5,000 (One-Time)",
+                "details": "Prepares child seamlessly for Class 1 primary school entrance."
+            }
+        ],
+        "whatsapp_template": "🌟 *Hello {parent_name}!*\\n\\nWelcome to *Curious Minds Pre-School at S.D. Public School*! We are delighted to share our Early Learning & Activity brochure for *{student_name}*.\\n\\n🧸 *Take a Tour of our Pre-School Activities & Fee Details:*\\n👉 {campaign_link}\\n\\n🎈 *What Makes Curious Minds Special?*\\n• Safe, Colourful Soft-Play & Sensory Learning\\n• Phonics, Rhymes & Motor Skill Building\\n• Loving & Motherly Care with 1:15 Ratio\\n\\n📞 *Helpline / Visit Booking:* +91 99551 90262",
+        "contact_phone": "+91 99551 90262",
+        "contact_whatsapp": "+91 99551 90262",
+        "contact_email": "admissions@sdpublic.org",
+        "is_active": True,
+        "views_count": 280,
+        "enquiries_count": 22,
+        "created_at": "2026-01-01T00:00:00+05:30",
+        "updated_at": "2026-01-01T00:00:00+05:30"
+    },
+    {
+        "id": "camp_fee_structure_scholarships",
+        "title": "Transparent Fee Structure & Merit Scholarships 2026-27",
+        "slug": "fee-structure-scholarships-2026",
+        "badge": "100% TRANSPARENT FEES",
+        "category": "fee_structure",
+        "description": "Quality English-medium CBSE education at honest and affordable fees. No hidden development charges. Special sibling concessions and academic scholarships available.",
+        "cover_image": "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=1200&q=80",
+        "fee_pdf_url": "/fee-structure",
+        "prospectus_url": "https://sdpublic.org/prospectus.pdf",
+        "highlights": [
+            "Zero Hidden Charges — Complete Yearly Transparency",
+            "25% Real Sibling Concession for Younger Children",
+            "Merit-Based Scholarship Waivers for Top Achievers",
+            "Flexible Quarterly or Monthly Online Fee Payment via UPI/Cards",
+            "Reasonable Bus Transport Fee Slab Based on Distance",
+            "Zero Building / Capital Donation Fees"
+        ],
+        "activities": [
+            {
+                "title": "Academic Excellence & Mentorship",
+                "category": "Academics",
+                "description": "Personalized doubt clearing sessions, remedial coaching, and regular parent-teacher reviews.",
+                "image": "https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?auto=format&fit=crop&w=800&q=80"
+            },
+            {
+                "title": "All-Round Personality Development",
+                "category": "Co-Curricular",
+                "description": "Debate clubs, quiz leagues, Olympiad training, and leadership councils included in schooling.",
+                "image": "https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=800&q=80"
+            }
+        ],
+        "fee_structure_summary": [
+            {
+                "class_range": "Pre-Primary (Playgroup - UKG)",
+                "monthly_fee": "₹1,850",
+                "admission_fee": "₹5,000",
+                "details": "Tuition, Activity, Examination, and Smart Classroom fees included."
+            },
+            {
+                "class_range": "Primary (Class I - V)",
+                "monthly_fee": "₹2,200",
+                "admission_fee": "₹6,500",
+                "details": "Includes Computer Lab, Library, Science Lab, and Sports facility."
+            },
+            {
+                "class_range": "Middle School (Class VI - VIII)",
+                "monthly_fee": "₹2,600",
+                "admission_fee": "₹7,500",
+                "details": "Includes STEM Labs, Sports Tournaments, and Advanced Examination System."
+            }
+        ],
+        "whatsapp_template": "📋 *Dear {parent_name},*\\n\\nHere is the complete *Fee Structure & Scholarship Guide 2026-27* for S.D. Public School, Patna for *{student_name}*:\\n\\n👉 {campaign_link}\\n\\n💡 *Key Highlights:*\\n• Zero hidden fees / No capitation charge\\n• 25% Sibling Discount available\\n• Easy Online Payment via UPI & Net Banking\\n\\n📞 *Accounts & Admission Desk:* +91 99551 90262",
+        "contact_phone": "+91 99551 90262",
+        "contact_whatsapp": "+91 99551 90262",
+        "contact_email": "admissions@sdpublic.org",
+        "is_active": True,
+        "views_count": 310,
+        "enquiries_count": 19,
+        "created_at": "2026-01-01T00:00:00+05:30",
+        "updated_at": "2026-01-01T00:00:00+05:30"
+    }
+]
+
+
+@public_router.get("/admission-campaigns")
+async def list_public_admission_campaigns():
+    """Returns active admission campaigns / promotion packs."""
+    items = await db.admission_campaigns.find({"is_active": True}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    if not items:
+        # Auto-seed default campaigns if collection is fresh
+        for c in DEFAULT_ADMISSION_CAMPAIGNS:
+            await db.admission_campaigns.update_one({"id": c["id"]}, {"$set": c}, upsert=True)
+        items = await db.admission_campaigns.find({"is_active": True}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return items
+
+
+@public_router.get("/admission-campaigns/{slug_or_id}")
+async def get_public_admission_campaign(slug_or_id: str):
+    """Get single campaign by slug or id, and increment view counter."""
+    item = await db.admission_campaigns.find_one({"$or": [{"slug": slug_or_id}, {"id": slug_or_id}]}, {"_id": 0})
+    if not item:
+        # Check in defaults
+        match = next((c for c in DEFAULT_ADMISSION_CAMPAIGNS if c["slug"] == slug_or_id or c["id"] == slug_or_id), None)
+        if match:
+            await db.admission_campaigns.update_one({"id": match["id"]}, {"$set": match}, upsert=True)
+            item = match
+    if not item:
+        raise HTTPException(status_code=404, detail="Admission campaign not found")
+    
+    # Increment view counter asynchronously
+    try:
+        await db.admission_campaigns.update_one(
+            {"id": item["id"]},
+            {"$inc": {"views_count": 1}}
+        )
+    except Exception:
+        pass
+        
+    return item
+
+
 @public_router.post("/admission/enquiry")
 @limiter.limit("10/minute")
 async def submit_enquiry(request: Request, payload: AdmissionEnquiry):
     await sync_logo_url()
     doc = payload.model_dump()
     await db.admission_enquiries.insert_one(doc.copy())
+
+    # If associated with a campaign, increment campaign enquiries counter
+    if payload.campaign_slug:
+        try:
+            await db.admission_campaigns.update_one(
+                {"$or": [{"slug": payload.campaign_slug}, {"id": payload.campaign_slug}]},
+                {"$inc": {"enquiries_count": 1}}
+            )
+        except Exception:
+            pass
+
     # Escape user-supplied values before embedding in HTML email (prevents HTML injection).
     parent = html.escape(payload.parent_name)
     student = html.escape(payload.student_name)
@@ -2126,6 +2394,8 @@ def parse_device_info(ua: str) -> dict:
 
 
 @public_router.post("/gdrive-folders/{slug}/track-download")
+async def track_gdrive_photo_download(slug: str, payload: Dict[str, Any] = Body(...)):
+    """Track single photo download and increment total folder downloads counter + photo download counter."""
 async def track_gdrive_photo_download(
     slug: str,
     request: Request,

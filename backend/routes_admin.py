@@ -37,7 +37,7 @@ from models import (
     News, Notice, GalleryImage, VideoItem, CalendarEvent, Holiday,
     CouncilMember, ElectionPoster, CouncilResult, HouseMentor, FormQuestion,
     CareerPost, AlumniMeet, AlumniSettings, TCRecord, PopupSettings,
-    SiteSettings, now_iso, new_id, AdmissionEnquiry,
+    SiteSettings, now_iso, new_id, AdmissionEnquiry, AdmissionCampaign,
     EligibilityRow, FeeStructureRow, HostelFeeRow, HostelGalleryItem,
     AdministrationMember, LegalPage, ExamPaper, HolidayHomework, KheloPatnaPhoto,
     Educator, GeneratedThumbnail, SalarySlip, SalaryCertificate, ExperienceCertificate, Testimonial,
@@ -620,15 +620,245 @@ async def email_experience_certificate(
     return {"sent": True, "method": res.get("method", "unknown")}
 
 
-# ============= READ-ONLY LISTS (for admin: enquiries, applications, etc) =============
+# ============= ADMISSION ENQUIRIES & CAMPAIGN HUB =============
 @admin_router.get("/admission-enquiries")
 async def list_enquiries(admin: TokenData = Depends(require_permission("admissions"))):
     items = await db.admission_enquiries.find({}, {"_id": 0}).sort("created_at", -1).to_list(2000)
     return items
 
 
+@admin_router.get("/admission-enquiries/stats")
+async def get_enquiries_stats(admin: TokenData = Depends(require_permission("admissions"))):
+    items = await db.admission_enquiries.find({}, {"_id": 0}).to_list(5000)
+    total = len(items)
+    by_status = {}
+    by_class = {}
+    by_campaign = {}
+    recent_7d = 0
+    
+    now = datetime.now(timezone.utc)
+    for it in items:
+        st = it.get("status") or "new"
+        by_status[st] = by_status.get(st, 0) + 1
+        
+        cls = (it.get("student_class") or "Unspecified").strip()
+        by_class[cls] = by_class.get(cls, 0) + 1
+        
+        camp = it.get("campaign_slug") or "direct"
+        by_campaign[camp] = by_campaign.get(camp, 0) + 1
+        
+        created = it.get("created_at")
+        if created:
+            try:
+                dt = datetime.fromisoformat(created.replace("Z", "+00:00"))
+                if (now - dt).total_seconds() <= 7 * 86400:
+                    recent_7d += 1
+            except Exception:
+                pass
+
+    admitted_count = by_status.get("admitted", 0)
+    conversion_rate = round((admitted_count / total * 100), 1) if total > 0 else 0.0
+
+    return {
+        "total": total,
+        "new": by_status.get("new", 0),
+        "contacted": by_status.get("contacted", 0),
+        "campus_visit_scheduled": by_status.get("campus_visit_scheduled", 0),
+        "visited_campus": by_status.get("visited_campus", 0),
+        "form_purchased": by_status.get("form_purchased", 0),
+        "admitted": admitted_count,
+        "cold": by_status.get("cold", 0),
+        "conversion_rate": conversion_rate,
+        "recent_7d": recent_7d,
+        "by_status": by_status,
+        "by_class": by_class,
+        "by_campaign": by_campaign,
+    }
+
+
+@admin_router.post("/admission-enquiries/walk-in")
+async def log_walk_in_enquiry(
+    payload: Dict[str, Any] = Body(...),
+    admin: TokenData = Depends(require_permission("admissions"))
+):
+    parent_name = payload.get("parent_name", "").strip()
+    student_name = payload.get("student_name", "").strip()
+    contact_phone = payload.get("contact_phone", "").strip()
+    email = payload.get("email", "").strip() or "walkin@sdpublic.org"
+    student_class = payload.get("student_class", "").strip()
+    
+    if not parent_name or not student_name or not contact_phone or not student_class:
+        raise HTTPException(status_code=400, detail="Parent Name, Student Name, Phone, and Class are required")
+
+    status = payload.get("status", "visited_campus")
+    doc = {
+        "id": new_id(),
+        "parent_name": parent_name,
+        "student_name": student_name,
+        "contact_phone": contact_phone,
+        "email": email,
+        "student_class": student_class,
+        "status": status,
+        "source": "walk_in",
+        "campaign_slug": payload.get("campaign_slug"),
+        "visit_date": payload.get("visit_date") or now_iso()[:10],
+        "notes": [
+            {
+                "id": new_id(),
+                "text": f"Walk-in enquiry logged by {admin.email or 'Admin'}. Note: {payload.get('note', 'Visited school campus directly.')}",
+                "author": admin.email or "Admin",
+                "status": status,
+                "timestamp": now_iso()
+            }
+        ] if payload.get("note") else [],
+        "answers": payload.get("answers", {}),
+        "created_at": now_iso(),
+        "updated_at": now_iso(),
+    }
+    await db.admission_enquiries.insert_one(doc.copy())
+    return doc
+
+
+@admin_router.put("/admission-enquiries/{item_id}/status")
+async def update_enquiry_status(
+    item_id: str,
+    payload: Dict[str, Any] = Body(...),
+    admin: TokenData = Depends(require_permission("admissions"))
+):
+    enquiry = await db.admission_enquiries.find_one({"id": item_id})
+    if not enquiry:
+        raise HTTPException(status_code=404, detail="Enquiry not found")
+    
+    new_status = payload.get("status")
+    note_text = payload.get("note")
+    visit_date = payload.get("visit_date")
+    follow_up_date = payload.get("follow_up_date")
+    
+    update_doc = {"updated_at": now_iso()}
+    if new_status:
+        update_doc["status"] = new_status
+    if visit_date is not None:
+        update_doc["visit_date"] = visit_date
+    if follow_up_date is not None:
+        update_doc["follow_up_date"] = follow_up_date
+        
+    if note_text and note_text.strip():
+        new_note = {
+            "id": new_id(),
+            "text": note_text.strip(),
+            "author": admin.email or "Admin",
+            "status": new_status or enquiry.get("status", "new"),
+            "timestamp": now_iso()
+        }
+        await db.admission_enquiries.update_one(
+            {"id": item_id},
+            {"$push": {"notes": new_note}, "$set": update_doc}
+        )
+    else:
+        await db.admission_enquiries.update_one(
+            {"id": item_id},
+            {"$set": update_doc}
+        )
+        
+    return await db.admission_enquiries.find_one({"id": item_id}, {"_id": 0})
+
+
+@admin_router.post("/admission-enquiries/{item_id}/send-campaign")
+async def send_campaign_to_enquiry(
+    item_id: str,
+    payload: Dict[str, Any] = Body(...),
+    admin: TokenData = Depends(require_permission("admissions"))
+):
+    enquiry = await db.admission_enquiries.find_one({"id": item_id}, {"_id": 0})
+    if not enquiry:
+        raise HTTPException(status_code=404, detail="Enquiry not found")
+        
+    campaign_slug = payload.get("campaign_slug") or "session-2026-27-admissions"
+    campaign = await db.admission_campaigns.find_one(
+        {"$or": [{"slug": campaign_slug}, {"id": campaign_slug}]},
+        {"_id": 0}
+    )
+    
+    parent_name = enquiry.get("parent_name", "Parent")
+    student_name = enquiry.get("student_name", "your child")
+    student_class = enquiry.get("student_class", "")
+    phone = enquiry.get("contact_phone", "")
+    email = enquiry.get("email", "")
+    channel = payload.get("channel", "whatsapp")  # whatsapp / email / both
+    custom_msg = payload.get("custom_message")
+    
+    base_url = "https://www.sdpublic.org"
+    slug_to_use = campaign.get('slug') if campaign else campaign_slug
+    campaign_link = f"{base_url}/explore/{slug_to_use}"
+    
+    results = {}
+    
+    # Prepare text message
+    if custom_msg:
+        msg_text = custom_msg.replace("{parent_name}", parent_name)\
+                             .replace("{student_name}", student_name)\
+                             .replace("{student_class}", student_class)\
+                             .replace("{campaign_link}", campaign_link)
+    elif campaign and campaign.get("whatsapp_template"):
+        msg_text = campaign["whatsapp_template"].replace("{parent_name}", parent_name)\
+                                                .replace("{student_name}", student_name)\
+                                                .replace("{student_class}", student_class)\
+                                                .replace("{campaign_link}", campaign_link)
+    else:
+        msg_text = (
+            f"🙏 *Namaste {parent_name}!*\\n\\n"
+            f"Thank you for your interest in *S.D. Public School, Patna* for *{student_name}* (Class {student_class}).\\n\\n"
+            f"🌟 *Explore our School Activities, Campus Life & Fee Structure here:*\\n"
+            f"👉 {campaign_link}\\n\\n"
+            f"📞 *Admission Helpline:* +91 99551 90262\\n"
+            f"— S.D. Public School, Patna"
+        )
+
+    if channel in ("whatsapp", "both") and phone:
+        wa_res = await send_whatsapp_text(phone, msg_text)
+        results["whatsapp"] = wa_res
+        
+    if channel in ("email", "both") and email and not email.endswith("@sdpublic.org"):
+        camp_title = campaign.get("title", "Admissions & School Showcase") if campaign else "SDPS Admissions & Activities Pack"
+        body_html = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b;">
+            <h2 style="color: #0E3B91;">SDPS Admissions & School Showcase 2026-27</h2>
+            <p>Dear {parent_name},</p>
+            <p>We are delighted to share the <strong>S.D. Public School Showcase & Information Pack</strong> for <strong>{student_name}</strong> (Class {student_class}).</p>
+            <div style="background: #f8fafc; border-left: 4px solid #F87D0E; padding: 16px; margin: 20px 0; border-radius: 8px;">
+                <h3 style="margin-top: 0; color: #0E3B91;">{camp_title}</h3>
+                <p style="font-size: 14px; margin-bottom: 12px;">Discover our smart digital classrooms, robotics lab, sports academy, and transparent fee structure.</p>
+                <a href="{campaign_link}" style="display: inline-block; background: #0E3B91; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; font-size: 14px;">View School Showcase & Fee Details →</a>
+            </div>
+            <p style="font-size: 13px; color: #64748b;">For assistance or to schedule a campus tour: +91 99551 90262 | admissions@sdpublic.org</p>
+            <p>Warm regards,<br/><strong>Admissions Committee</strong><br/>S.D. Public School, Patna</p>
+        </div>
+        """
+        email_res = await send_email(email, f"SDPS Admissions & School Showcase - {student_name}", body_html)
+        results["email"] = email_res
+
+    # Log note in enquiry
+    log_note = {
+        "id": new_id(),
+        "text": f"Sent Campaign '{campaign.get('title') if campaign else campaign_slug}' via {channel.upper()}",
+        "author": admin.email or "Admin",
+        "status": enquiry.get("status", "contacted"),
+        "timestamp": now_iso()
+    }
+    await db.admission_enquiries.update_one(
+        {"id": item_id},
+        {
+            "$push": {"notes": log_note},
+            "$set": {"status": "contacted", "updated_at": now_iso()}
+        }
+    )
+
+    return {"success": True, "results": results, "campaign_link": campaign_link, "message_preview": msg_text}
+
+
 @admin_router.put("/admission-enquiries/{item_id}")
 async def update_enquiry(item_id: str, payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(require_permission("admissions"))):
+    payload["updated_at"] = now_iso()
     update = _sanitize_update(payload, AdmissionEnquiry)
     if update:
         await db.admission_enquiries.update_one({"id": item_id}, {"$set": update})
@@ -638,6 +868,84 @@ async def update_enquiry(item_id: str, payload: Dict[str, Any] = Body(...), admi
 @admin_router.delete("/admission-enquiries/{item_id}")
 async def delete_enquiry(item_id: str, admin: TokenData = Depends(require_permission("admissions"))):
     res = await db.admission_enquiries.delete_one({"id": item_id})
+    return {"deleted": res.deleted_count}
+
+
+# ============= ADMISSION CAMPAIGNS CRUD =============
+@admin_router.get("/admission-campaigns")
+async def list_admin_admission_campaigns(admin: TokenData = Depends(require_permission("admissions"))):
+    items = await db.admission_campaigns.find({}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    return items
+
+
+@admin_router.post("/admission-campaigns")
+async def create_admission_campaign(
+    payload: Dict[str, Any] = Body(...),
+    admin: TokenData = Depends(require_permission("admissions"))
+):
+    title = payload.get("title", "").strip()
+    if not title:
+        raise HTTPException(status_code=400, detail="Title is required")
+    slug = payload.get("slug", "").strip()
+    if not slug:
+        import re
+        slug = re.sub(r'[^a-zA-Z0-9]+', '-', title.lower()).strip('-')
+    
+    # Check duplicate slug
+    existing = await db.admission_campaigns.find_one({"slug": slug})
+    if existing:
+        slug = f"{slug}-{new_id()[:5]}"
+
+    item = AdmissionCampaign(
+        title=title,
+        slug=slug,
+        badge=payload.get("badge", "Admissions Open 2026-27"),
+        category=payload.get("category", "general"),
+        description=payload.get("description", ""),
+        cover_image=payload.get("cover_image", ""),
+        video_url=payload.get("video_url"),
+        prospectus_url=payload.get("prospectus_url"),
+        fee_pdf_url=payload.get("fee_pdf_url"),
+        highlights=payload.get("highlights", []),
+        activities=payload.get("activities", []),
+        fee_structure_summary=payload.get("fee_structure_summary", []),
+        facilities=payload.get("facilities", []),
+        faqs=payload.get("faqs", []),
+        whatsapp_template=payload.get("whatsapp_template"),
+        contact_phone=payload.get("contact_phone", "+91 99551 90262"),
+        contact_whatsapp=payload.get("contact_whatsapp", "+91 99551 90262"),
+        contact_email=payload.get("contact_email", "admissions@sdpublic.org"),
+        is_active=payload.get("is_active", True),
+    ).model_dump()
+    
+    await db.admission_campaigns.insert_one(item.copy())
+    return item
+
+
+@admin_router.get("/admission-campaigns/{item_id}")
+async def get_admission_campaign(item_id: str, admin: TokenData = Depends(require_permission("admissions"))):
+    item = await db.admission_campaigns.find_one({"$or": [{"id": item_id}, {"slug": item_id}]}, {"_id": 0})
+    if not item:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    return item
+
+
+@admin_router.put("/admission-campaigns/{item_id}")
+async def update_admission_campaign(
+    item_id: str,
+    payload: Dict[str, Any] = Body(...),
+    admin: TokenData = Depends(require_permission("admissions"))
+):
+    payload["updated_at"] = now_iso()
+    update = _sanitize_update(payload, AdmissionCampaign)
+    if update:
+        await db.admission_campaigns.update_one({"$or": [{"id": item_id}, {"slug": item_id}]}, {"$set": update})
+    return await db.admission_campaigns.find_one({"$or": [{"id": item_id}, {"slug": item_id}]}, {"_id": 0})
+
+
+@admin_router.delete("/admission-campaigns/{item_id}")
+async def delete_admission_campaign(item_id: str, admin: TokenData = Depends(require_permission("admissions"))):
+    res = await db.admission_campaigns.delete_one({"$or": [{"id": item_id}, {"slug": item_id}]})
     return {"deleted": res.deleted_count}
 
 
@@ -1679,6 +1987,10 @@ async def delete_gdrive_folder_admin(slug: str, admin: TokenData = Depends(requi
 
 
 @admin_router.get("/gdrive-folders/analytics")
+async def get_gdrive_folders_analytics(admin: TokenData = Depends(require_permission("gallery"))):
+    """Return analytics for all Google Drive photo folders: total views, total downloads, and top downloaded photos across all albums."""
+    folders = await db.gdrive_folders.find({}, {"_id": 0}).to_list(500)
+    
 @admin_router.get("/gdrive-folders/analytics/deep")
 async def get_gdrive_folders_deep_analytics(
     slug: Optional[str] = None,
@@ -1707,6 +2019,7 @@ async def get_gdrive_folders_deep_analytics(
     total_downloads = sum(f.get("downloads", 0) for f in folders)
     total_hosted_photos = sum(len(f.get("files", [])) for f in folders)
 
+    top_photos = []
     # 2. Query download logs with optional time filter
     now_dt = datetime.now(timezone.utc)
     log_filter = {}
@@ -1781,6 +2094,20 @@ async def get_gdrive_folders_deep_analytics(
             dl = img.get("downloads", 0)
             if dl > 0:
                 unique_downloaded_count += 1
+                top_photos.append({
+                    "file_id": fid,
+                    "title": img.get("title") or f"Photo #{idx + 1}",
+                    "folder_title": f_title,
+                    "folder_slug": f_slug,
+                    "downloads": dl,
+                    "proxy_url": f"/api/gdrive-proxy/{fid}?w=500"
+                })
+
+            p_title = img.get("title") or f"Photo #{idx + 1}"
+
+            # Optional search filter
+            if search and search.lower() not in p_title.lower() and search.lower() not in f_title.lower():
+                continue
 
             p_title = img.get("title") or f"Photo #{idx + 1}"
 
@@ -1802,6 +2129,7 @@ async def get_gdrive_folders_deep_analytics(
             })
 
     # Sort top photos by downloads descending
+    top_photos.sort(key=lambda x: x["downloads"], reverse=True)
     all_photos_list.sort(key=lambda x: (x["downloads"], x.get("last_downloaded_at") or ""), reverse=True)
 
     # Assign leaderboard ranks
@@ -1812,6 +2140,7 @@ async def get_gdrive_folders_deep_analytics(
     folder_summaries = []
     for f in folders:
         files = f.get("files", [])
+        top_img = max(files, key=lambda x: x.get("downloads", 0), default=None) if files else None
         f_views = f.get("views", 0)
         f_downloads = f.get("downloads", 0)
         f_downloaded_files = [img for img in files if img.get("downloads", 0) > 0]
@@ -1833,6 +2162,13 @@ async def get_gdrive_folders_deep_analytics(
             "slug": f.get("slug"),
             "title": f.get("title"),
             "file_count": len(files),
+            "views": f.get("views", 0),
+            "downloads": f.get("downloads", 0),
+            "top_photo": {
+                "file_id": top_img.get("file_id"),
+                "title": top_img.get("title"),
+                "downloads": top_img.get("downloads", 0)
+            } if top_img and top_img.get("downloads", 0) > 0 else None,
             "views": f_views,
             "downloads": f_downloads,
             "download_rate": round((f_downloads / max(f_views, 1)) * 100, 1) if f_views else 0,
@@ -1868,6 +2204,8 @@ async def get_gdrive_folders_deep_analytics(
     return {
         "total_views": total_views,
         "total_downloads": total_downloads,
+        "folder_count": len(folders),
+        "top_photos": top_photos[:20],
         "total_hosted_photos": total_hosted_photos,
         "unique_photos_downloaded": unique_downloaded_count,
         "unique_download_pct": round((unique_downloaded_count / max(total_hosted_photos, 1)) * 100, 1) if total_hosted_photos else 0,

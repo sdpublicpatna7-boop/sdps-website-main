@@ -71,7 +71,7 @@ const NAV_CATEGORIES = [
     label: "Admissions & Academics",
     icon: GraduationCap,
     items: [
-      { to: "/admin/admission-enquiries", label: "Enquiries", icon: MessageSquare, permission: "admissions" },
+      { to: "/admin/admission-enquiries", label: "Enquiries & Campaigns", icon: MessageSquare, permission: "admissions" },
       { to: "/admin/enquiry-questions", label: "Enquiry Questions", icon: FilePlus, permission: "admissions" },
       { to: "/admin/admission-fields", label: "Admission Form Builder", icon: FileText, permission: "admissions" },
       { to: "/admin/admissions", label: "Full Applications", icon: GraduationCap, permission: "admissions" },
