@@ -1817,23 +1817,66 @@ async def pdf_proxy(url: str):
             raise HTTPException(status_code=500, detail=str(e))
 
 
+async def _find_roster_student(adm_no: str):
+    """Finds a student in the APAAR roster with flexible prefix and formatting matching."""
+    if not adm_no:
+        return None
+    raw = adm_no.strip()
+    digits = re.sub(r'\D', '', raw)
+    
+    # 1. Exact match
+    student = await db.apaar_roster.find_one({"admission_no": raw}, {"_id": 0})
+    if student:
+        return student
+        
+    # 2. Case-insensitive exact match
+    student = await db.apaar_roster.find_one({"admission_no": {"$regex": f"^{re.escape(raw)}$", "$options": "i"}}, {"_id": 0})
+    if student:
+        return student
+        
+    # 3. Try with SDPS prefix if not present
+    if not raw.upper().startswith("SDPS"):
+        student = await db.apaar_roster.find_one({"admission_no": f"SDPS{raw}"}, {"_id": 0})
+        if student:
+            return student
+        student = await db.apaar_roster.find_one({"admission_no": {"$regex": f"^SDPS{re.escape(raw)}$", "$options": "i"}}, {"_id": 0})
+        if student:
+            return student
+            
+    # 4. Try matching digits (e.g. 098 or 98 or SDPS98 or SDPS098)
+    if digits:
+        digits_int = str(int(digits))
+        pattern = f"^(SDPS|sdps)?\\s*0*{digits_int}$"
+        student = await db.apaar_roster.find_one({"admission_no": {"$regex": pattern, "$options": "i"}}, {"_id": 0})
+        if student:
+            return student
+            
+    return None
+
+
 @public_router.get("/apaar/verify")
 async def verify_apaar_student(admission_no: str):
     if not admission_no:
         raise HTTPException(status_code=400, detail="Admission number is required")
     
-    admission_no_clean = admission_no.strip()
-    # Check if student is in roster
-    student = await db.apaar_roster.find_one({"admission_no": admission_no_clean}, {"_id": 0})
+    student = await _find_roster_student(admission_no)
     if not student:
-        return {"status": "not_found", "message": "Admission number not found in school roster. Please verify."}
+        return {"status": "not_found", "message": "Admission number not found in school roster. Please verify digits or contact school office."}
     
     # Check if student already submitted details
-    existing = await db.apaar_submissions.find_one({"admission_no": admission_no_clean}, {"_id": 0})
+    adm_clean = student["admission_no"]
+    existing = await db.apaar_submissions.find_one(
+        {"$or": [
+            {"admission_no": adm_clean},
+            {"admission_no": {"$regex": f"^{re.escape(adm_clean)}$", "$options": "i"}},
+            {"admission_no": admission_no.strip()}
+        ]},
+        {"_id": 0}
+    )
     if existing:
         return {
             "status": "already_submitted",
-            "message": "APAAR details have already been submitted for this student."
+            "message": f"APAAR details have already been submitted for {student.get('student_name', 'this student')}."
         }
         
     return {
@@ -1844,40 +1887,63 @@ async def verify_apaar_student(admission_no: str):
 
 @public_router.post("/apaar/submit")
 async def submit_apaar_form(payload: ApaarSubmission = Body(...)):
-    admission_no_clean = payload.admission_no.strip()
-    # Verify the student exists in the roster
-    roster_student = await db.apaar_roster.find_one({"admission_no": admission_no_clean}, {"_id": 0})
-    if not roster_student:
-        raise HTTPException(status_code=400, detail="Invalid admission number. Not found in roster.")
+    admission_no_clean = payload.admission_no.strip() if payload.admission_no else ""
+    if not admission_no_clean:
+        raise HTTPException(status_code=400, detail="Admission number is required.")
         
+    # Verify the student exists in the roster
+    roster_student = await _find_roster_student(admission_no_clean)
+    if not roster_student:
+        raise HTTPException(status_code=400, detail=f"Admission number '{admission_no_clean}' not found in school roster.")
+        
+    canonical_adm_no = roster_student["admission_no"]
+    
     # Check for duplicate submission
-    existing = await db.apaar_submissions.find_one({"admission_no": admission_no_clean})
+    existing = await db.apaar_submissions.find_one(
+        {"$or": [
+            {"admission_no": canonical_adm_no},
+            {"admission_no": {"$regex": f"^{re.escape(canonical_adm_no)}$", "$options": "i"}},
+            {"admission_no": admission_no_clean}
+        ]}
+    )
     if existing:
-        raise HTTPException(status_code=400, detail="APAAR data already submitted for this student.")
+        raise HTTPException(status_code=400, detail="APAAR data has already been submitted for this student.")
         
     # Normalize inputs
     doc = payload.model_dump()
-    doc["admission_no"] = admission_no_clean
-    doc["student_name"] = roster_student["student_name"]  # Ensure name matches school records
-    doc["father_name"] = roster_student["father_name"]  # Ensure father name matches school records
-    doc["class_name"] = roster_student.get("class_name") or ""
-    doc["section"] = roster_student.get("section") or ""
+    doc["admission_no"] = canonical_adm_no
+    doc["student_name"] = roster_student.get("student_name") or payload.student_name or ""
+    doc["father_name"] = roster_student.get("father_name") or payload.father_name or ""
+    doc["class_name"] = roster_student.get("class_name") or payload.class_name or ""
+    doc["section"] = roster_student.get("section") or payload.section or ""
     
-    # Process and upload the three Aadhaar photos to Cloudinary (or local fallback)
+    # Process and upload the three Aadhaar photos safely
     import base64
     from image_utils import compress_and_save
 
     photo_fields = ["student_aadhaar_photo", "father_aadhaar_photo", "mother_aadhaar_photo", "aadhaar_photo"]
     for field in photo_fields:
         val = doc.get(field)
-        if val and val.startswith("data:image/"):
+        if val and isinstance(val, str) and val.startswith("data:image/"):
             try:
                 header, base64_str = val.split(",", 1)
                 file_bytes = base64.b64decode(base64_str)
-                res = compress_and_save(file_bytes, sub_dir="apaar", max_dimension=1600, quality=82)
+                res = compress_and_save(file_bytes, sub_dir="apaar", max_dimension=1200, quality=78)
                 doc[field] = res["url"]
             except Exception as e:
-                print(f"Failed to save {field} to Cloudinary:", e)
+                logger.error(f"Failed to process photo {field}: {e}")
+                # Fallback to local storage
+                try:
+                    import uuid
+                    from image_utils import UPLOAD_ROOT
+                    target_dir = UPLOAD_ROOT / "apaar"
+                    target_dir.mkdir(parents=True, exist_ok=True)
+                    fn = f"{uuid.uuid4().hex}.jpg"
+                    (target_dir / fn).write_bytes(file_bytes)
+                    doc[field] = f"/api/uploads/apaar/{fn}"
+                except Exception as ex2:
+                    logger.error(f"Fallback save also failed for {field}: {ex2}")
+                    doc[field] = ""
 
     # Align fallback field for compatibility
     if doc.get("student_aadhaar_photo") and not doc.get("aadhaar_photo"):

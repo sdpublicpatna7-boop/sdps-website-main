@@ -71,8 +71,8 @@ export default function ApaarForm() {
         setForm(prev => ({
           ...prev,
           admission_no: student.admission_no,
-          student_name: student.student_name,
-          father_name: student.father_name,
+          student_name: student.student_name || "",
+          father_name: student.father_name || "",
           class_name: student.class_name || "",
           section: student.section || ""
         }));
@@ -93,34 +93,43 @@ export default function ApaarForm() {
   // Image compressor helper
   const compressImage = (base64Str, callback) => {
     const img = new Image();
-    img.src = base64Str;
+    img.crossOrigin = "anonymous";
     img.onload = () => {
-      const canvas = document.createElement("canvas");
-      const MAX_WIDTH = 1600;
-      const MAX_HEIGHT = 1600;
-      let width = img.width;
-      let height = img.height;
+      try {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 1200;
+        const MAX_HEIGHT = 1200;
+        let width = img.width;
+        let height = img.height;
 
-      if (width > height) {
-        if (width > MAX_WIDTH) {
-          height *= MAX_WIDTH / width;
-          width = MAX_WIDTH;
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
         }
-      } else {
-        if (height > MAX_HEIGHT) {
-          width *= MAX_HEIGHT / height;
-          height = MAX_HEIGHT;
-        }
+
+        canvas.width = Math.round(width);
+        canvas.height = Math.round(height);
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+        const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.78);
+        callback(compressedDataUrl);
+      } catch (err) {
+        console.warn("Canvas compression failed, using original:", err);
+        callback(base64Str);
       }
-
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, width, height);
-      
-      const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.85);
-      callback(compressedDataUrl);
     };
+    img.onerror = () => {
+      callback(base64Str);
+    };
+    img.src = base64Str;
   };
 
   // Camera capture methods
@@ -202,19 +211,24 @@ export default function ApaarForm() {
     e.preventDefault();
     
     // Validations
-    if (form.student_aadhaar_no.length !== 12) {
+    const cleanStudentAadhaar = (form.student_aadhaar_no || "").replace(/\D/g, "");
+    const cleanFatherAadhaar = (form.father_aadhaar_no || "").replace(/\D/g, "");
+    const cleanMotherAadhaar = (form.mother_aadhaar_no || "").replace(/\D/g, "");
+    const cleanMobile = (form.mobile_no || "").replace(/\D/g, "");
+
+    if (cleanStudentAadhaar.length !== 12) {
       toast.error("Student Aadhaar Card number must be exactly 12 digits.");
       return;
     }
-    if (form.father_aadhaar_no.length !== 12) {
+    if (cleanFatherAadhaar.length !== 12) {
       toast.error("Father's Aadhaar Card number must be exactly 12 digits.");
       return;
     }
-    if (form.mother_aadhaar_no.length !== 12) {
+    if (cleanMotherAadhaar.length !== 12) {
       toast.error("Mother's Aadhaar Card number must be exactly 12 digits.");
       return;
     }
-    if (form.mobile_no.length !== 10) {
+    if (cleanMobile.length !== 10) {
       toast.error("Mobile number must be exactly 10 digits.");
       return;
     }
@@ -235,17 +249,37 @@ export default function ApaarForm() {
       return;
     }
     
-    // Set first photo for back-compat fallback
-    form.aadhaar_photo = form.student_aadhaar_photo;
+    const payload = {
+      admission_no: (form.admission_no || "").trim(),
+      student_name: (form.student_name || "").trim(),
+      father_name: (form.father_name || "").trim(),
+      student_aadhaar_name: (form.student_aadhaar_name || "").trim(),
+      student_aadhaar_no: cleanStudentAadhaar,
+      student_dob: form.student_dob || "",
+      student_gender: form.student_gender || "Male",
+      father_aadhaar_name: (form.father_aadhaar_name || "").trim(),
+      father_aadhaar_no: cleanFatherAadhaar,
+      mother_aadhaar_name: (form.mother_aadhaar_name || "").trim(),
+      mother_aadhaar_no: cleanMotherAadhaar,
+      class_name: form.class_name || "",
+      section: form.section || "",
+      mobile_no: cleanMobile,
+      student_aadhaar_photo: form.student_aadhaar_photo || "",
+      father_aadhaar_photo: form.father_aadhaar_photo || "",
+      mother_aadhaar_photo: form.mother_aadhaar_photo || "",
+      aadhaar_photo: form.student_aadhaar_photo || "",
+      consent: Boolean(form.consent)
+    };
 
     setSubmitting(true);
     try {
-      await api.post("/apaar/submit", form);
+      await api.post("/apaar/submit", payload);
       toast.success("APAAR registration details submitted successfully!");
       setStep(3);
     } catch (err) {
-      console.error(err);
-      toast.error(err?.response?.data?.detail || "Submission failed. Please check details.");
+      console.error("Submission failed:", err);
+      const msg = err?.response?.data?.detail || err?.response?.data?.message || "Submission failed. Please check details or contact school.";
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }

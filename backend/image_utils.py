@@ -105,24 +105,27 @@ def compress_and_save(file_bytes: bytes, sub_dir: str = "gallery", max_dimension
         img = img.resize((nw, nh), Image.LANCZOS)
 
     if CLOUDINARY_ENABLED:
-        buffer = io.BytesIO()
-        img.save(buffer, format=target_format, quality=quality, optimize=True, progressive=True)
-        buffer.seek(0)
-        
-        upload_result = cloudinary.uploader.upload(
-            buffer,
-            folder=f"sdps/{sub_dir}",
-            resource_type="image"
-        )
-        url = upload_result["secure_url"]
-        size_kb = round(upload_result.get("bytes", 0) / 1024, 2)
-        return {
-            "filename": upload_result.get("public_id"),
-            "url": url,
-            "size_kb": size_kb,
-            "width": img.size[0],
-            "height": img.size[1],
-        }
+        try:
+            buffer = io.BytesIO()
+            img.save(buffer, format=target_format, quality=quality, optimize=True, progressive=True)
+            buffer.seek(0)
+            
+            upload_result = cloudinary.uploader.upload(
+                buffer,
+                folder=f"sdps/{sub_dir}",
+                resource_type="image"
+            )
+            url = upload_result["secure_url"]
+            size_kb = round(upload_result.get("bytes", 0) / 1024, 2)
+            return {
+                "filename": upload_result.get("public_id"),
+                "url": url,
+                "size_kb": size_kb,
+                "width": img.size[0],
+                "height": img.size[1],
+            }
+        except Exception as e:
+            logging.warning(f"Cloudinary upload failed for {sub_dir}, falling back to local storage: {e}")
 
     target_dir = UPLOAD_ROOT / sub_dir
     target_dir.mkdir(parents=True, exist_ok=True)

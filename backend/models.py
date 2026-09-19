@@ -730,24 +730,24 @@ class ApaarRosterStudent(BaseDoc):
 class ApaarSubmission(BaseDoc):
     id: str = Field(default_factory=new_id)
     admission_no: str
-    student_name: str  # School records (from roster)
-    father_name: str  # School records (from roster)
+    student_name: Optional[str] = ""  # School records (from roster)
+    father_name: Optional[str] = ""  # School records (from roster)
     
     # Aadhaar info
-    student_aadhaar_name: str
-    student_aadhaar_no: str
-    student_dob: str
-    student_gender: str
+    student_aadhaar_name: Optional[str] = ""
+    student_aadhaar_no: Optional[str] = ""
+    student_dob: Optional[str] = ""
+    student_gender: Optional[str] = "Male"
     
-    father_aadhaar_name: str
-    father_aadhaar_no: str
-    mother_aadhaar_name: str
-    mother_aadhaar_no: str
+    father_aadhaar_name: Optional[str] = ""
+    father_aadhaar_no: Optional[str] = ""
+    mother_aadhaar_name: Optional[str] = ""
+    mother_aadhaar_no: Optional[str] = ""
     
     # Other details
-    class_name: str
-    section: str
-    mobile_no: str
+    class_name: Optional[str] = ""
+    section: Optional[str] = ""
+    mobile_no: Optional[str] = ""
     consent: bool = True
     aadhaar_photo: Optional[str] = ""
     student_aadhaar_photo: Optional[str] = ""
