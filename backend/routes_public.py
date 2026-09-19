@@ -1909,6 +1909,44 @@ async def submit_apaar_form(payload: ApaarSubmission = Body(...)):
     if existing:
         raise HTTPException(status_code=400, detail="APAAR data has already been submitted for this student.")
         
+    # Strict validation of required fields
+    student_aadhaar_name = (payload.student_aadhaar_name or "").strip()
+    student_aadhaar_no = re.sub(r'\D', '', payload.student_aadhaar_no or "")
+    student_dob = (payload.student_dob or "").strip()
+    father_aadhaar_name = (payload.father_aadhaar_name or "").strip()
+    father_aadhaar_no = re.sub(r'\D', '', payload.father_aadhaar_no or "")
+    mother_aadhaar_name = (payload.mother_aadhaar_name or "").strip()
+    mother_aadhaar_no = re.sub(r'\D', '', payload.mother_aadhaar_no or "")
+    mobile_no = re.sub(r'\D', '', payload.mobile_no or "")
+    student_photo = (payload.student_aadhaar_photo or "").strip()
+    father_photo = (payload.father_aadhaar_photo or "").strip()
+    mother_photo = (payload.mother_aadhaar_photo or "").strip()
+
+    if not student_aadhaar_name:
+        raise HTTPException(status_code=400, detail="Student's name as on Aadhaar card is required.")
+    if len(student_aadhaar_no) != 12:
+        raise HTTPException(status_code=400, detail="Student's Aadhaar card number must be exactly 12 digits.")
+    if not student_dob:
+        raise HTTPException(status_code=400, detail="Student's date of birth as on Aadhaar card is required.")
+    if not father_aadhaar_name:
+        raise HTTPException(status_code=400, detail="Father's name as on Aadhaar card is required.")
+    if len(father_aadhaar_no) != 12:
+        raise HTTPException(status_code=400, detail="Father's Aadhaar card number must be exactly 12 digits.")
+    if not mother_aadhaar_name:
+        raise HTTPException(status_code=400, detail="Mother's name as on Aadhaar card is required.")
+    if len(mother_aadhaar_no) != 12:
+        raise HTTPException(status_code=400, detail="Mother's Aadhaar card number must be exactly 12 digits.")
+    if len(mobile_no) != 10:
+        raise HTTPException(status_code=400, detail="Aadhaar-linked mobile number must be exactly 10 digits.")
+    if not student_photo:
+        raise HTTPException(status_code=400, detail="Photo of Student's Aadhaar card is mandatory.")
+    if not father_photo:
+        raise HTTPException(status_code=400, detail="Photo of Father's Aadhaar card is mandatory.")
+    if not mother_photo:
+        raise HTTPException(status_code=400, detail="Photo of Mother's Aadhaar card is mandatory.")
+    if not payload.consent:
+        raise HTTPException(status_code=400, detail="Parent consent is mandatory to submit APAAR registration.")
+
     # Normalize inputs
     doc = payload.model_dump()
     doc["admission_no"] = canonical_adm_no
@@ -1916,6 +1954,13 @@ async def submit_apaar_form(payload: ApaarSubmission = Body(...)):
     doc["father_name"] = roster_student.get("father_name") or payload.father_name or ""
     doc["class_name"] = roster_student.get("class_name") or payload.class_name or ""
     doc["section"] = roster_student.get("section") or payload.section or ""
+    doc["student_aadhaar_name"] = student_aadhaar_name
+    doc["student_aadhaar_no"] = student_aadhaar_no
+    doc["father_aadhaar_name"] = father_aadhaar_name
+    doc["father_aadhaar_no"] = father_aadhaar_no
+    doc["mother_aadhaar_name"] = mother_aadhaar_name
+    doc["mother_aadhaar_no"] = mother_aadhaar_no
+    doc["mobile_no"] = mobile_no
     
     # Process and upload the three Aadhaar photos safely
     import base64
