@@ -3,7 +3,7 @@ import api from "../../lib/api";
 import { Toaster, toast } from "sonner";
 import {
   MessageSquare, Smartphone, RefreshCw, LogOut, Paperclip, X,
-  Send, FlaskConical, Megaphone, Loader2, CheckCircle2, AlertTriangle, StopCircle,
+  Send, FlaskConical, Megaphone, Loader2, CheckCircle2, AlertTriangle, StopCircle, ArrowRight
 } from "lucide-react";
 
 const MAX_MEDIA_MB = 16;
@@ -179,8 +179,14 @@ export default function WhatsAppMarketing() {
         </div>
 
         {!status.connected && !statusLoading && (
-          <div className="mt-4 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-            WhatsApp isn't linked. Go to <a href="/admin/integration-keys" className="font-semibold underline">Integration Keys</a> to scan the QR code, then come back to send.
+          <div className="mt-4 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
+            <span>WhatsApp isn't linked yet. Scan the QR code or link via phone number to begin messaging.</span>
+            <a
+              href="/admin/integration-keys"
+              className="font-semibold bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1 shrink-0"
+            >
+              Open QR & Pairing <ArrowRight className="w-3.5 h-3.5" />
+            </a>
           </div>
         )}
       </div>

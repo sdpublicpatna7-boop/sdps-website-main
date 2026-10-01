@@ -19,7 +19,7 @@ from typing import Optional, List
 from datetime import datetime, timezone, timedelta, date
 from PIL import Image, ImageDraw, ImageFont
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request, Body
 from pydantic import BaseModel
 from slowapi import Limiter
 
@@ -325,9 +325,31 @@ async def wa_status(admin: TokenData = Depends(get_superadmin)):
 async def wa_disconnect(admin: TokenData = Depends(get_superadmin)):
     """Log out from WhatsApp and reset the session (a new QR will be generated)."""
     try:
-        return await _wa_post("/disconnect", json={"confirm": True})
+        return await _wa_post("/reset-session", json={"confirm": True})
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))
+
+
+@wa_router.post("/reset-session")
+async def wa_reset_session(admin: TokenData = Depends(get_superadmin)):
+    """Force wipe any stale session and generate a new QR code immediately."""
+    try:
+        return await _wa_post("/reset-session", json={"confirm": True})
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"WhatsApp reset failed: {e}")
+
+
+@wa_router.post("/pairing-code")
+async def wa_pairing_code(
+    payload: dict = Body(...),
+    admin: TokenData = Depends(get_superadmin),
+):
+    """Generate an 8-character pairing code for phone-number based WhatsApp linking."""
+    try:
+        return await _wa_post("/pairing-code", json=payload)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
 
 
 # ── Test send (single number) ────────────────────────────────────────────────

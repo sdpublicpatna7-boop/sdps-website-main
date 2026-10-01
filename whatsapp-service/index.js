@@ -2,10 +2,12 @@
  * SDPS WhatsApp microservice (Baileys)
  * ------------------------------------
  * Exposes a small HTTP API consumed by the FastAPI backend:
- *   GET  /status      -> { connected, qr, user, bulkProgress }
- *   POST /disconnect  -> logout + reset session
- *   POST /send-text   -> { phone, message, mediaBase64?, mediaMime?, mediaType? }
- *   POST /send-bulk   -> { contacts:[{phone,name}], message, mediaBase64?, mediaMime?, mediaType?, delayMs }
+ *   GET  /status        -> { connected, qr, user, bulkProgress, uptimeSec }
+ *   POST /disconnect    -> logout + wipe auth + generate fresh QR
+ *   POST /reset-session -> force wipe stale session + generate fresh QR
+ *   POST /pairing-code  -> { phone } -> { success, pairingCode, phone }
+ *   POST /send-text     -> { phone, message, mediaBase64?, mediaMime?, mediaType? }
+ *   POST /send-bulk     -> { contacts:[{phone,name}], message, mediaBase64?, mediaMime?, mediaType?, delayMs }
  *   GET  /bulk-progress (via /status.bulkProgress)
  *   POST /stop-bulk
  *
@@ -25,6 +27,7 @@ const {
   useMultiFileAuthState,
   DisconnectReason,
   fetchLatestBaileysVersion,
+  Browsers,
 } = require("@whiskeysockets/baileys");
 
 const PORT = process.env.PORT || 3001;
@@ -52,6 +55,24 @@ let disconnecting = false;  // Flag to prevent close handler from interfering du
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/** Clean up persisted Baileys auth state folder */
+function cleanAuthDir() {
+  const paths = [
+    path.resolve(AUTH_DIR),
+    path.join(__dirname, "auth_state"),
+  ];
+  for (const p of paths) {
+    try {
+      if (fs.existsSync(p)) {
+        fs.rmSync(p, { recursive: true, force: true });
+        console.log("[WhatsApp] Cleaned auth state directory:", p);
+      }
+    } catch (e) {
+      console.warn("[WhatsApp] Could not clean auth state at:", p, e.message);
+    }
+  }
+}
+
 /** Normalise an Indian-style phone number to a WhatsApp JID. */
 function toJid(raw) {
   let digits = String(raw || "").replace(/\D/g, "");
@@ -65,62 +86,109 @@ function toJid(raw) {
 }
 
 async function startSock() {
-  if (starting) return;
+  if (starting) {
+    console.log("[WhatsApp] startSock already in progress, skipping duplicate call.");
+    return;
+  }
   starting = true;
+
   try {
-    const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
-    const { version } = await fetchLatestBaileysVersion();
+    // 1. Clean up old socket if it exists
+    if (sock) {
+      try { sock.ev.removeAllListeners(); } catch (e) { /* ok */ }
+      try { sock.ws?.close(); } catch (e) { /* ok */ }
+      try { sock.end?.(undefined); } catch (e) { /* ok */ }
+      sock = null;
+    }
+
+    const resolvedAuthDir = path.resolve(AUTH_DIR);
+    if (!fs.existsSync(resolvedAuthDir)) {
+      fs.mkdirSync(resolvedAuthDir, { recursive: true });
+    }
+
+    const { state, saveCreds } = await useMultiFileAuthState(resolvedAuthDir);
+
+    let version = [2, 3000, 1015901307];
+    try {
+      const v = await fetchLatestBaileysVersion();
+      if (v?.version) version = v.version;
+    } catch (e) {
+      console.warn("[WhatsApp] Could not fetch latest Baileys version, using fallback:", e.message);
+    }
 
     sock = makeWASocket({
       version,
       auth: state,
       logger,
-      printQRInTerminal: false,
-      browser: ["SDPS Portal", "Chrome", "1.0.0"],
+      printQRInTerminal: true,
+      browser: Browsers.ubuntu("Chrome"),
       markOnlineOnConnect: false,
+      syncFullHistory: false,
+      generateHighQualityLinkPreview: false,
+      connectTimeoutMs: 60000,
+      keepAliveIntervalMs: 25000,
+      getMessage: async () => ({ conversation: "" }),
     });
 
     sock.ev.on("creds.update", saveCreds);
 
     sock.ev.on("connection.update", async (update) => {
       const { connection, lastDisconnect, qr } = update;
+
       if (qr) {
         try {
-          currentQR = await qrcode.toDataURL(qr);
+          currentQR = await qrcode.toDataURL(qr, {
+            margin: 2,
+            scale: 8,
+            color: { dark: "#0f172a", light: "#ffffff" },
+          });
+          console.log("[WhatsApp] Fresh QR code generated and ready to scan!");
         } catch (e) {
+          console.error("[WhatsApp] QR generation error:", e.message);
           currentQR = null;
         }
       }
+
       if (connection === "open") {
         isConnected = true;
         currentQR = null;
         meUser = sock?.user || null;
-        console.log("WhatsApp connected as", meUser?.id);
+        console.log("[WhatsApp] Successfully connected as:", meUser?.id || meUser?.name);
       }
+
       if (connection === "close") {
         isConnected = false;
         meUser = null;
-        // If we're in the middle of a manual disconnect, don't interfere
+        currentQR = null;
+
         if (disconnecting) {
-          console.log("WhatsApp close event during disconnect — skipping auto-reconnect.");
+          console.log("[WhatsApp] Socket closed during intentional disconnect/reset.");
           return;
         }
-        const statusCode = new Boom(lastDisconnect?.error)?.output?.statusCode;
-        const loggedOut = statusCode === DisconnectReason.loggedOut;
-        console.log("WhatsApp connection closed. loggedOut=", loggedOut, "code=", statusCode);
+
+        const boom = new Boom(lastDisconnect?.error);
+        const statusCode = boom?.output?.statusCode;
+        const isLoggedOut = statusCode === DisconnectReason.loggedOut;
+        const isBadSession = statusCode === DisconnectReason.badSession;
+
+        console.log(`[WhatsApp] Connection closed. StatusCode: ${statusCode} (loggedOut=${isLoggedOut})`);
+
         starting = false;
-        if (!loggedOut) {
+
+        if (isLoggedOut || isBadSession || statusCode === 401 || statusCode === 403) {
+          console.log("[WhatsApp] Session invalidated/logged out. Wiping stale auth state and generating fresh QR...");
+          cleanAuthDir();
           await sleep(2000);
           startSock();
         } else {
-          // Session invalidated — clear so a fresh QR is produced on next start.
-          currentQR = null;
-          sock = null;
+          console.log("[WhatsApp] Connection dropped or QR refreshed. Reconnecting in 2.5s...");
+          await sleep(2500);
+          startSock();
         }
       }
     });
   } catch (e) {
-    console.error("startSock error:", e.message);
+    console.error("[WhatsApp] startSock error:", e.message);
   } finally {
     starting = false;
   }
@@ -142,25 +210,24 @@ async function sendMessage(jid, message, media) {
 
 // ── HTTP API ─────────────────────────────────────────────────────────────────
 const app = express();
-  // 20mb accommodates base64-encoded media (~15mb raw) without allowing
-  // memory-exhaustion sized payloads.
-  app.use(express.json({ limit: process.env.WA_BODY_LIMIT || "20mb" }));
+// 20mb accommodates base64-encoded media (~15mb raw) without allowing memory exhaustion
+app.use(express.json({ limit: process.env.WA_BODY_LIMIT || "20mb" }));
 
-  // Public keep-alive endpoint (no secret) — for the pinger / uptime monitors.
-  // Intentionally does NOT reveal connection state to unauthenticated callers.
-  app.get("/ping", (req, res) => res.json({ status: "alive" }));
+// Public keep-alive endpoint (no secret) — for the pinger / uptime monitors.
+app.get("/ping", (req, res) => res.json({ status: "alive", connected: isConnected }));
 
-  // Shared-secret auth for every other route (timing-safe comparison).
-  const secretBuf = Buffer.from(WA_API_SECRET);
-  const secretMatches = (provided) => {
-    const providedBuf = Buffer.from(String(provided || ""));
-    return (
-      providedBuf.length === secretBuf.length &&
-      crypto.timingSafeEqual(providedBuf, secretBuf)
-    );
-  };
-  app.use((req, res, next) => {
-    if (!secretMatches(req.headers["x-wa-secret"])) {
+// Shared-secret auth for every other route (timing-safe comparison).
+const secretBuf = Buffer.from(WA_API_SECRET);
+const secretMatches = (provided) => {
+  const providedBuf = Buffer.from(String(provided || ""));
+  return (
+    providedBuf.length === secretBuf.length &&
+    crypto.timingSafeEqual(providedBuf, secretBuf)
+  );
+};
+
+app.use((req, res, next) => {
+  if (!secretMatches(req.headers["x-wa-secret"])) {
     return res.status(401).json({ error: "Unauthorized" });
   }
   next();
@@ -172,63 +239,78 @@ app.get("/status", (req, res) => {
     qr: currentQR,
     user: meUser ? { id: meUser.id, name: meUser.name } : null,
     bulkProgress,
+    uptimeSec: Math.floor(process.uptime()),
   });
 });
 
-app.post("/disconnect", async (req, res) => {
-  console.log("[Disconnect] ===== DISCONNECT REQUESTED =====");
+app.post("/reset-session", async (req, res) => {
+  console.log("[WhatsApp] ===== RESET SESSION REQUESTED =====");
   disconnecting = true;
-
-  // 1. Capture and nullify the old socket immediately
-  const oldSock = sock;
-  sock = null;
   isConnected = false;
   meUser = null;
   currentQR = null;
   starting = false;
 
-  // 2. Kill the old socket — do NOT call sock.logout(), it hangs and races
-  if (oldSock) {
-    // Strip all listeners so nothing can fire
-    try { oldSock.ev.removeAllListeners(); } catch (e) { /* ok */ }
-
-    // Force close the underlying websocket
-    try { oldSock.ws.close(); } catch (e) { /* ok */ }
-    try { oldSock.end(undefined); } catch (e) { /* ok */ }
-    console.log("[Disconnect] Old socket killed.");
-  } else {
-    console.log("[Disconnect] No active socket to kill.");
+  if (sock) {
+    try { sock.ev.removeAllListeners(); } catch (e) { /* ok */ }
+    try { sock.ws?.close(); } catch (e) { /* ok */ }
+    try { sock.end?.(undefined); } catch (e) { /* ok */ }
+    sock = null;
   }
 
-  // 3. Delete auth state — try both path.resolve and __dirname-relative
-  const paths = [
-    path.resolve(AUTH_DIR),
-    path.join(__dirname, "auth_state"),
-  ];
-  for (const p of paths) {
-    try {
-      if (fs.existsSync(p)) {
-        fs.rmSync(p, { recursive: true, force: true });
-        console.log("[Disconnect] Deleted auth state:", p);
-      }
-    } catch (e) {
-      console.log("[Disconnect] Could not delete", p, e.message);
-    }
-  }
+  cleanAuthDir();
+  await sleep(1500);
 
-  // 4. Wait for Baileys internals to fully settle
-  await sleep(3000);
-
-  // 5. Start a fresh socket — will create new auth state + show QR
   disconnecting = false;
-  try {
+  startSock();
+
+  // Wait briefly (up to 3s) to return fresh QR immediately if available
+  for (let i = 0; i < 6; i++) {
+    if (currentQR) break;
+    await sleep(500);
+  }
+
+  res.json({
+    status: "reset_complete",
+    message: "Fresh QR session initialized.",
+    qr: currentQR,
+  });
+});
+
+app.post("/disconnect", (req, res, next) => {
+  // Disconnect behaves identically to reset-session: wipes stale state & restarts fresh QR
+  req.url = "/reset-session";
+  app.handle(req, res, next);
+});
+
+app.post("/pairing-code", async (req, res) => {
+  if (isConnected) {
+    return res.status(400).json({ error: "WhatsApp is already connected." });
+  }
+  const { phone } = req.body || {};
+  let digits = String(phone || "").replace(/\D/g, "");
+  if (digits.length === 10) digits = "91" + digits;
+  if (digits.length === 11 && digits.startsWith("0")) digits = "91" + digits.slice(1);
+
+  if (digits.length < 11 || digits.length > 15) {
+    return res.status(400).json({ error: "Invalid mobile number. Please enter a valid 10-digit Indian phone number." });
+  }
+
+  if (!sock) {
     await startSock();
-    console.log("[Disconnect] ===== FRESH SOCKET STARTED =====");
-    console.log("[Disconnect] isConnected:", isConnected, "| QR exists:", !!currentQR);
-    res.json({ status: "disconnected", qr: currentQR });
+    await sleep(2000);
+  }
+
+  try {
+    if (typeof sock?.requestPairingCode !== "function") {
+      return res.status(500).json({ error: "Pairing code is not supported by the current socket." });
+    }
+    const code = await sock.requestPairingCode(digits);
+    console.log(`[WhatsApp] Pairing code generated for ${digits}: ${code}`);
+    res.json({ success: true, pairingCode: code, phone: digits });
   } catch (e) {
-    console.error("[Disconnect] startSock failed:", e.message);
-    res.status(500).json({ error: "Failed to restart: " + e.message });
+    console.error("[WhatsApp] Pairing code generation error:", e.message);
+    res.status(500).json({ error: `Could not generate pairing code: ${e.message}` });
   }
 });
 
@@ -327,7 +409,6 @@ function startKeepAlive() {
     if (selfUrl) targets.push(`${selfUrl}/ping`);
     if (backendUrl) targets.push(`${backendUrl}/api/ping`);
     targets.forEach((u) => {
-      // global fetch is available on Node 18+
       fetch(u).catch(() => { /* non-fatal */ });
     });
   };
