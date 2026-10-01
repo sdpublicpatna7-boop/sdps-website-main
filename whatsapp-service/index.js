@@ -32,7 +32,6 @@ const makeWASocket = baileysPkg.default || baileysPkg.makeWASocket || baileysPkg
 const {
   useMultiFileAuthState,
   DisconnectReason,
-  fetchLatestBaileysVersion,
   Browsers,
 } = baileysPkg;
 
@@ -114,21 +113,13 @@ async function startSock() {
 
     const { state, saveCreds } = await useMultiFileAuthState(resolvedAuthDir);
 
-    let version = [2, 3000, 1015901307];
-    try {
-      const v = await fetchLatestBaileysVersion();
-      if (v?.version) version = v.version;
-    } catch (e) {
-      console.warn("[WhatsApp] Could not fetch latest Baileys version, using fallback:", e.message);
-    }
-
-    const browserConfig = Browsers?.ubuntu ? Browsers.ubuntu("Chrome") : ["Ubuntu", "Chrome", "22.04.1"];
+    // Use standard macOS Desktop profile for stable multi-device pairing signatures
+    const browserConfig = Browsers?.macOS ? Browsers.macOS("Desktop") : ["Mac OS", "Desktop", "14.4.1"];
 
     sock = makeWASocket({
-      version,
       auth: state,
       logger,
-      printQRInTerminal: true,
+      printQRInTerminal: false,
       browser: browserConfig,
       markOnlineOnConnect: false,
       syncFullHistory: false,
@@ -183,8 +174,8 @@ async function startSock() {
 
         starting = false;
 
-        if (isLoggedOut || isBadSession || statusCode === 401 || statusCode === 403) {
-          console.log("[WhatsApp] Session invalidated/logged out. Wiping stale auth state and generating fresh QR...");
+        if (isLoggedOut || isBadSession || statusCode === 401 || statusCode === 403 || statusCode === 500) {
+          console.log("[WhatsApp] Auth state reset or signature mismatch. Wiping stale state and generating fresh QR...");
           cleanAuthDir();
           await sleep(2000);
           startSock();
