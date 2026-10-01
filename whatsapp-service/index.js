@@ -15,20 +15,26 @@
  * Bulk sends are paced with a configurable delay (default 2000ms) to reduce
  * WhatsApp ban risk, and support {name} personalisation in the message.
  */
-const express = require("express");
-const crypto = require("crypto");
-const fs = require("fs");
-const path = require("path");
-const qrcode = require("qrcode");
-const pino = require("pino");
-const { Boom } = require("@hapi/boom");
+import express from "express";
+import crypto from "crypto";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import qrcode from "qrcode";
+import pino from "pino";
+import { Boom } from "@hapi/boom";
+import baileysPkg from "@whiskeysockets/baileys";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const makeWASocket = baileysPkg.default || baileysPkg.makeWASocket || baileysPkg;
 const {
-  default: makeWASocket,
   useMultiFileAuthState,
   DisconnectReason,
   fetchLatestBaileysVersion,
   Browsers,
-} = require("@whiskeysockets/baileys");
+} = baileysPkg;
 
 const PORT = process.env.PORT || 3001;
 const WA_API_SECRET = process.env.WA_API_SECRET || "";
@@ -116,12 +122,14 @@ async function startSock() {
       console.warn("[WhatsApp] Could not fetch latest Baileys version, using fallback:", e.message);
     }
 
+    const browserConfig = Browsers?.ubuntu ? Browsers.ubuntu("Chrome") : ["Ubuntu", "Chrome", "22.04.1"];
+
     sock = makeWASocket({
       version,
       auth: state,
       logger,
       printQRInTerminal: true,
-      browser: Browsers.ubuntu("Chrome"),
+      browser: browserConfig,
       markOnlineOnConnect: false,
       syncFullHistory: false,
       generateHighQualityLinkPreview: false,
