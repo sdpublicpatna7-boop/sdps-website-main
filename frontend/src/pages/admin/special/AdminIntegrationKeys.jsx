@@ -98,7 +98,7 @@ export function AdminIntegrationKeys() {
 
   // Refresh the QR / connection while not yet linked.
   useEffect(() => {
-    const id = setInterval(loadWa, wa.connected ? 20000 : 4000);
+    const id = setInterval(loadWa, wa.connected ? 20000 : 2000);
     return () => clearInterval(id);
   }, [wa.connected]);
 
