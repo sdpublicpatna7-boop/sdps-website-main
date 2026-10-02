@@ -5,7 +5,8 @@ import {
   FileText, Printer, Copy, RefreshCw, Sparkles, Stamp, Award, ShieldCheck,
   Building, Calendar, CheckCircle2, User, FileSpreadsheet, Eye, Download,
   PenTool, Upload, Trash2, AlertCircle, SlidersHorizontal, Space, ArrowDown,
-  Table, Plus, Grid, LayoutGrid, AlignLeft, AlignCenter, Rows, Columns, Check, ChevronDown, List
+  Table, Plus, Grid, LayoutGrid, AlignLeft, AlignCenter, Rows, Columns, Check, ChevronDown, List,
+  Save, FolderOpen, Search, X, Clock, Edit3, PlusCircle, ArrowRight
 } from "lucide-react";
 
 const TEMPLATES = {
@@ -148,6 +149,15 @@ export default function AdminLetterMaker() {
   const [paragraphGap, setParagraphGap] = useState(10);
   const [pushFooterToBottom, setPushFooterToBottom] = useState(false);
 
+  // Database Save / Load States
+  const [savedLetters, setSavedLetters] = useState([]);
+  const [activeSavedId, setActiveSavedId] = useState(null);
+  const [loadingSavedList, setLoadingSavedList] = useState(false);
+  const [savingDoc, setSavingDoc] = useState(false);
+  const [showSavedModal, setShowSavedModal] = useState(false);
+  const [savedSearchQuery, setSavedSearchQuery] = useState("");
+  const [lastSavedTimestamp, setLastSavedTimestamp] = useState(null);
+
   // Digital Signature State
   const [signaturePresets, setSignaturePresets] = useState(() => {
     try {
@@ -163,6 +173,23 @@ export default function AdminLetterMaker() {
   const [uploadingSignature, setUploadingSignature] = useState(false);
 
   const letterRef = useRef(null);
+
+  // Fetch saved letters from MongoDB
+  const fetchSavedLetters = async () => {
+    setLoadingSavedList(true);
+    try {
+      const res = await api.get("/admin/letterhead/saved");
+      setSavedLetters(res.data || []);
+    } catch (err) {
+      console.error("Failed to load saved letters:", err);
+    } finally {
+      setLoadingSavedList(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSavedLetters();
+  }, []);
 
   // Load signature presets from database site-settings on mount
   useEffect(() => {
@@ -197,6 +224,132 @@ export default function AdminLetterMaker() {
       setSignatureUrl(signaturePresets.custom || "");
     }
   }, [signatory, signaturePresets]);
+
+  const handleSaveToDatabase = async (forceNewCopy = false) => {
+    setSavingDoc(true);
+    try {
+      const targetId = forceNewCopy ? null : activeSavedId;
+      const payload = {
+        id: targetId,
+        ref_no: refNo,
+        letter_date: letterDate,
+        template_key: templateKey,
+        recipient,
+        details,
+        subject,
+        salutation,
+        body,
+        signatory,
+        custom_signatory_title: customSignatoryTitle,
+        signature_url: signatureUrl,
+        signature_height: signatureHeight,
+        show_stamp: showStamp,
+        body_font_size: bodyFontSize,
+        subject_font_size: subjectFontSize,
+        recipient_font_size: recipientFontSize,
+        line_height: lineHeight,
+        section_gap: sectionGap,
+        paragraph_gap: paragraphGap,
+        push_footer_bottom: pushFooterToBottom,
+        // Table support
+        show_table: showTable,
+        table_title: tableTitle,
+        table_headers: tableHeaders,
+        table_rows: tableRows,
+        table_style: tableStyle,
+        table_header_bg: tableHeaderBg,
+        table_align: tableAlign,
+        table_font_size: tableFontSize
+      };
+
+      const res = await api.post("/admin/letterhead/save", payload);
+      const savedDoc = res.data.document;
+      setActiveSavedId(savedDoc.id);
+      setLastSavedTimestamp(new Date());
+      toast.success(forceNewCopy ? "Saved as a new document copy in database!" : "Letterhead document saved successfully!");
+      fetchSavedLetters();
+    } catch (err) {
+      console.error("Failed to save letterhead to database:", err);
+      toast.error(err?.response?.data?.detail || "Failed to save letterhead document to database.");
+    } finally {
+      setSavingDoc(false);
+    }
+  };
+
+  const handleLoadSavedLetter = (doc) => {
+    setActiveSavedId(doc.id);
+    setRefNo(doc.ref_no || "");
+    setLetterDate(doc.letter_date || "");
+    setTemplateKey(doc.template_key || "custom");
+    setRecipient(doc.recipient || "");
+    setDetails(doc.details || "");
+    setSubject(doc.subject || "");
+    setSalutation(doc.salutation || "");
+    setBody(doc.body || "");
+    setSignatory(doc.signatory || "principal");
+    setCustomSignatoryTitle(doc.custom_signatory_title || "");
+    setSignatureUrl(doc.signature_url || "");
+    setSignatureHeight(doc.signature_height || 48);
+    setShowStamp(doc.show_stamp !== undefined ? doc.show_stamp : true);
+    setBodyFontSize(doc.body_font_size || 13);
+    setSubjectFontSize(doc.subject_font_size || 13);
+    setRecipientFontSize(doc.recipient_font_size || 12);
+    setLineHeight(doc.line_height || 1.6);
+    setSectionGap(doc.section_gap || 12);
+    setParagraphGap(doc.paragraph_gap || 10);
+    setPushFooterToBottom(doc.push_footer_bottom || false);
+    setShowTable(Boolean(doc.show_table));
+    setTableTitle(doc.table_title || "");
+    setTableHeaders(doc.table_headers || ["S.No", "Particulars", "Class", "Remarks"]);
+    setTableRows(doc.table_rows || []);
+    setTableStyle(doc.table_style || "boxed");
+    setTableHeaderBg(doc.table_header_bg || "navy");
+    setTableAlign(doc.table_align || "left");
+    setTableFontSize(doc.table_font_size || 11);
+    setLastSavedTimestamp(doc.updated_at ? new Date(doc.updated_at) : new Date());
+    setShowSavedModal(false);
+    toast.success(`Loaded saved letter: ${doc.ref_no}`);
+  };
+
+  const handleDeleteSavedLetter = async (id, e) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to permanently delete this saved letterhead document from database?")) return;
+    try {
+      await api.delete(`/admin/letterhead/saved/${id}`);
+      if (activeSavedId === id) {
+        setActiveSavedId(null);
+      }
+      toast.success("Saved document deleted.");
+      fetchSavedLetters();
+    } catch (err) {
+      toast.error("Failed to delete saved document.");
+    }
+  };
+
+  const handleDuplicateSavedLetter = (doc, e) => {
+    e.stopPropagation();
+    handleLoadSavedLetter(doc);
+    setActiveSavedId(null);
+    generateRefNo();
+    toast.info("Duplicated as a new letterhead draft. Click 'Save to Database' when ready.");
+  };
+
+  const handleNewLetter = () => {
+    if (activeSavedId && !window.confirm("Start a new document draft? Unsaved changes will be cleared from editor.")) {
+      return;
+    }
+    setActiveSavedId(null);
+    setTemplateKey("custom");
+    const t = TEMPLATES.custom;
+    setSubject(t.subject);
+    setSalutation(t.salutation);
+    setBody(t.body);
+    setRecipient("The Management\nHindustan Ventures Pvt. Ltd.");
+    setDetails("Patna, Bihar");
+    generateRefNo();
+    setShowTable(false);
+    toast.info("Started new letterhead draft.");
+  };
 
   const handleTemplateChange = (key) => {
     setTemplateKey(key);
@@ -551,6 +704,18 @@ export default function AdminLetterMaker() {
 
   const bodyParagraphs = formattedBodyText().split("\n\n").filter((p) => p.trim());
 
+  const filteredSavedLetters = savedLetters.filter((doc) => {
+    if (!savedSearchQuery.trim()) return true;
+    const q = savedSearchQuery.toLowerCase();
+    return (
+      (doc.subject && doc.subject.toLowerCase().includes(q)) ||
+      (doc.ref_no && doc.ref_no.toLowerCase().includes(q)) ||
+      (doc.recipient && doc.recipient.toLowerCase().includes(q)) ||
+      (doc.letter_date && doc.letter_date.toLowerCase().includes(q)) ||
+      (doc.created_by && doc.created_by.toLowerCase().includes(q))
+    );
+  });
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 font-sans text-slate-800 bg-slate-50 min-h-screen print:bg-white print:text-black print:p-0 print:m-0">
       {/* Strict CSS for A4 printing */}
@@ -609,11 +774,52 @@ export default function AdminLetterMaker() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleSaveToDatabase(false)}
+              disabled={savingDoc}
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 text-white font-bold text-xs transition flex items-center gap-2 shadow-md cursor-pointer disabled:opacity-50"
+            >
+              {savingDoc ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" /> Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" /> Save to Database
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                fetchSavedLetters();
+                setShowSavedModal(true);
+              }}
+              className="px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-bold text-xs border border-slate-300 transition flex items-center gap-2 cursor-pointer shadow-xs"
+            >
+              <FolderOpen className="w-4 h-4 text-blue-600" />
+              <span>Saved Letters</span>
+              <span className="px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800 font-mono text-[10px] font-bold">
+                {savedLetters.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleNewLetter}
+              className="px-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs border border-slate-300 transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+              title="Start Blank Draft"
+            >
+              <PlusCircle className="w-4 h-4 text-slate-600" /> New
+            </button>
+
             <button
               type="button"
               onClick={handleCopyText}
-              className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs border border-slate-300 transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+              className="px-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs border border-slate-300 transition flex items-center gap-1.5 cursor-pointer shadow-xs"
             >
               <Copy className="w-4 h-4 text-blue-600" /> Copy Text
             </button>
@@ -638,12 +844,60 @@ export default function AdminLetterMaker() {
             <button
               type="button"
               onClick={handlePrint}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 text-white font-bold text-xs transition flex items-center gap-2 shadow-md cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs transition flex items-center gap-2 shadow-md cursor-pointer"
             >
-              <Printer className="w-4 h-4" /> Print Letter
+              <Printer className="w-4 h-4" /> Print
             </button>
           </div>
         </div>
+
+        {/* Active Saved Document Indicator Banner */}
+        {activeSavedId && (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-3xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-2.5 text-emerald-950 font-bold text-xs">
+              <div className="p-1.5 bg-emerald-200/60 rounded-xl text-emerald-800">
+                <CheckCircle2 className="w-4 h-4" />
+              </div>
+              <div>
+                <span>
+                  Editing Saved Database Record: <span className="font-mono text-emerald-800 bg-white px-2 py-0.5 rounded-lg border border-emerald-300 shadow-xs">{refNo}</span>
+                </span>
+                {lastSavedTimestamp && (
+                  <span className="text-[11px] text-emerald-700 font-normal block sm:inline sm:ml-2">
+                    (Last saved {lastSavedTimestamp.toLocaleTimeString()})
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <button
+                type="button"
+                onClick={() => handleSaveToDatabase(false)}
+                disabled={savingDoc}
+                className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition cursor-pointer flex items-center gap-1.5 shadow-xs"
+              >
+                <Save className="w-3.5 h-3.5" />
+                {savingDoc ? "Updating..." : "Update Record"}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSaveToDatabase(true)}
+                disabled={savingDoc}
+                className="px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs transition cursor-pointer flex items-center gap-1.5"
+              >
+                <Copy className="w-3.5 h-3.5" /> Save as New Copy
+              </button>
+              <button
+                type="button"
+                onClick={handleNewLetter}
+                className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition cursor-pointer"
+                title="Start Blank Draft"
+              >
+                <PlusCircle className="w-3.5 h-3.5" /> New Draft
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Template Selector Bar */}
         <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-3">
@@ -1458,6 +1712,211 @@ export default function AdminLetterMaker() {
           </div>
         </div>
       </div>
+
+      {/* Saved Letterhead Documents Modal */}
+      {showSavedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2.5 bg-blue-100 text-blue-700 rounded-2xl">
+                  <FolderOpen className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    Saved Official Letters & Documents
+                    <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-xs font-mono font-bold">
+                      {savedLetters.length}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Saved official letters and documents stored securely in school database.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSavedModal(false)}
+                className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Search & Actions Bar */}
+            <div className="p-4 border-b border-slate-100 bg-white flex flex-col sm:flex-row gap-3 items-center justify-between">
+              <div className="relative w-full sm:w-80">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={savedSearchQuery}
+                  onChange={(e) => setSavedSearchQuery(e.target.value)}
+                  placeholder="Search by Subject, Ref No, Recipient..."
+                  className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:outline-none focus:border-blue-600 font-medium"
+                />
+                {savedSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSavedSearchQuery("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button
+                  type="button"
+                  onClick={fetchSavedLetters}
+                  disabled={loadingSavedList}
+                  className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 transition flex items-center gap-1.5 cursor-pointer"
+                  title="Refresh List"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loadingSavedList ? "animate-spin" : ""}`} />
+                  <span className="hidden sm:inline">Refresh</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleNewLetter();
+                    setShowSavedModal(false);
+                  }}
+                  className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Start New Draft
+                </button>
+              </div>
+            </div>
+
+            {/* Saved List Content */}
+            <div className="p-4 overflow-y-auto space-y-3 flex-1">
+              {loadingSavedList ? (
+                <div className="py-12 text-center text-slate-400 space-y-2">
+                  <RefreshCw className="w-6 h-6 animate-spin mx-auto text-blue-600" />
+                  <p className="text-xs font-medium">Loading saved letters from database...</p>
+                </div>
+              ) : filteredSavedLetters.length === 0 ? (
+                <div className="py-12 text-center text-slate-500 space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+                    <FolderOpen className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-700">
+                      {savedSearchQuery ? "No matching letters found" : "No saved letterhead documents yet"}
+                    </p>
+                    <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1">
+                      {savedSearchQuery
+                        ? "Try searching with a different keyword or clear the search bar."
+                        : "Create letters and click 'Save to Database' to build your school records archive."}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-3">
+                  {filteredSavedLetters.map((doc) => (
+                    <div
+                      key={doc.id}
+                      className={`p-4 rounded-2xl border transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
+                        activeSavedId === doc.id
+                          ? "bg-blue-50/70 border-blue-300 ring-1 ring-blue-500/20 shadow-xs"
+                          : "bg-white border-slate-200 hover:border-slate-300 hover:shadow-xs"
+                      }`}
+                    >
+                      <div className="space-y-1.5 flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-mono text-xs font-bold text-blue-700 bg-blue-100/70 px-2 py-0.5 rounded-md border border-blue-200">
+                            {doc.ref_no || "SDPS/ADM/---"}
+                          </span>
+                          <span className="text-[11px] text-slate-500 flex items-center gap-1 font-medium">
+                            <Calendar className="w-3 h-3 text-slate-400" /> {doc.letter_date || "No date"}
+                          </span>
+                          {doc.show_table && (
+                            <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-bold flex items-center gap-1">
+                              <Table className="w-3 h-3" /> Includes Table
+                            </span>
+                          )}
+                          <span className="text-[10px] uppercase font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
+                            {doc.template_key || "custom"}
+                          </span>
+                        </div>
+
+                        <h4 className="font-bold text-slate-900 text-sm truncate">
+                          {doc.subject || "[No Subject Heading]"}
+                        </h4>
+
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600">
+                          {doc.recipient && (
+                            <span className="truncate max-w-xs text-slate-700 font-medium">
+                              <span className="text-slate-400 font-normal">To: </span>
+                              {doc.recipient.split("\n")[0]}
+                            </span>
+                          )}
+                          {doc.created_by && (
+                            <span className="text-[11px] text-slate-400">
+                              By: {doc.created_by}
+                            </span>
+                          )}
+                          {doc.updated_at && (
+                            <span className="text-[10.5px] text-slate-400 flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-slate-300" />
+                              {new Date(doc.updated_at).toLocaleDateString("en-IN", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric"
+                              })}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Item Actions */}
+                      <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleLoadSavedLetter(doc)}
+                          className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" /> Load
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handleDuplicateSavedLetter(doc, e)}
+                          className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 transition cursor-pointer"
+                          title="Clone as New Letter"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteSavedLetter(doc.id, e)}
+                          className="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                          title="Delete from Database"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center text-xs text-slate-500">
+              <span>Showing {filteredSavedLetters.length} of {savedLetters.length} saved records</span>
+              <button
+                type="button"
+                onClick={() => setShowSavedModal(false)}
+                className="px-4 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold border border-slate-200 transition cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

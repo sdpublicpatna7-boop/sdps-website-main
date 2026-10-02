@@ -4573,7 +4573,116 @@ async def generate_letterhead_pdf_browserless(
             logger.error(f"Browserless PDF API failed: {err}")
 
     # Fallback response: Return clean HTML suitable for browser rendering or printing
-    return HTMLResponse(content=html_content)
+    return Response(content=html_content, media_type="text/html")
+
+
+# ==========================================
+# SAVED OFFICIAL LETTERHEAD DOCUMENTS IN DB
+# ==========================================
+
+class SavedLetterhead(BaseModel):
+    id: Optional[str] = None
+    ref_no: str = "SDPS/ADM/2026-27/084"
+    letter_date: str = ""
+    template_key: str = "custom"
+    recipient: str = ""
+    details: str = ""
+    subject: str = ""
+    salutation: str = ""
+    body: str = ""
+    signatory: str = "principal"
+    custom_signatory_title: str = "Authorized Signatory"
+    signature_url: str = ""
+    signature_height: int = 48
+    show_stamp: bool = True
+    body_font_size: int = 13
+    subject_font_size: int = 13
+    recipient_font_size: int = 12
+    line_height: float = 1.6
+    section_gap: int = 12
+    paragraph_gap: int = 10
+    push_footer_bottom: bool = False
+    # Table configuration
+    show_table: bool = False
+    table_title: str = ""
+    table_headers: List[str] = []
+    table_rows: List[List[str]] = []
+    table_style: str = "boxed"  # "boxed" | "striped" | "minimal"
+    table_header_bg: str = "navy"  # "navy" | "slate" | "amber" | "white"
+    table_align: str = "left"  # "left" | "center"
+    table_font_size: int = 11
+
+
+@admin_router.post("/letterhead/save")
+async def save_letterhead_document(
+    payload: SavedLetterhead,
+    admin: TokenData = Depends(require_permission(["notice-maker", "media-tools", "site-settings"]))
+):
+    """
+    Save or update an official letterhead document in MongoDB database.
+    """
+    doc = payload.model_dump()
+    user = await db.admin_users.find_one({"id": admin.sub})
+    author_name = user.get("name") if (user and user.get("name")) else (admin.email or "Admin")
+
+    current_time = now_iso()
+    doc_id = doc.get("id") or new_id()
+    doc["id"] = doc_id
+    doc["updated_at"] = current_time
+    doc["updated_by"] = author_name
+
+    existing = await db.saved_letterheads.find_one({"id": doc_id})
+    if existing:
+        doc["created_at"] = existing.get("created_at", current_time)
+        doc["created_by"] = existing.get("created_by", author_name)
+        await db.saved_letterheads.update_one({"id": doc_id}, {"$set": doc})
+    else:
+        doc["created_at"] = current_time
+        doc["created_by"] = author_name
+        await db.saved_letterheads.insert_one(doc.copy())
+
+    doc.pop("_id", None)
+    return {"status": "success", "message": "Letterhead saved successfully", "document": doc}
+
+
+@admin_router.get("/letterhead/saved")
+async def list_saved_letterheads(
+    admin: TokenData = Depends(require_permission(["notice-maker", "media-tools", "site-settings"]))
+):
+    """
+    Retrieve all saved letterhead documents from MongoDB database.
+    """
+    items = await db.saved_letterheads.find({}, {"_id": 0}).sort("updated_at", -1).to_list(1000)
+    return items
+
+
+@admin_router.get("/letterhead/saved/{item_id}")
+async def get_saved_letterhead(
+    item_id: str,
+    admin: TokenData = Depends(require_permission(["notice-maker", "media-tools", "site-settings"]))
+):
+    """
+    Get a specific saved letterhead by ID.
+    """
+    doc = await db.saved_letterheads.find_one({"id": item_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Saved letterhead document not found")
+    return doc
+
+
+@admin_router.delete("/letterhead/saved/{item_id}")
+async def delete_saved_letterhead(
+    item_id: str,
+    admin: TokenData = Depends(require_permission(["notice-maker", "media-tools", "site-settings"]))
+):
+    """
+    Delete a saved letterhead document by ID.
+    """
+    res = await db.saved_letterheads.delete_one({"id": item_id})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Letterhead document not found or already deleted")
+    return {"status": "success", "deleted": res.deleted_count, "id": item_id}
+
 
 
 
