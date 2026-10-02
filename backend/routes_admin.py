@@ -4235,6 +4235,15 @@ class LetterheadPdfPayload(BaseModel):
     section_gap: int = 12
     paragraph_gap: int = 10
     push_footer_bottom: bool = False
+    # Official Data Table Support
+    show_table: bool = False
+    table_title: str = ""
+    table_headers: List[str] = []
+    table_rows: List[List[str]] = []
+    table_style: str = "boxed"  # "boxed" | "striped" | "minimal"
+    table_header_bg: str = "navy"  # "navy" | "slate" | "amber" | "white"
+    table_align: str = "left"  # "left" | "center"
+    table_font_size: int = 11
 
 
 @admin_router.post("/letterhead/pdf")
@@ -4284,9 +4293,69 @@ async def generate_letterhead_pdf_browserless(
 
     sig_image_html = f'<img src="{payload.signature_url}" style="height: {payload.signature_height}px; max-width: 200px; object-fit: contain;" />' if payload.signature_url else '<span style="font-family: serif; font-style: italic; font-size: 18px; color: #312e81; font-weight: bold; border-bottom: 1px solid #94a3b8; padding: 0 16px;">S.D. Public School</span>'
 
-    # Split paragraphs for custom paragraph gap
-    paragraphs = [p for p in formatted_body.split("\n\n") if p.strip()]
-    paragraphs_html = "".join([f'<p style="margin: 0 0 {payload.paragraph_gap}px 0;">{p}</p>' for p in paragraphs])
+    # Build Table HTML if enabled
+    table_html = ""
+    if payload.show_table and payload.table_headers and payload.table_rows:
+        if payload.table_header_bg == "navy":
+            th_bg = "#0B1E40"
+            th_color = "#ffffff"
+            th_border = "#0B1E40"
+        elif payload.table_header_bg == "amber":
+            th_bg = "#fef3c7"
+            th_color = "#78350f"
+            th_border = "#f59e0b"
+        elif payload.table_header_bg == "slate":
+            th_bg = "#f1f5f9"
+            th_color = "#1e293b"
+            th_border = "#cbd5e1"
+        else:  # white
+            th_bg = "#ffffff"
+            th_color = "#0B1E40"
+            th_border = "#e2e8f0"
+
+        is_boxed = payload.table_style == "boxed"
+        is_striped = payload.table_style == "striped"
+
+        border_css = "border: 1px solid #cbd5e1;" if is_boxed else "border-bottom: 2px solid #0B1E40;"
+
+        th_cells = "".join([
+            f'<th style="padding: 6px 10px; font-weight: 800; text-transform: uppercase; font-size: {payload.table_font_size}px; background-color: {th_bg}; color: {th_color}; text-align: {payload.table_align}; {"border: 1px solid #cbd5e1;" if is_boxed else "border-bottom: 2px solid " + th_border + ";"}">{h}</th>'
+            for h in payload.table_headers
+        ])
+
+        tr_rows = []
+        for r_idx, row in enumerate(payload.table_rows):
+            row_bg = "#f8fafc" if (is_striped and r_idx % 2 == 1) else "#ffffff"
+            td_cells = "".join([
+                f'<td style="padding: 5px 10px; font-size: {payload.table_font_size}px; text-align: {payload.table_align}; background-color: {row_bg}; {"border: 1px solid #cbd5e1;" if is_boxed else "border-bottom: 1px solid #e2e8f0;"}">{cell}</td>'
+                for cell in row
+            ])
+            tr_rows.append(f"<tr>{td_cells}</tr>")
+
+        title_div = f'<div style="font-weight: 800; font-size: {payload.table_font_size + 1}px; color: #0B1E40; text-transform: uppercase; margin-bottom: 4px; text-align: {payload.table_align};">{payload.table_title}</div>' if payload.table_title else ""
+
+        table_html = f"""
+        <div style="margin: {payload.section_gap}px 0; width: 100%;">
+          {title_div}
+          <table style="width: 100%; border-collapse: collapse; font-family: system-ui, sans-serif; {border_css}">
+            <thead>
+              <tr>{th_cells}</tr>
+            </thead>
+            <tbody>
+              {"".join(tr_rows)}
+            </tbody>
+          </table>
+        </div>
+        """
+
+    # Handle in-place {{table}} or append table to content
+    if "{{table}}" in formatted_body:
+        content_body_html = formatted_body.replace("{{table}}", table_html)
+        paragraphs = [p for p in content_body_html.split("\n\n") if p.strip()]
+        body_render_html = "".join([f'<p style="margin: 0 0 {payload.paragraph_gap}px 0;">{p}</p>' if not p.strip().startswith("<div") else p for p in paragraphs])
+    else:
+        paragraphs = [p for p in formatted_body.split("\n\n") if p.strip()]
+        body_render_html = "".join([f'<p style="margin: 0 0 {payload.paragraph_gap}px 0;">{p}</p>' for p in paragraphs]) + table_html
 
     footer_margin_css = "margin-top: auto;" if payload.push_footer_bottom else f"margin-top: {payload.section_gap * 2}px;"
 
@@ -4440,7 +4509,7 @@ async def generate_letterhead_pdf_browserless(
       {recipient_html}
       {subject_html}
       <div style="font-weight: bold; color: #0f172a; margin-bottom: {payload.section_gap}px;">{payload.salutation}</div>
-      <div class="body-text">{paragraphs_html}</div>
+      <div class="body-text">{body_render_html}</div>
     </div>
 
     <!-- Footer & Signatures -->

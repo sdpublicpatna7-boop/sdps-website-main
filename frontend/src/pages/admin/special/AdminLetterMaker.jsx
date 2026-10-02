@@ -4,7 +4,8 @@ import { toast } from "sonner";
 import {
   FileText, Printer, Copy, RefreshCw, Sparkles, Stamp, Award, ShieldCheck,
   Building, Calendar, CheckCircle2, User, FileSpreadsheet, Eye, Download,
-  PenTool, Upload, Trash2, AlertCircle, SlidersHorizontal, Space, ArrowDown
+  PenTool, Upload, Trash2, AlertCircle, SlidersHorizontal, Space, ArrowDown,
+  Table, Plus, Grid, LayoutGrid, AlignLeft, AlignCenter, Rows, Columns, Check, ChevronDown, List
 } from "lucide-react";
 
 const TEMPLATES = {
@@ -52,6 +53,59 @@ const TEMPLATES = {
   }
 };
 
+const TABLE_PRESETS = {
+  fee: {
+    name: "💰 Fee Details",
+    title: "DETAILS OF APPLICABLE FEES & CHARGES",
+    headers: ["S.No", "Fee Head / Description", "Amount (₹)", "Due Date"],
+    rows: [
+      ["1", "Quarterly Tuition Fee (Q3)", "₹ 7,500.00", "15 Oct 2026"],
+      ["2", "Annual Activity & Exam Fee", "₹ 2,200.00", "20 Oct 2026"],
+      ["3", "Computer Lab & Smart Class", "₹ 1,100.00", "25 Oct 2026"],
+    ]
+  },
+  exam: {
+    name: "📅 Exam Schedule",
+    title: "HALF-YEARLY EXAMINATION TIMETABLE (2026-27)",
+    headers: ["Date & Day", "Subject", "Class / Section", "Timings"],
+    rows: [
+      ["12/10/2026 (Mon)", "Mathematics", "Class VI - X", "08:30 AM - 11:30 AM"],
+      ["14/10/2026 (Wed)", "Science & Tech", "Class VI - X", "08:30 AM - 11:30 AM"],
+      ["16/10/2026 (Fri)", "English Language", "Class VI - X", "08:30 AM - 11:30 AM"],
+      ["19/10/2026 (Mon)", "Social Studies", "Class VI - X", "08:30 AM - 11:30 AM"],
+    ]
+  },
+  students: {
+    name: "🏆 Student Roster",
+    title: "LIST OF MERIT CANDIDATES / AWARDEES",
+    headers: ["Roll No", "Student Name", "Class & Sec", "Award / Result"],
+    rows: [
+      ["101", "Aarav Sharma", "Class VIII-A", "1st Rank (98.4%)"],
+      ["105", "Priyanshu Verma", "Class VIII-A", "2nd Rank (96.8%)"],
+      ["112", "Ananya Mishra", "Class VIII-B", "3rd Rank (95.2%)"],
+    ]
+  },
+  itinerary: {
+    name: "⏱️ Event Itinerary",
+    title: "SCHEDULE OF EVENTS & ACTIVITIES",
+    headers: ["Time", "Activity / Program", "In-Charge", "Venue"],
+    rows: [
+      ["09:00 AM", "Inauguration & Prayer", "Principal / Vice Principal", "School Ground"],
+      ["10:00 AM", "Inter-House Debate Finals", "Language Department", "Auditorium"],
+      ["12:30 PM", "Prize Distribution & Address", "Chief Guest / Director", "Main Stage"],
+    ]
+  },
+  blank: {
+    name: "📋 Blank Grid",
+    title: "",
+    headers: ["Column 1", "Column 2", "Column 3"],
+    rows: [
+      ["Item 1", "Details 1", "Value 1"],
+      ["Item 2", "Details 2", "Value 2"],
+    ]
+  }
+};
+
 export default function AdminLetterMaker() {
   const [templateKey, setTemplateKey] = useState("custom");
   const [refNo, setRefNo] = useState("SDPS/ADM/2026-27/084");
@@ -68,6 +122,20 @@ export default function AdminLetterMaker() {
   const [signatory, setSignatory] = useState("principal"); // principal, director, management, custom
   const [customSignatoryTitle, setCustomSignatoryTitle] = useState("Authorized Signatory");
   const [showStamp, setShowStamp] = useState(true);
+
+  // Table Generator States
+  const [showTable, setShowTable] = useState(false);
+  const [tableTitle, setTableTitle] = useState("SCHEDULE / PARTICULARS TABLE");
+  const [tableHeaders, setTableHeaders] = useState(["S.No", "Particulars / Head", "Class / Section", "Due Date / Timings"]);
+  const [tableRows, setTableRows] = useState([
+    ["1", "Term-I Academic Fee", "Class VI - X", "15 Oct 2026"],
+    ["2", "Annual Examination & Activity", "Class VI - X", "20 Oct 2026"],
+    ["3", "Science Lab & Computer", "Class IX - X", "25 Oct 2026"],
+  ]);
+  const [tableStyle, setTableStyle] = useState("boxed"); // "boxed" | "striped" | "minimal"
+  const [tableHeaderBg, setTableHeaderBg] = useState("navy"); // "navy" | "slate" | "amber" | "white"
+  const [tableAlign, setTableAlign] = useState("left"); // "left" | "center"
+  const [tableFontSize, setTableFontSize] = useState(11);
 
   // Font Size & Typography Control States
   const [bodyFontSize, setBodyFontSize] = useState(13);
@@ -151,8 +219,88 @@ export default function AdminLetterMaker() {
     window.print();
   };
 
+  const applyTablePreset = (key) => {
+    const p = TABLE_PRESETS[key];
+    if (p) {
+      setShowTable(true);
+      setTableTitle(p.title);
+      setTableHeaders([...p.headers]);
+      setTableRows(p.rows.map(r => [...r]));
+      toast.success(`Applied ${p.name} preset!`);
+    }
+  };
+
+  const handleAddColumn = () => {
+    if (tableHeaders.length >= 6) {
+      toast.error("Maximum 6 columns allowed on A4 portrait letterhead.");
+      return;
+    }
+    const newColNum = tableHeaders.length + 1;
+    setTableHeaders(prev => [...prev, `Column ${newColNum}`]);
+    setTableRows(prev => prev.map(row => [...row, ""]));
+    toast.success("Added new column");
+  };
+
+  const handleRemoveColumn = (colIdx) => {
+    if (tableHeaders.length <= 1) {
+      toast.error("At least 1 column is required.");
+      return;
+    }
+    setTableHeaders(prev => prev.filter((_, idx) => idx !== colIdx));
+    setTableRows(prev => prev.map(row => row.filter((_, idx) => idx !== colIdx)));
+  };
+
+  const handleHeaderChange = (colIdx, val) => {
+    setTableHeaders(prev => {
+      const next = [...prev];
+      next[colIdx] = val;
+      return next;
+    });
+  };
+
+  const handleAddRow = () => {
+    setTableRows(prev => [...prev, tableHeaders.map(() => "")]);
+  };
+
+  const handleRemoveRow = (rowIdx) => {
+    setTableRows(prev => prev.filter((_, idx) => idx !== rowIdx));
+  };
+
+  const handleCellChange = (rowIdx, colIdx, val) => {
+    setTableRows(prev => {
+      const next = prev.map(r => [...r]);
+      if (next[rowIdx]) {
+        next[rowIdx][colIdx] = val;
+      }
+      return next;
+    });
+  };
+
+  const handleClearRows = () => {
+    if (window.confirm("Clear all data rows from the table?")) {
+      setTableRows([]);
+    }
+  };
+
   const handleCopyText = () => {
-    const fullText = `S.D. PUBLIC SCHOOL, PATNA\nRef No: ${refNo}\nDate: ${letterDate}\n\nTo,\n${recipient}\n${details}\n\nSubject: ${subject}\n\n${salutation}\n\n${formattedBodyText()}\n\nSincerely,\n${getSignatoryTitle()}`;
+    let tableText = "";
+    if (showTable && tableHeaders.length > 0 && tableRows.length > 0) {
+      const headerLine = tableHeaders.join(" | ");
+      const separatorLine = tableHeaders.map(() => "---").join(" | ");
+      const rowLines = tableRows.map(r => r.join(" | ")).join("\n");
+      tableText = `\n\n${tableTitle ? `${tableTitle}\n` : ""}${headerLine}\n${separatorLine}\n${rowLines}`;
+    }
+
+    let finalBody = formattedBodyText();
+    if (showTable) {
+      if (finalBody.includes("{{table}}")) {
+        finalBody = finalBody.replace("{{table}}", tableText);
+      } else {
+        finalBody += tableText;
+      }
+    }
+
+    const fullText = `S.D. PUBLIC SCHOOL, PATNA\nRef No: ${refNo}\nDate: ${letterDate}\n\nTo,\n${recipient}\n${details}\n\nSubject: ${subject}\n\n${salutation}\n\n${finalBody}\n\nSincerely,\n${getSignatoryTitle()}`;
     navigator.clipboard.writeText(fullText);
     toast.success("Letter content copied to clipboard!");
   };
@@ -261,7 +409,16 @@ export default function AdminLetterMaker() {
         line_height: lineHeight,
         section_gap: sectionGap,
         paragraph_gap: paragraphGap,
-        push_footer_bottom: pushFooterToBottom
+        push_footer_bottom: pushFooterToBottom,
+        // Table support
+        show_table: showTable,
+        table_title: tableTitle,
+        table_headers: tableHeaders,
+        table_rows: tableRows,
+        table_style: tableStyle,
+        table_header_bg: tableHeaderBg,
+        table_align: tableAlign,
+        table_font_size: tableFontSize
       };
 
       const response = await api.post("/admin/letterhead/pdf", payload, {
@@ -287,6 +444,109 @@ export default function AdminLetterMaker() {
     } finally {
       setGeneratingPdf(false);
     }
+  };
+
+  const renderTablePreview = () => {
+    if (!showTable || tableHeaders.length === 0) return null;
+
+    const getHeaderBgClass = () => {
+      switch (tableHeaderBg) {
+        case "navy":
+          return "bg-[#0B1E40] text-white";
+        case "slate":
+          return "bg-slate-800 text-white";
+        case "amber":
+          return "bg-amber-100 text-amber-900 border-b border-amber-300";
+        case "white":
+          return "bg-slate-100 text-slate-900 border-b-2 border-slate-300";
+        default:
+          return "bg-[#0B1E40] text-white";
+      }
+    };
+
+    const isBoxed = tableStyle === "boxed";
+    const isStriped = tableStyle === "striped";
+    const isMinimal = tableStyle === "minimal";
+
+    return (
+      <div className="my-3 font-sans w-full overflow-hidden">
+        {tableTitle && (
+          <div
+            className={`font-bold text-[#0B1E40] uppercase tracking-wide mb-1.5 ${
+              tableAlign === "center" ? "text-center" : "text-left"
+            }`}
+            style={{ fontSize: `${tableFontSize + 1}px` }}
+          >
+            {tableTitle}
+          </div>
+        )}
+        <div className={`overflow-x-auto rounded-lg ${isMinimal ? "border-y border-slate-300" : "border border-slate-300"}`}>
+          <table
+            className="w-full border-collapse"
+            style={{ fontSize: `${tableFontSize}px` }}
+          >
+            <thead>
+              <tr className={getHeaderBgClass()}>
+                {tableHeaders.map((header, hIdx) => (
+                  <th
+                    key={hIdx}
+                    className={`py-2 px-3 font-bold tracking-wider uppercase text-[10px] ${
+                      tableAlign === "center" ? "text-center" : "text-left"
+                    } ${isBoxed ? "border border-slate-300" : isStriped ? "border-b border-slate-300" : "border-b-2 border-slate-300"}`}
+                  >
+                    {header || `Col ${hIdx + 1}`}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {tableRows.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={tableHeaders.length}
+                    className="py-3 text-center text-slate-400 italic text-xs bg-slate-50"
+                  >
+                    No data rows added yet.
+                  </td>
+                </tr>
+              ) : (
+                tableRows.map((row, rIdx) => {
+                  const rowBg = isStriped
+                    ? rIdx % 2 === 1
+                      ? "bg-slate-50/90"
+                      : "bg-white"
+                    : "bg-white";
+
+                  return (
+                    <tr
+                      key={rIdx}
+                      className={`${rowBg} ${
+                        isMinimal
+                          ? "border-b border-slate-200 last:border-b-0"
+                          : "border-b border-slate-200"
+                      }`}
+                    >
+                      {tableHeaders.map((_, cIdx) => (
+                        <td
+                          key={cIdx}
+                          className={`py-1.5 px-3 text-slate-800 leading-snug ${
+                            tableAlign === "center" ? "text-center" : "text-left"
+                          } ${
+                            isBoxed ? "border border-slate-200" : ""
+                          }`}
+                        >
+                          {row[cIdx] || "-"}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
   };
 
   const bodyParagraphs = formattedBodyText().split("\n\n").filter((p) => p.trim());
@@ -506,6 +766,248 @@ export default function AdminLetterMaker() {
               />
               <span className="text-[10px] text-slate-500">Use &#123;recipient&#125;, &#123;details&#125;, &#123;date&#125; variables to auto-insert recipient details.</span>
             </div>
+          </div>
+
+          {/* Data Table & Schedule Builder Card */}
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-sm">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                <Table className="w-4 h-4 text-blue-600" /> Data Table & Schedule
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowTable(!showTable)}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  showTable
+                    ? "bg-blue-600 text-white shadow-xs"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                <Table className="w-3.5 h-3.5" />
+                {showTable ? "Table Active" : "Add Table"}
+              </button>
+            </div>
+
+            {showTable && (
+              <div className="space-y-4 pt-1">
+                {/* Table Presets */}
+                <div className="space-y-1.5">
+                  <label className="text-[10.5px] font-bold text-slate-600 uppercase tracking-wider block">
+                    Quick Table Presets
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                    {Object.entries(TABLE_PRESETS).map(([key, preset]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => applyTablePreset(key)}
+                        className="py-1.5 px-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 text-slate-700 hover:text-blue-900 font-bold text-[11px] transition text-left cursor-pointer flex items-center justify-between"
+                      >
+                        <span>{preset.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Table Title */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-700">Table Heading / Title (Optional)</label>
+                  <input
+                    type="text"
+                    value={tableTitle}
+                    onChange={(e) => setTableTitle(e.target.value)}
+                    placeholder="e.g. DETAILS OF APPLICABLE FEES"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-xs font-bold uppercase focus:outline-none focus:border-blue-600"
+                  />
+                </div>
+
+                {/* Table Style & Format Controls */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">Border Style</label>
+                    <select
+                      value={tableStyle}
+                      onChange={(e) => setTableStyle(e.target.value)}
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-800 text-xs font-medium focus:outline-none focus:border-blue-600 cursor-pointer"
+                    >
+                      <option value="boxed">Boxed (Grid)</option>
+                      <option value="striped">Striped Rows</option>
+                      <option value="minimal">Minimal Lines</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">Header Color</label>
+                    <select
+                      value={tableHeaderBg}
+                      onChange={(e) => setTableHeaderBg(e.target.value)}
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-800 text-xs font-medium focus:outline-none focus:border-blue-600 cursor-pointer"
+                    >
+                      <option value="navy">Navy (#0B1E40)</option>
+                      <option value="slate">Slate Gray</option>
+                      <option value="amber">Amber Gold</option>
+                      <option value="white">Clean Light</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1 col-span-2 sm:col-span-1">
+                    <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">Alignment</label>
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setTableAlign("left")}
+                        className={`flex-1 py-1 px-2 rounded-lg text-xs font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${
+                          tableAlign === "left"
+                            ? "bg-blue-600 border-blue-600 text-white"
+                            : "bg-white border-slate-300 text-slate-600 hover:bg-slate-100"
+                        }`}
+                      >
+                        <AlignLeft className="w-3 h-3" /> Left
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTableAlign("center")}
+                        className={`flex-1 py-1 px-2 rounded-lg text-xs font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${
+                          tableAlign === "center"
+                            ? "bg-blue-600 border-blue-600 text-white"
+                            : "bg-white border-slate-300 text-slate-600 hover:bg-slate-100"
+                        }`}
+                      >
+                        <AlignCenter className="w-3 h-3" /> Center
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="col-span-2 sm:col-span-3 space-y-1 pt-1 border-t border-slate-200">
+                    <div className="flex justify-between items-center text-xs">
+                      <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Table Font Size</label>
+                      <span className="font-mono text-xs font-bold text-blue-600">{tableFontSize}px</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="9"
+                      max="14"
+                      value={tableFontSize}
+                      onChange={(e) => setTableFontSize(Number(e.target.value))}
+                      className="w-full accent-blue-600 cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                {/* Columns Manager */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                      <Columns className="w-3.5 h-3.5 text-blue-600" /> Columns ({tableHeaders.length}/6)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleAddColumn}
+                      disabled={tableHeaders.length >= 6}
+                      className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[11px] border border-blue-200 transition flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                    >
+                      <Plus className="w-3 h-3" /> Add Column
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {tableHeaders.map((header, colIdx) => (
+                      <div key={colIdx} className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl p-1.5">
+                        <input
+                          type="text"
+                          value={header}
+                          onChange={(e) => handleHeaderChange(colIdx, e.target.value)}
+                          placeholder={`Col ${colIdx + 1}`}
+                          className="w-full px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-600"
+                        />
+                        {tableHeaders.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveColumn(colIdx)}
+                            className="p-1 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50 transition cursor-pointer"
+                            title="Delete Column"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Rows & Data Manager */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                      <Rows className="w-3.5 h-3.5 text-blue-600" /> Data Rows ({tableRows.length})
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      {tableRows.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleClearRows}
+                          className="px-2 py-1 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 text-[10px] font-bold transition cursor-pointer"
+                        >
+                          Clear All
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleAddRow}
+                        className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[11px] border border-emerald-200 transition flex items-center gap-1 cursor-pointer"
+                      >
+                        <Plus className="w-3 h-3" /> Add Row
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                    {tableRows.length === 0 ? (
+                      <div className="p-4 text-center border-2 border-dashed border-slate-200 rounded-2xl text-xs text-slate-500">
+                        No data rows added yet. Click &quot;+ Add Row&quot; or pick a preset above.
+                      </div>
+                    ) : (
+                      tableRows.map((row, rowIdx) => (
+                        <div key={rowIdx} className="p-2.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+                          <div className="flex justify-between items-center text-[10px] font-bold text-slate-500">
+                            <span>ROW #{rowIdx + 1}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveRow(rowIdx)}
+                              className="text-slate-400 hover:text-rose-600 flex items-center gap-0.5 cursor-pointer"
+                            >
+                              <Trash2 className="w-3 h-3" /> Remove
+                            </button>
+                          </div>
+                          <div className={`grid gap-1.5 ${tableHeaders.length > 3 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2 sm:grid-cols-3"}`}>
+                            {tableHeaders.map((header, colIdx) => (
+                              <input
+                                key={colIdx}
+                                type="text"
+                                value={row[colIdx] || ""}
+                                onChange={(e) => handleCellChange(rowIdx, colIdx, e.target.value)}
+                                placeholder={header || `Col ${colIdx + 1}`}
+                                className="w-full px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-blue-600"
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Inline Placement Helper Tip */}
+                <div className="p-3 bg-blue-50/60 border border-blue-200 rounded-2xl text-[11px] text-blue-950 space-y-1">
+                  <div className="font-bold flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5 text-blue-600" /> Positioning Tip:
+                  </div>
+                  <p className="text-slate-600 leading-relaxed">
+                    By default, the table renders below the letter paragraphs. You can also place <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200 text-blue-700 font-mono font-bold">&#123;&#123;table&#125;&#125;</code> anywhere in the Letter Body text to position it precisely between paragraphs.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Typography & Spacing Controls */}
@@ -867,11 +1369,30 @@ export default function AdminLetterMaker() {
                 className="text-justify text-slate-800"
                 style={{ fontSize: `${bodyFontSize}px`, lineHeight: lineHeight }}
               >
-                {bodyParagraphs.map((p, idx) => (
-                  <p key={idx} style={{ marginBottom: `${paragraphGap}px` }}>
-                    {p}
-                  </p>
-                ))}
+                {bodyParagraphs.map((p, idx) => {
+                  if (p.includes("{{table}}")) {
+                    const parts = p.split("{{table}}");
+                    return (
+                      <div key={idx} style={{ marginBottom: `${paragraphGap}px` }}>
+                        {parts[0] && <p className="mb-2">{parts[0].trim()}</p>}
+                        {renderTablePreview()}
+                        {parts[1] && <p className="mt-2">{parts[1].trim()}</p>}
+                      </div>
+                    );
+                  }
+                  return (
+                    <p key={idx} style={{ marginBottom: `${paragraphGap}px` }}>
+                      {p}
+                    </p>
+                  );
+                })}
+
+                {/* If table is enabled and body does NOT contain {{table}}, render it after all paragraphs */}
+                {showTable && !formattedBodyText().includes("{{table}}") && (
+                  <div style={{ marginTop: `${paragraphGap + 2}px`, marginBottom: `${paragraphGap}px` }}>
+                    {renderTablePreview()}
+                  </div>
+                )}
               </div>
             </div>
 
