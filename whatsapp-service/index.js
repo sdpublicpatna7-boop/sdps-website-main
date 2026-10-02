@@ -31,9 +31,9 @@ const __dirname = path.dirname(__filename);
 const makeWASocket = baileysPkg.default || baileysPkg.makeWASocket || baileysPkg;
 const {
   useMultiFileAuthState,
+  makeCacheableSignalKeyStore,
   DisconnectReason,
   fetchLatestBaileysVersion,
-  fetchLatestWaWebVersion,
   Browsers,
 } = baileysPkg;
 
@@ -62,17 +62,20 @@ let disconnecting = false;  // Flag to prevent close handler from interfering du
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-/** Clean up persisted Baileys auth state folder */
+/** Clean up persisted Baileys auth state folders completely */
 function cleanAuthDir() {
   const paths = [
     path.resolve(AUTH_DIR),
     path.join(__dirname, "auth_state"),
+    path.join(__dirname, "auth_info_baileys"),
+    path.join(__dirname, "baileys_auth"),
+    path.join(__dirname, ".baileys_auth"),
   ];
   for (const p of paths) {
     try {
       if (fs.existsSync(p)) {
         fs.rmSync(p, { recursive: true, force: true });
-        console.log("[WhatsApp] Cleaned auth state directory:", p);
+        console.log("[WhatsApp] Wiped clean auth state directory:", p);
       }
     } catch (e) {
       console.warn("[WhatsApp] Could not clean auth state at:", p, e.message);
@@ -109,31 +112,46 @@ async function startSock() {
     }
 
     const resolvedAuthDir = path.resolve(AUTH_DIR);
+
+    // If an unregistered/stale session exists on disk, wipe it clean to prevent signature mismatch
+    const credsFile = path.join(resolvedAuthDir, "creds.json");
+    if (fs.existsSync(credsFile)) {
+      try {
+        const rawCreds = JSON.parse(fs.readFileSync(credsFile, "utf-8"));
+        if (!rawCreds.registered) {
+          console.log("[WhatsApp] Found unregistered/stale auth state on startup. Cleaning directory for fresh linking...");
+          cleanAuthDir();
+        }
+      } catch (e) {
+        cleanAuthDir();
+      }
+    }
+
     if (!fs.existsSync(resolvedAuthDir)) {
       fs.mkdirSync(resolvedAuthDir, { recursive: true });
     }
 
     const { state, saveCreds } = await useMultiFileAuthState(resolvedAuthDir);
 
-    let version = [2, 3000, 1019143644];
+    let version = [2, 3000, 1015901307];
     try {
-      if (typeof fetchLatestWaWebVersion === "function") {
-        const v = await fetchLatestWaWebVersion();
-        if (v?.version) version = v.version;
-      } else if (typeof fetchLatestBaileysVersion === "function") {
+      if (typeof fetchLatestBaileysVersion === "function") {
         const v = await fetchLatestBaileysVersion();
         if (v?.version) version = v.version;
       }
     } catch (e) {
-      console.warn("[WhatsApp] Version fetch fallback:", e.message);
+      console.warn("[WhatsApp] Version fetch fallback, using default version:", version, e.message);
     }
 
-    // Browsers.macOS("Desktop") provides the official desktop handshake tuple
-    const browserConfig = Browsers?.macOS ? Browsers.macOS("Desktop") : ["Mac OS", "Desktop", "14.4.1"];
+    // Standard Ubuntu/Chrome browser identity matches official Baileys tested pair profile
+    const browserConfig = Browsers?.ubuntu ? Browsers.ubuntu("Chrome") : ["Ubuntu", "Chrome", "22.04.4"];
 
     sock = makeWASocket({
       version,
-      auth: state,
+      auth: {
+        creds: state.creds,
+        keys: makeCacheableSignalKeyStore(state.keys, logger),
+      },
       logger,
       printQRInTerminal: false,
       browser: browserConfig,
@@ -172,7 +190,7 @@ async function startSock() {
         isConnected = true;
         currentQR = null;
         meUser = sock?.user || null;
-        console.log("[WhatsApp] Successfully connected as:", meUser?.id || meUser?.name);
+        console.log("[WhatsApp] Successfully connected to WhatsApp as:", meUser?.id || meUser?.name);
       }
 
       if (connection === "close") {
