@@ -4348,14 +4348,16 @@ async def generate_letterhead_pdf_browserless(
         </div>
         """
 
-    # Handle in-place {{table}} or append table to content
-    if "{{table}}" in formatted_body:
-        content_body_html = formatted_body.replace("{{table}}", table_html)
+    # Handle in-place {table} or {{table}} or append table to content
+    table_regex = r"\{\{?table\}\}?|\[\[?table\]\]?"
+    if payload.show_table and re.search(table_regex, formatted_body, flags=re.IGNORECASE):
+        content_body_html = re.sub(table_regex, table_html, formatted_body, flags=re.IGNORECASE)
         paragraphs = [p for p in content_body_html.split("\n\n") if p.strip()]
         body_render_html = "".join([f'<p style="margin: 0 0 {payload.paragraph_gap}px 0;">{p}</p>' if not p.strip().startswith("<div") else p for p in paragraphs])
     else:
-        paragraphs = [p for p in formatted_body.split("\n\n") if p.strip()]
-        body_render_html = "".join([f'<p style="margin: 0 0 {payload.paragraph_gap}px 0;">{p}</p>' for p in paragraphs]) + table_html
+        cleaned_body = re.sub(table_regex, "", formatted_body, flags=re.IGNORECASE) if not payload.show_table else formatted_body
+        paragraphs = [p for p in cleaned_body.split("\n\n") if p.strip()]
+        body_render_html = "".join([f'<p style="margin: 0 0 {payload.paragraph_gap}px 0;">{p}</p>' for p in paragraphs]) + (table_html if payload.show_table else "")
 
     footer_margin_css = "margin-top: auto;" if payload.push_footer_bottom else f"margin-top: {payload.section_gap * 2}px;"
 

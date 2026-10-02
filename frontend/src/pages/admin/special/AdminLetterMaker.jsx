@@ -435,22 +435,51 @@ export default function AdminLetterMaker() {
     }
   };
 
+  const bodyTextareaRef = useRef(null);
+
+  const insertTokenIntoBody = (token) => {
+    const textarea = bodyTextareaRef.current;
+    if (!textarea) {
+      setBody((prev) => prev + `\n\n${token}\n\n`);
+      return;
+    }
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const currentVal = body;
+    const before = currentVal.substring(0, start);
+    const after = currentVal.substring(end);
+    const newVal = `${before}\n\n${token}\n\n${after}`;
+    setBody(newVal);
+    if (token.includes("table")) {
+      setShowTable(true);
+    }
+    toast.success(`Inserted ${token} tag in letter body!`);
+    setTimeout(() => {
+      textarea.focus();
+      const newPos = start + token.length + 4;
+      textarea.setSelectionRange(newPos, newPos);
+    }, 50);
+  };
+
   const handleCopyText = () => {
     let tableText = "";
     if (showTable && tableHeaders.length > 0 && tableRows.length > 0) {
       const headerLine = tableHeaders.join(" | ");
       const separatorLine = tableHeaders.map(() => "---").join(" | ");
       const rowLines = tableRows.map(r => r.join(" | ")).join("\n");
-      tableText = `\n\n${tableTitle ? `${tableTitle}\n` : ""}${headerLine}\n${separatorLine}\n${rowLines}`;
+      tableText = `\n\n${tableTitle ? `${tableTitle}\n` : ""}${headerLine}\n${separatorLine}\n${rowLines}\n\n`;
     }
 
     let finalBody = formattedBodyText();
+    const tableRegex = /\{\{?table\}\}?|\[\[?table\]\]?/i;
     if (showTable) {
-      if (finalBody.includes("{{table}}")) {
-        finalBody = finalBody.replace("{{table}}", tableText);
+      if (tableRegex.test(finalBody)) {
+        finalBody = finalBody.replace(tableRegex, tableText);
       } else {
         finalBody += tableText;
       }
+    } else {
+      finalBody = finalBody.replace(tableRegex, "");
     }
 
     const fullText = `S.D. PUBLIC SCHOOL, PATNA\nRef No: ${refNo}\nDate: ${letterDate}\n\nTo,\n${recipient}\n${details}\n\nSubject: ${subject}\n\n${salutation}\n\n${finalBody}\n\nSincerely,\n${getSignatoryTitle()}`;
@@ -1010,15 +1039,43 @@ export default function AdminLetterMaker() {
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-700">Letter Body Paragraphs</label>
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <label className="text-[11px] font-bold text-slate-700">Letter Body Paragraphs</label>
+                <button
+                  type="button"
+                  onClick={() => insertTokenIntoBody("{table}")}
+                  className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[11px] font-bold transition flex items-center gap-1 cursor-pointer shadow-xs"
+                  title="Insert {table} tag at cursor position to render data table at that exact position"
+                >
+                  <Table className="w-3.5 h-3.5 text-blue-600" />
+                  <span>+ Insert Table in Middle</span>
+                </button>
+              </div>
               <textarea
+                ref={bodyTextareaRef}
                 rows={7}
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-xs leading-relaxed focus:outline-none focus:border-blue-600 resize-y"
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-xs leading-relaxed focus:outline-none focus:border-blue-600 resize-y font-normal"
               />
-              <span className="text-[10px] text-slate-500">Use &#123;recipient&#125;, &#123;details&#125;, &#123;date&#125; variables to auto-insert recipient details.</span>
+              <div className="flex flex-wrap items-center justify-between gap-1.5 pt-0.5">
+                <span className="text-[10px] text-slate-500">
+                  Insert <code className="bg-blue-50 text-blue-800 px-1.5 py-0.5 rounded font-mono font-bold border border-blue-200">&#123;table&#125;</code> anywhere in body to position table in middle.
+                </span>
+                <div className="flex items-center gap-1">
+                  {["{table}", "{recipient}", "{details}", "{date}"].map((token) => (
+                    <button
+                      key={token}
+                      type="button"
+                      onClick={() => insertTokenIntoBody(token)}
+                      className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded-md bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-600 border border-slate-200 transition cursor-pointer"
+                    >
+                      +{token}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1252,13 +1309,22 @@ export default function AdminLetterMaker() {
                 </div>
 
                 {/* Inline Placement Helper Tip */}
-                <div className="p-3 bg-blue-50/60 border border-blue-200 rounded-2xl text-[11px] text-blue-950 space-y-1">
-                  <div className="font-bold flex items-center gap-1">
-                    <Sparkles className="w-3.5 h-3.5 text-blue-600" /> Positioning Tip:
+                <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-2xl text-[11px] text-blue-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                  <div className="space-y-0.5">
+                    <div className="font-bold flex items-center gap-1">
+                      <Sparkles className="w-3.5 h-3.5 text-blue-600" /> Insert in Middle Tip:
+                    </div>
+                    <p className="text-slate-600 leading-relaxed">
+                      Place <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200 text-blue-700 font-mono font-bold">&#123;table&#125;</code> anywhere in the Letter Body text to place the table between paragraphs.
+                    </p>
                   </div>
-                  <p className="text-slate-600 leading-relaxed">
-                    By default, the table renders below the letter paragraphs. You can also place <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200 text-blue-700 font-mono font-bold">&#123;&#123;table&#125;&#125;</code> anywhere in the Letter Body text to position it precisely between paragraphs.
-                  </p>
+                  <button
+                    type="button"
+                    onClick={() => insertTokenIntoBody("{table}")}
+                    className="px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition cursor-pointer shrink-0 shadow-xs flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3" /> Insert &#123;table&#125; in Body
+                  </button>
                 </div>
               </div>
             )}
@@ -1618,35 +1684,57 @@ export default function AdminLetterMaker() {
                 {salutation}
               </div>
 
-              {/* Formatted Body Paragraphs */}
+              {/* Formatted Body Paragraphs & Table Rendering */}
               <div
                 className="text-justify text-slate-800"
                 style={{ fontSize: `${bodyFontSize}px`, lineHeight: lineHeight }}
               >
-                {bodyParagraphs.map((p, idx) => {
-                  if (p.includes("{{table}}")) {
-                    const parts = p.split("{{table}}");
+                {(() => {
+                  const rawText = formattedBodyText();
+                  const tableRegex = /\{\{?table\}\}?|\[\[?table\]\]?/i;
+                  const hasTableToken = tableRegex.test(rawText);
+
+                  if (showTable && hasTableToken) {
+                    const parts = rawText.split(tableRegex);
                     return (
-                      <div key={idx} style={{ marginBottom: `${paragraphGap}px` }}>
-                        {parts[0] && <p className="mb-2">{parts[0].trim()}</p>}
-                        {renderTablePreview()}
-                        {parts[1] && <p className="mt-2">{parts[1].trim()}</p>}
-                      </div>
+                      <>
+                        {parts.map((part, pIdx) => {
+                          const paragraphs = part.split("\n\n").filter((p) => p.trim());
+                          return (
+                            <div key={pIdx}>
+                              {paragraphs.map((p, idx) => (
+                                <p key={idx} style={{ marginBottom: `${paragraphGap}px` }}>
+                                  {p}
+                                </p>
+                              ))}
+                              {/* Render the table between parts (not after the final trailing part) */}
+                              {pIdx < parts.length - 1 && renderTablePreview()}
+                            </div>
+                          );
+                        })}
+                      </>
                     );
                   }
-                  return (
-                    <p key={idx} style={{ marginBottom: `${paragraphGap}px` }}>
-                      {p}
-                    </p>
-                  );
-                })}
 
-                {/* If table is enabled and body does NOT contain {{table}}, render it after all paragraphs */}
-                {showTable && !formattedBodyText().includes("{{table}}") && (
-                  <div style={{ marginTop: `${paragraphGap + 2}px`, marginBottom: `${paragraphGap}px` }}>
-                    {renderTablePreview()}
-                  </div>
-                )}
+                  // Default mode: no table token in body
+                  const cleanedText = showTable ? rawText : rawText.replace(tableRegex, "");
+                  const paragraphs = cleanedText.split("\n\n").filter((p) => p.trim());
+                  return (
+                    <>
+                      {paragraphs.map((p, idx) => (
+                        <p key={idx} style={{ marginBottom: `${paragraphGap}px` }}>
+                          {p}
+                        </p>
+                      ))}
+                      {/* If table is enabled but no token placed in text, append at bottom */}
+                      {showTable && (
+                        <div style={{ marginTop: `${paragraphGap + 2}px`, marginBottom: `${paragraphGap}px` }}>
+                          {renderTablePreview()}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             </div>
 
