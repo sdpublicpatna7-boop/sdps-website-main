@@ -23,19 +23,21 @@ import { fileURLToPath } from "url";
 import qrcode from "qrcode";
 import pino from "pino";
 import { Boom } from "@hapi/boom";
-import baileysPkg from "@whiskeysockets/baileys";
+import * as baileysAll from "@whiskeysockets/baileys";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const makeWASocket = baileysPkg.default || baileysPkg.makeWASocket || baileysPkg;
-const {
-  useMultiFileAuthState,
-  makeCacheableSignalKeyStore,
-  DisconnectReason,
-  fetchLatestBaileysVersion,
-  Browsers,
-} = baileysPkg;
+const baileys = baileysAll.default && typeof baileysAll.default === "object" ? { ...baileysAll.default, ...baileysAll } : baileysAll;
+const makeWASocket = typeof baileysAll.default === "function"
+  ? baileysAll.default
+  : (baileysAll.makeWASocket || baileys.makeWASocket || baileys.default || baileys);
+
+const useMultiFileAuthState = baileysAll.useMultiFileAuthState || baileysAll.default?.useMultiFileAuthState || baileys.useMultiFileAuthState;
+const makeCacheableSignalKeyStore = baileysAll.makeCacheableSignalKeyStore || baileysAll.default?.makeCacheableSignalKeyStore || baileys.makeCacheableSignalKeyStore;
+const DisconnectReason = baileysAll.DisconnectReason || baileysAll.default?.DisconnectReason || baileys.DisconnectReason;
+const fetchLatestBaileysVersion = baileysAll.fetchLatestBaileysVersion || baileysAll.default?.fetchLatestBaileysVersion || baileys.fetchLatestBaileysVersion;
+const Browsers = baileysAll.Browsers || baileysAll.default?.Browsers || baileys.Browsers;
 
 const PORT = process.env.PORT || 3001;
 const WA_API_SECRET = process.env.WA_API_SECRET || "";
