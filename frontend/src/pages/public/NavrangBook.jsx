@@ -49,7 +49,7 @@ export default function NavrangBook() {
   useEffect(() => {
     if (selectedPackage) {
       const pkg = packages.find(p => p.id === selectedPackage);
-      setStudents(Array(pkg.children).fill({ admission_no: '', verified: false, data: null }));
+      setStudents(Array.from({ length: pkg.children }, () => ({ admission_no: '', verified: false, data: null })));
     }
   }, [selectedPackage]);
 
@@ -103,11 +103,16 @@ export default function NavrangBook() {
       setError(null);
       
       const payload = {
+        package: selectedPackage,
         package_id: selectedPackage,
         parent_name: parentDetails.name,
+        parent_phone: parentDetails.phone,
         phone: parentDetails.phone,
+        parent_email: parentDetails.email,
         email: parentDetails.email,
-        students: students.map(s => s.data.id || s.data.admission_no || s.admission_no)
+        students: students.map(s => ({
+          admission_no: s.data?.admission_no || s.admission_no
+        }))
       };
 
       const res = await api.post('/navrang/book', payload);

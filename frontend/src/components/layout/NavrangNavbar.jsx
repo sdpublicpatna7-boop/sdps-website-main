@@ -58,7 +58,7 @@ export default function NavrangNavbar({ activePage = "home" }) {
     if (!target) return;
     const t = setTimeout(() => scrollToSection(target), 350);
     return () => clearTimeout(t);
-  }, [location.key, isLanding, scrollToSection]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [location.key, isLanding, scrollToSection]);
 
   // Scroll-spy
   useEffect(() => {

@@ -69,11 +69,14 @@ class BookingStudent(BaseModel):
     admission_no: str
 
 class BookRequest(BaseModel):
-    package: str
-    students: List[BookingStudent]
+    package: Optional[str] = None
+    package_id: Optional[str] = None
+    students: List[Any] = []
     parent_name: str
-    parent_phone: str
+    parent_phone: Optional[str] = None
+    phone: Optional[str] = None
     parent_email: Optional[str] = None
+    email: Optional[str] = None
 
 class MyTicketsRequest(BaseModel):
     phone: str
@@ -165,7 +168,8 @@ async def book_tickets(req: BookRequest):
 
     packages = config.get("packages", DEFAULT_PACKAGES)
     
-    pkg_key = req.package.lower()
+    pkg_str = req.package or req.package_id or ""
+    pkg_key = pkg_str.lower().strip()
     if pkg_key not in packages:
         raise HTTPException(status_code=400, detail="Invalid package selected.")
         
@@ -174,11 +178,30 @@ async def book_tickets(req: BookRequest):
     if len(req.students) != required_children:
         raise HTTPException(status_code=400, detail=f"The {pkg_key.title()} package requires verifying exactly {required_children} student(s).")
     
+    raw_phone = req.parent_phone or req.phone or ""
+    parent_phone_clean = re.sub(r"\D", "", raw_phone)[-10:]
+    if len(parent_phone_clean) != 10:
+        raise HTTPException(status_code=400, detail="Please provide a valid 10-digit mobile number.")
+
+    parent_email_val = (req.parent_email or req.email or "").strip()
+
     verified_students = []
     for s in req.students:
-        student = await _find_roster_student(s.admission_no)
+        if isinstance(s, dict):
+            adm_val = str(s.get("admission_no") or s.get("id") or "").strip()
+        elif hasattr(s, "admission_no"):
+            adm_val = str(s.admission_no).strip()
+        elif isinstance(s, str):
+            adm_val = s.strip()
+        else:
+            adm_val = str(s).strip()
+
+        if not adm_val:
+            raise HTTPException(status_code=400, detail="Student admission number is required.")
+
+        student = await _find_roster_student(adm_val)
         if not student:
-            raise HTTPException(status_code=404, detail=f"Student with admission number {s.admission_no} not found.")
+            raise HTTPException(status_code=404, detail=f"Student with admission number {adm_val} not found.")
             
         # Check if already booked
         existing_booking = await db.navrang_bookings.find_one({
@@ -209,8 +232,8 @@ async def book_tickets(req: BookRequest):
         "price": pkg_info["price"],
         "students": verified_students,
         "parent_name": req.parent_name.strip(),
-        "parent_phone": re.sub(r"\D", "", req.parent_phone)[-10:],
-        "parent_email": (req.parent_email or "").strip(),
+        "parent_phone": parent_phone_clean,
+        "parent_email": parent_email_val,
         "payment_status": "pending",
         "entry_status": "not_entered",
         "created_at": now_iso()
