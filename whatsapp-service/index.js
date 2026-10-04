@@ -77,8 +77,21 @@ function cleanAuthDir() {
   for (const p of paths) {
     try {
       if (fs.existsSync(p)) {
-        fs.rmSync(p, { recursive: true, force: true });
-        console.log("[WhatsApp] Wiped clean auth state directory:", p);
+        const stat = fs.statSync(p);
+        if (stat.isDirectory()) {
+          const files = fs.readdirSync(p);
+          for (const f of files) {
+            try {
+              fs.rmSync(path.join(p, f), { recursive: true, force: true });
+            } catch (err) {
+              console.warn(`[WhatsApp] Failed to delete ${f} in ${p}:`, err.message);
+            }
+          }
+        }
+        try {
+          fs.rmSync(p, { recursive: true, force: true });
+        } catch { /* ok if mount point or busy */ }
+        console.log("[WhatsApp] Wiped clean auth state directory contents:", p);
       }
     } catch (e) {
       console.warn("[WhatsApp] Could not clean auth state at:", p, e.message);
@@ -86,7 +99,11 @@ function cleanAuthDir() {
   }
   const resolved = path.resolve(AUTH_DIR);
   if (!fs.existsSync(resolved)) {
-    fs.mkdirSync(resolved, { recursive: true });
+    try {
+      fs.mkdirSync(resolved, { recursive: true });
+    } catch (e) {
+      console.warn("[WhatsApp] Could not recreate AUTH_DIR:", e.message);
+    }
   }
 }
 
