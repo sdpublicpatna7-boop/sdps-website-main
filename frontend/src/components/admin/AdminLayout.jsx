@@ -27,6 +27,12 @@ const NAV_CATEGORIES = [
     end: true,
   },
   {
+    type: "single",
+    to: "/admin/navrang",
+    label: "🎆 Navrang 2026",
+    icon: PartyPopper,
+  },
+  {
     id: "content",
     label: "Content & Media",
     icon: Newspaper,

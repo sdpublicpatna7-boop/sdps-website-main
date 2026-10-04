@@ -16,10 +16,26 @@ from motor.motor_asyncio import AsyncIOMotorClient
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
 
-# MongoDB connection
-mongo_url = os.environ["MONGO_URL"]
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ["DB_NAME"]]
+# MongoDB connection (with in-memory fallback if local daemon is not running)
+mongo_url = os.environ.get("MONGO_URL", "")
+try:
+    if not mongo_url or "localhost" in mongo_url or "127.0.0.1" in mongo_url:
+        import socket
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(0.5)
+        is_open = s.connect_ex(('localhost', 27017)) == 0
+        s.close()
+        if is_open:
+            client = AsyncIOMotorClient(mongo_url)
+        else:
+            from mongomock_motor import AsyncMongoMockClient
+            client = AsyncMongoMockClient()
+    else:
+        client = AsyncIOMotorClient(mongo_url)
+except Exception:
+    from mongomock_motor import AsyncMongoMockClient
+    client = AsyncMongoMockClient()
+db = client[os.environ.get("DB_NAME", "sdps_portal")]
 
 # Logging
 logging.basicConfig(
@@ -255,11 +271,13 @@ async def seed_defaults():
 async def lifespan(app: FastAPI):
     from routes_whatsapp import init_db as init_wa, run_daily_birthday_campaign_loop
     from message_logger import init_db as init_msg
+    from routes_navrang import init_db as init_navrang
     init_public(db)
     init_admin(db)
     init_qp(db)
     init_wa(db)
     init_msg(db)
+    init_navrang(db)
     await seed_defaults()
     logger.info("SDPS backend ready")
     ka_task = asyncio.create_task(_keepalive_loop())
@@ -364,6 +382,8 @@ app.include_router(elections_router)
 from routes_audio import audio_router, public_audio_router
 app.include_router(audio_router)
 app.include_router(public_audio_router)
+from routes_navrang import navrang_router
+app.include_router(navrang_router)
 
 # Wire up rate limiters (slowapi requires app.state.limiter)
 from slowapi import _rate_limit_exceeded_handler

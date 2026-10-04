@@ -5,8 +5,15 @@ import { createClient } from "@supabase/supabase-js";
 const useSupabase = false;
 export let supabase = null;
 
+const isLocalhost = typeof window !== "undefined" && (
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1" ||
+  window.location.hostname.endsWith(".localhost")
+);
+
 // Candidate backend bases, in priority order
 const RAW_BASES = [
+  isLocalhost ? (process.env.REACT_APP_BACKEND_URL || "http://localhost:8000") : null,
   "https://api.sdpublic.org",
   process.env.REACT_APP_BACKEND_URL,
   process.env.REACT_APP_BACKEND_FALLBACK,
@@ -20,6 +27,10 @@ const DEFAULT_BASE = BASES[0] || "";
 function pinnedBase() {
   try {
     const p = sessionStorage.getItem("sdps_api_base");
+    if (isLocalhost && p && !p.includes("localhost") && !p.includes("127.0.0.1")) {
+      sessionStorage.removeItem("sdps_api_base");
+      return null;
+    }
     return p && BASES.includes(p) ? p : null;
   } catch {
     return null;

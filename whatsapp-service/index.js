@@ -37,6 +37,7 @@ const useMultiFileAuthState = baileysAll.useMultiFileAuthState || baileysAll.def
 const makeCacheableSignalKeyStore = baileysAll.makeCacheableSignalKeyStore || baileysAll.default?.makeCacheableSignalKeyStore || baileys.makeCacheableSignalKeyStore;
 const DisconnectReason = baileysAll.DisconnectReason || baileysAll.default?.DisconnectReason || baileys.DisconnectReason;
 const fetchLatestBaileysVersion = baileysAll.fetchLatestBaileysVersion || baileysAll.default?.fetchLatestBaileysVersion || baileys.fetchLatestBaileysVersion;
+const fetchLatestWaWebVersion = baileysAll.fetchLatestWaWebVersion || baileysAll.default?.fetchLatestWaWebVersion || baileys.fetchLatestWaWebVersion;
 const Browsers = baileysAll.Browsers || baileysAll.default?.Browsers || baileys.Browsers;
 
 const PORT = process.env.PORT || 3001;
@@ -83,6 +84,10 @@ function cleanAuthDir() {
       console.warn("[WhatsApp] Could not clean auth state at:", p, e.message);
     }
   }
+  const resolved = path.resolve(AUTH_DIR);
+  if (!fs.existsSync(resolved)) {
+    fs.mkdirSync(resolved, { recursive: true });
+  }
 }
 
 /** Normalise an Indian-style phone number to a WhatsApp JID. */
@@ -115,38 +120,37 @@ async function startSock() {
 
     const resolvedAuthDir = path.resolve(AUTH_DIR);
 
-    // If an unregistered/stale session exists on disk, wipe it clean to prevent signature mismatch
-    const credsFile = path.join(resolvedAuthDir, "creds.json");
-    if (fs.existsSync(credsFile)) {
-      try {
-        const rawCreds = JSON.parse(fs.readFileSync(credsFile, "utf-8"));
-        if (!rawCreds.registered) {
-          console.log("[WhatsApp] Found unregistered/stale auth state on startup. Cleaning directory for fresh linking...");
-          cleanAuthDir();
-        }
-      } catch (e) {
-        cleanAuthDir();
-      }
-    }
-
     if (!fs.existsSync(resolvedAuthDir)) {
       fs.mkdirSync(resolvedAuthDir, { recursive: true });
     }
 
     const { state, saveCreds } = await useMultiFileAuthState(resolvedAuthDir);
 
-    let version = [2, 3000, 1015901307];
+    let version = [2, 3000, 1021422409];
     try {
-      if (typeof fetchLatestBaileysVersion === "function") {
+      if (typeof fetchLatestWaWebVersion === "function") {
+        const v = await fetchLatestWaWebVersion();
+        if (v?.version) {
+          version = v.version;
+          console.log("[WhatsApp] Using latest WhatsApp Web version:", version);
+        }
+      } else if (typeof fetchLatestBaileysVersion === "function") {
         const v = await fetchLatestBaileysVersion();
-        if (v?.version) version = v.version;
+        if (v?.version) {
+          version = v.version;
+          console.log("[WhatsApp] Using latest Baileys version:", version);
+        }
       }
     } catch (e) {
       console.warn("[WhatsApp] Version fetch fallback, using default version:", version, e.message);
     }
 
-    // Standard Ubuntu/Chrome browser identity matches official Baileys tested pair profile
-    const browserConfig = Browsers?.ubuntu ? Browsers.ubuntu("Chrome") : ["Ubuntu", "Chrome", "22.04.4"];
+    // Standard Desktop browser identity matches official Baileys tested pair profile
+    const browserConfig = Browsers?.macOS
+      ? Browsers.macOS("Desktop")
+      : Browsers?.ubuntu
+        ? Browsers.ubuntu("Chrome")
+        : ["Mac OS", "Desktop", "14.4.1"];
 
     sock = makeWASocket({
       version,
@@ -169,7 +173,13 @@ async function startSock() {
       getMessage: async () => ({ conversation: "" }),
     });
 
-    sock.ev.on("creds.update", saveCreds);
+    sock.ev.on("creds.update", async () => {
+      try {
+        await saveCreds();
+      } catch (err) {
+        console.error("[WhatsApp] Error saving credentials:", err.message);
+      }
+    });
 
     sock.ev.on("connection.update", async (update) => {
       const { connection, lastDisconnect, qr } = update;
@@ -204,23 +214,28 @@ async function startSock() {
           return;
         }
 
-        const boom = new Boom(lastDisconnect?.error);
-        const statusCode = boom?.output?.statusCode || lastDisconnect?.error?.output?.statusCode;
-        const isLoggedOut = statusCode === DisconnectReason.loggedOut;
+        const err = lastDisconnect?.error;
+        const statusCode = err?.output?.statusCode
+          || err?.statusCode
+          || err?.data?.statusCode
+          || (err?.message?.includes("515") ? 515 : null);
 
-        console.log(`[WhatsApp] Connection closed. StatusCode: ${statusCode} (loggedOut=${isLoggedOut})`);
+        const isLoggedOut = statusCode === DisconnectReason.loggedOut || statusCode === 401;
+        const isRestart = statusCode === DisconnectReason.restartRequired || statusCode === 515;
+
+        console.log(`[WhatsApp] Connection closed. StatusCode: ${statusCode} (loggedOut=${isLoggedOut}, restartRequired=${isRestart})`);
 
         starting = false;
 
         if (isLoggedOut) {
-          console.log("[WhatsApp] Device was logged out. Cleaning auth directory and generating fresh session...");
+          console.log("[WhatsApp] Device was logged out (code 401). Cleaning auth directory and generating fresh session...");
           cleanAuthDir();
           currentQR = null;
           await sleep(2000);
           startSock();
-        } else if (statusCode === DisconnectReason.restartRequired || statusCode === 515) {
-          console.log("[WhatsApp] Restart required (handshake/pairing completed). Restarting socket with saved creds...");
-          await sleep(1000);
+        } else if (isRestart) {
+          console.log("[WhatsApp] Restart required (code 515: pairing handshake completed). Preserving credentials and restarting socket in 2s...");
+          await sleep(2000);
           startSock();
         } else {
           console.log(`[WhatsApp] Connection dropped (status code: ${statusCode}). Reconnecting in 3s...`);

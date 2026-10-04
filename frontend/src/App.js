@@ -122,6 +122,12 @@ const AdminElections = lazy(() => import("@/pages/admin/AdminElections"));
 const AdminElectionsResults = lazy(() => import("@/pages/admin/AdminElectionsResults"));
 const AdminElectionsScheduler = lazy(() => import("@/pages/admin/AdminElectionsScheduler"));
 
+// Navrang 2026 Event
+const Navrang = lazy(() => import("@/pages/public/Navrang"));
+const NavrangBook = lazy(() => import("@/pages/public/NavrangBook"));
+const NavrangMyTicket = lazy(() => import("@/pages/public/NavrangMyTicket"));
+const AdminNavrang = lazy(() => import("@/pages/admin/special/AdminNavrang"));
+
 function AdminLoading() {
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 text-white">
@@ -173,6 +179,13 @@ function MainApp() {
       <Route path="/photos/:slug" element={<GDriveFolderPage />} />
       <Route path="/drive/:slug" element={<GDriveFolderPage />} />
       <Route path="/p/:slug" element={<GDriveFolderPage />} />
+
+      {/* Navrang 2026 Dandiya Event (Standalone festive experience) */}
+      <Route path="/navrang" element={<Suspense fallback={<PublicLoading />}><Navrang /></Suspense>} />
+      <Route path="/navrang/book" element={<Suspense fallback={<PublicLoading />}><NavrangBook /></Suspense>} />
+      <Route path="/navrang/my-ticket" element={<Suspense fallback={<PublicLoading />}><NavrangMyTicket /></Suspense>} />
+      <Route path="/book" element={<Suspense fallback={<PublicLoading />}><NavrangBook /></Suspense>} />
+      <Route path="/my-ticket" element={<Suspense fallback={<PublicLoading />}><NavrangMyTicket /></Suspense>} />
 
       {/* Public */}
       <Route element={<PublicLayout />}>
@@ -280,6 +293,7 @@ function MainApp() {
         <Route path="holiday-homework" element={<AdminHolidayHomework />} />
         <Route path="staff-users" element={<AdminStaffUsers />} />
         <Route path="maps-review" element={<AdminMapsReview />} />
+        <Route path="navrang" element={<Suspense fallback={<AdminLoading />}><AdminNavrang /></Suspense>} />
       </Route>
     </Routes>
   );
@@ -293,6 +307,24 @@ function App() {
     window.location.hostname.startsWith("audio.")
   );
 
+  const isNavrangSubdomain = typeof window !== "undefined" &&
+    window.location.hostname.startsWith("navrang.");
+
+  const renderApp = () => {
+    if (isBroadcastingSubdomain) return <BroadcastingApp />;
+    if (isNavrangSubdomain) return (
+      <Suspense fallback={<PublicLoading />}>
+        <Routes>
+          <Route path="/" element={<Navrang />} />
+          <Route path="/book" element={<NavrangBook />} />
+          <Route path="/my-ticket" element={<NavrangMyTicket />} />
+          <Route path="*" element={<Navrang />} />
+        </Routes>
+      </Suspense>
+    );
+    return <MainApp />;
+  };
+
   return (
     <div className="App">
       <HelmetProvider>
@@ -300,7 +332,7 @@ function App() {
           <BrowserRouter>
             <ErrorBoundary>
               <RouteSEOManager />
-              {isBroadcastingSubdomain ? <BroadcastingApp /> : <MainApp />}
+              {renderApp()}
             </ErrorBoundary>
           </BrowserRouter>
         </AuthProvider>
