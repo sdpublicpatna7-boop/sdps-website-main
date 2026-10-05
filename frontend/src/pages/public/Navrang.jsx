@@ -148,6 +148,9 @@ export default function Navrang() {
       <Helmet>
         <title>Navrang 2026 | Grand Dandiya & Durga Puja Celebration | S.D. Public School</title>
         <meta name="description" content="Join S.D. Public School for Navrang 2026 - The grandest Dandiya Raas, Garba & Durga Puja celebration night in Patna." />
+        <meta property="og:title" content="Navrang 2026 | Grand Dandiya & Durga Puja Celebration" />
+        <meta property="og:description" content="Join S.D. Public School for Navrang 2026 - The grandest Dandiya Raas, Garba & Durga Puja celebration night in Patna." />
+        <meta property="og:image" content="https://sdpublic.org/navrang-hero-bg.jpg" />
       </Helmet>
 
       {/* Floating Canvas Animation (Marigold Flower Petals & Golden Sparkles) */}
@@ -158,14 +161,25 @@ export default function Navrang() {
 
       {/* Hero Section */}
       <section className="relative flex items-center justify-center py-10 sm:py-14 min-h-[calc(100vh-7.5rem)] overflow-hidden">
-        {/* Background Deep Festive Gradients */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-950 via-slate-950 to-black z-0"></div>
-        <div className="absolute top-0 left-1/4 w-[420px] h-[420px] bg-gradient-to-tr from-fuchsia-600/25 to-amber-500/20 rounded-full blur-[130px] pointer-events-none"></div>
-        <div className="absolute bottom-0 right-1/4 w-[420px] h-[420px] bg-gradient-to-br from-amber-600/25 to-rose-600/20 rounded-full blur-[130px] pointer-events-none"></div>
+        {/* Full-Bleed Festive Artwork Hero Background */}
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          <img
+            src="/navrang-hero-bg.jpg"
+            alt="Navrang 2026 Dandiya Night"
+            className="w-full h-full object-cover object-center scale-105 filter brightness-[0.42] contrast-[1.12] saturate-[1.2]"
+          />
+          {/* Gradients ensuring smooth transition from header and toward bottom section */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-purple-950/45 to-slate-950"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-black/40 to-black/85"></div>
+        </div>
+
+        {/* Ambient Glows */}
+        <div className="absolute top-0 left-1/4 w-[420px] h-[420px] bg-gradient-to-tr from-fuchsia-600/20 to-amber-500/15 rounded-full blur-[140px] pointer-events-none"></div>
+        <div className="absolute bottom-0 right-1/4 w-[420px] h-[420px] bg-gradient-to-br from-amber-600/20 to-rose-600/15 rounded-full blur-[140px] pointer-events-none"></div>
 
         {/* Sacred Spinning Rangoli Mandala — centered behind the content */}
         <div className="absolute inset-0 flex items-center justify-center z-0 pointer-events-none">
-          <RangoliMandala size={600} opacity={0.3} />
+          <RangoliMandala size={600} opacity={0.22} />
         </div>
 
         <div className="relative z-20 w-full max-w-4xl mx-auto px-4 flex flex-col items-center text-center">

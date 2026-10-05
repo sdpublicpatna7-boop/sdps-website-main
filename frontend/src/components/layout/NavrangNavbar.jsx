@@ -142,13 +142,13 @@ export default function NavrangNavbar({ activePage = "home" }) {
           <Link to={resolvePath("/")} className="flex items-center gap-3 group">
             <div className="w-12 h-12 rounded-full ring-2 ring-brand-gold/50 overflow-hidden p-0.5 bg-white flex items-center justify-center relative shrink-0 shadow-sm transition-transform group-hover:scale-105">
               <img
-                src="/logo-original.png"
+                src="https://res.cloudinary.com/drx3kb809/image/upload/q_auto,f_auto,w_120/v1782313772/sdps/misc/hffxigjkpw7cbc7cmdm5.jpg"
                 alt="S.D. Public School"
                 onError={(e) => {
                   e.target.onerror = null;
-                  e.target.src = "/logo192.png";
+                  e.target.src = "/navrang-logo.png";
                 }}
-                className="w-full h-full object-cover rounded-full"
+                className="w-full h-full object-contain rounded-full"
               />
             </div>
             <div className="leading-tight">
