@@ -5,7 +5,7 @@ import {
   CheckCircle2, XCircle, AlertCircle, Clock, ChevronLeft, 
   ChevronRight, LogIn, Save, GraduationCap, UploadCloud, 
   Trash2, FileSpreadsheet, Copy, Check, RefreshCw, AlertTriangle,
-  Smartphone, Filter, Pencil, Plus, X
+  Smartphone, Filter, Pencil, Plus, X, Sparkles
 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import * as XLSX from 'xlsx';
