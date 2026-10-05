@@ -271,7 +271,7 @@ async def seed_defaults():
 async def lifespan(app: FastAPI):
     from routes_whatsapp import init_db as init_wa, run_daily_birthday_campaign_loop
     from message_logger import init_db as init_msg
-    from routes_navrang import init_db as init_navrang
+    from routes_navrang import init_db as init_navrang, seed_navrang_defaults
     init_public(db)
     init_admin(db)
     init_qp(db)
@@ -279,6 +279,7 @@ async def lifespan(app: FastAPI):
     init_msg(db)
     init_navrang(db)
     await seed_defaults()
+    await seed_navrang_defaults()
     logger.info("SDPS backend ready")
     ka_task = asyncio.create_task(_keepalive_loop())
     bday_task = asyncio.create_task(run_daily_birthday_campaign_loop())
@@ -345,7 +346,16 @@ if not _cors_origins_raw:
         "Wildcard '*' is not allowed — it disables credential security."
     )
 _cors_origins = [o.strip() for o in _cors_origins_raw.split(",") if o.strip()]
-for sub in ["https://boardcasting.sdpublic.org", "https://broadcasting.sdpublic.org", "https://broadcast.sdpublic.org", "https://audio.sdpublic.org"]:
+for sub in [
+    "https://boardcasting.sdpublic.org", 
+    "https://broadcasting.sdpublic.org", 
+    "https://broadcast.sdpublic.org", 
+    "https://audio.sdpublic.org",
+    "https://navrang.sdpublic.org",
+    "https://www.sdpublic.org",
+    "http://navrang.localhost:3000",
+    "http://navrang.localhost:8000"
+]:
     if sub not in _cors_origins:
         _cors_origins.append(sub)
 
@@ -354,7 +364,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
     allow_origins=_cors_origins,
-    allow_origin_regex=r"https://.*\.sdpublic\.org",
+    allow_origin_regex=r"^https?://([a-zA-Z0-9_-]+\.)?(sdpublic\.org|localhost|127\.0\.0\.1)(:[0-9]+)?$",
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -365,7 +375,7 @@ app.add_middleware(SecurityHeadersMiddleware)
 async def global_options_handler(full_path: str, request: Request):
     origin = request.headers.get("origin", "")
     response = Response(status_code=200)
-    if origin and ("sdpublic.org" in origin or origin in _cors_origins or origin.startswith("http://localhost")):
+    if origin and ("sdpublic.org" in origin or "localhost" in origin or "127.0.0.1" in origin or origin in _cors_origins):
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Credentials"] = "true"
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"

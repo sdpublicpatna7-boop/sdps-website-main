@@ -24,42 +24,51 @@ def init_db(database):
     global db
     db = database
 
-async def _find_roster_student(adm_no: str):
-    if not adm_no:
+async def _lookup_in_collection(coll, raw: str, digits: str):
+    if coll is None:
         return None
-    raw = str(adm_no).strip()
-    digits = re.sub(r'\D', '', raw)
-
-    # 1. Exact match on raw string in dedicated navrang_roster
-    student = await db.navrang_roster.find_one({"admission_no": raw}, {"_id": 0})
+    # 1. Exact match on raw string
+    student = await coll.find_one({"admission_no": raw}, {"_id": 0})
     if student:
         return student
 
     # 2. Case-insensitive exact match
-    student = await db.navrang_roster.find_one({"admission_no": {"$regex": f"^{re.escape(raw)}$", "$options": "i"}}, {"_id": 0})
+    student = await coll.find_one({"admission_no": {"$regex": f"^{re.escape(raw)}$", "$options": "i"}}, {"_id": 0})
     if student:
         return student
 
     # 3. If raw doesn't start with SDPS, try adding SDPS (e.g. user entered "2" -> "SDPS2")
     if not raw.upper().startswith("SDPS"):
-        student = await db.navrang_roster.find_one({"admission_no": f"SDPS{raw}"}, {"_id": 0})
+        student = await coll.find_one({"admission_no": f"SDPS{raw}"}, {"_id": 0})
+        if student:
+            return student
+        student = await coll.find_one({"admission_no": {"$regex": f"^SDPS{re.escape(raw)}$", "$options": "i"}}, {"_id": 0})
         if student:
             return student
         if digits:
             digits_int = str(int(digits))
-            student = await db.navrang_roster.find_one({"admission_no": f"SDPS{digits_int}"}, {"_id": 0})
+            student = await coll.find_one({"admission_no": f"SDPS{digits_int}"}, {"_id": 0})
+            if student:
+                return student
+            student = await coll.find_one({"admission_no": {"$regex": f"^SDPS0*{digits_int}$", "$options": "i"}}, {"_id": 0})
             if student:
                 return student
 
     # 4. If raw starts with SDPS, try stripping it (e.g. user entered "SDPS2", roster stored "2")
     if raw.upper().startswith("SDPS"):
         stripped = raw[4:].strip().lstrip("-").lstrip("_")
-        student = await db.navrang_roster.find_one({"admission_no": stripped}, {"_id": 0})
+        student = await coll.find_one({"admission_no": stripped}, {"_id": 0})
+        if student:
+            return student
+        student = await coll.find_one({"admission_no": {"$regex": f"^{re.escape(stripped)}$", "$options": "i"}}, {"_id": 0})
         if student:
             return student
         if digits:
             digits_int = str(int(digits))
-            student = await db.navrang_roster.find_one({"admission_no": digits_int}, {"_id": 0})
+            student = await coll.find_one({"admission_no": digits_int}, {"_id": 0})
+            if student:
+                return student
+            student = await coll.find_one({"admission_no": {"$regex": f"^0*{digits_int}$", "$options": "i"}}, {"_id": 0})
             if student:
                 return student
 
@@ -67,11 +76,110 @@ async def _find_roster_student(adm_no: str):
     if digits:
         digits_int = str(int(digits))
         pattern = f"^(SDPS|sdps)?[\\s\\-_]*0*{digits_int}$"
-        student = await db.navrang_roster.find_one({"admission_no": {"$regex": pattern, "$options": "i"}}, {"_id": 0})
+        student = await coll.find_one({"admission_no": {"$regex": pattern, "$options": "i"}}, {"_id": 0})
         if student:
             return student
 
     return None
+
+async def _find_roster_student(adm_no: str):
+    if not adm_no or db is None:
+        return None
+    raw = str(adm_no).strip()
+    digits = re.sub(r'\D', '', raw)
+
+    # 1. Search in dedicated Dandiya roster first
+    try:
+        student = await _lookup_in_collection(db.navrang_roster, raw, digits)
+        if student:
+            return student
+    except Exception as e:
+        logger.warning(f"Error checking navrang_roster: {e}")
+
+    # 2. Fallback to main school apaar_roster
+    try:
+        student = await _lookup_in_collection(db.apaar_roster, raw, digits)
+        if student:
+            return student
+    except Exception as e:
+        logger.warning(f"Error checking apaar_roster fallback: {e}")
+
+    return None
+
+async def seed_navrang_defaults():
+    """Seed sample students for local dev/testing if both navrang_roster and apaar_roster are empty."""
+    if db is None:
+        return
+    try:
+        nav_count = await db.navrang_roster.count_documents({})
+        apaar_count = await db.apaar_roster.count_documents({})
+        if nav_count == 0 and apaar_count == 0:
+            sample_students = [
+                {
+                    "admission_no": "SDPS101",
+                    "student_name": "Surbhi",
+                    "class_name": "CLASS-III",
+                    "section": "A",
+                    "roll_no": "24",
+                    "father_name": "Sanjeet Kumar",
+                    "mother_name": "Nilu Kumari",
+                    "phone": "7488454722",
+                    "contact_no": "7488454722",
+                    "created_at": now_iso()
+                },
+                {
+                    "admission_no": "SDPS2",
+                    "student_name": "Aksh Chaudhary",
+                    "class_name": "CLASS-I",
+                    "section": "A",
+                    "roll_no": "08",
+                    "father_name": "Santosh Chaudhary",
+                    "mother_name": "Rupa Chaudahray",
+                    "phone": "9334120156",
+                    "contact_no": "9334120156",
+                    "created_at": now_iso()
+                },
+                {
+                    "admission_no": "SDPS8",
+                    "student_name": "Aarna Kashyap",
+                    "class_name": "CLASS-I",
+                    "section": "A",
+                    "roll_no": "5",
+                    "father_name": "Vicky Kumar",
+                    "mother_name": "Rinku Kumari",
+                    "phone": "8804145581",
+                    "contact_no": "8804145581",
+                    "created_at": now_iso()
+                },
+                {
+                    "admission_no": "SDPS13",
+                    "student_name": "Sanshkrita",
+                    "class_name": "CLASS-I",
+                    "section": "A",
+                    "roll_no": "31",
+                    "father_name": "Kameshwer Shah",
+                    "mother_name": "Sushma Devi",
+                    "phone": "8709912503",
+                    "contact_no": "8709912503",
+                    "created_at": now_iso()
+                },
+                {
+                    "admission_no": "SDPS15",
+                    "student_name": "Anurag Mehta",
+                    "class_name": "CLASS-I",
+                    "section": "A",
+                    "roll_no": "14",
+                    "father_name": "Amit Kumar",
+                    "mother_name": "Poonam Kumari",
+                    "phone": "9576224419",
+                    "contact_no": "9576224419",
+                    "created_at": now_iso()
+                },
+            ]
+            await db.navrang_roster.insert_many(sample_students)
+            logger.info(f"[SEED] Seeded {len(sample_students)} default sample students into navrang_roster for testing.")
+    except Exception as e:
+        logger.warning(f"[SEED] Could not seed navrang defaults: {e}")
 
 # Simple in-memory rate limiting for verify-student
 verify_rate_limits = {}
@@ -232,7 +340,18 @@ async def verify_student(req: StudentVerifyRequest, request: Request):
             detail=f"Student {student['admission_no']} ({registered_name}) already has an active booking ({existing.get('booking_id')}). Duplicate bookings for the same student are prohibited."
         )
     
-    phone_val = student.get("phone") or student.get("contact_no") or student.get("Contact_No") or ""
+    phone_val = (
+        student.get("phone") or 
+        student.get("contact_no") or 
+        student.get("Contact_No") or 
+        student.get("mobile") or 
+        ""
+    )
+    class_val = student.get("class_name") or student.get("Class") or student.get("class") or ""
+    sec_val = student.get("section") or student.get("Section") or ""
+    roll_val = student.get("roll_no") or student.get("Roll_no") or student.get("Roll No") or ""
+    father_val = student.get("father_name") or student.get("Father_Name") or student.get("father") or ""
+    mother_val = student.get("mother_name") or student.get("Mother_Name") or student.get("mother") or ""
 
     return {
         "status": "success",
@@ -241,11 +360,11 @@ async def verify_student(req: StudentVerifyRequest, request: Request):
             "name": registered_name,
             "student_name": registered_name,
             "admission_no": student.get("admission_no", clean_adm),
-            "class_name": student.get("class_name", ""),
-            "section": student.get("section", ""),
-            "roll_no": student.get("roll_no", ""),
-            "father_name": student.get("father_name", ""),
-            "mother_name": student.get("mother_name", ""),
+            "class_name": str(class_val).strip(),
+            "section": str(sec_val).strip(),
+            "roll_no": str(roll_val).strip(),
+            "father_name": str(father_val).strip(),
+            "mother_name": str(mother_val).strip(),
             "phone": str(phone_val).strip(),
             "contact_no": str(phone_val).strip()
         }
@@ -306,14 +425,21 @@ async def book_tickets(req: BookRequest):
         if existing_booking:
             raise HTTPException(status_code=400, detail=f"Student {student['admission_no']} already has an active booking ({existing_booking.get('booking_id')}). Duplicate bookings are prohibited.")
             
+        st_name = student.get("student_name") or student.get("name") or student.get("Name") or ""
+        c_name = student.get("class_name") or student.get("Class") or student.get("class") or ""
+        s_name = student.get("section") or student.get("Section") or ""
+        r_num = student.get("roll_no") or student.get("Roll_no") or student.get("Roll No") or ""
+        f_name = student.get("father_name") or student.get("Father_Name") or student.get("father") or ""
+        m_name = student.get("mother_name") or student.get("Mother_Name") or student.get("mother") or ""
+
         verified_students.append({
-            "admission_no": student["admission_no"],
-            "name": student.get("student_name", ""),
-            "class_name": student.get("class_name", ""),
-            "section": student.get("section", ""),
-            "roll_no": student.get("roll_no", ""),
-            "father_name": student.get("father_name", ""),
-            "mother_name": student.get("mother_name", "")
+            "admission_no": student.get("admission_no", adm_val),
+            "name": str(st_name).strip(),
+            "class_name": str(c_name).strip(),
+            "section": str(s_name).strip(),
+            "roll_no": str(r_num).strip(),
+            "father_name": str(f_name).strip(),
+            "mother_name": str(m_name).strip()
         })
 
     booking_id = f"NVR-2026-{''.join(random.choices(string.ascii_uppercase + string.digits, k=4))}"
