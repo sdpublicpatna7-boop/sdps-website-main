@@ -7,7 +7,8 @@ import {
   Trash2, FileSpreadsheet, Copy, Check, RefreshCw, AlertTriangle,
   Smartphone, Filter, Pencil, Plus, X, Sparkles,
   Camera, CameraOff, SwitchCamera, ScanLine, Volume2, VolumeX, Upload,
-  Flashlight, FlashlightOff, Maximize, Minimize, Ticket, ShieldCheck, UserCheck, Play, Pause, PhoneCall
+  Flashlight, FlashlightOff, Maximize, Minimize, Ticket, ShieldCheck, UserCheck, Play, Pause, PhoneCall,
+  CreditCard, Lock, Eye, EyeOff
 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import * as XLSX from 'xlsx';
@@ -2385,6 +2386,7 @@ const SettingsTab = () => {
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showSecret, setShowSecret] = useState(false);
 
   useEffect(() => {
     fetchConfig();
@@ -2392,9 +2394,18 @@ const SettingsTab = () => {
 
   const fetchConfig = async () => {
     try {
-      const { data } = await api.get('/navrang/config');
+      let res;
+      try {
+        res = await api.get('/navrang/admin/config');
+      } catch (e) {
+        res = await api.get('/navrang/config');
+      }
+      const data = res.data;
       if (Array.isArray(data.rules)) {
         data.rules = data.rules.join('\n');
+      }
+      if (data.razorpay_key_secret_masked) {
+        data.razorpay_key_secret = data.razorpay_key_secret_masked;
       }
       setConfig(data);
     } catch (error) {
@@ -2410,7 +2421,10 @@ const SettingsTab = () => {
         rules: '',
         upi_id: 'sdpublicpatna@sbi',
         upi_merchant_name: 'S.D. Public School, Patna',
-        upi_instructions: ''
+        upi_instructions: '',
+        razorpay_enabled: true,
+        razorpay_key_id: '',
+        razorpay_key_secret: ''
       });
     } finally {
       setLoading(false);
@@ -2426,7 +2440,8 @@ const SettingsTab = () => {
         payload.rules = payload.rules.split('\n').filter(r => r.trim());
       }
       await api.put('/navrang/admin/config', payload);
-      toast.success('Event & UPI settings saved successfully');
+      toast.success('Navrang event & 2nd Razorpay settings saved successfully');
+      fetchConfig();
     } catch (error) {
       toast.error('Failed to save settings');
     } finally {
@@ -2448,11 +2463,95 @@ const SettingsTab = () => {
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 max-w-4xl space-y-6">
       <div>
-        <h3 className="font-headline text-xl font-bold text-brand-ink">Event & UPI Gateway Settings</h3>
-        <p className="text-slate-500 text-xs md:text-sm mt-0.5">Configure event schedule, ticketing rules, and custom school UPI payment details.</p>
+        <h3 className="font-headline text-xl font-bold text-brand-ink">Event & Payment Gateway Settings</h3>
+        <p className="text-slate-500 text-xs md:text-sm mt-0.5">Configure event schedule, ticketing rules, dedicated 2nd Razorpay account, and UPI details.</p>
       </div>
       
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Dedicated 2nd Razorpay Account Section (Navrang Only) */}
+        <div className="p-5 rounded-2xl bg-gradient-to-r from-purple-50/90 via-indigo-50/60 to-purple-50/90 border-2 border-purple-300 space-y-4 shadow-xs">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-purple-700 text-white flex items-center justify-center shadow-xs">
+                <CreditCard className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                  <span>2nd Razorpay Account (Exclusive to Navrang)</span>
+                  {config.has_razorpay_key_secret || config.razorpay_key_id ? (
+                    <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-300">
+                      Configured
+                    </span>
+                  ) : (
+                    <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-300">
+                      Keys Needed
+                    </span>
+                  )}
+                </h4>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Dedicated payment gateway account used ONLY for Navrang pass bookings (separate from school admission/fee account).
+                </p>
+              </div>
+            </div>
+
+            {/* Toggle Razorpay Enabled */}
+            <label className="flex items-center gap-2 cursor-pointer bg-white px-3.5 py-1.5 rounded-xl border border-purple-200 shadow-2xs self-start sm:self-auto">
+              <input 
+                type="checkbox" 
+                name="razorpay_enabled"
+                checked={config.razorpay_enabled ?? true}
+                onChange={handleChange}
+                className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+              />
+              <span className="text-xs font-bold text-purple-900">Enable Razorpay</span>
+            </label>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Navrang Razorpay Key ID <span className="text-purple-700 font-mono">(rzp_live_... / rzp_test_...)</span>
+              </label>
+              <input 
+                type="text" 
+                name="razorpay_key_id" 
+                value={config.razorpay_key_id || ''} 
+                onChange={handleChange} 
+                placeholder="e.g. rzp_live_xxxxxxxxxxxxxx"
+                className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-mono focus:ring-2 focus:ring-purple-600 outline-none bg-white"
+              />
+              <p className="text-[11px] text-slate-400 mt-1">Can also be set in server environment as NAVRANG_RAZORPAY_KEY_ID.</p>
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <label className="text-xs font-semibold text-slate-700">
+                  Navrang Razorpay Key Secret
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowSecret(!showSecret)}
+                  className="text-[11px] text-purple-600 hover:text-purple-800 font-medium flex items-center gap-1"
+                >
+                  {showSecret ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                  {showSecret ? 'Hide' : 'Show'}
+                </button>
+              </div>
+              <div className="relative">
+                <input 
+                  type={showSecret ? "text" : "password"} 
+                  name="razorpay_key_secret" 
+                  value={config.razorpay_key_secret || ''} 
+                  onChange={handleChange} 
+                  placeholder={config.has_razorpay_key_secret ? "•••••••••••• (Configured — leave blank to keep)" : "Enter 2nd Razorpay Key Secret"}
+                  className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-mono focus:ring-2 focus:ring-purple-600 outline-none bg-white pr-9"
+                />
+                <Lock className="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none" />
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1">Stored securely. Can also be set in server environment as NAVRANG_RAZORPAY_KEY_SECRET.</p>
+            </div>
+          </div>
+        </div>
         {/* UPI Gateway Section */}
         <div className="p-5 rounded-2xl bg-purple-50/60 border border-purple-200 space-y-4">
           <div className="flex items-center gap-2">

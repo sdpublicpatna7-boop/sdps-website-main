@@ -1,10 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Ticket, QrCode, Share2, AlertCircle, Loader2 } from 'lucide-react';
+import { Search, Ticket, QrCode, Share2, AlertCircle, Loader2, Zap, CheckCircle2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
 import api from '@/lib/api';
 import NavrangNavbar from '@/components/layout/NavrangNavbar';
+
+function loadRazorpay() {
+  return new Promise((resolve) => {
+    if (typeof window !== 'undefined' && window.Razorpay) return resolve(true);
+    const s = document.createElement('script');
+    s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    s.onload = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.body.appendChild(s);
+  });
+}
 
 export default function NavrangMyTicket() {
   const [searchInput, setSearchInput] = useState('');
@@ -13,6 +25,22 @@ export default function NavrangMyTicket() {
   const [error, setError] = useState(null);
   const [tickets, setTickets] = useState([]);
   const [searched, setSearched] = useState(false);
+  const [razorpayEnabled, setRazorpayEnabled] = useState(false);
+  const [payingBookingId, setPayingBookingId] = useState(null);
+
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const { data } = await api.get('/navrang/config');
+        if (data.razorpay_enabled && data.razorpay_key_id) {
+          setRazorpayEnabled(true);
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+    fetchConfig();
+  }, []);
 
   const autoFetchTicket = async (type, query) => {
     if (!query) return;
@@ -79,6 +107,75 @@ export default function NavrangMyTicket() {
       case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'cash': return 'bg-blue-100 text-blue-800 border-blue-200';
       default: return 'bg-slate-100 text-slate-800 border-slate-200';
+    }
+  };
+
+  const handlePayNow = async (ticket) => {
+    try {
+      setPayingBookingId(ticket.booking_id);
+      const sdkReady = await loadRazorpay();
+      if (!sdkReady) {
+        toast.error('Could not load payment gateway. Please check your connection.');
+        setPayingBookingId(null);
+        return;
+      }
+
+      const orderRes = await api.post('/navrang/create-order', { booking_id: ticket.booking_id });
+      const order = orderRes.data;
+
+      const rzpOptions = {
+        key: order.key_id,
+        amount: order.amount,
+        currency: order.currency || 'INR',
+        name: 'S.D. Public School',
+        description: `Navrang 2026 Pass - ${ticket.booking_id}`,
+        order_id: order.order_id,
+        prefill: {
+          name: ticket.parent_name || '',
+          contact: ticket.parent_phone || ticket.phone || '',
+          email: ticket.parent_email || ticket.email || ''
+        },
+        theme: {
+          color: '#581C87'
+        },
+        handler: async (resp) => {
+          try {
+            setPayingBookingId(ticket.booking_id);
+            await api.post('/navrang/verify-payment', {
+              booking_id: ticket.booking_id,
+              razorpay_order_id: resp.razorpay_order_id,
+              razorpay_payment_id: resp.razorpay_payment_id,
+              razorpay_signature: resp.razorpay_signature
+            });
+
+            toast.success('Payment verified! Your pass is active.');
+            setTickets(prev => prev.map(t => 
+              t.booking_id === ticket.booking_id 
+                ? { ...t, payment_status: 'paid', payment_ref: resp.razorpay_payment_id } 
+                : t
+            ));
+          } catch (verErr) {
+            toast.error(verErr.response?.data?.detail || 'Payment verification failed.');
+          } finally {
+            setPayingBookingId(null);
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setPayingBookingId(null);
+          }
+        }
+      };
+
+      const rzp = new window.Razorpay(rzpOptions);
+      rzp.on('payment.failed', function (resp) {
+        toast.error(`Payment failed: ${resp.error?.description || 'Declined'}`);
+        setPayingBookingId(null);
+      });
+      rzp.open();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to initiate online payment.');
+      setPayingBookingId(null);
     }
   };
 
@@ -225,6 +322,50 @@ export default function NavrangMyTicket() {
                           <span className="font-semibold text-purple-900">UPI Ref / UTR:</span>
                           <span className="font-mono font-bold text-purple-800">{ticket.payment_ref}</span>
                         </div>
+                      )}
+
+                      {/* Payment Status Action Bar */}
+                      {ticket.payment_status?.toLowerCase() === 'paid' ? (
+                        <div className="mt-3 p-2.5 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-900 flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 font-semibold">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                            <span>Entry Pass Verified & Active</span>
+                          </div>
+                          <span className="text-[11px] font-mono text-emerald-800">
+                            {ticket.payment_ref}
+                          </span>
+                        </div>
+                      ) : (
+                        razorpayEnabled && (
+                          <div className="mt-3 p-3 bg-gradient-to-r from-purple-50 via-amber-50/40 to-purple-50 rounded-xl border border-purple-200 flex flex-col sm:flex-row items-center justify-between gap-2.5 shadow-xs">
+                            <div className="text-xs text-slate-800">
+                              <span className="font-bold text-purple-900 flex items-center gap-1.5">
+                                <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-400" /> Payment Pending • Instant Online Pay
+                              </span>
+                              <span className="text-slate-600 text-[11px] block mt-0.5">
+                                Pay ₹{ticket.price || 299} via UPI or Cards to instantly activate this pass.
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handlePayNow(ticket)}
+                              disabled={payingBookingId === ticket.booking_id}
+                              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md cursor-pointer disabled:opacity-60 shrink-0 transition-all"
+                            >
+                              {payingBookingId === ticket.booking_id ? (
+                                <>
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  <span>Opening...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
+                                  <span>Pay ₹{ticket.price || 299} Online</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        )
                       )}
                     </div>
                   </div>

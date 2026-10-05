@@ -11,7 +11,9 @@ import string
 import csv
 import io
 import time
+import os
 import logging
+import razorpay
 
 from auth import get_superadmin, get_current_admin, TokenData
 from models import now_iso, new_id
@@ -275,6 +277,39 @@ class StudentRosterRecord(BaseModel):
     phone: Optional[str] = ""
     contact_no: Optional[str] = ""
 
+# --- 2nd Razorpay Account (Dedicated Exclusively to Navrang) ---
+async def _get_navrang_razorpay_config():
+    """
+    Returns (key_id, key_secret, is_enabled) for the 2nd Razorpay account dedicated to Navrang only.
+    Priority:
+    1. db.navrang_config ("razorpay_key_id", "razorpay_key_secret", "razorpay_enabled")
+    2. Environment variables NAVRANG_RAZORPAY_KEY_ID & NAVRANG_RAZORPAY_KEY_SECRET
+    """
+    if db is None:
+        return "", "", False
+    try:
+        cfg = await db.navrang_config.find_one({}, {"_id": 0}) or {}
+    except Exception:
+        cfg = {}
+
+    key_id = (cfg.get("razorpay_key_id") or os.environ.get("NAVRANG_RAZORPAY_KEY_ID") or "").strip()
+    key_secret = (cfg.get("razorpay_key_secret") or os.environ.get("NAVRANG_RAZORPAY_KEY_SECRET") or "").strip()
+    
+    # If explicitly toggled off in config, disabled. Otherwise enabled if both key_id and secret exist.
+    is_enabled = bool(cfg.get("razorpay_enabled", True) and key_id and key_secret)
+    return key_id, key_secret, is_enabled
+
+async def _get_navrang_razorpay_client():
+    key_id, key_secret, enabled = await _get_navrang_razorpay_config()
+    if not enabled or not key_id or not key_secret:
+        return None, None
+    try:
+        client = razorpay.Client(auth=(key_id, key_secret))
+        return client, key_id
+    except Exception as e:
+        logger.error(f"Failed to initialize Navrang 2nd Razorpay client: {e}")
+        return None, None
+
 # --- Public Endpoints ---
 
 DEFAULT_PACKAGES = {
@@ -312,6 +347,14 @@ async def get_config():
         config["upi_merchant_name"] = "S.D. Public School, Patna"
     if not config.get("upi_instructions"):
         config["upi_instructions"] = "1. Scan the QR code or tap 'Pay via Any UPI App' (GPay, PhonePe, Paytm, BHIM).\n2. Pay the exact pass amount.\n3. Enter the 12-digit UPI UTR / Transaction Reference Number from your payment receipt."
+    
+    # 2nd Razorpay Account (Navrang Only) public properties
+    key_id, _, is_enabled = await _get_navrang_razorpay_config()
+    config["razorpay_enabled"] = is_enabled
+    config["razorpay_key_id"] = key_id
+    if "razorpay_key_secret" in config:
+        del config["razorpay_key_secret"]
+
     config["packages"] = DEFAULT_PACKAGES
     return config
 
@@ -460,9 +503,13 @@ async def book_tickets(req: BookRequest):
 
     qr_token = str(uuid.uuid4())
     
+    is_razorpay = "razorpay" in (req.payment_method or "").lower()
     utr_val = (req.payment_ref or req.utr_number or "").strip()
     if not utr_val:
-        raise HTTPException(status_code=400, detail="Please provide the 12-digit UPI Transaction ID / UTR reference number.")
+        if is_razorpay:
+            utr_val = "pending_online_payment"
+        else:
+            raise HTTPException(status_code=400, detail="Please provide the 12-digit UPI Transaction ID / UTR reference number.")
 
     booking_doc = {
         "_id": new_id(),
@@ -484,58 +531,59 @@ async def book_tickets(req: BookRequest):
     
     await db.navrang_bookings.insert_one(booking_doc)
 
-    # Trigger transactional WhatsApp confirmation message
-    try:
-        student_lines = []
-        for s in verified_students:
-            s_name = s.get("name") or "Student"
-            s_adm = s.get("admission_no") or ""
-            s_cls = f"Class {s.get('class_name')} {s.get('section', '')}".strip() if s.get('class_name') else ""
-            line = f"• {s_name} (Adm: {s_adm})"
-            if s_cls:
-                line += f" - {s_cls}"
-            student_lines.append(line)
-        students_text = "\n".join(student_lines)
+    # Trigger transactional WhatsApp confirmation message for manual UPI
+    if not is_razorpay:
+        try:
+            student_lines = []
+            for s in verified_students:
+                s_name = s.get("name") or "Student"
+                s_adm = s.get("admission_no") or ""
+                s_cls = f"Class {s.get('class_name')} {s.get('section', '')}".strip() if s.get('class_name') else ""
+                line = f"• {s_name} (Adm: {s_adm})"
+                if s_cls:
+                    line += f" - {s_cls}"
+                student_lines.append(line)
+            students_text = "\n".join(student_lines)
 
-        pkg_title = pkg_info.get("name", f"{pkg_key.title()} Pass")
-        event_date = config.get("event_date", "15 Oct 2026")
-        event_time = config.get("event_time", "6:00 PM – 10:00 PM")
-        venue = config.get("venue", "S.D. Public School Main Campus, Patna")
-        ticket_link = f"https://navrang.sdpublic.org/my-ticket?booking_id={booking_id}"
+            pkg_title = pkg_info.get("name", f"{pkg_key.title()} Pass")
+            event_date = config.get("event_date", "15 Oct 2026")
+            event_time = config.get("event_time", "6:00 PM – 10:00 PM")
+            venue = config.get("venue", "S.D. Public School Main Campus, Patna")
+            ticket_link = f"https://navrang.sdpublic.org/my-ticket?booking_id={booking_id}"
 
-        wa_msg = (
-            f"🎉 *NAVRANG 2026 PASS BOOKING CONFIRMED!* 🎆\n"
-            f"*S.D. Public School, Patna*\n\n"
-            f"Dear *{booking_doc['parent_name']}*,\n"
-            f"Namaste! Your Navrang 2026 Dandiya & Durga Puja Celebration Night pass has been booked successfully.\n\n"
-            f"📋 *BOOKING DETAILS:*\n"
-            f"• *Booking ID:* {booking_id}\n"
-            f"• *Pass Package:* {pkg_title} (₹{pkg_info['price']})\n"
-            f"• *UPI UTR Number:* {utr_val}\n"
-            f"• *Payment Status:* Submitted (Pending Admin Approval)\n\n"
-            f"👨‍🎓 *STUDENT(S):*\n"
-            f"{students_text}\n\n"
-            f"🎟️ *ACCESS YOUR DIGITAL ENTRY PASS:*\n"
-            f"👉 {ticket_link}\n\n"
-            f"📍 *EVENT SCHEDULE:*\n"
-            f"• *Date & Time:* {event_date} | {event_time}\n"
-            f"• *Venue:* {venue}\n\n"
-            f"⚠️ *Important Entry Guidelines:*\n"
-            f"1. Please keep your QR pass handy on your mobile at the school entrance gate.\n"
-            f"2. Pass admits student(s) + 1 Mother and includes 1 pair of Dandiya sticks.\n"
-            f"3. Traditional festive attire is encouraged.\n\n"
-            f"📞 *School Desk:* +91 99551 90262\n"
-            f"— *S.D. Public School, Patna*"
-        )
+            wa_msg = (
+                f"🎉 *NAVRANG 2026 PASS BOOKING CONFIRMED!* 🎆\n"
+                f"*S.D. Public School, Patna*\n\n"
+                f"Dear *{booking_doc['parent_name']}*,\n"
+                f"Namaste! Your Navrang 2026 Dandiya & Durga Puja Celebration Night pass has been booked successfully.\n\n"
+                f"📋 *BOOKING DETAILS:*\n"
+                f"• *Booking ID:* {booking_id}\n"
+                f"• *Pass Package:* {pkg_title} (₹{pkg_info['price']})\n"
+                f"• *UPI UTR Number:* {utr_val}\n"
+                f"• *Payment Status:* Submitted (Pending Admin Approval)\n\n"
+                f"👨‍🎓 *STUDENT(S):*\n"
+                f"{students_text}\n\n"
+                f"🎟️ *ACCESS YOUR DIGITAL ENTRY PASS:*\n"
+                f"👉 {ticket_link}\n\n"
+                f"📍 *EVENT SCHEDULE:*\n"
+                f"• *Date & Time:* {event_date} | {event_time}\n"
+                f"• *Venue:* {venue}\n\n"
+                f"⚠️ *Important Entry Guidelines:*\n"
+                f"1. Please keep your QR pass handy on your mobile at the school entrance gate.\n"
+                f"2. Pass admits student(s) + 1 Mother and includes 1 pair of Dandiya sticks.\n"
+                f"3. Traditional festive attire is encouraged.\n\n"
+                f"📞 *School Desk:* +91 99551 90262\n"
+                f"— *S.D. Public School, Patna*"
+            )
 
-        from whatsapp_service import send_whatsapp_text
-        await send_whatsapp_text(
-            phone=booking_doc["parent_phone"],
-            message=wa_msg,
-            subject=f"Navrang 2026 Pass Confirmation - {booking_id}"
-        )
-    except Exception as wa_e:
-        logger.warning(f"Could not send WhatsApp booking message: {wa_e}")
+            from whatsapp_service import send_whatsapp_text
+            await send_whatsapp_text(
+                phone=booking_doc["parent_phone"],
+                message=wa_msg,
+                subject=f"Navrang 2026 Pass Confirmation - {booking_id}"
+            )
+        except Exception as wa_e:
+            logger.warning(f"Could not send WhatsApp booking message: {wa_e}")
     
     return {
         "booking_id": booking_id,
@@ -576,6 +624,162 @@ async def get_my_tickets(req: MyTicketsRequest):
     ).sort("created_at", -1)
     bookings = await cursor.to_list(length=None)
     return {"bookings": bookings}
+
+# --- 2nd Razorpay Payment Processing (Navrang Only) ---
+
+class NavrangCreateOrderRequest(BaseModel):
+    booking_id: str
+
+class NavrangVerifyPaymentRequest(BaseModel):
+    booking_id: str
+    razorpay_order_id: str
+    razorpay_payment_id: str
+    razorpay_signature: str
+
+async def _send_navrang_verified_whatsapp(booking: dict):
+    """Send immediate WhatsApp pass confirmation with live entry QR link."""
+    if not booking or not booking.get("parent_phone"):
+        return
+    booking_id = booking.get("booking_id")
+    try:
+        ticket_link = f"https://navrang.sdpublic.org/my-ticket?booking_id={booking_id}"
+        verified_wa_msg = (
+            f"✅ *PAYMENT VERIFIED — NAVRANG 2026 PASS ACTIVATED!* 🎟️\n"
+            f"*S.D. Public School, Patna*\n\n"
+            f"Dear *{booking.get('parent_name', 'Parent')}*,\n"
+            f"Your payment via *{booking.get('payment_method', 'Razorpay Online').upper()}* (Ref: {booking.get('payment_ref', 'N/A')}) for Navrang 2026 has been *VERIFIED & APPROVED*.\n\n"
+            f"🎫 *Booking ID:* {booking_id}\n"
+            f"✨ *Pass Status:* ACTIVE & READY FOR GATE ENTRY\n\n"
+            f"👉 *Open Your Verified Entry QR Pass:*\n"
+            f"{ticket_link}\n\n"
+            f"See you at the Navrang celebration! 🎆\n"
+            f"— *S.D. Public School, Patna*"
+        )
+        from whatsapp_service import send_whatsapp_text
+        await send_whatsapp_text(
+            phone=booking.get("parent_phone"),
+            message=verified_wa_msg,
+            subject=f"Navrang 2026 Pass Verified - {booking_id}"
+        )
+    except Exception as wa_err:
+        logger.warning(f"Could not send WhatsApp verification message for {booking_id}: {wa_err}")
+
+@navrang_router.post("/create-order")
+async def navrang_create_order(req: NavrangCreateOrderRequest):
+    b_id = (req.booking_id or "").strip().upper()
+    if not b_id:
+        raise HTTPException(status_code=400, detail="Booking ID is required.")
+
+    booking = await db.navrang_bookings.find_one({
+        "$or": [{"booking_id": b_id}, {"booking_id": req.booking_id.strip()}]
+    })
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found.")
+
+    if booking.get("payment_status") in ("paid", "cash"):
+        raise HTTPException(status_code=400, detail="This booking is already paid.")
+
+    client, key_id = await _get_navrang_razorpay_client()
+    if not client or not key_id:
+        raise HTTPException(
+            status_code=503, 
+            detail="Navrang 2nd Razorpay account is not configured yet. Configure Navrang Razorpay keys in Admin Settings or pay via UPI QR."
+        )
+
+    amount_inr = int(booking.get("price") or 299)
+    amount_paise = amount_inr * 100
+
+    try:
+        order = client.order.create({
+            "amount": amount_paise,
+            "currency": "INR",
+            "payment_capture": 1,
+            "notes": {
+                "booking_id": booking["booking_id"],
+                "event": "Navrang 2026 Dandiya",
+                "parent_name": booking.get("parent_name", ""),
+                "parent_phone": booking.get("parent_phone", ""),
+                "package": booking.get("package", "")
+            }
+        })
+    except Exception as e:
+        logger.error(f"Navrang Razorpay order creation failed: {e}")
+        raise HTTPException(status_code=502, detail=f"Failed to initiate Razorpay order: {str(e)}")
+
+    await db.navrang_bookings.update_one(
+        {"booking_id": booking["booking_id"]},
+        {"$set": {
+            "razorpay_order_id": order["id"],
+            "razorpay_key_id": key_id,
+            "payment_gateway": "razorpay_navrang",
+            "updated_at": now_iso()
+        }}
+    )
+
+    return {
+        "status": "success",
+        "order_id": order["id"],
+        "amount": amount_paise,
+        "currency": "INR",
+        "key_id": key_id,
+        "booking_id": booking["booking_id"],
+        "parent_name": booking.get("parent_name", ""),
+        "parent_phone": booking.get("parent_phone", ""),
+        "parent_email": booking.get("parent_email", "")
+    }
+
+@navrang_router.post("/verify-payment")
+async def navrang_verify_payment(req: NavrangVerifyPaymentRequest):
+    b_id = (req.booking_id or "").strip().upper()
+    booking = await db.navrang_bookings.find_one({
+        "$or": [{"booking_id": b_id}, {"booking_id": req.booking_id.strip()}]
+    })
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found.")
+
+    client, key_id = await _get_navrang_razorpay_client()
+    if not client:
+        raise HTTPException(status_code=503, detail="Navrang Razorpay gateway not configured.")
+
+    try:
+        client.utility.verify_payment_signature({
+            "razorpay_order_id": req.razorpay_order_id,
+            "razorpay_payment_id": req.razorpay_payment_id,
+            "razorpay_signature": req.razorpay_signature
+        })
+    except Exception as e:
+        logger.warning(f"Navrang Razorpay signature verification failed for {b_id}: {e}")
+        raise HTTPException(status_code=400, detail="Payment verification failed: invalid signature.")
+
+    update_data = {
+        "payment_status": "paid",
+        "payment_method": "razorpay",
+        "payment_ref": req.razorpay_payment_id,
+        "razorpay_order_id": req.razorpay_order_id,
+        "razorpay_payment_id": req.razorpay_payment_id,
+        "razorpay_signature": req.razorpay_signature,
+        "paid_at": now_iso(),
+        "verified_at": now_iso(),
+        "verified_by": "Razorpay_Navrang_Auto",
+        "updated_at": now_iso()
+    }
+
+    await db.navrang_bookings.update_one({"booking_id": booking["booking_id"]}, {"$set": update_data})
+    booking.update(update_data)
+    if "_id" in booking:
+        del booking["_id"]
+
+    # Send WhatsApp notification with activated QR pass
+    try:
+        await _send_navrang_verified_whatsapp(booking)
+    except Exception as e:
+        logger.warning(f"Failed to send auto WhatsApp for booking {b_id}: {e}")
+
+    return {
+        "status": "success",
+        "message": "Payment verified and Navrang pass activated successfully!",
+        "booking": booking
+    }
 
 # --- Admin Endpoints ---
 
@@ -856,12 +1060,30 @@ async def export_bookings(token: TokenData = Depends(get_current_admin)):
         headers={"Content-Disposition": "attachment; filename=navrang_bookings_2026.csv"}
     )
 
+@navrang_router.get("/admin/config")
+async def get_admin_config(token: TokenData = Depends(get_current_admin)):
+    config = await db.navrang_config.find_one({}, {"_id": 0}) or {}
+    key_id, key_secret, is_enabled = await _get_navrang_razorpay_config()
+    config["razorpay_enabled"] = bool(config.get("razorpay_enabled", is_enabled))
+    config["razorpay_key_id"] = key_id
+    config["has_razorpay_key_secret"] = bool(key_secret)
+    config["razorpay_key_secret_masked"] = ("••••••••••••" if key_secret else "")
+    return config
+
 @navrang_router.put("/admin/config")
-async def update_config(config_data: dict, token: TokenData = Depends(get_superadmin)):
+async def update_config(config_data: dict, token: TokenData = Depends(get_current_admin)):
     if "_id" in config_data:
         del config_data["_id"]
+        
+    # If admin submitted masked secret, don't wipe existing key secret
+    secret = config_data.get("razorpay_key_secret")
+    if secret == "••••••••••••":
+        del config_data["razorpay_key_secret"]
+    elif secret is not None and not str(secret).strip():
+        config_data["razorpay_key_secret"] = ""
+        
     await db.navrang_config.update_one({}, {"$set": config_data}, upsert=True)
-    return {"status": "success", "message": "Event configuration updated successfully."}
+    return {"status": "success", "message": "Navrang configuration updated successfully."}
 
 @navrang_router.delete("/admin/bookings/{booking_id}")
 @navrang_router.delete("/admin/booking/{booking_id}")
