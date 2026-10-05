@@ -5,7 +5,8 @@ import {
   CheckCircle2, XCircle, AlertCircle, Clock, ChevronLeft, 
   ChevronRight, LogIn, Save, GraduationCap, UploadCloud, 
   Trash2, FileSpreadsheet, Copy, Check, RefreshCw, AlertTriangle,
-  Smartphone, Filter, Pencil, Plus, X, Sparkles
+  Smartphone, Filter, Pencil, Plus, X, Sparkles,
+  Camera, CameraOff, SwitchCamera, ScanLine, Volume2, VolumeX, Upload
 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import * as XLSX from 'xlsx';
@@ -1188,13 +1189,49 @@ const RosterTab = () => {
 // ==========================================
 // TAB 4: GATE SCANNER
 // ==========================================
+// ==========================================
+// TAB 4: GATE SCANNER (LIVE CAMERA & MANUAL)
+// ==========================================
 const ScannerTab = () => {
+  const [activeMode, setActiveMode] = useState('camera'); // 'camera' | 'manual' | 'upload'
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState([]);
   const [currentResult, setCurrentResult] = useState(null);
-  
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  // Camera State
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraFacing, setCameraFacing] = useState('environment'); // 'environment' | 'user'
+  const [cameraError, setCameraError] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const streamRef = useRef(null);
+  const isScanningRef = useRef(false);
+  const isProcessingRef = useRef(false);
+  const fileInputRef = useRef(null);
+
+  // Load jsQR dynamically as fallback for older browsers without BarcodeDetector
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !window.BarcodeDetector && !window.jsQR) {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js';
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  }, []);
+
+  // Cleanup camera stream on unmount
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, []);
+
   const playSound = (type) => {
+    if (!soundEnabled) return;
     try {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (!AudioContext) return;
@@ -1207,29 +1244,50 @@ const ScannerTab = () => {
       if (type === 'success') {
         osc.type = 'sine';
         osc.frequency.setValueAtTime(800, ctx.currentTime);
-        gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+        gainNode.gain.setValueAtTime(0.12, ctx.currentTime);
         osc.start();
-        osc.stop(ctx.currentTime + 0.1);
+        osc.stop(ctx.currentTime + 0.15);
       } else {
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(200, ctx.currentTime);
-        gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+        osc.frequency.setValueAtTime(220, ctx.currentTime);
+        gainNode.gain.setValueAtTime(0.15, ctx.currentTime);
         osc.start();
-        osc.stop(ctx.currentTime + 0.3);
+        osc.stop(ctx.currentTime + 0.35);
       }
     } catch (e) {
-      console.log('Audio disabled');
+      console.log('Audio feedback not available');
     }
   };
 
-  const handleVerify = async (e) => {
-    if (e) e.preventDefault();
-    if (!inputValue.trim()) return;
+  const addLog = (log) => {
+    setLogs(prev => [log, ...prev].slice(0, 30));
+  };
 
+  // Main token verification caller
+  const verifyToken = async (rawToken) => {
+    if (!rawToken || isProcessingRef.current) return;
+    isProcessingRef.current = true;
+    setIsProcessing(true);
     setLoading(true);
     setCurrentResult(null);
-    const token = inputValue.trim();
-    
+
+    let token = String(rawToken).trim();
+    // Parse URL if user scanned QR containing full link
+    try {
+      if (token.includes('booking_id=')) {
+        const url = new URL(token);
+        token = url.searchParams.get('booking_id') || token;
+      } else if (token.includes('/my-ticket/')) {
+        token = token.split('/my-ticket/')[1].split('?')[0];
+      }
+    } catch (e) {}
+
+    setInputValue(token);
+
+    if (navigator?.vibrate) {
+      try { navigator.vibrate([100, 50, 100]); } catch (e) {}
+    }
+
     try {
       const { data } = await api.post('/navrang/admin/verify-entry', { 
         qr_token: token,
@@ -1238,85 +1296,473 @@ const ScannerTab = () => {
       
       playSound('success');
       setCurrentResult({ success: true, data });
-      addLog({ token, success: true, message: 'Entry Verified', data });
-      setInputValue('');
+      addLog({ 
+        token, 
+        success: true, 
+        message: 'Entry Verified ✓', 
+        data, 
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) 
+      });
+      toast.success(`Entry Granted: ${data.booking?.booking_id || token}`);
     } catch (error) {
       playSound('error');
       const msg = error.response?.data?.detail || 'Verification failed';
       setCurrentResult({ success: false, error: msg });
-      addLog({ token, success: false, message: msg });
+      addLog({ 
+        token, 
+        success: false, 
+        message: msg, 
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) 
+      });
+      toast.error(msg);
     } finally {
       setLoading(false);
+      // Pause 2.5s before allowing next scan to prevent double reading
+      setTimeout(() => {
+        isProcessingRef.current = false;
+        setIsProcessing(false);
+      }, 2500);
     }
   };
 
-  const addLog = (log) => {
-    setLogs(prev => [log, ...prev].slice(0, 20));
+  // Start live camera
+  const startCamera = async () => {
+    try {
+      setCameraError(null);
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(t => t.stop());
+      }
+
+      const constraints = {
+        video: {
+          facingMode: cameraFacing,
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = stream;
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+        setCameraActive(true);
+        isScanningRef.current = true;
+        requestAnimationFrame(tickScanner);
+      }
+    } catch (err) {
+      console.error('Camera access error:', err);
+      let errMsg = 'Could not access camera.';
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        errMsg = 'Camera permission was denied. Please allow camera access in your browser settings to scan QR tickets.';
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        errMsg = 'No camera found on this device. You can use manual entry or upload an image.';
+      }
+      setCameraError(errMsg);
+      setCameraActive(false);
+      toast.error(errMsg);
+    }
+  };
+
+  const stopCamera = () => {
+    isScanningRef.current = false;
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setCameraActive(false);
+  };
+
+  const flipCamera = () => {
+    const next = cameraFacing === 'environment' ? 'user' : 'environment';
+    setCameraFacing(next);
+  };
+
+  useEffect(() => {
+    if (cameraActive) {
+      startCamera();
+    }
+  }, [cameraFacing]);
+
+  // Frame tick decoder
+  const tickScanner = async () => {
+    if (!isScanningRef.current || !videoRef.current) return;
+    const video = videoRef.current;
+
+    if (video.readyState === video.HAVE_ENOUGH_DATA && !isProcessingRef.current) {
+      let detectedToken = null;
+
+      // 1. Try Native BarcodeDetector (Chrome Mac/Win/Android & Safari 17+)
+      if (window.BarcodeDetector) {
+        try {
+          const detector = new window.BarcodeDetector({ formats: ['qr_code'] });
+          const barcodes = await detector.detect(video);
+          if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
+            detectedToken = barcodes[0].rawValue;
+          }
+        } catch (e) {}
+      }
+
+      // 2. jsQR Canvas fallback
+      if (!detectedToken && window.jsQR && canvasRef.current) {
+        try {
+          const canvas = canvasRef.current;
+          canvas.width = video.videoWidth || 640;
+          canvas.height = video.videoHeight || 480;
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
+          if (ctx) {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const code = window.jsQR(imgData.data, imgData.width, imgData.height, {
+              inversionAttempts: 'dontInvert'
+            });
+            if (code && code.data) {
+              detectedToken = code.data;
+            }
+          }
+        } catch (e) {}
+      }
+
+      if (detectedToken && !isProcessingRef.current) {
+        verifyToken(detectedToken);
+      }
+    }
+
+    if (isScanningRef.current) {
+      setTimeout(() => {
+        requestAnimationFrame(tickScanner);
+      }, 100);
+    }
+  };
+
+  // Image upload decoder
+  const handleImageUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const img = new Image();
+    img.onload = async () => {
+      let detected = null;
+      if (window.BarcodeDetector) {
+        try {
+          const detector = new window.BarcodeDetector({ formats: ['qr_code'] });
+          const barcodes = await detector.detect(img);
+          if (barcodes && barcodes.length > 0) detected = barcodes[0].rawValue;
+        } catch (e) {}
+      }
+      if (!detected && window.jsQR) {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const imgData = ctx.getImageData(0, 0, img.width, img.height);
+        const code = window.jsQR(imgData.data, imgData.width, imgData.height);
+        if (code) detected = code.data;
+      }
+
+      if (detected) {
+        verifyToken(detected);
+        toast.success('QR Code detected from image!');
+      } else {
+        toast.error('Could not detect a valid QR code in this image. Try another photo.');
+      }
+    };
+    img.src = URL.createObjectURL(file);
+  };
+
+  const handleManualSubmit = (e) => {
+    if (e) e.preventDefault();
+    if (!inputValue.trim()) return;
+    verifyToken(inputValue.trim());
   };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* LEFT: SCANNER CONTROLS */}
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-        <h3 className="font-headline text-xl font-bold text-brand-ink mb-1">Gate Scanner</h3>
-        <p className="text-slate-500 mb-6 text-xs md:text-sm">Scan physical/digital QR code or manually enter Booking ID</p>
-
-        <form onSubmit={handleVerify} className="space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Booking ID / QR Token</label>
-            <div className="flex gap-2">
-              <input 
-                type="text"
-                autoFocus
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder="e.g. NVR-2026-ABCD"
-                className="flex-1 border border-slate-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-brand-navy outline-none text-base uppercase font-mono"
+            <h3 className="font-headline text-xl font-bold text-brand-ink">Gate QR Scanner</h3>
+            <p className="text-slate-500 text-xs">Scan attendee QR pass or enter Booking ID for gate verification</p>
+          </div>
+          
+          {/* Audio toggle button */}
+          <button
+            type="button"
+            onClick={() => setSoundEnabled(!soundEnabled)}
+            className={`self-start sm:self-auto p-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition-all ${
+              soundEnabled ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-slate-50 text-slate-400 border-slate-200'
+            }`}
+            title={soundEnabled ? 'Sound alerts enabled' : 'Sound muted'}
+          >
+            {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">{soundEnabled ? 'Beep On' : 'Muted'}</span>
+          </button>
+        </div>
+
+        {/* MODE TABS */}
+        <div className="flex p-1 bg-slate-100 rounded-xl mb-5 text-xs font-semibold">
+          <button
+            type="button"
+            onClick={() => {
+              setActiveMode('camera');
+              if (!cameraActive) startCamera();
+            }}
+            className={`flex-1 py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              activeMode === 'camera' ? 'bg-white text-purple-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Camera className="w-3.5 h-3.5" />
+            <span>Live Camera</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveMode('manual')}
+            className={`flex-1 py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              activeMode === 'manual' ? 'bg-white text-purple-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <ScanLine className="w-3.5 h-3.5" />
+            <span>Manual Entry</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveMode('upload')}
+            className={`flex-1 py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              activeMode === 'upload' ? 'bg-white text-purple-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Upload className="w-3.5 h-3.5" />
+            <span>Upload Image</span>
+          </button>
+        </div>
+
+        {/* 1. CAMERA SCANNER VIEWPORT */}
+        {activeMode === 'camera' && (
+          <div className="space-y-4">
+            <div className="relative aspect-video sm:aspect-square max-h-[380px] w-full bg-slate-950 rounded-2xl overflow-hidden shadow-md flex items-center justify-center border border-slate-900">
+              <video
+                ref={videoRef}
+                playsInline
+                autoPlay
+                muted
+                className={`w-full h-full object-cover transition-opacity duration-300 ${cameraActive ? 'opacity-100' : 'opacity-0 absolute'}`}
               />
-              <button 
-                type="submit"
-                disabled={loading || !inputValue.trim()}
-                className="bg-brand-navy text-white px-6 py-2.5 rounded-xl text-xs font-bold hover:bg-slate-800 disabled:opacity-50 outline-none"
-              >
-                {loading ? 'Verifying...' : 'Verify Entry'}
-              </button>
+              <canvas ref={canvasRef} className="hidden" />
+
+              {/* CAMERA NOT RUNNING STATE */}
+              {!cameraActive && (
+                <div className="text-center p-6 text-white space-y-3 max-w-sm">
+                  <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center mx-auto text-amber-400">
+                    <Camera className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm text-white">Live Camera QR Scanner</h4>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Point device camera at guest ticket passes (on mobile or printed) for instant check-in.
+                    </p>
+                  </div>
+                  {cameraError && (
+                    <div className="p-2.5 rounded-xl bg-red-950/80 border border-red-700/60 text-red-200 text-xs">
+                      {cameraError}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={startCamera}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-purple-600/30 inline-flex items-center gap-2 transition-all cursor-pointer"
+                  >
+                    <Camera className="w-4 h-4" />
+                    Start Camera Scanner
+                  </button>
+                </div>
+              )}
+
+              {/* ACTIVE CAMERA OVERLAY & SCANNING FRAME */}
+              {cameraActive && (
+                <>
+                  {/* Top Bar with Camera Controls */}
+                  <div className="absolute top-3 inset-x-3 flex justify-between items-center z-20">
+                    <div className="inline-flex items-center gap-1.5 bg-black/60 backdrop-blur-xs text-green-400 text-[11px] font-bold px-2.5 py-1 rounded-full border border-green-500/30">
+                      <span className="w-2 h-2 rounded-full bg-green-500 animate-ping" />
+                      Scanning Active
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={flipCamera}
+                        className="bg-black/60 hover:bg-black/80 backdrop-blur-xs text-white text-xs font-semibold px-2.5 py-1 rounded-full border border-white/20 inline-flex items-center gap-1 transition-all"
+                        title="Switch between front and back camera"
+                      >
+                        <SwitchCamera className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">{cameraFacing === 'environment' ? 'Back' : 'Front'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={stopCamera}
+                        className="bg-red-600/80 hover:bg-red-700 backdrop-blur-xs text-white text-xs font-semibold px-2.5 py-1 rounded-full inline-flex items-center gap-1 transition-all"
+                      >
+                        <CameraOff className="w-3.5 h-3.5" />
+                        <span>Stop</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Center QR Target Reticle */}
+                  <div className="relative z-10 w-48 h-48 sm:w-56 sm:h-56 border-2 border-emerald-400/80 rounded-2xl shadow-[0_0_25px_rgba(52,211,153,0.3)] pointer-events-none flex flex-col justify-between p-1.5 overflow-hidden">
+                    {/* 4 Corner Targeting Marks */}
+                    <div className="flex justify-between">
+                      <div className="w-4 h-4 border-t-2 border-l-2 border-white rounded-tl" />
+                      <div className="w-4 h-4 border-t-2 border-r-2 border-white rounded-tr" />
+                    </div>
+                    
+                    {/* Animated Laser Scanning Line */}
+                    <motion.div 
+                      animate={{ top: ['5%', '90%', '5%'] }} 
+                      transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                      className="absolute left-2 right-2 h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_12px_#34d399]" 
+                    />
+
+                    <div className="flex justify-between">
+                      <div className="w-4 h-4 border-b-2 border-l-2 border-white rounded-bl" />
+                      <div className="w-4 h-4 border-b-2 border-r-2 border-white rounded-br" />
+                    </div>
+                  </div>
+
+                  {/* Processing Status Banner */}
+                  {isProcessing && (
+                    <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-xs z-30 flex flex-col items-center justify-center text-white space-y-2">
+                      <div className="w-8 h-8 border-3 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin" />
+                      <span className="text-xs font-bold text-emerald-400">Verifying Ticket Pass...</span>
+                    </div>
+                  )}
+
+                  <div className="absolute bottom-3 inset-x-3 text-center z-20">
+                    <span className="text-[11px] font-medium text-white/80 bg-black/60 px-3 py-1 rounded-full backdrop-blur-xs">
+                      Align Ticket QR inside green frame
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
-        </form>
+        )}
 
+        {/* 2. MANUAL ENTRY MODE */}
+        {activeMode === 'manual' && (
+          <form onSubmit={handleManualSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Enter Booking ID or QR Token
+              </label>
+              <div className="flex gap-2">
+                <input 
+                  type="text"
+                  autoFocus
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  placeholder="e.g. NVR-2026-ABCD"
+                  className="flex-1 border border-slate-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-purple-600 outline-none text-base uppercase font-mono"
+                />
+                <button 
+                  type="submit"
+                  disabled={loading || !inputValue.trim()}
+                  className="bg-purple-700 text-white px-6 py-2.5 rounded-xl text-xs font-bold hover:bg-purple-800 disabled:opacity-50 outline-none transition-all cursor-pointer shadow-md"
+                >
+                  {loading ? 'Verifying...' : 'Verify Entry'}
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1">
+                Also supports handheld USB/Bluetooth barcode gun scanners.
+              </p>
+            </div>
+          </form>
+        )}
+
+        {/* 3. UPLOAD QR IMAGE MODE */}
+        {activeMode === 'upload' && (
+          <div className="space-y-3">
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              className="border-2 border-dashed border-purple-200 hover:border-purple-400 rounded-2xl p-8 text-center cursor-pointer bg-purple-50/40 hover:bg-purple-50/70 transition-all"
+            >
+              <Upload className="w-8 h-8 text-purple-600 mx-auto mb-2" />
+              <div className="text-xs font-bold text-slate-800">Click to Select QR Ticket Image</div>
+              <div className="text-[11px] text-slate-400 mt-1">PNG, JPG, or Screenshot of attendee pass</div>
+              <input 
+                ref={fileInputRef} 
+                type="file" 
+                accept="image/*" 
+                className="hidden" 
+                onChange={handleImageUpload} 
+              />
+            </div>
+          </div>
+        )}
+
+        {/* CURRENT VERIFICATION RESULT CARD */}
         <AnimatePresence>
           {currentResult && (
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className={`mt-6 p-5 rounded-2xl border ${currentResult.success ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'}`}
+              className={`mt-5 p-5 rounded-2xl border transition-all ${
+                currentResult.success 
+                  ? 'bg-green-50/90 border-green-300 shadow-sm' 
+                  : 'bg-red-50/90 border-red-300 shadow-sm'
+              }`}
             >
               {currentResult.success ? (
                 <div>
-                  <div className="flex items-center gap-2 text-green-800 mb-3">
-                    <CheckCircle2 className="w-6 h-6 text-green-600" />
-                    <h4 className="text-lg font-bold">Entry Granted ✓</h4>
+                  <div className="flex items-center gap-2 text-green-900 mb-2">
+                    <CheckCircle2 className="w-6 h-6 text-green-600 shrink-0" />
+                    <div>
+                      <h4 className="text-base font-extrabold text-green-900">Entry Granted ✓</h4>
+                      <span className="text-[11px] font-semibold text-green-700">Valid Navrang 2026 Pass</span>
+                    </div>
                   </div>
-                  <div className="space-y-1.5 text-xs text-slate-800">
-                    <p><span className="text-slate-500 font-semibold">Booking ID:</span> <strong className="font-mono">{currentResult.data.booking.booking_id}</strong></p>
-                    <p><span className="text-slate-500 font-semibold">Mother / Parent:</span> {currentResult.data.booking.parent_name} ({currentResult.data.booking.parent_phone})</p>
-                    <p className="flex items-center gap-2"><span className="text-slate-500 font-semibold">Package:</span> <Badge status={currentResult.data.booking.package} /></p>
-                    <div className="mt-2 pt-2 border-t border-green-200">
-                      <p className="text-xs font-semibold text-slate-600 mb-1">Students Admitted:</p>
-                      {(currentResult.data.booking.students || []).map((s, i) => (
-                        <div key={i} className="font-medium text-slate-900 bg-white/70 px-2 py-1 rounded inline-block mr-1">
-                          {s.name} <span className="font-mono text-slate-500">({s.admission_no})</span>
-                        </div>
-                      ))}
+
+                  <div className="space-y-1.5 text-xs text-slate-800 mt-3 pt-3 border-t border-green-200">
+                    <div className="flex justify-between">
+                      <span className="text-slate-500 font-semibold">Booking ID:</span>
+                      <strong className="font-mono text-sm text-purple-900">{currentResult.data.booking?.booking_id}</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500 font-semibold">Mother / Parent:</span>
+                      <span className="font-bold text-slate-800">{currentResult.data.booking?.parent_name} ({currentResult.data.booking?.parent_phone})</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500 font-semibold">Pass Package:</span>
+                      <Badge status={currentResult.data.booking?.package} />
+                    </div>
+
+                    <div className="mt-2.5 pt-2 border-t border-green-200">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">Students Admitted:</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {(currentResult.data.booking?.students || []).map((s, i) => (
+                          <div key={i} className="font-medium text-slate-900 bg-white px-2.5 py-1 rounded-lg border border-green-200 shadow-2xs text-xs">
+                            <strong>{s.name || s.student_name}</strong>
+                            <span className="font-mono text-slate-500 ml-1 text-[11px]">({s.admission_no})</span>
+                            {s.class_name && <span className="text-purple-700 ml-1 text-[10px]">[{s.class_name} {s.section || ''}]</span>}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="flex items-start gap-3 text-red-700">
-                  <XCircle className="w-6 h-6 shrink-0 mt-0.5" />
+                <div className="flex items-start gap-3 text-red-800">
+                  <XCircle className="w-6 h-6 text-red-600 shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="text-base font-bold mb-1">Entry Denied</h4>
-                    <p className="text-xs leading-relaxed">{currentResult.error}</p>
+                    <h4 className="text-base font-extrabold text-red-900">Entry Denied ✕</h4>
+                    <p className="text-xs leading-relaxed mt-0.5 font-medium">{currentResult.error}</p>
                   </div>
                 </div>
               )}
@@ -1325,22 +1771,65 @@ const ScannerTab = () => {
         </AnimatePresence>
       </div>
 
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-        <h3 className="font-headline text-lg font-bold text-brand-ink mb-4">Live Check-in Logs</h3>
-        <div className="space-y-2.5 max-h-[460px] overflow-y-auto">
-          {logs.length === 0 ? (
-            <p className="text-slate-400 text-center py-8 text-xs">No scan events recorded yet in this session.</p>
-          ) : (
-            logs.map((log, idx) => (
-              <div key={idx} className={`flex items-start gap-2.5 p-3 rounded-xl border text-xs ${log.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                {log.success ? <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 shrink-0" /> : <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />}
-                <div>
-                  <div className="font-bold text-slate-900 font-mono">{log.token}</div>
-                  <div className={`mt-0.5 ${log.success ? 'text-green-700' : 'text-red-700'}`}>{log.message}</div>
-                </div>
+      {/* RIGHT: LIVE CHECK-IN LOGS */}
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+        <div>
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h3 className="font-headline text-lg font-bold text-brand-ink">Live Check-in Logs</h3>
+              <p className="text-slate-400 text-xs">Real-time gate scans recorded during this session</p>
+            </div>
+            {logs.length > 0 && (
+              <span className="text-[11px] font-bold bg-purple-100 text-purple-800 px-2.5 py-0.5 rounded-full">
+                {logs.length} Scans
+              </span>
+            )}
+          </div>
+
+          <div className="space-y-2.5 max-h-[500px] overflow-y-auto pr-1">
+            {logs.length === 0 ? (
+              <div className="text-center py-16 text-slate-400 text-xs">
+                <ScanLine className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                <p className="font-medium">No scan events recorded yet in this session.</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Start the live camera or enter a booking ID to verify.</p>
               </div>
-            ))
-          )}
+            ) : (
+              logs.map((log, idx) => (
+                <div 
+                  key={idx} 
+                  className={`flex items-start justify-between p-3 rounded-xl border text-xs transition-all ${
+                    log.success ? 'bg-green-50/70 border-green-200' : 'bg-red-50/70 border-red-200'
+                  }`}
+                >
+                  <div className="flex items-start gap-2.5">
+                    {log.success ? (
+                      <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
+                    )}
+                    <div>
+                      <div className="font-bold text-slate-900 font-mono flex items-center gap-1.5">
+                        <span>{log.token}</span>
+                        {log.data?.booking?.parent_name && (
+                          <span className="text-slate-600 font-normal text-[11px] truncate max-w-[120px]">
+                            • {log.data.booking.parent_name}
+                          </span>
+                        )}
+                      </div>
+                      <div className={`mt-0.5 ${log.success ? 'text-green-700 font-medium' : 'text-red-700'}`}>
+                        {log.message}
+                      </div>
+                    </div>
+                  </div>
+                  {log.time && (
+                    <span className="text-[10px] text-slate-400 font-mono shrink-0 ml-2">
+                      {log.time}
+                    </span>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
     </div>
