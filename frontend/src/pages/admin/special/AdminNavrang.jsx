@@ -656,12 +656,15 @@ const RosterTab = () => {
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 pb-4 border-b border-slate-100">
           <div>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300 mb-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-amber-700" /> Dedicated Dandiya Roster (Independent Collection)
+            </div>
             <h3 className="font-headline text-xl font-bold text-brand-ink flex items-center gap-2">
               <GraduationCap className="w-6 h-6 text-brand-navy" />
-              SDPS Student Eligibility Roster
+              Dandiya Student Eligibility Roster
             </h3>
             <p className="text-slate-500 text-xs md:text-sm mt-0.5">
-              Only students present in this roster can authenticate their admission number to book passes on Navrang.
+              Dedicated roster created exclusively for Dandiya (Navrang 2026). Only students in this roster can book passes. The main school APAAR / PEN database is completely separate and unaffected.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -708,9 +711,9 @@ const RosterTab = () => {
 
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col justify-between">
             <div>
-              <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Roster Overview</div>
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Dandiya Roster Overview</div>
               <div className="text-3xl font-black text-slate-900">{total}</div>
-              <div className="text-xs text-slate-500 mt-1">Total Verified Students Eligible for Navrang 2026 Passes</div>
+              <div className="text-xs text-slate-500 mt-1">Students in Dandiya Eligibility List</div>
             </div>
 
             <div className="mt-4 pt-3 border-t border-slate-200/80">
@@ -1302,7 +1305,7 @@ export default function AdminNavrang() {
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: Users },
     { id: 'bookings', label: 'All Bookings', icon: Search },
-    { id: 'roster', label: 'Student Roster', icon: GraduationCap },
+    { id: 'roster', label: 'Dandiya Roster', icon: GraduationCap },
     { id: 'scanner', label: 'Gate Scanner', icon: QrCode },
     { id: 'settings', label: 'Settings & UPI', icon: Settings },
   ];
@@ -1312,9 +1315,9 @@ export default function AdminNavrang() {
       <Toaster position="top-right" richColors />
       
       <div className="mb-6">
-        <h1 className="text-3xl font-headline font-bold text-slate-100">Navrang 2026 Admin</h1>
-        <p className="text-slate-400 mt-1 text-sm">
-          Manage bookings, verify student roster & eligibility, process UPI UTR payments, and check gate entries.
+        <h1 className="text-3xl font-headline font-bold text-slate-900">Navrang 2026 Admin</h1>
+        <p className="text-slate-600 mt-1 text-sm">
+          Manage bookings, separate Dandiya student roster, UPI UTR payments, and gate scanner check-in.
         </p>
       </div>
 

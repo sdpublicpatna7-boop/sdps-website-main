@@ -30,36 +30,36 @@ async def _find_roster_student(adm_no: str):
     raw = str(adm_no).strip()
     digits = re.sub(r'\D', '', raw)
 
-    # 1. Exact match on raw string
-    student = await db.apaar_roster.find_one({"admission_no": raw}, {"_id": 0})
+    # 1. Exact match on raw string in dedicated navrang_roster
+    student = await db.navrang_roster.find_one({"admission_no": raw}, {"_id": 0})
     if student:
         return student
 
     # 2. Case-insensitive exact match
-    student = await db.apaar_roster.find_one({"admission_no": {"$regex": f"^{re.escape(raw)}$", "$options": "i"}}, {"_id": 0})
+    student = await db.navrang_roster.find_one({"admission_no": {"$regex": f"^{re.escape(raw)}$", "$options": "i"}}, {"_id": 0})
     if student:
         return student
 
     # 3. If raw doesn't start with SDPS, try adding SDPS (e.g. user entered "2" -> "SDPS2")
     if not raw.upper().startswith("SDPS"):
-        student = await db.apaar_roster.find_one({"admission_no": f"SDPS{raw}"}, {"_id": 0})
+        student = await db.navrang_roster.find_one({"admission_no": f"SDPS{raw}"}, {"_id": 0})
         if student:
             return student
         if digits:
             digits_int = str(int(digits))
-            student = await db.apaar_roster.find_one({"admission_no": f"SDPS{digits_int}"}, {"_id": 0})
+            student = await db.navrang_roster.find_one({"admission_no": f"SDPS{digits_int}"}, {"_id": 0})
             if student:
                 return student
 
     # 4. If raw starts with SDPS, try stripping it (e.g. user entered "SDPS2", roster stored "2")
     if raw.upper().startswith("SDPS"):
         stripped = raw[4:].strip().lstrip("-").lstrip("_")
-        student = await db.apaar_roster.find_one({"admission_no": stripped}, {"_id": 0})
+        student = await db.navrang_roster.find_one({"admission_no": stripped}, {"_id": 0})
         if student:
             return student
         if digits:
             digits_int = str(int(digits))
-            student = await db.apaar_roster.find_one({"admission_no": digits_int}, {"_id": 0})
+            student = await db.navrang_roster.find_one({"admission_no": digits_int}, {"_id": 0})
             if student:
                 return student
 
@@ -67,7 +67,7 @@ async def _find_roster_student(adm_no: str):
     if digits:
         digits_int = str(int(digits))
         pattern = f"^(SDPS|sdps)?[\\s\\-_]*0*{digits_int}$"
-        student = await db.apaar_roster.find_one({"admission_no": {"$regex": pattern, "$options": "i"}}, {"_id": 0})
+        student = await db.navrang_roster.find_one({"admission_no": {"$regex": pattern, "$options": "i"}}, {"_id": 0})
         if student:
             return student
 
@@ -713,8 +713,8 @@ async def get_admin_roster(
     if class_name:
         query["class_name"] = {"$regex": f"^{re.escape(class_name.strip())}$", "$options": "i"}
 
-    total = await db.apaar_roster.count_documents(query)
-    cursor = db.apaar_roster.find(query, {"_id": 0}).sort("admission_no", 1).skip((page - 1) * limit).limit(limit)
+    total = await db.navrang_roster.count_documents(query)
+    cursor = db.navrang_roster.find(query, {"_id": 0}).sort("admission_no", 1).skip((page - 1) * limit).limit(limit)
     students = await cursor.to_list(length=limit)
 
     # Check which students have booked
@@ -766,7 +766,7 @@ async def upload_admin_roster(
         raise HTTPException(status_code=400, detail="No student records found in upload payload.")
 
     if replace_all:
-        await db.apaar_roster.delete_many({})
+        await db.navrang_roster.delete_many({})
 
     operations = []
     for item in students_data:
@@ -817,27 +817,27 @@ async def upload_admin_roster(
             detail="No valid student rows containing both Admn_No and Name were found in the uploaded file."
         )
 
-    await db.apaar_roster.bulk_write(operations)
-    total_in_roster = await db.apaar_roster.count_documents({})
+    await db.navrang_roster.bulk_write(operations)
+    total_in_roster = await db.navrang_roster.count_documents({})
 
     return {
         "status": "success",
-        "message": f"Successfully processed {len(operations)} student records into the roster.",
+        "message": f"Successfully processed {len(operations)} student records into the Dandiya roster.",
         "imported_count": len(operations),
         "total_roster_count": total_in_roster
     }
 
 @navrang_router.delete("/admin/roster/clear")
 async def clear_admin_roster(token: TokenData = Depends(get_current_admin)):
-    await db.apaar_roster.delete_many({})
-    return {"status": "success", "message": "Student roster cleared successfully."}
+    await db.navrang_roster.delete_many({})
+    return {"status": "success", "message": "Dandiya student roster cleared successfully."}
 
 @navrang_router.delete("/admin/roster/{admission_no}")
 async def delete_roster_student(admission_no: str, token: TokenData = Depends(get_current_admin)):
-    res = await db.apaar_roster.delete_one({"admission_no": admission_no})
+    res = await db.navrang_roster.delete_one({"admission_no": admission_no})
     if res.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Student record not found in roster.")
-    return {"status": "success", "message": f"Student {admission_no} removed from roster."}
+        raise HTTPException(status_code=404, detail="Student record not found in Dandiya roster.")
+    return {"status": "success", "message": f"Student {admission_no} removed from Dandiya roster."}
 
 @navrang_router.get("/admin/roster/template")
 async def get_admin_roster_template(token: TokenData = Depends(get_current_admin)):
