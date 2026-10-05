@@ -10,9 +10,12 @@ import string
 import csv
 import io
 import time
+import logging
 
 from auth import get_superadmin, get_current_admin, TokenData
 from models import now_iso, new_id
+
+logger = logging.getLogger("sdps.navrang")
 
 navrang_router = APIRouter(prefix="/api/navrang", tags=["navrang"])
 db = None
@@ -24,24 +27,50 @@ def init_db(database):
 async def _find_roster_student(adm_no: str):
     if not adm_no:
         return None
-    raw = adm_no.strip()
+    raw = str(adm_no).strip()
     digits = re.sub(r'\D', '', raw)
+
+    # 1. Exact match on raw string
     student = await db.apaar_roster.find_one({"admission_no": raw}, {"_id": 0})
     if student:
         return student
+
+    # 2. Case-insensitive exact match
     student = await db.apaar_roster.find_one({"admission_no": {"$regex": f"^{re.escape(raw)}$", "$options": "i"}}, {"_id": 0})
     if student:
         return student
+
+    # 3. If raw doesn't start with SDPS, try adding SDPS (e.g. user entered "2" -> "SDPS2")
     if not raw.upper().startswith("SDPS"):
         student = await db.apaar_roster.find_one({"admission_no": f"SDPS{raw}"}, {"_id": 0})
         if student:
             return student
+        if digits:
+            digits_int = str(int(digits))
+            student = await db.apaar_roster.find_one({"admission_no": f"SDPS{digits_int}"}, {"_id": 0})
+            if student:
+                return student
+
+    # 4. If raw starts with SDPS, try stripping it (e.g. user entered "SDPS2", roster stored "2")
+    if raw.upper().startswith("SDPS"):
+        stripped = raw[4:].strip().lstrip("-").lstrip("_")
+        student = await db.apaar_roster.find_one({"admission_no": stripped}, {"_id": 0})
+        if student:
+            return student
+        if digits:
+            digits_int = str(int(digits))
+            student = await db.apaar_roster.find_one({"admission_no": digits_int}, {"_id": 0})
+            if student:
+                return student
+
+    # 5. Regex match with optional SDPS prefix, hyphens, and leading zeros
     if digits:
         digits_int = str(int(digits))
-        pattern = f"^(SDPS|sdps)?\\s*0*{digits_int}$"
+        pattern = f"^(SDPS|sdps)?[\\s\\-_]*0*{digits_int}$"
         student = await db.apaar_roster.find_one({"admission_no": {"$regex": pattern, "$options": "i"}}, {"_id": 0})
         if student:
             return student
+
     return None
 
 # Simple in-memory rate limiting for verify-student
@@ -52,7 +81,7 @@ def check_rate_limit(ip: str):
     if ip not in verify_rate_limits:
         verify_rate_limits[ip] = []
     verify_rate_limits[ip] = [t for t in verify_rate_limits[ip] if now - t < 60]
-    if len(verify_rate_limits[ip]) >= 10:
+    if len(verify_rate_limits[ip]) >= 20:
         raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in a minute.")
     verify_rate_limits[ip].append(now)
 
@@ -128,14 +157,11 @@ class PaymentUpdateRequest(BaseModel):
 
 # --- Public Endpoints ---
 
-# Package pricing is fixed in code (single source of truth). get_config() always
-# serves these, so stale prices saved in the DB can never override them.
 DEFAULT_PACKAGES = {
     "silver": {"name": "Silver Pass", "price": 299, "children": 1, "desc": "1 child + 1 mother, includes 1 pair of Dandiya sticks"},
     "gold": {"name": "Gold Pass", "price": 399, "children": 2, "desc": "2 children + 1 mother, includes 1 pair of Dandiya sticks"},
     "platinum": {"name": "Platinum Pass", "price": 499, "children": 3, "desc": "3 children + 1 mother, includes 1 pair of Dandiya sticks"},
 }
-
 
 @navrang_router.get("/config")
 async def get_config():
@@ -158,14 +184,14 @@ async def get_config():
             "contact_phone": "+91 99551 90262",
             "upi_id": "sdpublicpatna@sbi",
             "upi_merchant_name": "S.D. Public School, Patna",
-            "upi_instructions": "1. Scan the QR code or click 'Pay via Any UPI App' (GPay, PhonePe, Paytm, BHIM).\n2. Pay the exact pass amount.\n3. Copy the 12-digit UTR / Transaction Reference Number from your payment receipt or bank SMS and enter it below."
+            "upi_instructions": "1. Scan the QR code or tap 'Pay via Any UPI App' (GPay, PhonePe, Paytm, BHIM).\n2. Pay the exact pass amount.\n3. Enter the 12-digit UPI UTR / Transaction Reference Number from your payment receipt."
         }
     if not config.get("upi_id"):
         config["upi_id"] = "sdpublicpatna@sbi"
     if not config.get("upi_merchant_name"):
         config["upi_merchant_name"] = "S.D. Public School, Patna"
     if not config.get("upi_instructions"):
-        config["upi_instructions"] = "1. Scan the QR code or click 'Pay via Any UPI App' (GPay, PhonePe, Paytm, BHIM).\n2. Pay the exact pass amount.\n3. Copy the 12-digit UTR / Transaction Reference Number from your payment receipt or bank SMS and enter it below."
+        config["upi_instructions"] = "1. Scan the QR code or tap 'Pay via Any UPI App' (GPay, PhonePe, Paytm, BHIM).\n2. Pay the exact pass amount.\n3. Enter the 12-digit UPI UTR / Transaction Reference Number from your payment receipt."
     config["packages"] = DEFAULT_PACKAGES
     return config
 
@@ -174,29 +200,28 @@ async def verify_student(req: StudentVerifyRequest, request: Request):
     ip = get_client_ip(request)
     check_rate_limit(ip)
     
-    student = await _find_roster_student(req.admission_no)
+    clean_adm = (req.admission_no or "").strip()
+    if not clean_adm:
+        raise HTTPException(status_code=400, detail="Admission number is required.")
+
+    student = await _find_roster_student(clean_adm)
     if not student:
         raise HTTPException(
             status_code=404, 
-            detail=f"Student with admission number {req.admission_no} not found in SDPS school roster. Only verified current SDPS students are eligible to book."
+            detail=f"Student with admission number '{clean_adm}' not found in SDPS school roster. Only verified current SDPS students are eligible to book passes."
         )
     
-    registered_name = (student.get("student_name") or "").strip()
+    registered_name = (student.get("student_name") or student.get("name") or "").strip()
     entered_name = (req.student_name or req.name or "").strip()
     
-    if not entered_name:
+    # If student_name was explicitly passed, verify name match as well
+    if entered_name and not _name_matches(entered_name, registered_name):
         raise HTTPException(
             status_code=400, 
-            detail="Student name is required to authenticate eligibility."
-        )
-        
-    if not _name_matches(entered_name, registered_name):
-        raise HTTPException(
-            status_code=400, 
-            detail=f"The entered student name does not match school records for admission number {req.admission_no}. Please verify the spelling or enter the full name registered with the school."
+            detail=f"The entered student name does not match school records for admission number {clean_adm}. Please verify the spelling or enter the name registered with the school."
         )
 
-    # Check if student already booked
+    # Check if student has already booked
     existing = await db.navrang_bookings.find_one({
         "students.admission_no": student["admission_no"],
         "payment_status": {"$ne": "failed"}
@@ -204,17 +229,25 @@ async def verify_student(req: StudentVerifyRequest, request: Request):
     if existing:
         raise HTTPException(
             status_code=400, 
-            detail=f"Student {student['admission_no']} already has an active booking ({existing.get('booking_id')}). Duplicate bookings are prohibited."
+            detail=f"Student {student['admission_no']} ({registered_name}) already has an active booking ({existing.get('booking_id')}). Duplicate bookings for the same student are prohibited."
         )
     
+    phone_val = student.get("phone") or student.get("contact_no") or student.get("Contact_No") or ""
+
     return {
         "status": "success",
         "verified": True,
         "student": {
             "name": registered_name,
+            "student_name": registered_name,
+            "admission_no": student.get("admission_no", clean_adm),
             "class_name": student.get("class_name", ""),
             "section": student.get("section", ""),
-            "admission_no": student.get("admission_no", "")
+            "roll_no": student.get("roll_no", ""),
+            "father_name": student.get("father_name", ""),
+            "mother_name": student.get("mother_name", ""),
+            "phone": str(phone_val).strip(),
+            "contact_no": str(phone_val).strip()
         }
     }
 
@@ -243,7 +276,7 @@ async def book_tickets(req: BookRequest):
     raw_phone = req.parent_phone or req.phone or ""
     parent_phone_clean = re.sub(r"\D", "", raw_phone)[-10:]
     if len(parent_phone_clean) != 10:
-        raise HTTPException(status_code=400, detail="Please provide a valid 10-digit mobile number.")
+        raise HTTPException(status_code=400, detail="Please provide a valid 10-digit mobile number for ticket and WhatsApp confirmation.")
 
     parent_email_val = (req.parent_email or req.email or "").strip()
 
@@ -263,7 +296,7 @@ async def book_tickets(req: BookRequest):
 
         student = await _find_roster_student(adm_val)
         if not student:
-            raise HTTPException(status_code=404, detail=f"Student with admission number {adm_val} not found.")
+            raise HTTPException(status_code=404, detail=f"Student with admission number {adm_val} not found in SDPS roster.")
             
         # Check if already booked
         existing_booking = await db.navrang_bookings.find_one({
@@ -277,7 +310,10 @@ async def book_tickets(req: BookRequest):
             "admission_no": student["admission_no"],
             "name": student.get("student_name", ""),
             "class_name": student.get("class_name", ""),
-            "section": student.get("section", "")
+            "section": student.get("section", ""),
+            "roll_no": student.get("roll_no", ""),
+            "father_name": student.get("father_name", ""),
+            "mother_name": student.get("mother_name", "")
         })
 
     booking_id = f"NVR-2026-{''.join(random.choices(string.ascii_uppercase + string.digits, k=4))}"
@@ -309,6 +345,59 @@ async def book_tickets(req: BookRequest):
     }
     
     await db.navrang_bookings.insert_one(booking_doc)
+
+    # Trigger transactional WhatsApp confirmation message
+    try:
+        student_lines = []
+        for s in verified_students:
+            s_name = s.get("name") or "Student"
+            s_adm = s.get("admission_no") or ""
+            s_cls = f"Class {s.get('class_name')} {s.get('section', '')}".strip() if s.get('class_name') else ""
+            line = f"• {s_name} (Adm: {s_adm})"
+            if s_cls:
+                line += f" - {s_cls}"
+            student_lines.append(line)
+        students_text = "\n".join(student_lines)
+
+        pkg_title = pkg_info.get("name", f"{pkg_key.title()} Pass")
+        event_date = config.get("event_date", "15 Oct 2026")
+        event_time = config.get("event_time", "6:00 PM – 10:00 PM")
+        venue = config.get("venue", "S.D. Public School Main Campus, Patna")
+        ticket_link = f"https://navrang.sdpublic.org/my-ticket?booking_id={booking_id}"
+
+        wa_msg = (
+            f"🎉 *NAVRANG 2026 PASS BOOKING CONFIRMED!* 🎆\n"
+            f"*S.D. Public School, Patna*\n\n"
+            f"Dear *{booking_doc['parent_name']}*,\n"
+            f"Namaste! Your Navrang 2026 Dandiya & Durga Puja Celebration Night pass has been booked successfully.\n\n"
+            f"📋 *BOOKING DETAILS:*\n"
+            f"• *Booking ID:* {booking_id}\n"
+            f"• *Pass Package:* {pkg_title} (₹{pkg_info['price']})\n"
+            f"• *UPI UTR Number:* {utr_val}\n"
+            f"• *Payment Status:* Submitted (Pending Admin Approval)\n\n"
+            f"👨‍🎓 *STUDENT(S):*\n"
+            f"{students_text}\n\n"
+            f"🎟️ *ACCESS YOUR DIGITAL ENTRY PASS:*\n"
+            f"👉 {ticket_link}\n\n"
+            f"📍 *EVENT SCHEDULE:*\n"
+            f"• *Date & Time:* {event_date} | {event_time}\n"
+            f"• *Venue:* {venue}\n\n"
+            f"⚠️ *Important Entry Guidelines:*\n"
+            f"1. Please keep your QR pass handy on your mobile at the school entrance gate.\n"
+            f"2. Pass admits student(s) + 1 Mother and includes 1 pair of Dandiya sticks.\n"
+            f"3. Traditional festive attire is encouraged.\n\n"
+            f"📞 *School Desk:* +91 99551 90262\n"
+            f"— *S.D. Public School, Patna*"
+        )
+
+        from whatsapp_service import send_whatsapp_text
+        await send_whatsapp_text(
+            phone=booking_doc["parent_phone"],
+            message=wa_msg,
+            subject=f"Navrang 2026 Pass Confirmation - {booking_id}"
+        )
+    except Exception as wa_e:
+        logger.warning(f"Could not send WhatsApp booking message: {wa_e}")
     
     return {
         "booking_id": booking_id,
@@ -342,7 +431,8 @@ async def get_my_tickets(req: MyTicketsRequest):
     cursor = db.navrang_bookings.find(
         {"$or": [
             {"parent_phone": clean_phone},
-            {"booking_id": req.phone.strip().upper()}
+            {"booking_id": req.phone.strip().upper()},
+            {"booking_id": req.phone.strip()}
         ]},
         {"_id": 0}
     ).sort("created_at", -1)
@@ -383,19 +473,32 @@ async def get_admin_stats(token: TokenData = Depends(get_current_admin)):
     async for b in db.navrang_bookings.aggregate([{"$group": {"_id": "$package", "count": {"$sum": 1}}}]):
         package_breakdown[b["_id"] or "silver"] = b["count"]
 
-    stats["payment_breakdown"] = payment_breakdown
-    stats["package_breakdown"] = package_breakdown
-    
-    return stats
+    recent_cursor = db.navrang_bookings.find({}, {"_id": 0}).sort("created_at", -1).limit(10)
+    recent_bookings = await recent_cursor.to_list(length=10)
+
+    packages_list = [
+        {"name": "silver", "count": package_breakdown.get("silver", 0)},
+        {"name": "gold", "count": package_breakdown.get("gold", 0)},
+        {"name": "platinum", "count": package_breakdown.get("platinum", 0)}
+    ]
+
+    return {
+        "total_bookings": stats.get("total_bookings", 0),
+        "total_revenue": stats.get("total_revenue", 0),
+        "entries_recorded": stats.get("total_entered", 0),
+        "pending_payments": payment_breakdown.get("pending", 0),
+        "packages": packages_list,
+        "recent_bookings": recent_bookings
+    }
 
 @navrang_router.get("/admin/bookings")
-async def admin_get_bookings(
-    search: Optional[str] = None,
-    payment_status: Optional[str] = None,
-    entry_status: Optional[str] = None,
-    package: Optional[str] = None,
-    page: int = 1,
-    limit: int = 50,
+async def get_admin_bookings(
+    search: Optional[str] = Query(None),
+    payment_status: Optional[str] = Query(None),
+    entry_status: Optional[str] = Query(None),
+    package: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
     token: TokenData = Depends(get_current_admin)
 ):
     query = {}
@@ -405,6 +508,7 @@ async def admin_get_bookings(
             {"booking_id": {"$regex": re.escape(s), "$options": "i"}},
             {"parent_name": {"$regex": re.escape(s), "$options": "i"}},
             {"parent_phone": {"$regex": re.escape(s), "$options": "i"}},
+            {"payment_ref": {"$regex": re.escape(s), "$options": "i"}},
             {"students.name": {"$regex": re.escape(s), "$options": "i"}},
             {"students.admission_no": {"$regex": re.escape(s), "$options": "i"}}
         ]
@@ -445,7 +549,7 @@ async def admin_verify_entry(req: VerifyEntryRequest, token: TokenData = Depends
         raise HTTPException(status_code=404, detail="Invalid Ticket: No booking found for this code.")
         
     if booking.get("payment_status") not in ["paid", "cash"]:
-        raise HTTPException(status_code=400, detail=f"Cannot allow entry: Payment status is '{booking.get('payment_status', 'pending')}'. Please collect payment first.")
+        raise HTTPException(status_code=400, detail=f"Cannot allow entry: Payment status is '{booking.get('payment_status', 'pending')}'. Please collect payment or verify UTR first.")
         
     if booking.get("entry_status") == "entered":
         raise HTTPException(status_code=400, detail=f"ALREADY USED: This ticket was already checked in at {booking.get('entry_time', 'earlier')}.")
@@ -503,6 +607,32 @@ async def update_booking_action(
         update_data["payment_ref"] = req.payment_ref
         
     await db.navrang_bookings.update_one({"booking_id": booking_id}, {"$set": update_data})
+
+    # If action is verify_paid or mark_paid, send WhatsApp confirmation
+    if action in ("mark_paid", "paid", "verify_paid") and booking.get("parent_phone"):
+        try:
+            ticket_link = f"https://navrang.sdpublic.org/my-ticket?booking_id={booking_id}"
+            verified_wa_msg = (
+                f"✅ *PAYMENT VERIFIED — NAVRANG 2026 PASS ACTIVATED!* 🎟️\n"
+                f"*S.D. Public School, Patna*\n\n"
+                f"Dear *{booking.get('parent_name', 'Parent')}*,\n"
+                f"Your UPI payment (UTR: {booking.get('payment_ref', 'N/A')}) for Navrang 2026 has been *VERIFIED & APPROVED* by the school administration.\n\n"
+                f"🎫 *Booking ID:* {booking_id}\n"
+                f"✨ *Pass Status:* ACTIVE & READY FOR GATE ENTRY\n\n"
+                f"👉 *Open Your Verified Entry QR Pass:*\n"
+                f"{ticket_link}\n\n"
+                f"See you at the Navrang celebration! 🎆\n"
+                f"— *S.D. Public School, Patna*"
+            )
+            from whatsapp_service import send_whatsapp_text
+            await send_whatsapp_text(
+                phone=booking.get("parent_phone"),
+                message=verified_wa_msg,
+                subject=f"Navrang 2026 Pass Verified - {booking_id}"
+            )
+        except Exception as wa_err:
+            logger.warning(f"Could not send WhatsApp verification message: {wa_err}")
+
     return {"status": "success", "message": "Booking updated successfully."}
 
 @navrang_router.get("/admin/export")
@@ -519,10 +649,10 @@ async def export_bookings(token: TokenData = Depends(get_current_admin)):
     ])
     
     for b in bookings:
-        students = b.get("students", [])
-        s1 = f"{students[0]['name']} ({students[0]['admission_no']}, Class {students[0].get('class_name','')})" if len(students) > 0 else ""
-        s2 = f"{students[1]['name']} ({students[1]['admission_no']}, Class {students[1].get('class_name','')})" if len(students) > 1 else ""
-        s3 = f"{students[2]['name']} ({students[2]['admission_no']}, Class {students[2].get('class_name','')})" if len(students) > 2 else ""
+        stus = b.get("students", [])
+        s1 = f"{stus[0].get('name')} ({stus[0].get('admission_no')})" if len(stus) > 0 else ""
+        s2 = f"{stus[1].get('name')} ({stus[1].get('admission_no')})" if len(stus) > 1 else ""
+        s3 = f"{stus[2].get('name')} ({stus[2].get('admission_no')})" if len(stus) > 2 else ""
         
         writer.writerow([
             b.get("booking_id", ""),
@@ -530,9 +660,9 @@ async def export_bookings(token: TokenData = Depends(get_current_admin)):
             b.get("parent_name", ""),
             b.get("parent_phone", ""),
             b.get("package", ""),
-            b.get("price", ""),
+            b.get("price", 0),
             b.get("payment_status", ""),
-            b.get("payment_method", "UPI"),
+            b.get("payment_method", ""),
             b.get("payment_ref", ""),
             b.get("entry_status", ""),
             s1, s2, s3
@@ -546,7 +676,9 @@ async def export_bookings(token: TokenData = Depends(get_current_admin)):
     )
 
 @navrang_router.put("/admin/config")
-async def update_config(config_data: dict, token: TokenData = Depends(get_current_admin)):
+async def update_config(config_data: dict, token: TokenData = Depends(get_superadmin)):
+    if "_id" in config_data:
+        del config_data["_id"]
     await db.navrang_config.update_one({}, {"$set": config_data}, upsert=True)
     return {"status": "success", "message": "Event configuration updated successfully."}
 
@@ -575,6 +707,8 @@ async def get_admin_roster(
             {"admission_no": {"$regex": escaped, "$options": "i"}},
             {"student_name": {"$regex": escaped, "$options": "i"}},
             {"father_name": {"$regex": escaped, "$options": "i"}},
+            {"mother_name": {"$regex": escaped, "$options": "i"}},
+            {"phone": {"$regex": escaped, "$options": "i"}},
         ]
     if class_name:
         query["class_name"] = {"$regex": f"^{re.escape(class_name.strip())}$", "$options": "i"}
@@ -608,6 +742,18 @@ async def get_admin_roster(
         "students": students
     }
 
+def _get_row_val(item: dict, *keys) -> str:
+    """Helper to extract column value case-insensitively with flexible aliases."""
+    for k in keys:
+        if k in item and item[k] is not None:
+            return str(item[k]).strip()
+    norm_map = {re.sub(r'[\s_\-.]', '', k.lower()): v for k, v in item.items() if v is not None}
+    for k in keys:
+        norm_k = re.sub(r'[\s_\-.]', '', k.lower())
+        if norm_k in norm_map:
+            return str(norm_map[norm_k]).strip()
+    return ""
+
 @navrang_router.post("/admin/roster/upload")
 async def upload_admin_roster(
     payload: Dict[str, Any] = Body(...),
@@ -624,59 +770,36 @@ async def upload_admin_roster(
 
     operations = []
     for item in students_data:
-        adm = str(
-            item.get("admission_no") or 
-            item.get("Admission No") or 
-            item.get("Admission Number") or 
-            item.get("Adm No") or 
-            item.get("adm_no") or 
-            item.get("Roll No") or ""
-        ).strip()
-
-        name = str(
-            item.get("student_name") or 
-            item.get("Student Name") or 
-            item.get("Name") or 
-            item.get("name") or ""
-        ).strip()
+        adm = _get_row_val(
+            item, 
+            "Admn_No", "admn_no", "Admn No", "ADMN_NO", 
+            "admission_no", "Admission No", "Admission Number", "Adm No", "adm_no", "Roll No"
+        )
+        name = _get_row_val(
+            item, 
+            "Name", "name", "student_name", "Student Name", "Student_Name"
+        )
 
         if not adm or not name:
             continue
 
-        c_name = str(
-            item.get("class_name") or 
-            item.get("Class") or 
-            item.get("class") or 
-            item.get("Grade") or ""
-        ).strip()
-
-        sec = str(
-            item.get("section") or 
-            item.get("Section") or 
-            item.get("sec") or ""
-        ).strip()
-
-        father = str(
-            item.get("father_name") or 
-            item.get("Father Name") or 
-            item.get("Father's Name") or 
-            item.get("Parent Name") or ""
-        ).strip()
-
-        phone = str(
-            item.get("phone") or 
-            item.get("Phone") or 
-            item.get("Mobile") or 
-            item.get("Contact") or ""
-        ).strip()
+        c_name = _get_row_val(item, "Class", "class", "class_name", "Class_Name", "Grade")
+        sec = _get_row_val(item, "Section", "section", "sec")
+        roll = _get_row_val(item, "Roll_no", "roll_no", "Roll No", "Roll_No", "roll")
+        father = _get_row_val(item, "Father_Name", "father_name", "Father Name", "Father's Name", "Parent Name")
+        mother = _get_row_val(item, "Mother_Name", "mother_name", "Mother Name", "Mother's Name")
+        phone = _get_row_val(item, "Contact_No", "contact_no", "Contact No", "phone", "Phone", "Mobile")
 
         doc = {
             "admission_no": adm,
             "student_name": name,
             "class_name": c_name,
             "section": sec,
+            "roll_no": roll,
             "father_name": father,
+            "mother_name": mother,
             "phone": phone,
+            "contact_no": phone,
             "updated_at": now_iso()
         }
 
@@ -689,7 +812,10 @@ async def upload_admin_roster(
         )
 
     if not operations:
-        raise HTTPException(status_code=400, detail="No valid student rows containing both Admission No and Student Name were found.")
+        raise HTTPException(
+            status_code=400, 
+            detail="No valid student rows containing both Admn_No and Name were found in the uploaded file."
+        )
 
     await db.apaar_roster.bulk_write(operations)
     total_in_roster = await db.apaar_roster.count_documents({})
@@ -715,7 +841,13 @@ async def delete_roster_student(admission_no: str, token: TokenData = Depends(ge
 
 @navrang_router.get("/admin/roster/template")
 async def get_admin_roster_template(token: TokenData = Depends(get_current_admin)):
-    csv_content = "admission_no,student_name,class_name,section,father_name,phone\n1001,Aarav Kumar,10,A,Rajesh Kumar,9876543210\n1002,Priya Sharma,9,B,Suresh Sharma,9876543211\n1003,Rohan Verma,8,C,Manoj Verma,9876543212\n"
+    csv_content = (
+        "Class,Section,Roll_no,Name,Father_Name,Mother_Name,Contact_No,Admn_No\n"
+        "CLASS-I,A,08,Aksh Chaudhary,Santosh Chaudhary,Rupa Chaudahray,9334120156,SDPS2\n"
+        "CLASS-I,A,5,Aarna Kashyap,Vicky Kumar,Rinku Kumari,8804145581,SDPS8\n"
+        "CLASS-I,A,31,Sanshkrita,Kameshwer Shah,Sushma Devi,8709912503,SDPS13\n"
+        "CLASS-I,A,14,Anurag Mehta,Amit Kumar,Poonam Kumari,9576224419,SDPS15\n"
+    )
     return Response(
         content=csv_content,
         media_type="text/csv",

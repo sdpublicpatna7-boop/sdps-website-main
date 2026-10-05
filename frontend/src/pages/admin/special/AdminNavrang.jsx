@@ -614,7 +614,7 @@ const RosterTab = () => {
       toast.success('Downloaded sample CSV template');
     } catch (err) {
       // Fallback client-side template download
-      const csv = "admission_no,student_name,class_name,section,father_name,phone\n1001,Aarav Kumar,10,A,Rajesh Kumar,9876543210\n1002,Priya Sharma,9,B,Suresh Sharma,9876543211\n";
+      const csv = "Class,Section,Roll_no,Name,Father_Name,Mother_Name,Contact_No,Admn_No\nCLASS-I,A,08,Aksh Chaudhary,Santosh Chaudhary,Rupa Chaudahray,9334120156,SDPS2\nCLASS-I,A,5,Aarna Kashyap,Vicky Kumar,Rinku Kumari,8804145581,SDPS8\nCLASS-I,A,31,Sanshkrita,Kameshwer Shah,Sushma Devi,8709912503,SDPS13\nCLASS-I,A,14,Anurag Mehta,Amit Kumar,Poonam Kumari,9576224419,SDPS15\n";
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -661,7 +661,7 @@ const RosterTab = () => {
               SDPS Student Eligibility Roster
             </h3>
             <p className="text-slate-500 text-xs md:text-sm mt-0.5">
-              Only students present in this roster can authenticate their name & admission number to book passes on Navrang.
+              Only students present in this roster can authenticate their admission number to book passes on Navrang.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -701,7 +701,7 @@ const RosterTab = () => {
                 Click to browse or drop Excel / CSV file
               </div>
               <p className="text-xs text-slate-500 mt-1">
-                Supports .xlsx, .xls, or .csv with columns: <strong>Admission No, Student Name, Class, Section, Father Name, Phone</strong>
+                Format: <strong>Class, Section, Roll_no, Name, Father_Name, Mother_Name, Contact_No, Admn_No</strong>
               </p>
             </div>
           </div>
@@ -757,19 +757,23 @@ const RosterTab = () => {
               <table className="w-full text-left">
                 <thead>
                   <tr className="text-slate-400 border-b border-slate-100">
-                    <th className="p-1">Adm No</th>
+                    <th className="p-1">Admn_No</th>
                     <th className="p-1">Name</th>
-                    <th className="p-1">Class</th>
-                    <th className="p-1">Father Name</th>
+                    <th className="p-1">Class & Sec</th>
+                    <th className="p-1">Father_Name</th>
+                    <th className="p-1">Mother_Name</th>
+                    <th className="p-1">Contact_No</th>
                   </tr>
                 </thead>
                 <tbody>
                   {fileData.slice(0, 3).map((r, i) => (
                     <tr key={i} className="border-b border-slate-50 font-mono">
-                      <td className="p-1">{r.admission_no || r['Admission No'] || r['Adm No']}</td>
-                      <td className="p-1 font-sans font-medium">{r.student_name || r['Student Name'] || r['Name']}</td>
-                      <td className="p-1 font-sans">{r.class_name || r['Class'] || '-'}</td>
-                      <td className="p-1 font-sans">{r.father_name || r['Father Name'] || '-'}</td>
+                      <td className="p-1 font-bold text-slate-900">{r.Admn_No || r['Admn_No'] || r.admission_no || r['Admission No']}</td>
+                      <td className="p-1 font-sans font-medium">{r.Name || r['Name'] || r.student_name || r['Student Name']}</td>
+                      <td className="p-1 font-sans">{(r.Class || r['Class'] || '')} {(r.Section || r['Section'] || '')}</td>
+                      <td className="p-1 font-sans">{r.Father_Name || r['Father_Name'] || r.father_name || '-'}</td>
+                      <td className="p-1 font-sans">{r.Mother_Name || r['Mother_Name'] || r.mother_name || '-'}</td>
+                      <td className="p-1 font-mono">{r.Contact_No || r['Contact_No'] || r.phone || '-'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -800,10 +804,10 @@ const RosterTab = () => {
             <Filter className="w-4 h-4 text-slate-400" />
             <input 
               type="text"
-              placeholder="Filter Class (e.g. 10)"
+              placeholder="Filter Class (e.g. CLASS-I)"
               value={classNameFilter}
               onChange={(e) => { setClassNameFilter(e.target.value); setPage(1); }}
-              className="border border-slate-300 rounded-xl px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-brand-navy w-36"
+              className="border border-slate-300 rounded-xl px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-brand-navy w-40"
             />
             <button 
               onClick={fetchRoster}
@@ -818,14 +822,15 @@ const RosterTab = () => {
         {loading ? <Spinner /> : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-slate-600 min-w-[850px]">
+              <table className="w-full text-left text-sm text-slate-600 min-w-[950px]">
                 <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
                   <tr>
-                    <th className="py-3 px-4 rounded-tl-lg">Adm No</th>
+                    <th className="py-3 px-4 rounded-tl-lg">Admn_No</th>
                     <th className="py-3 px-4">Student Name</th>
                     <th className="py-3 px-4">Class & Sec</th>
-                    <th className="py-3 px-4">Father / Guardian</th>
-                    <th className="py-3 px-4">Phone</th>
+                    <th className="py-3 px-4">Father_Name</th>
+                    <th className="py-3 px-4">Mother_Name</th>
+                    <th className="py-3 px-4">Contact_No</th>
                     <th className="py-3 px-4">Pass Status</th>
                     <th className="py-3 px-4 rounded-tr-lg">Action</th>
                   </tr>
@@ -840,13 +845,17 @@ const RosterTab = () => {
                         {st.student_name}
                       </td>
                       <td className="py-3 px-4 text-xs">
-                        {st.class_name ? `Class ${st.class_name} ${st.section || ''}` : '-'}
+                        {st.class_name ? `${st.class_name} ${st.section || ''}` : '-'}
+                        {st.roll_no ? <span className="text-slate-400 ml-1 font-mono text-[10px]">(Roll: {st.roll_no})</span> : ''}
                       </td>
                       <td className="py-3 px-4 text-xs text-slate-600">
                         {st.father_name || '-'}
                       </td>
-                      <td className="py-3 px-4 text-xs font-mono text-slate-500">
-                        {st.phone || '-'}
+                      <td className="py-3 px-4 text-xs text-slate-600">
+                        {st.mother_name || '-'}
+                      </td>
+                      <td className="py-3 px-4 text-xs font-mono text-slate-800 font-medium">
+                        {st.phone || st.contact_no || '-'}
                       </td>
                       <td className="py-3 px-4 text-xs">
                         {st.booking ? (

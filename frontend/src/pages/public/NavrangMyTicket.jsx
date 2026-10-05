@@ -14,22 +14,17 @@ export default function NavrangMyTicket() {
   const [tickets, setTickets] = useState([]);
   const [searched, setSearched] = useState(false);
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!searchInput.trim()) return;
-
+  const autoFetchTicket = async (type, query) => {
+    if (!query) return;
     setIsLoading(true);
     setError(null);
     setSearched(true);
-    setTickets([]);
-
     try {
-      let res;
-      if (searchType === 'booking_id') {
-        res = await api.get(`/navrang/booking/${searchInput.trim().toUpperCase()}`);
+      if (type === 'booking_id') {
+        const res = await api.get(`/navrang/booking/${query.trim().toUpperCase()}`);
         setTickets(res.data ? [res.data] : []);
       } else {
-        res = await api.post('/navrang/my-tickets', { phone: searchInput.trim() });
+        const res = await api.post('/navrang/my-tickets', { phone: query.trim() });
         const list = res.data?.bookings || (Array.isArray(res.data) ? res.data : []);
         setTickets(list);
       }
@@ -42,6 +37,27 @@ export default function NavrangMyTicket() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const bId = urlParams.get('booking_id') || urlParams.get('id');
+    const ph = urlParams.get('phone');
+    if (bId) {
+      setSearchType('booking_id');
+      setSearchInput(bId);
+      autoFetchTicket('booking_id', bId);
+    } else if (ph) {
+      setSearchType('phone');
+      setSearchInput(ph);
+      autoFetchTicket('phone', ph);
+    }
+  }, []);
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    if (!searchInput.trim()) return;
+    autoFetchTicket(searchType, searchInput);
   };
 
   const handleShare = (ticket) => {

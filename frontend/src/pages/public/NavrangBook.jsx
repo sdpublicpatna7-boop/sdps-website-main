@@ -14,10 +14,14 @@ import {
   Printer,
   Smartphone,
   ShieldCheck,
-  QrCode as QrIcon,
   HelpCircle,
   Clock,
-  Sparkles
+  Sparkles,
+  MessageSquare,
+  Search,
+  Phone,
+  User,
+  HeartHandshake
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import api from '@/lib/api';
@@ -56,8 +60,8 @@ const DEFAULT_PACKAGES = [
 
 const steps = [
   { id: 1, name: 'Pass', icon: Ticket },
-  { id: 2, name: 'Student Auth', icon: ShieldCheck },
-  { id: 3, name: 'Parent Info', icon: UserCheck },
+  { id: 2, name: 'Student Lookup', icon: Search },
+  { id: 3, name: 'Parent & WhatsApp', icon: MessageSquare },
   { id: 4, name: 'UPI Payment', icon: Smartphone },
   { id: 5, name: 'Ticket Pass', icon: CheckCircle2 },
 ];
@@ -130,7 +134,6 @@ export default function NavrangBook() {
       if (pkg) {
         setStudents(Array.from({ length: pkg.children }, () => ({
           admission_no: '',
-          student_name: '',
           verified: false,
           data: null,
           error: null
@@ -139,11 +142,11 @@ export default function NavrangBook() {
     }
   }, [selectedPackage, packages]);
 
-  const handleStudentFieldChange = (index, field, value) => {
+  const handleAdmissionNoChange = (index, value) => {
     const newStudents = [...students];
     newStudents[index] = { 
       ...newStudents[index], 
-      [field]: value, 
+      admission_no: value, 
       verified: false, 
       data: null, 
       error: null 
@@ -151,20 +154,13 @@ export default function NavrangBook() {
     setStudents(newStudents);
   };
 
-  const verifyStudent = async (index) => {
+  const fetchStudentDataByAdmissionNo = async (index) => {
     const student = students[index];
     const adm = (student.admission_no || '').trim();
-    const name = (student.student_name || '').trim();
 
     if (!adm) {
       const newStudents = [...students];
       newStudents[index].error = 'Please enter an admission number.';
-      setStudents(newStudents);
-      return;
-    }
-    if (!name) {
-      const newStudents = [...students];
-      newStudents[index].error = 'Please enter the student\'s name as registered in school records.';
       setStudents(newStudents);
       return;
     }
@@ -175,25 +171,33 @@ export default function NavrangBook() {
       newStudents[index].error = null;
       setStudents(newStudents);
 
-      const res = await api.post('/navrang/verify-student', { 
-        admission_no: adm,
-        student_name: name
-      });
+      const res = await api.post('/navrang/verify-student', { admission_no: adm });
       
+      const stData = res.data.student;
       const updated = [...students];
       updated[index] = { 
         ...updated[index], 
         verified: true, 
-        data: res.data.student,
+        data: stData,
         error: null
       };
       setStudents(updated);
+
+      // Pre-fill parent details from first student's record if empty
+      setParentDetails(prev => {
+        const cleanPhone = (stData.phone || stData.contact_no || '').replace(/\D/g, '').slice(-10);
+        return {
+          name: prev.name || stData.mother_name || stData.father_name || '',
+          phone: prev.phone || cleanPhone || '',
+          email: prev.email || ''
+        };
+      });
     } catch (err) {
       const updated = [...students];
       updated[index] = { 
         ...updated[index], 
         verified: false, 
-        error: err.response?.data?.detail || 'Verification failed. Please check the admission number and student name.' 
+        error: err.response?.data?.detail || 'Admission number not found in school records. Please check and try again.' 
       };
       setStudents(updated);
     } finally {
@@ -207,7 +211,6 @@ export default function NavrangBook() {
   const totalPrice = selectedPkgObj?.price || 299;
 
   // Build UPI URI for QR code and native app deep linking
-  // Format: upi://pay?pa=<VPA>&pn=<Name>&am=<Amount>&cu=INR&tn=Navrang
   const upiIntentUrl = `upi://pay?pa=${encodeURIComponent(upiConfig.upi_id)}&pn=${encodeURIComponent(upiConfig.merchant_name)}&am=${totalPrice}&cu=INR&tn=${encodeURIComponent(`Navrang Pass ${selectedPkgObj?.name || ''}`)}`;
 
   const handleCopyUpi = () => {
@@ -248,7 +251,7 @@ export default function NavrangBook() {
         upi_id_used: upiConfig.upi_id,
         students: students.map(s => ({
           admission_no: s.data?.admission_no || s.admission_no,
-          student_name: s.data?.name || s.student_name
+          student_name: s.data?.name || s.data?.student_name || ''
         }))
       };
 
@@ -272,7 +275,7 @@ export default function NavrangBook() {
     <div className="min-h-screen bg-slate-950 font-sans text-brand-navy selection:bg-brand-orange selection:text-white pb-16">
       <Helmet>
         <title>Book Navrang 2026 Passes | S.D. Public School</title>
-        <meta name="description" content="Exclusive online Dandiya night pass booking for verified current students of S.D. Public School, Patna." />
+        <meta name="description" content="Exclusive online Dandiya night pass booking for current students of S.D. Public School, Patna." />
       </Helmet>
 
       {/* Shared School-Styled Navrang Header */}
@@ -289,7 +292,7 @@ export default function NavrangBook() {
             Navrang 2026 Passes
           </h1>
           <p className="text-slate-300 text-sm md:text-base max-w-xl mx-auto">
-            Dandiya & Durga Puja Celebration Night • Direct UPI Payment Gateway
+            Dandiya & Durga Puja Celebration Night • Instant WhatsApp Pass Confirmation
           </p>
         </div>
       </div>
@@ -336,7 +339,7 @@ export default function NavrangBook() {
                   <div className="text-center max-w-xl mx-auto">
                     <h2 className="text-2xl md:text-3xl font-outfit font-extrabold text-slate-900">Choose Your Pass Package</h2>
                     <p className="text-sm text-slate-500 mt-1">
-                      Passes are exclusively for verified current students of S.D. Public School and their mothers.
+                      Passes are exclusively for current students of S.D. Public School and their mothers.
                     </p>
                   </div>
 
@@ -397,25 +400,25 @@ export default function NavrangBook() {
                       onClick={() => setStep(2)}
                       className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-xl font-semibold flex items-center gap-2 shadow-lg shadow-purple-600/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
-                      Continue to Student Auth <ArrowRight className="w-4 h-4" />
+                      Enter Admission No <ArrowRight className="w-4 h-4" />
                     </button>
                   </div>
                 </motion.div>
               )}
 
-              {/* STEP 2: STUDENT 2-FACTOR AUTHENTICATION */}
+              {/* STEP 2: ENTER ADMISSION NO -> FETCH & SHOW STUDENT DETAILS */}
               {step === 2 && (
                 <motion.div key="step2" variants={slideVariants} initial="initial" animate="enter" exit="exit" className="space-y-6">
                   <div className="text-center max-w-xl mx-auto">
                     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 mb-2">
                       <ShieldCheck className="w-3.5 h-3.5 text-purple-700" />
-                      Two-Factor School Eligibility Verification
+                      Current SDPS Student Verification
                     </div>
                     <h2 className="text-2xl md:text-3xl font-outfit font-extrabold text-slate-900">
-                      Verify Student Details
+                      Enter Student Admission Number
                     </h2>
                     <p className="text-xs md:text-sm text-slate-500 mt-1">
-                      Enter both the <strong>Admission Number</strong> and the registered <strong>Student Name</strong>. Our system will check the school database to authenticate current enrolment.
+                      Enter the admission number (e.g. <strong>SDPS2</strong> or <strong>2</strong>) to automatically fetch student, parent, and contact details from school records.
                     </p>
                   </div>
 
@@ -437,37 +440,49 @@ export default function NavrangBook() {
                           </span>
                           {student.verified && (
                             <span className="inline-flex items-center gap-1 text-xs font-bold text-green-700 bg-green-100 px-2.5 py-0.5 rounded-full">
-                              <CheckCircle2 className="w-3.5 h-3.5" /> Authenticated
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Verified in School Roster
                             </span>
                           )}
                         </div>
 
                         {!student.verified ? (
                           <div className="space-y-3">
-                            <div className="grid sm:grid-cols-2 gap-3">
-                              <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                                  Admission Number <span className="text-red-500">*</span>
-                                </label>
+                            <div>
+                              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                Admission Number <span className="text-red-500">*</span>
+                              </label>
+                              <div className="flex gap-2">
                                 <input 
                                   type="text"
                                   value={student.admission_no}
-                                  onChange={(e) => handleStudentFieldChange(idx, 'admission_no', e.target.value)}
-                                  placeholder="e.g. 1001 or SDPS1001"
-                                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                                  onChange={(e) => handleAdmissionNoChange(idx, e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      fetchStudentDataByAdmissionNo(idx);
+                                    }
+                                  }}
+                                  placeholder="e.g. SDPS2 or 2"
+                                  className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-mono focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none uppercase"
                                 />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                                  Student Full Name <span className="text-red-500">*</span>
-                                </label>
-                                <input 
-                                  type="text"
-                                  value={student.student_name}
-                                  onChange={(e) => handleStudentFieldChange(idx, 'student_name', e.target.value)}
-                                  placeholder="As registered in school"
-                                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
-                                />
+                                <button 
+                                  type="button"
+                                  onClick={() => fetchStudentDataByAdmissionNo(idx)}
+                                  disabled={!student.admission_no?.trim() || isVerifyingIdx === idx}
+                                  className="bg-brand-navy hover:bg-slate-800 text-white text-xs font-semibold px-5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all shrink-0"
+                                >
+                                  {isVerifyingIdx === idx ? (
+                                    <>
+                                      <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                      Fetching...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Search className="w-3.5 h-3.5" />
+                                      Fetch Details
+                                    </>
+                                  )}
+                                </button>
                               </div>
                             </div>
 
@@ -477,60 +492,77 @@ export default function NavrangBook() {
                                 <span>{student.error}</span>
                               </div>
                             )}
-
-                            <div className="flex justify-end pt-1">
-                              <button 
-                                type="button"
-                                onClick={() => verifyStudent(idx)}
-                                disabled={!student.admission_no?.trim() || !student.student_name?.trim() || isVerifyingIdx === idx}
-                                className="bg-brand-navy hover:bg-slate-800 text-white text-xs font-semibold px-5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                              >
-                                {isVerifyingIdx === idx ? (
-                                  <>
-                                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    Verifying in Roster...
-                                  </>
-                                ) : (
-                                  <>
-                                    <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-                                    Verify Student Identity
-                                  </>
-                                )}
-                              </button>
-                            </div>
                           </div>
                         ) : (
-                          <div className="bg-white p-4 rounded-xl border border-green-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-bold text-sm shrink-0">
-                                {student.data?.name?.charAt(0) || '✓'}
-                              </div>
-                              <div>
-                                <div className="font-bold text-slate-900 text-sm md:text-base">
-                                  {student.data?.name}
+                          /* Detailed Student & Family Card Loaded from Roster */
+                          <div className="bg-white p-5 rounded-xl border border-green-200 shadow-sm space-y-3">
+                            <div className="flex justify-between items-start">
+                              <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-800 flex items-center justify-center font-black text-lg shrink-0">
+                                  {student.data?.name?.charAt(0) || '✓'}
                                 </div>
-                                <div className="text-xs text-slate-600 flex flex-wrap gap-2 mt-0.5">
-                                  <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded">Adm: {student.data?.admission_no}</span>
-                                  {student.data?.class_name && (
-                                    <span className="bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded font-medium">
-                                      Class: {student.data?.class_name} {student.data?.section || ''}
+                                <div>
+                                  <div className="font-extrabold text-slate-900 text-base md:text-lg">
+                                    {student.data?.name}
+                                  </div>
+                                  <div className="text-xs text-purple-700 font-semibold mt-0.5 flex flex-wrap gap-2">
+                                    <span className="bg-purple-50 px-2 py-0.5 rounded border border-purple-100">
+                                      Class: {student.data?.class_name || 'N/A'} {student.data?.section ? `Sec ${student.data.section}` : ''}
                                     </span>
-                                  )}
+                                    {student.data?.roll_no && (
+                                      <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-700">
+                                        Roll No: {student.data.roll_no}
+                                      </span>
+                                    )}
+                                    <span className="bg-slate-100 px-2 py-0.5 rounded font-mono text-slate-700">
+                                      Adm: {student.data?.admission_no}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
+
+                              <button 
+                                type="button"
+                                onClick={() => {
+                                  const newSt = [...students];
+                                  newSt[idx] = { admission_no: '', verified: false, data: null, error: null };
+                                  setStudents(newSt);
+                                }}
+                                className="text-xs text-slate-400 hover:text-red-600 underline font-medium"
+                              >
+                                Change
+                              </button>
                             </div>
 
-                            <button 
-                              type="button"
-                              onClick={() => {
-                                const newSt = [...students];
-                                newSt[idx] = { admission_no: '', student_name: '', verified: false, data: null, error: null };
-                                setStudents(newSt);
-                              }}
-                              className="text-xs text-slate-500 hover:text-red-600 underline font-medium self-end sm:self-center"
-                            >
-                              Change / Re-verify
-                            </button>
+                            {/* Family Details fetched from Roster */}
+                            <div className="grid sm:grid-cols-3 gap-2.5 pt-3 border-t border-slate-100 text-xs">
+                              <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">
+                                  Father's Name
+                                </span>
+                                <span className="font-semibold text-slate-800">
+                                  {student.data?.father_name || 'N/A'}
+                                </span>
+                              </div>
+
+                              <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">
+                                  Mother's Name
+                                </span>
+                                <span className="font-semibold text-slate-800">
+                                  {student.data?.mother_name || 'N/A'}
+                                </span>
+                              </div>
+
+                              <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">
+                                  Contact / Phone No.
+                                </span>
+                                <span className="font-mono font-bold text-slate-800">
+                                  {student.data?.phone || student.data?.contact_no || 'N/A'}
+                                </span>
+                              </div>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -549,19 +581,25 @@ export default function NavrangBook() {
                       onClick={() => setStep(3)}
                       className="bg-purple-600 hover:bg-purple-700 text-white px-7 py-2.5 rounded-xl font-semibold flex items-center gap-2 shadow-lg shadow-purple-600/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
                     >
-                      Parent Contact Info <ArrowRight className="w-4 h-4" />
+                      Proceed to Contact & WhatsApp <ArrowRight className="w-4 h-4" />
                     </button>
                   </div>
                 </motion.div>
               )}
 
-              {/* STEP 3: PARENT / GUARDIAN CONTACT */}
+              {/* STEP 3: PARENT & WHATSAPP CONFIRMATION DETAILS (PHONE IS USER-CHANGEABLE) */}
               {step === 3 && (
                 <motion.div key="step3" variants={slideVariants} initial="initial" animate="enter" exit="exit" className="space-y-6">
                   <div className="text-center max-w-xl mx-auto">
-                    <h2 className="text-2xl md:text-3xl font-outfit font-extrabold text-slate-900">Parent / Guardian Information</h2>
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 mb-2 border border-green-200">
+                      <MessageSquare className="w-3.5 h-3.5 text-green-700" />
+                      WhatsApp Pass Confirmation Notification
+                    </div>
+                    <h2 className="text-2xl md:text-3xl font-outfit font-extrabold text-slate-900">
+                      Parent & WhatsApp Contact
+                    </h2>
                     <p className="text-xs md:text-sm text-slate-500 mt-1">
-                      Pass notifications and gate entry QR codes will be linked to this contact number.
+                      Pre-filled with your school records. You can update the WhatsApp number if you prefer to receive your booking message on a different mobile number.
                     </p>
                   </div>
                   
@@ -579,9 +617,10 @@ export default function NavrangBook() {
                         required
                       />
                     </div>
+
                     <div>
                       <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        10-Digit Mobile Number <span className="text-red-500">*</span>
+                        WhatsApp / Mobile Number for Pass Confirmation <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
                         <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">+91</span>
@@ -590,13 +629,19 @@ export default function NavrangBook() {
                           maxLength="10"
                           value={parentDetails.phone}
                           onChange={(e) => setParentDetails({...parentDetails, phone: e.target.value.replace(/\D/g,'')})}
-                          className="w-full pl-12 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm font-mono focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                          className="w-full pl-12 pr-4 py-2.5 rounded-xl border-2 border-green-500 text-sm font-mono font-bold focus:ring-2 focus:ring-green-500 focus:border-green-600 outline-none bg-green-50/20"
                           placeholder="9876543210"
                           required
                         />
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-1">Used to retrieve your pass anytime under 'My Tickets'.</p>
+                      <div className="mt-2 p-2.5 rounded-xl bg-green-50 border border-green-200 text-green-900 text-xs flex items-start gap-2">
+                        <MessageSquare className="w-4 h-4 text-green-700 shrink-0 mt-0.5" />
+                        <span>
+                          <strong>WhatsApp Delivery:</strong> We will automatically send your booking confirmation and digital QR pass link to <strong>+91 {parentDetails.phone || '...'}</strong> upon booking.
+                        </span>
+                      </div>
                     </div>
+
                     <div>
                       <label className="block text-xs font-semibold text-slate-700 mb-1">
                         Email Address (Optional)
@@ -629,7 +674,7 @@ export default function NavrangBook() {
                 </motion.div>
               )}
 
-              {/* STEP 4: CUSTOM DIRECT UPI PAYMENT GATEWAY (NO RAZORPAY) */}
+              {/* STEP 4: CUSTOM DIRECT UPI PAYMENT GATEWAY */}
               {step === 4 && (
                 <motion.div key="step4" variants={slideVariants} initial="initial" animate="enter" exit="exit" className="space-y-6">
                   <div className="text-center max-w-xl mx-auto">
@@ -651,7 +696,7 @@ export default function NavrangBook() {
                       <div>
                         <div className="font-bold text-slate-900">{selectedPkgObj?.name}</div>
                         <div className="text-xs text-slate-500">
-                          {students.map(s => s.data?.name || s.student_name).join(', ')}
+                          {students.map(s => s.data?.name || s.admission_no).join(', ')}
                         </div>
                       </div>
                       <div className="text-xl font-black text-purple-700">
@@ -774,7 +819,7 @@ export default function NavrangBook() {
                           {isBooking ? (
                             <>
                               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                              Submitting Booking...
+                              Submitting Booking & Sending WhatsApp...
                             </>
                           ) : (
                             <>
@@ -798,11 +843,16 @@ export default function NavrangBook() {
                   </div>
                   
                   <h2 className="text-2xl md:text-3xl font-outfit font-extrabold text-green-700 mb-1">
-                    Booking & Payment Submitted!
+                    Booking Submitted & WhatsApp Message Sent!
                   </h2>
-                  <p className="text-slate-600 text-xs md:text-sm mb-6 max-w-md mx-auto">
-                    Your Navrang 2026 pass has been registered. School administration will verify your UPI UTR reference.
+                  <p className="text-slate-600 text-xs md:text-sm mb-4 max-w-md mx-auto">
+                    Your Navrang 2026 pass has been registered. A confirmation message with your ticket link has been sent to <strong>+91 {bookingResult.parent_phone || parentDetails.phone}</strong>.
                   </p>
+
+                  <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 text-green-800 text-xs px-4 py-2 rounded-xl mb-6">
+                    <MessageSquare className="w-4 h-4 text-green-600" />
+                    <span>WhatsApp confirmation sent to <strong>+91 {bookingResult.parent_phone || parentDetails.phone}</strong></span>
+                  </div>
 
                   {/* Printable Ticket Card */}
                   <div id="navrang-pass-ticket" className="max-w-md mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-200 mb-6 text-left">
@@ -832,7 +882,7 @@ export default function NavrangBook() {
 
                     <div className="p-5 space-y-3 bg-white text-xs">
                       <div>
-                        <div className="font-semibold text-slate-400 uppercase text-[10px] tracking-wider mb-1">Verified Students</div>
+                        <div className="font-semibold text-slate-400 uppercase text-[10px] tracking-wider mb-1">Students Admitted</div>
                         <div className="space-y-1">
                           {(bookingResult.students || students).map((st, i) => (
                             <div key={i} className="flex justify-between font-medium text-slate-800 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-100">
@@ -849,7 +899,7 @@ export default function NavrangBook() {
                           <div className="font-medium truncate">{bookingResult.parent_name || parentDetails.name}</div>
                         </div>
                         <div>
-                          <div className="text-[10px] uppercase text-slate-400 font-semibold">Mobile Number</div>
+                          <div className="text-[10px] uppercase text-slate-400 font-semibold">WhatsApp Number</div>
                           <div className="font-mono font-medium">{bookingResult.parent_phone || parentDetails.phone}</div>
                         </div>
                       </div>
