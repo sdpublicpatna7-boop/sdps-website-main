@@ -21,7 +21,8 @@ import {
   Search,
   Phone,
   User,
-  HeartHandshake
+  HeartHandshake,
+  Info
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import api from '@/lib/api';
@@ -555,12 +556,30 @@ export default function NavrangBook() {
                               </div>
 
                               <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">
-                                  Contact / Phone No.
-                                </span>
+                                <div className="flex items-center justify-between mb-0.5">
+                                  <span className="text-[10px] uppercase font-bold text-slate-400">
+                                    Contact / Phone No.
+                                  </span>
+                                  <span className="text-[9px] font-semibold text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded">
+                                    Can be changed
+                                  </span>
+                                </div>
                                 <span className="font-mono font-bold text-slate-800">
                                   {student.data?.phone || student.data?.contact_no || 'N/A'}
                                 </span>
+                              </div>
+                            </div>
+
+                            {/* Contact Number Note */}
+                            <div className="mt-3 p-3 rounded-xl bg-amber-50/90 border border-amber-200 text-amber-950 text-xs flex items-start gap-2.5 shadow-sm">
+                              <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                              <div className="leading-relaxed">
+                                <strong className="font-bold text-amber-950 block">
+                                  Please check the contact number:
+                                </strong>
+                                <p className="mt-0.5 text-amber-900">
+                                  If this phone number is incorrect or outdated, <strong>you can easily change it in the next step</strong>. This number is used for sending your pass booking details, official QR entry tickets on WhatsApp, and gate verification.
+                                </p>
                               </div>
                             </div>
                           </div>
@@ -619,9 +638,14 @@ export default function NavrangBook() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        WhatsApp / Mobile Number for Pass Confirmation <span className="text-red-500">*</span>
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-semibold text-slate-700">
+                          WhatsApp / Mobile Number for Pass Confirmation <span className="text-red-500">*</span>
+                        </label>
+                        <span className="text-[10px] font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-100">
+                          ✏️ Changeable if incorrect
+                        </span>
+                      </div>
                       <div className="relative">
                         <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">+91</span>
                         <input 
@@ -633,6 +657,17 @@ export default function NavrangBook() {
                           placeholder="9876543210"
                           required
                         />
+                      </div>
+                      <div className="mt-2.5 p-3 rounded-xl bg-amber-50/90 border border-amber-200 text-amber-950 text-xs flex items-start gap-2.5 shadow-sm">
+                        <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                        <div className="leading-relaxed">
+                          <strong className="font-bold text-amber-950 block">
+                            Verify your mobile number:
+                          </strong>
+                          <p className="mt-0.5 text-amber-900">
+                            If the number fetched from school records is incorrect or you want to receive details on another mobile, <strong>feel free to change it above</strong>. This phone number will be used for all pass booking details, official WhatsApp confirmation, and QR gate passes.
+                          </p>
+                        </div>
                       </div>
                       <div className="mt-2 p-2.5 rounded-xl bg-green-50 border border-green-200 text-green-900 text-xs flex items-start gap-2">
                         <MessageSquare className="w-4 h-4 text-green-700 shrink-0 mt-0.5" />
@@ -692,14 +727,25 @@ export default function NavrangBook() {
 
                   <div className="max-w-xl mx-auto bg-gradient-to-b from-purple-50/60 to-white rounded-2xl p-5 md:p-6 border border-purple-200 shadow-sm space-y-6">
                     {/* Booking Breakdown Pill */}
-                    <div className="bg-white p-3.5 rounded-xl border border-purple-100 flex justify-between items-center text-sm">
+                    <div className="bg-white p-3.5 rounded-xl border border-purple-100 flex flex-col sm:flex-row justify-between sm:items-center gap-2 text-sm">
                       <div>
                         <div className="font-bold text-slate-900">{selectedPkgObj?.name}</div>
                         <div className="text-xs text-slate-500">
                           {students.map(s => s.data?.name || s.admission_no).join(', ')}
                         </div>
+                        <div className="text-xs text-purple-700 font-medium mt-1 flex items-center gap-1.5">
+                          <MessageSquare className="w-3.5 h-3.5 text-green-600 shrink-0" />
+                          <span>WhatsApp Passes to: <strong className="text-slate-900 font-mono font-bold">+91 {parentDetails.phone}</strong></span>
+                          <button 
+                            type="button" 
+                            onClick={() => setStep(3)} 
+                            className="text-[11px] text-purple-600 hover:text-purple-800 underline ml-1 font-semibold"
+                          >
+                            Change
+                          </button>
+                        </div>
                       </div>
-                      <div className="text-xl font-black text-purple-700">
+                      <div className="text-xl font-black text-purple-700 shrink-0">
                         ₹{totalPrice}
                       </div>
                     </div>
