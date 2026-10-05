@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, Query, Request, Response, Body
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from pymongo import UpdateOne
@@ -683,13 +684,30 @@ async def admin_verify_entry(req: VerifyEntryRequest, token: TokenData = Depends
     })
     
     if not booking:
-        raise HTTPException(status_code=404, detail="Invalid Ticket: No booking found for this code.")
+        raise HTTPException(status_code=404, detail="INVALID TICKET: No booking found for this code.")
         
+    if "_id" in booking:
+        del booking["_id"]
+
     if booking.get("payment_status") not in ["paid", "cash"]:
-        raise HTTPException(status_code=400, detail=f"Cannot allow entry: Payment status is '{booking.get('payment_status', 'pending')}'. Please collect payment or verify UTR first.")
+        return JSONResponse(
+            status_code=400,
+            content={
+                "status": "unpaid",
+                "detail": f"PAYMENT UNPAID: Payment status is '{booking.get('payment_status', 'pending')}'. Please collect ₹{booking.get('price', 0)} cash or verify UTR first.",
+                "booking": booking
+            }
+        )
         
     if booking.get("entry_status") == "entered":
-        raise HTTPException(status_code=400, detail=f"ALREADY USED: This ticket was already checked in at {booking.get('entry_time', 'earlier')}.")
+        return JSONResponse(
+            status_code=400,
+            content={
+                "status": "already_used",
+                "detail": f"ALREADY USED: This ticket was already checked in at {booking.get('entry_time', 'earlier')} by {booking.get('entry_marked_by', 'Gate Officer')}.",
+                "booking": booking
+            }
+        )
         
     update_data = {
         "entry_status": "entered",
@@ -700,12 +718,38 @@ async def admin_verify_entry(req: VerifyEntryRequest, token: TokenData = Depends
     await db.navrang_bookings.update_one({"booking_id": booking["booking_id"]}, {"$set": update_data})
     
     booking.update(update_data)
+        
+    return {
+        "status": "success",
+        "verified": True,
+        "message": "ENTRY GRANTED ✓",
+        "booking": booking
+    }
+
+@navrang_router.post("/admin/bookings/{booking_id}/admit-cash")
+async def admin_admit_cash(booking_id: str, token: TokenData = Depends(get_current_admin)):
+    booking = await db.navrang_bookings.find_one({"booking_id": booking_id})
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+        
+    update_data = {
+        "payment_status": "cash",
+        "entry_status": "entered",
+        "entry_time": now_iso(),
+        "entry_marked_by": token.sub,
+        "verified_by": token.sub,
+        "verified_at": now_iso(),
+        "updated_at": now_iso()
+    }
+    
+    await db.navrang_bookings.update_one({"booking_id": booking_id}, {"$set": update_data})
+    booking.update(update_data)
     if "_id" in booking:
         del booking["_id"]
         
     return {
         "status": "success",
-        "message": "Entry verified and marked successfully!",
+        "message": "Cash collected & Entry Granted ✓",
         "booking": booking
     }
 
