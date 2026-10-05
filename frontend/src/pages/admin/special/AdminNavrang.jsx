@@ -1851,19 +1851,20 @@ const ScannerTab = () => {
             {/* 1. CAMERA SCANNER VIEWPORT */}
             {activeMode === 'camera' && (
               <div className="space-y-4">
-                <div className="relative aspect-video sm:aspect-square max-h-[380px] w-full bg-black rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center border border-slate-800">
+                <div className="relative aspect-video sm:aspect-square max-h-[420px] w-full bg-black rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center border border-slate-800">
+                  {/* VIDEO IN BACKGROUND */}
                   <video
                     ref={videoRef}
                     playsInline
                     autoPlay
                     muted
-                    className={`w-full h-full object-cover transition-opacity duration-300 ${cameraActive ? 'opacity-100' : 'opacity-0 absolute'}`}
+                    className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 z-0 ${cameraActive ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
                   />
                   <canvas ref={canvasRef} className="hidden" />
 
                   {/* CAMERA NOT RUNNING STATE */}
                   {!cameraActive && (
-                    <div className="text-center p-6 text-white space-y-3 max-w-sm">
+                    <div className="relative z-10 text-center p-6 text-white space-y-3 max-w-sm">
                       <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center mx-auto text-amber-400 border border-white/10">
                         <Camera className="w-8 h-8" />
                       </div>
@@ -1893,7 +1894,7 @@ const ScannerTab = () => {
                   {cameraActive && (
                     <>
                       {/* Top Bar with Camera Controls */}
-                      <div className="absolute top-3 inset-x-3 flex justify-between items-center z-20">
+                      <div className="absolute top-3 inset-x-3 flex justify-between items-center z-30 pointer-events-auto">
                         <div className="inline-flex items-center gap-1.5 bg-black/75 backdrop-blur-md text-emerald-400 text-[11px] font-bold px-3 py-1 rounded-full border border-emerald-500/40">
                           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                           Ready For Pass
@@ -1931,37 +1932,38 @@ const ScannerTab = () => {
                         </div>
                       </div>
 
-                      {/* Center QR Target Reticle (Cinema Usher HUD) */}
-                      <div className="relative z-10 w-48 h-48 sm:w-56 sm:h-56 border-2 border-emerald-400/80 rounded-2xl shadow-[0_0_30px_rgba(52,211,153,0.35)] pointer-events-none flex flex-col justify-between p-1.5 overflow-hidden">
-                        {/* 4 Corner Targeting Marks */}
+                      {/* Center QR Target Reticle (Cinema Usher HUD with Outer Shadow Vignette) */}
+                      <div className="relative z-20 w-52 h-52 sm:w-60 sm:h-60 border-2 border-emerald-400 rounded-3xl shadow-[0_0_0_9999px_rgba(0,0,0,0.45)] pointer-events-none flex flex-col justify-between p-2 overflow-hidden bg-emerald-500/5">
+                        {/* 4 Glowing Corner Targeting Brackets */}
                         <div className="flex justify-between">
-                          <div className="w-4 h-4 border-t-2 border-l-2 border-white rounded-tl" />
-                          <div className="w-4 h-4 border-t-2 border-r-2 border-white rounded-tr" />
+                          <div className="w-6 h-6 border-t-3 border-l-3 border-emerald-300 rounded-tl-xl shadow-[0_0_10px_#34d399]" />
+                          <div className="w-6 h-6 border-t-3 border-r-3 border-emerald-300 rounded-tr-xl shadow-[0_0_10px_#34d399]" />
                         </div>
                         
-                        {/* Animated Laser Scanning Line */}
+                        {/* Animated Neon Laser Scanning Line */}
                         <motion.div 
-                          animate={{ top: ['5%', '92%', '5%'] }} 
+                          animate={{ top: ['6%', '90%', '6%'] }} 
                           transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-                          className="absolute left-2 right-2 h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_15px_#34d399]" 
+                          className="absolute left-2 right-2 h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_18px_#34d399]" 
                         />
 
                         <div className="flex justify-between">
-                          <div className="w-4 h-4 border-b-2 border-l-2 border-white rounded-bl" />
-                          <div className="w-4 h-4 border-b-2 border-r-2 border-white rounded-br" />
+                          <div className="w-6 h-6 border-b-3 border-l-3 border-emerald-300 rounded-bl-xl shadow-[0_0_10px_#34d399]" />
+                          <div className="w-6 h-6 border-b-3 border-r-3 border-emerald-300 rounded-br-xl shadow-[0_0_10px_#34d399]" />
                         </div>
                       </div>
 
                       {/* Processing Status Banner */}
                       {isProcessing && (
-                        <div className="absolute inset-0 bg-black/80 backdrop-blur-xs z-30 flex flex-col items-center justify-center text-white space-y-2">
+                        <div className="absolute inset-0 bg-black/80 backdrop-blur-xs z-40 flex flex-col items-center justify-center text-white space-y-2">
                           <div className="w-8 h-8 border-3 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin" />
                           <span className="text-xs font-bold text-emerald-400">Verifying Ticket Pass...</span>
                         </div>
                       )}
 
-                      <div className="absolute bottom-3 inset-x-3 text-center z-20">
-                        <span className="text-[11px] font-medium text-white/90 bg-black/75 px-3 py-1 rounded-full backdrop-blur-md border border-white/10">
+                      <div className="absolute bottom-3 inset-x-3 text-center z-30 pointer-events-none">
+                        <span className="text-xs font-bold text-emerald-300 bg-black/85 px-4 py-1.5 rounded-full backdrop-blur-md border border-emerald-500/30 shadow-lg inline-flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                           Align Attendee QR Pass inside green reticle
                         </span>
                       </div>
