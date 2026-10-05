@@ -35,6 +35,11 @@ const steps = [
 ];
 
 export default function NavrangBook() {
+  const isSubdomain = typeof window !== "undefined" && (
+    window.location.hostname.startsWith("navrang.") ||
+    window.location.hostname.startsWith("navrang-") ||
+    window.location.hostname === "navrang.localhost"
+  );
   const [step, setStep] = useState(1);
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [students, setStudents] = useState([]);
@@ -467,7 +472,7 @@ export default function NavrangBook() {
                       <p className="text-sm text-slate-500 mb-4">Show this QR code at the entrance</p>
                       <div className="w-full flex gap-3">
                         <Link 
-                          to="/navrang/my-ticket"
+                          to={isSubdomain ? "/my-ticket" : "/navrang/my-ticket"}
                           className="flex-1 bg-purple-100 text-purple-700 py-2 rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-purple-200 transition-colors"
                         >
                           My Tickets

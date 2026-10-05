@@ -1,6 +1,26 @@
 {
   "redirects": [
     {
+      "source": "/navrang",
+      "destination": "https://navrang.sdpublic.org/",
+      "permanent": false
+    },
+    {
+      "source": "/navrang/book",
+      "destination": "https://navrang.sdpublic.org/book",
+      "permanent": false
+    },
+    {
+      "source": "/navrang/my-ticket",
+      "destination": "https://navrang.sdpublic.org/my-ticket",
+      "permanent": false
+    },
+    {
+      "source": "/navrang/:match*",
+      "destination": "https://navrang.sdpublic.org/:match*",
+      "permanent": false
+    },
+    {
       "source": "/s/:code",
       "destination": "https://api.sdpublic.org/api/s/:code",
       "permanent": false

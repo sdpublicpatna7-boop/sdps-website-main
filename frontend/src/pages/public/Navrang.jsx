@@ -139,7 +139,11 @@ export default function Navrang() {
     }
   ];
 
-  const isSubdomain = typeof window !== "undefined" && window.location.hostname.startsWith("navrang.");
+  const isSubdomain = typeof window !== "undefined" && (
+    window.location.hostname.startsWith("navrang.") ||
+    window.location.hostname.startsWith("navrang-") ||
+    window.location.hostname === "navrang.localhost"
+  );
   const bookPath = isSubdomain ? "/book" : "/navrang/book";
   const ticketPath = isSubdomain ? "/my-ticket" : "/navrang/my-ticket";
 

@@ -144,6 +144,18 @@ function PublicLoading() {
   );
 }
 
+function RedirectToNavrang({ path = "" }) {
+  if (typeof window !== "undefined") {
+    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    if (isLocal) {
+      window.location.replace(`http://navrang.localhost:${window.location.port || 3000}${path}`);
+    } else {
+      window.location.replace(`https://navrang.sdpublic.org${path}`);
+    }
+  }
+  return <PublicLoading />;
+}
+
 function BroadcastingApp() {
   return (
     <Suspense fallback={<AdminLoading />}>
@@ -180,12 +192,10 @@ function MainApp() {
       <Route path="/drive/:slug" element={<GDriveFolderPage />} />
       <Route path="/p/:slug" element={<GDriveFolderPage />} />
 
-      {/* Navrang 2026 Dandiya Event (Standalone festive experience) */}
-      <Route path="/navrang" element={<Suspense fallback={<PublicLoading />}><Navrang /></Suspense>} />
-      <Route path="/navrang/book" element={<Suspense fallback={<PublicLoading />}><NavrangBook /></Suspense>} />
-      <Route path="/navrang/my-ticket" element={<Suspense fallback={<PublicLoading />}><NavrangMyTicket /></Suspense>} />
-      <Route path="/book" element={<Suspense fallback={<PublicLoading />}><NavrangBook /></Suspense>} />
-      <Route path="/my-ticket" element={<Suspense fallback={<PublicLoading />}><NavrangMyTicket /></Suspense>} />
+      {/* Navrang Event: Redirects to navrang subdomain (served exclusively at navrang.sdpublic.org) */}
+      <Route path="/navrang" element={<RedirectToNavrang path="/" />} />
+      <Route path="/navrang/book" element={<RedirectToNavrang path="/book" />} />
+      <Route path="/navrang/my-ticket" element={<RedirectToNavrang path="/my-ticket" />} />
 
       {/* Public */}
       <Route element={<PublicLayout />}>
@@ -307,8 +317,11 @@ function App() {
     window.location.hostname.startsWith("audio.")
   );
 
-  const isNavrangSubdomain = typeof window !== "undefined" &&
-    window.location.hostname.startsWith("navrang.");
+  const isNavrangSubdomain = typeof window !== "undefined" && (
+    window.location.hostname.startsWith("navrang.") ||
+    window.location.hostname.startsWith("navrang-") ||
+    window.location.hostname === "navrang.localhost"
+  );
 
   const renderApp = () => {
     if (isBroadcastingSubdomain) return <BroadcastingApp />;

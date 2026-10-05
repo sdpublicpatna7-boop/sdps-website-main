@@ -17,7 +17,11 @@ export default function NavrangNavbar({ activePage = "home" }) {
   const navigate = useNavigate();
   const headerRef = useRef(null);
 
-  const isSubdomain = typeof window !== "undefined" && window.location.hostname.startsWith("navrang.");
+  const isSubdomain = typeof window !== "undefined" && (
+    window.location.hostname.startsWith("navrang.") ||
+    window.location.hostname.startsWith("navrang-") ||
+    window.location.hostname === "navrang.localhost"
+  );
   const landingPath = isSubdomain ? "/" : "/navrang";
   const isLanding = location.pathname === "/" || location.pathname === "/navrang";
 
