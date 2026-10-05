@@ -8,9 +8,10 @@ import {
   Smartphone, Filter, Pencil, Plus, X, Sparkles,
   Camera, CameraOff, SwitchCamera, ScanLine, Volume2, VolumeX, Upload,
   Flashlight, FlashlightOff, Maximize, Minimize, Ticket, ShieldCheck, UserCheck, Play, Pause, PhoneCall,
-  CreditCard, Lock, Eye, EyeOff
+  CreditCard, Lock, Eye, EyeOff, Banknote, Receipt, Printer, MessageSquare, PartyPopper
 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
+import { QRCodeSVG } from 'qrcode.react';
 import * as XLSX from 'xlsx';
 import api from '@/lib/api';
 
@@ -53,10 +54,16 @@ const Badge = ({ status }) => {
   );
 };
 
+const DEFAULT_PACKAGES = [
+  { id: 'silver', name: 'Silver Pass', price: 299, children: 1, desc: '1 SDPS Student + 1 Mother + 1 Pair Dandiya' },
+  { id: 'gold', name: 'Gold Pass', price: 399, children: 2, desc: '2 SDPS Students + 1 Mother + 1 Pair Dandiya' },
+  { id: 'platinum', name: 'Platinum Pass', price: 499, children: 3, desc: '3 SDPS Students + 1 Mother + 1 Pair Dandiya' }
+];
+
 // ==========================================
 // TAB 1: DASHBOARD
 // ==========================================
-const DashboardTab = () => {
+const DashboardTab = ({ onBookCash }) => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -81,6 +88,28 @@ const DashboardTab = () => {
 
   return (
     <div className="space-y-6">
+      {/* Quick Cash Booking Action Bar */}
+      <div className="bg-gradient-to-r from-purple-950 via-slate-900 to-indigo-950 p-4 md:p-5 rounded-2xl text-white flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm border border-purple-900/40">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-400/20 text-amber-300 flex items-center justify-center border border-amber-400/30 shrink-0">
+            <Banknote className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="font-bold text-sm text-white">Desk Ticket Booking & Cash Collection</h4>
+            <p className="text-xs text-purple-200">Issue official festival passes on spot for cash paid at the counter with instant WhatsApp delivery.</p>
+          </div>
+        </div>
+        {onBookCash && (
+          <button
+            type="button"
+            onClick={onBookCash}
+            className="w-full sm:w-auto bg-amber-400 hover:bg-amber-300 text-purple-950 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer shrink-0"
+          >
+            <Plus className="w-4 h-4" /> Book Ticket (Cash)
+          </button>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
           <div className="flex justify-between items-start">
@@ -188,7 +217,7 @@ const DashboardTab = () => {
 // ==========================================
 // TAB 2: ALL BOOKINGS (WITH UPI UTR VERIFY)
 // ==========================================
-const BookingsTab = () => {
+const BookingsTab = ({ onOpenCashBooking }) => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -339,10 +368,19 @@ const BookingsTab = () => {
           </select>
           <button 
             onClick={handleExport}
-            className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors"
+            className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" /> Export CSV
           </button>
+          {onOpenCashBooking && (
+            <button 
+              type="button"
+              onClick={onOpenCashBooking}
+              className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+            >
+              <Banknote className="w-3.5 h-3.5" /> Book Ticket (Cash)
+            </button>
+          )}
         </div>
       </div>
 
@@ -496,6 +534,719 @@ const BookingsTab = () => {
           )}
         </>
       )}
+    </div>
+  );
+};
+
+// ==========================================
+// TAB: CASH BOOKING (DESK & ON-SPOT TICKETING)
+// ==========================================
+const CashBookingTab = ({ onBookingComplete }) => {
+  const [packages, setPackages] = useState(DEFAULT_PACKAGES);
+  const [selectedPkg, setSelectedPkg] = useState('silver');
+  const [students, setStudents] = useState([
+    { admission_no: '', student_name: '', class_name: '', section: '', roll_no: '', father_name: '', mother_name: '', phone: '', verified: false, error: null }
+  ]);
+  const [parentDetails, setParentDetails] = useState({ name: '', phone: '', email: '' });
+  const [cashDetails, setCashDetails] = useState({
+    amount_collected: 299,
+    receipt_no: '',
+    admit_immediately: false,
+    notes: ''
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [bookingSuccess, setBookingSuccess] = useState(null);
+  const [searchingIdx, setSearchingIdx] = useState(null);
+
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const { data } = await api.get('/navrang/config');
+        if (data.packages) {
+          const list = Object.entries(data.packages).map(([key, pkg]) => ({
+            id: key,
+            name: pkg.name || `${key.toUpperCase()} Pass`,
+            price: pkg.price,
+            children: pkg.children,
+            desc: pkg.desc || `Admits ${pkg.children} Student(s) + 1 Mother + 1 Pair Dandiya`
+          }));
+          if (list.length > 0) {
+            setPackages(list);
+            const initialPkg = list.find(p => p.id === selectedPkg) || list[0];
+            setCashDetails(prev => ({ ...prev, amount_collected: initialPkg.price }));
+          }
+        }
+      } catch (err) {
+        // use default
+      }
+    };
+    fetchConfig();
+  }, []);
+
+  const handleSelectPackage = (pkgId) => {
+    setSelectedPkg(pkgId);
+    const pkg = packages.find(p => p.id === pkgId) || packages[0];
+    const childCount = pkg.children || 1;
+    
+    setCashDetails(prev => ({ ...prev, amount_collected: pkg.price }));
+
+    setStudents(prev => {
+      const arr = [];
+      for (let i = 0; i < childCount; i++) {
+        arr.push(prev[i] || {
+          admission_no: '',
+          student_name: '',
+          class_name: '',
+          section: '',
+          roll_no: '',
+          father_name: '',
+          mother_name: '',
+          phone: '',
+          verified: false,
+          error: null
+        });
+      }
+      return arr;
+    });
+  };
+
+  const handleLookupStudent = async (index) => {
+    const st = students[index];
+    const query = (st.admission_no || '').trim();
+    if (!query) {
+      toast.error('Enter an admission number to lookup.');
+      return;
+    }
+
+    try {
+      setSearchingIdx(index);
+      const res = await api.get(`/navrang/admin/roster?search=${encodeURIComponent(query)}&limit=5`);
+      const list = res.data?.students || [];
+
+      if (list.length > 0) {
+        const found = list.find(s => 
+          (s.admission_no || '').toLowerCase() === query.toLowerCase()
+        ) || list[0];
+
+        const updated = [...students];
+        updated[index] = {
+          ...updated[index],
+          admission_no: found.admission_no || query,
+          student_name: found.student_name || found.name || '',
+          class_name: found.class_name || found.Class || '',
+          section: found.section || found.Section || '',
+          roll_no: found.roll_no || found.Roll_no || '',
+          father_name: found.father_name || found.Father_Name || '',
+          mother_name: found.mother_name || found.Mother_Name || '',
+          phone: found.phone || found.contact_no || '',
+          verified: true,
+          error: null
+        };
+        setStudents(updated);
+        toast.success(`Found ${found.student_name} (${found.admission_no}) in Dandiya roster`);
+
+        setParentDetails(prev => ({
+          name: prev.name || found.mother_name || found.father_name || '',
+          phone: prev.phone || (found.phone || found.contact_no || '').replace(/\D/g, '').slice(-10),
+          email: prev.email || ''
+        }));
+      } else {
+        try {
+          const vRes = await api.post('/navrang/verify-student', { admission_no: query });
+          const stData = vRes.data?.student;
+          if (stData) {
+            const updated = [...students];
+            updated[index] = {
+              ...updated[index],
+              admission_no: stData.admission_no || query,
+              student_name: stData.student_name || stData.name || '',
+              class_name: stData.class_name || '',
+              section: stData.section || '',
+              roll_no: stData.roll_no || '',
+              father_name: stData.father_name || '',
+              mother_name: stData.mother_name || '',
+              phone: stData.phone || '',
+              verified: true,
+              error: null
+            };
+            setStudents(updated);
+            toast.success(`Verified: ${stData.student_name}`);
+            setParentDetails(prev => ({
+              name: prev.name || stData.mother_name || stData.father_name || '',
+              phone: prev.phone || (stData.phone || '').replace(/\D/g, '').slice(-10),
+              email: prev.email || ''
+            }));
+            return;
+          }
+        } catch (vErr) {
+          // not found in either
+        }
+
+        const updated = [...students];
+        updated[index] = {
+          ...updated[index],
+          verified: false,
+          error: 'Not found in school roster. Admin can enter details manually below.'
+        };
+        setStudents(updated);
+        toast.info(`Admission ${query} not found in roster. You can fill details manually.`);
+      }
+    } catch (err) {
+      toast.error('Lookup failed: ' + (err.response?.data?.detail || err.message));
+    } finally {
+      setSearchingIdx(null);
+    }
+  };
+
+  const handleStudentFieldChange = (index, field, value) => {
+    const updated = [...students];
+    updated[index] = {
+      ...updated[index],
+      [field]: value
+    };
+    if (field === 'admission_no') {
+      updated[index].verified = false;
+    }
+    setStudents(updated);
+  };
+
+  const handleSubmitCashBooking = async (e) => {
+    e.preventDefault();
+
+    if (!parentDetails.name?.trim()) {
+      toast.error('Parent / Guardian name is required.');
+      return;
+    }
+
+    const cleanPhone = (parentDetails.phone || '').replace(/\D/g, '').slice(-10);
+    if (cleanPhone.length !== 10) {
+      toast.error('Please enter a valid 10-digit mobile number for WhatsApp pass delivery.');
+      return;
+    }
+
+    const currentPkg = packages.find(p => p.id === selectedPkg) || packages[0];
+    const requiredChildren = currentPkg.children || 1;
+
+    for (let i = 0; i < requiredChildren; i++) {
+      const st = students[i];
+      if (!st.student_name?.trim() && !st.admission_no?.trim()) {
+        toast.error(`Please provide student details for Slot ${i + 1}.`);
+        return;
+      }
+    }
+
+    try {
+      setSubmitting(true);
+      const payload = {
+        package: selectedPkg,
+        students: students.slice(0, requiredChildren).map((s, idx) => ({
+          admission_no: (s.admission_no || `CASH-SPOT-${idx + 1}`).trim(),
+          student_name: (s.student_name || `Student ${idx + 1}`).trim(),
+          class_name: (s.class_name || '').trim(),
+          section: (s.section || '').trim(),
+          roll_no: (s.roll_no || '').trim(),
+          father_name: (s.father_name || '').trim(),
+          mother_name: (s.mother_name || '').trim()
+        })),
+        parent_name: parentDetails.name.trim(),
+        parent_phone: cleanPhone,
+        parent_email: (parentDetails.email || '').trim(),
+        amount_collected: Number(cashDetails.amount_collected) || currentPkg.price,
+        receipt_no: (cashDetails.receipt_no || '').trim(),
+        admit_immediately: Boolean(cashDetails.admit_immediately),
+        notes: (cashDetails.notes || '').trim()
+      };
+
+      const res = await api.post('/navrang/admin/book-cash', payload);
+      toast.success(res.data.message || 'Cash booking confirmed & pass generated!');
+      setBookingSuccess(res.data.booking);
+      if (onBookingComplete) onBookingComplete();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to submit cash booking.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleResetForm = () => {
+    setBookingSuccess(null);
+    const pkg = packages.find(p => p.id === selectedPkg) || packages[0];
+    setCashDetails({
+      amount_collected: pkg.price,
+      receipt_no: '',
+      admit_immediately: false,
+      notes: ''
+    });
+    setParentDetails({ name: '', phone: '', email: '' });
+    setStudents(Array.from({ length: pkg.children || 1 }, () => ({
+      admission_no: '',
+      student_name: '',
+      class_name: '',
+      section: '',
+      roll_no: '',
+      father_name: '',
+      mother_name: '',
+      phone: '',
+      verified: false,
+      error: null
+    })));
+  };
+
+  if (bookingSuccess) {
+    const pkgObj = packages.find(p => p.id === bookingSuccess.package) || { name: `${bookingSuccess.package} Pass` };
+    return (
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 max-w-3xl mx-auto space-y-6">
+        <div className="text-center py-4">
+          <div className="w-14 h-14 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto mb-3 shadow-xs">
+            <CheckCircle2 className="w-8 h-8" />
+          </div>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 mb-2">
+            ✓ Cash Paid & Official Entry Pass Issued
+          </span>
+          <h2 className="text-2xl md:text-3xl font-headline font-black text-slate-900">
+            Booking Confirmed: {bookingSuccess.booking_id}
+          </h2>
+          <p className="text-slate-500 text-xs md:text-sm mt-1">
+            Cash payment of <strong>₹{bookingSuccess.price}</strong> collected at desk. Official QR pass has been generated.
+          </p>
+        </div>
+
+        {/* Printable Ticket */}
+        <div id="admin-printable-ticket" className="bg-slate-50 border-2 border-purple-200 rounded-3xl overflow-hidden shadow-md max-w-md mx-auto">
+          <div className="bg-gradient-to-r from-purple-950 via-slate-900 to-indigo-950 text-white p-5 text-center relative">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-amber-400 mb-0.5">
+              S.D. Public School, Patna
+            </div>
+            <div className="text-xl font-headline font-black tracking-wide text-white">
+              NAVRANG 2026 PASS
+            </div>
+            <div className="text-2xl font-mono font-black text-amber-300 mt-1 tracking-wider">
+              {bookingSuccess.booking_id}
+            </div>
+            <div className="text-xs text-purple-200 mt-1 capitalize font-medium">
+              {pkgObj.name} • ₹{bookingSuccess.price} (Cash Paid)
+            </div>
+          </div>
+
+          <div className="p-6 bg-white flex flex-col items-center justify-center border-b border-purple-100 text-center">
+            <div className="p-3 bg-white rounded-2xl shadow-sm border border-slate-200 inline-block mb-2">
+              <QRCodeSVG 
+                value={bookingSuccess.qr_token || bookingSuccess.booking_id}
+                size={170}
+                level="H"
+                includeMargin={true}
+              />
+            </div>
+            <span className="text-[11px] font-mono font-bold text-slate-700">Scan at Entrance Gate</span>
+            <div className="mt-2 flex items-center gap-1.5">
+              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-emerald-300">
+                PAID - CASH AT DESK ✓
+              </span>
+              {bookingSuccess.entry_status === 'entered' && (
+                <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-blue-300">
+                  CHECKED IN AT GATE ✓
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="p-5 bg-white space-y-3 text-xs">
+            <div>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
+                Admitted Student(s)
+              </span>
+              <div className="space-y-1">
+                {bookingSuccess.students?.map((s, idx) => (
+                  <div key={idx} className="flex justify-between items-center bg-slate-50 p-2 rounded-lg border border-slate-100 text-xs">
+                    <span className="font-bold text-slate-800">{s.name || s.student_name}</span>
+                    <span className="text-slate-500 font-mono text-[11px]">
+                      Adm: {s.admission_no} {s.class_name ? `• ${s.class_name}` : ''}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-slate-700">
+              <div>
+                <span className="text-[10px] uppercase text-slate-400 font-semibold block">Mother / Guardian</span>
+                <span className="font-semibold text-slate-900 truncate block">{bookingSuccess.parent_name}</span>
+              </div>
+              <div>
+                <span className="text-[10px] uppercase text-slate-400 font-semibold block">WhatsApp Contact</span>
+                <span className="font-mono font-bold text-slate-900 block">{bookingSuccess.parent_phone}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-slate-700">
+              <div>
+                <span className="text-[10px] uppercase text-slate-400 font-semibold block">Receipt Ref</span>
+                <span className="font-mono text-purple-800 font-bold block">{bookingSuccess.payment_ref}</span>
+              </div>
+              <div>
+                <span className="text-[10px] uppercase text-slate-400 font-semibold block">Issued By Admin</span>
+                <span className="font-mono text-slate-700 block">{bookingSuccess.booked_by_admin || 'Admin'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-md mx-auto p-3.5 bg-green-50 border border-green-200 rounded-xl text-xs text-green-900 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <MessageSquare className="w-4 h-4 text-green-600 shrink-0" />
+            <span>Digital pass link dispatched via WhatsApp to <strong>+91 {bookingSuccess.parent_phone}</strong></span>
+          </div>
+        </div>
+
+        <div className="max-w-md mx-auto flex flex-col sm:flex-row gap-3 pt-2">
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="flex-1 bg-slate-900 hover:bg-slate-800 text-white py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 text-xs shadow-md transition-colors cursor-pointer"
+          >
+            <Printer className="w-4 h-4" /> Print Pass / Receipt
+          </button>
+          <button
+            type="button"
+            onClick={handleResetForm}
+            className="flex-1 bg-purple-700 hover:bg-purple-800 text-white py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 text-xs shadow-md transition-colors cursor-pointer"
+          >
+            <Plus className="w-4 h-4" /> Book Next Ticket
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const selectedPkgObj = packages.find(p => p.id === selectedPkg) || packages[0];
+
+  return (
+    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 max-w-4xl space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 pb-4 border-b border-slate-100">
+        <div>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 mb-1.5">
+            <Banknote className="w-3.5 h-3.5 text-amber-700" /> Desk Ticket Booking • Cash Collection
+          </div>
+          <h3 className="font-headline text-xl font-bold text-slate-900">
+            Issue Navrang 2026 Pass (Cash)
+          </h3>
+          <p className="text-slate-500 text-xs md:text-sm mt-0.5">
+            Book passes for parents paying in cash at the school desk or spot entry at the gate. Instant QR pass activation and WhatsApp delivery.
+          </p>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmitCashBooking} className="space-y-6">
+        {/* Step 1: Select Package */}
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+            1. Select Pass Package
+          </label>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {packages.map((pkg) => {
+              const isSelected = selectedPkg === pkg.id;
+              return (
+                <div
+                  key={pkg.id}
+                  onClick={() => handleSelectPackage(pkg.id)}
+                  className={`p-4 rounded-2xl border-2 transition-all cursor-pointer relative ${
+                    isSelected
+                      ? 'border-purple-600 bg-purple-50/70 shadow-sm ring-1 ring-purple-500'
+                      : 'border-slate-200 hover:border-slate-300 bg-white'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-1">
+                    <span className="font-bold text-sm text-slate-900">{pkg.name}</span>
+                    <span className="text-lg font-black text-purple-700">₹{pkg.price}</span>
+                  </div>
+                  <p className="text-xs text-slate-500 leading-relaxed mb-2">{pkg.desc}</p>
+                  <div className="flex items-center justify-between text-[11px] font-semibold text-purple-900 pt-2 border-t border-purple-100">
+                    <span>{pkg.children} Student Slot{pkg.children > 1 ? 's' : ''}</span>
+                    {isSelected && (
+                      <span className="flex items-center gap-1 text-emerald-600 font-bold">
+                        <Check className="w-3.5 h-3.5" /> Selected
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Step 2: Student Details & Dandiya Roster Lookup */}
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+              2. Student Details ({selectedPkgObj.children} Child{selectedPkgObj.children > 1 ? 'ren' : ''})
+            </label>
+            <span className="text-[11px] text-slate-400">
+              Type Admission No & click Lookup to fetch from Dandiya roster
+            </span>
+          </div>
+
+          <div className="space-y-4">
+            {students.map((st, idx) => (
+              <div 
+                key={idx}
+                className="p-4 rounded-2xl border border-slate-200 bg-slate-50/60 space-y-3"
+              >
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-purple-950 flex items-center gap-1.5">
+                    <GraduationCap className="w-4 h-4 text-purple-700" />
+                    Student Slot {idx + 1} of {selectedPkgObj.children}
+                  </span>
+                  {st.verified ? (
+                    <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-300 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Verified in Roster
+                    </span>
+                  ) : (
+                    <span className="bg-slate-200 text-slate-600 text-[10px] font-medium px-2 py-0.5 rounded-full">
+                      Manual / Walk-in
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="sm:col-span-2">
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                      Admission Number <span className="text-red-500">*</span>
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={st.admission_no || ''}
+                        onChange={(e) => handleStudentFieldChange(idx, 'admission_no', e.target.value)}
+                        placeholder="e.g. SDPS15 or 15"
+                        className="flex-1 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono font-bold focus:ring-2 focus:ring-purple-600 outline-none bg-white uppercase"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleLookupStudent(idx)}
+                        disabled={searchingIdx === idx || !st.admission_no?.trim()}
+                        className="bg-purple-700 hover:bg-purple-800 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-xs shrink-0"
+                      >
+                        {searchingIdx === idx ? (
+                          <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                          <Search className="w-3.5 h-3.5" />
+                        )}
+                        Lookup
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                      Class & Section
+                    </label>
+                    <div className="flex gap-1.5">
+                      <input
+                        type="text"
+                        value={st.class_name || ''}
+                        onChange={(e) => handleStudentFieldChange(idx, 'class_name', e.target.value)}
+                        placeholder="Class"
+                        className="w-1/2 border border-slate-300 rounded-xl px-2.5 py-2 text-xs focus:ring-2 focus:ring-purple-600 outline-none bg-white font-medium"
+                      />
+                      <input
+                        type="text"
+                        value={st.section || ''}
+                        onChange={(e) => handleStudentFieldChange(idx, 'section', e.target.value)}
+                        placeholder="Sec"
+                        className="w-1/2 border border-slate-300 rounded-xl px-2.5 py-2 text-xs focus:ring-2 focus:ring-purple-600 outline-none bg-white font-medium uppercase"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="sm:col-span-2">
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                      Student Full Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={st.student_name || ''}
+                      onChange={(e) => handleStudentFieldChange(idx, 'student_name', e.target.value)}
+                      placeholder="e.g. Anurag Mehta"
+                      required
+                      className="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-purple-600 outline-none bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                      Father / Mother Name
+                    </label>
+                    <input
+                      type="text"
+                      value={st.mother_name || st.father_name || ''}
+                      onChange={(e) => {
+                        handleStudentFieldChange(idx, 'mother_name', e.target.value);
+                        handleStudentFieldChange(idx, 'father_name', e.target.value);
+                      }}
+                      placeholder="e.g. Poonam Kumari"
+                      className="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-purple-600 outline-none bg-white font-medium"
+                    />
+                  </div>
+                </div>
+
+                {st.error && (
+                  <p className="text-[11px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200">
+                    ℹ️ {st.error}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Step 3: Parent & WhatsApp Details */}
+        <div className="p-4 rounded-2xl border border-slate-200 bg-white space-y-4">
+          <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">
+            <MessageSquare className="w-4 h-4 text-green-600" />
+            3. Parent Contact & WhatsApp Delivery
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                Parent / Mother Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={parentDetails.name}
+                onChange={(e) => setParentDetails({ ...parentDetails, name: e.target.value })}
+                placeholder="Parent's Name"
+                required
+                className="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-purple-600 outline-none bg-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                WhatsApp Phone (10 Digits) <span className="text-red-500">*</span>
+              </label>
+              <div className="flex items-center gap-1.5 border border-slate-300 rounded-xl px-3 py-2 bg-white focus-within:ring-2 focus-within:ring-purple-600">
+                <span className="text-xs font-bold text-slate-400">+91</span>
+                <input
+                  type="tel"
+                  maxLength="10"
+                  value={parentDetails.phone}
+                  onChange={(e) => setParentDetails({ ...parentDetails, phone: e.target.value.replace(/\D/g, '') })}
+                  placeholder="9876543210"
+                  required
+                  className="w-full text-xs font-mono font-bold outline-none bg-transparent"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                Email Address (Optional)
+              </label>
+              <input
+                type="email"
+                value={parentDetails.email}
+                onChange={(e) => setParentDetails({ ...parentDetails, email: e.target.value })}
+                placeholder="parent@example.com"
+                className="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-purple-600 outline-none bg-white"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Step 4: Cash Collection & Receipt Settings */}
+        <div className="p-4 rounded-2xl border border-amber-200 bg-amber-50/50 space-y-4">
+          <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-900">
+            <Receipt className="w-4 h-4 text-amber-700" />
+            4. Cash Collection & Receipt Settings
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                Cash Amount Collected (₹) <span className="text-red-500">*</span>
+              </label>
+              <div className="flex items-center gap-1.5 border border-slate-300 rounded-xl px-3 py-2 bg-white focus-within:ring-2 focus-within:ring-purple-600">
+                <span className="text-xs font-bold text-slate-400">₹</span>
+                <input
+                  type="number"
+                  value={cashDetails.amount_collected}
+                  onChange={(e) => setCashDetails({ ...cashDetails, amount_collected: e.target.value })}
+                  placeholder="299"
+                  required
+                  className="w-full text-xs font-bold text-slate-900 outline-none bg-transparent"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                Manual Cash Receipt / Bill No.
+              </label>
+              <input
+                type="text"
+                value={cashDetails.receipt_no}
+                onChange={(e) => setCashDetails({ ...cashDetails, receipt_no: e.target.value })}
+                placeholder="e.g. CR-402 (Optional)"
+                className="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-purple-600 outline-none bg-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                Admin Remark / Desk Notes
+              </label>
+              <input
+                type="text"
+                value={cashDetails.notes}
+                onChange={(e) => setCashDetails({ ...cashDetails, notes: e.target.value })}
+                placeholder="e.g. Spot booking Counter 1"
+                className="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-purple-600 outline-none bg-white"
+              />
+            </div>
+          </div>
+
+          <label className="flex items-start gap-2.5 p-3 rounded-xl bg-white border border-amber-200 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={cashDetails.admit_immediately}
+              onChange={(e) => setCashDetails({ ...cashDetails, admit_immediately: e.target.checked })}
+              className="mt-0.5 w-4 h-4 text-purple-700 rounded focus:ring-purple-600"
+            />
+            <div className="text-xs">
+              <span className="font-bold text-slate-900 block">
+                Admit Student & Mother Immediately at Gate (Fast-Track)
+              </span>
+              <span className="text-slate-500">
+                Check this box if the student/parent is already at the entrance gate right now so they do not need to be scanned again.
+              </span>
+            </div>
+          </label>
+        </div>
+
+        {/* Submit Button */}
+        <div className="pt-2">
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full bg-gradient-to-r from-purple-800 via-indigo-900 to-purple-800 hover:from-purple-900 hover:to-indigo-950 text-white py-4 px-6 rounded-2xl font-bold text-sm md:text-base shadow-lg shadow-purple-900/20 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-60"
+          >
+            {submitting ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Recording Cash Payment & Generating Pass...</span>
+              </>
+            ) : (
+              <>
+                <Banknote className="w-5 h-5 text-amber-300" />
+                <span>Confirm Cash Booking & Issue Ticket (₹{cashDetails.amount_collected || selectedPkgObj.price})</span>
+              </>
+            )}
+          </button>
+        </div>
+      </form>
     </div>
   );
 };
@@ -2698,6 +3449,7 @@ export default function AdminNavrang() {
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: Users },
     { id: 'bookings', label: 'All Bookings', icon: Search },
+    { id: 'cash-booking', label: 'Cash Booking (Desk)', icon: Banknote },
     { id: 'roster', label: 'Dandiya Roster', icon: GraduationCap },
     { id: 'scanner', label: 'Gate Scanner', icon: QrCode },
     { id: 'settings', label: 'Settings & UPI', icon: Settings },
@@ -2710,7 +3462,7 @@ export default function AdminNavrang() {
       <div className="mb-6">
         <h1 className="text-3xl font-headline font-bold text-slate-900">Navrang 2026 Admin</h1>
         <p className="text-slate-600 mt-1 text-sm">
-          Manage bookings, separate Dandiya student roster, UPI UTR payments, and gate scanner check-in.
+          Manage bookings, separate Dandiya student roster, desk cash ticketing, UPI UTR payments, and gate scanner check-in.
         </p>
       </div>
 
@@ -2723,7 +3475,7 @@ export default function AdminNavrang() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all relative outline-none whitespace-nowrap ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all relative outline-none whitespace-nowrap cursor-pointer ${
                 isActive ? 'text-white' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
@@ -2754,8 +3506,9 @@ export default function AdminNavrang() {
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.15 }}
           >
-            {activeTab === 'dashboard' && <DashboardTab />}
-            {activeTab === 'bookings' && <BookingsTab />}
+            {activeTab === 'dashboard' && <DashboardTab onBookCash={() => setActiveTab('cash-booking')} />}
+            {activeTab === 'bookings' && <BookingsTab onOpenCashBooking={() => setActiveTab('cash-booking')} />}
+            {activeTab === 'cash-booking' && <CashBookingTab onBookingComplete={() => {}} />}
             {activeTab === 'roster' && <RosterTab />}
             {activeTab === 'scanner' && <ScannerTab />}
             {activeTab === 'settings' && <SettingsTab />}

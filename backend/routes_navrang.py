@@ -277,6 +277,17 @@ class StudentRosterRecord(BaseModel):
     phone: Optional[str] = ""
     contact_no: Optional[str] = ""
 
+class AdminCashBookingRequest(BaseModel):
+    package: str = "silver"
+    students: List[Dict[str, Any]] = []
+    parent_name: str
+    parent_phone: str
+    parent_email: Optional[str] = ""
+    amount_collected: Optional[float] = None
+    receipt_no: Optional[str] = None
+    admit_immediately: Optional[bool] = False
+    notes: Optional[str] = ""
+
 # --- 2nd Razorpay Account (Dedicated Exclusively to Navrang) ---
 async def _get_navrang_razorpay_config():
     """
@@ -955,6 +966,172 @@ async def admin_admit_cash(booking_id: str, token: TokenData = Depends(get_curre
         "status": "success",
         "message": "Cash collected & Entry Granted ✓",
         "booking": booking
+    }
+
+@navrang_router.post("/admin/book-cash")
+async def admin_book_cash(req: AdminCashBookingRequest, token: TokenData = Depends(get_current_admin)):
+    config = await get_config()
+    packages = config.get("packages") or DEFAULT_PACKAGES
+    
+    pkg_key = (req.package or "silver").lower().strip()
+    if pkg_key not in packages:
+        raise HTTPException(status_code=400, detail=f"Invalid package '{pkg_key}'. Choose from silver, gold, or platinum.")
+    
+    pkg_info = packages[pkg_key]
+    required_children = pkg_info.get("children", 1)
+    
+    parent_name = req.parent_name.strip()
+    if not parent_name:
+        raise HTTPException(status_code=400, detail="Parent or guardian name is required.")
+        
+    parent_phone_clean = re.sub(r"\D", "", req.parent_phone or "")[-10:]
+    if len(parent_phone_clean) != 10:
+        raise HTTPException(status_code=400, detail="Please enter a valid 10-digit mobile number for WhatsApp ticket delivery.")
+
+    if not req.students or len(req.students) < required_children:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"The selected {pkg_info.get('name', pkg_key.title())} requires details for {required_children} student(s)."
+        )
+
+    # Process and enrich each student's details
+    verified_students = []
+    for idx in range(required_children):
+        st_input = req.students[idx] if idx < len(req.students) else {}
+        adm_val = (st_input.get("admission_no") or "").strip()
+        name_val = (st_input.get("student_name") or st_input.get("name") or "").strip()
+        
+        # If admission_no provided, try looking up in Dandiya roster first, then apaar_roster
+        roster_data = None
+        if adm_val:
+            roster_data = await _find_roster_student(adm_val)
+            
+        if roster_data:
+            st_name = name_val or roster_data.get("student_name") or roster_data.get("name") or ""
+            c_name = roster_data.get("class_name") or roster_data.get("Class") or st_input.get("class_name", "")
+            s_name = roster_data.get("section") or roster_data.get("Section") or st_input.get("section", "")
+            r_num = roster_data.get("roll_no") or roster_data.get("Roll_no") or st_input.get("roll_no", "")
+            f_name = roster_data.get("father_name") or roster_data.get("Father_Name") or st_input.get("father_name", "")
+            m_name = roster_data.get("mother_name") or roster_data.get("Mother_Name") or st_input.get("mother_name", "")
+            standard_adm = roster_data.get("admission_no", adm_val)
+        else:
+            if not name_val:
+                name_val = f"Student {idx + 1}"
+            st_name = name_val
+            c_name = st_input.get("class_name", "")
+            s_name = st_input.get("section", "")
+            r_num = st_input.get("roll_no", "")
+            f_name = st_input.get("father_name", "")
+            m_name = st_input.get("mother_name", "")
+            standard_adm = adm_val or f"CASH-SPOT-{idx + 1}"
+
+        verified_students.append({
+            "admission_no": str(standard_adm).strip(),
+            "name": str(st_name).strip(),
+            "student_name": str(st_name).strip(),
+            "class_name": str(c_name).strip(),
+            "section": str(s_name).strip(),
+            "roll_no": str(r_num).strip(),
+            "father_name": str(f_name).strip(),
+            "mother_name": str(m_name).strip()
+        })
+
+    # Generate unique booking ID & QR token
+    booking_id = f"NVR-2026-{''.join(random.choices(string.ascii_uppercase + string.digits, k=4))}"
+    while await db.navrang_bookings.find_one({"booking_id": booking_id}):
+        booking_id = f"NVR-2026-{''.join(random.choices(string.ascii_uppercase + string.digits, k=4))}"
+
+    qr_token = str(uuid.uuid4())
+    price_val = float(req.amount_collected) if req.amount_collected is not None else float(pkg_info.get("price", 299))
+    receipt_val = (req.receipt_no or "").strip() or f"CASH-{booking_id}"
+    
+    is_immediate_entry = bool(req.admit_immediately)
+    entry_status = "entered" if is_immediate_entry else "not_entered"
+    entry_time = now_iso() if is_immediate_entry else None
+    entry_marked_by = token.sub if is_immediate_entry else None
+
+    booking_doc = {
+        "_id": new_id(),
+        "booking_id": booking_id,
+        "qr_token": qr_token,
+        "package": pkg_key,
+        "price": price_val,
+        "students": verified_students,
+        "parent_name": parent_name,
+        "parent_phone": parent_phone_clean,
+        "parent_email": (req.parent_email or "").strip(),
+        "payment_method": "Cash at Desk",
+        "payment_ref": receipt_val,
+        "payment_status": "cash",
+        "verified_by": token.sub,
+        "verified_at": now_iso(),
+        "entry_status": entry_status,
+        "entry_time": entry_time,
+        "entry_marked_by": entry_marked_by,
+        "booked_by_admin": token.sub,
+        "admin_notes": (req.notes or "").strip(),
+        "created_at": now_iso(),
+        "updated_at": now_iso()
+    }
+
+    await db.navrang_bookings.insert_one(booking_doc)
+
+    # Send instant WhatsApp notification
+    whatsapp_sent = False
+    try:
+        student_lines = []
+        for s in verified_students:
+            s_name = s.get("name") or s.get("student_name") or "Student"
+            s_adm = s.get("admission_no") or ""
+            s_cls = f"Class {s.get('class_name')} {s.get('section', '')}".strip() if s.get('class_name') else ""
+            line = f"• {s_name} (Adm: {s_adm})"
+            if s_cls:
+                line += f" - {s_cls}"
+            student_lines.append(line)
+        students_text = "\n".join(student_lines)
+
+        pkg_title = pkg_info.get("name", f"{pkg_key.title()} Pass")
+        ticket_link = f"https://navrang.sdpublic.org/my-ticket?booking_id={booking_id}"
+        
+        wa_msg = (
+            f"✅ *CASH PAYMENT CONFIRMED — NAVRANG 2026 PASS ISSUED!* 🎟️\n"
+            f"*S.D. Public School, Patna*\n\n"
+            f"Dear *{booking_doc['parent_name']}*,\n"
+            f"Your cash payment of *₹{price_val:.0f}* at the school counter has been recorded and your Navrang 2026 entry pass is *ACTIVE*.\n\n"
+            f"📋 *OFFICIAL PASS DETAILS:*\n"
+            f"• *Booking ID:* {booking_id}\n"
+            f"• *Pass Package:* {pkg_title}\n"
+            f"• *Amount Paid:* ₹{price_val:.0f} (Cash Collected)\n"
+            f"• *Cash Receipt Ref:* {receipt_val}\n"
+            f"• *Issued By Admin:* {token.sub}\n"
+            f"• *Entry Status:* {'ALREADY CHECKED IN ✓' if is_immediate_entry else 'ACTIVE & READY FOR ENTRY'}\n\n"
+            f"👨‍🎓 *ADMITTED STUDENT(S):*\n"
+            f"{students_text}\n\n"
+            f"🎟️ *VIEW / DOWNLOAD YOUR ENTRY QR PASS:*\n"
+            f"👉 {ticket_link}\n\n"
+            f"⚠️ *Important Guidelines:*\n"
+            f"1. Please show your QR pass at the entrance gate for quick verification.\n"
+            f"2. Package admits student(s) + 1 Mother and includes 1 pair of Dandiya sticks.\n"
+            f"3. Traditional festive attire is encouraged.\n\n"
+            f"📞 *School Desk:* +91 99551 90262\n"
+            f"— *S.D. Public School, Patna*"
+        )
+        from whatsapp_service import send_whatsapp_text
+        await send_whatsapp_text(
+            phone=booking_doc["parent_phone"],
+            message=wa_msg,
+            subject=f"Navrang 2026 Cash Pass - {booking_id}"
+        )
+        whatsapp_sent = True
+    except Exception as wa_e:
+        logger.warning(f"Could not send WhatsApp cash confirmation for {booking_id}: {wa_e}")
+
+    booking_doc.pop("_id", None)
+    return {
+        "status": "success",
+        "message": f"Cash ticket pass {booking_id} booked and activated successfully.",
+        "booking": booking_doc,
+        "whatsapp_sent": whatsapp_sent
     }
 
 @navrang_router.post("/admin/bookings/{booking_id}/action")
