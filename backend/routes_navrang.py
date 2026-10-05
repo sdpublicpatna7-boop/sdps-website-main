@@ -263,6 +263,17 @@ class PaymentUpdateRequest(BaseModel):
     payment_method: Optional[str] = None
     payment_ref: Optional[str] = None
 
+class StudentRosterRecord(BaseModel):
+    admission_no: Optional[str] = None
+    student_name: str
+    class_name: Optional[str] = ""
+    section: Optional[str] = ""
+    roll_no: Optional[str] = ""
+    father_name: Optional[str] = ""
+    mother_name: Optional[str] = ""
+    phone: Optional[str] = ""
+    contact_no: Optional[str] = ""
+
 # --- Public Endpoints ---
 
 DEFAULT_PACKAGES = {
@@ -979,3 +990,87 @@ async def get_admin_roster_template(token: TokenData = Depends(get_current_admin
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=sdps_student_roster_template.csv"}
     )
+
+@navrang_router.put("/admin/roster/{admission_no}")
+async def update_roster_student(
+    admission_no: str,
+    payload: StudentRosterRecord,
+    token: TokenData = Depends(get_current_admin)
+):
+    target_adm = admission_no.strip()
+    new_adm = (payload.admission_no or target_adm).strip()
+    phone_clean = (payload.phone or payload.contact_no or "").strip()
+
+    if not payload.student_name.strip():
+        raise HTTPException(status_code=400, detail="Student name cannot be empty.")
+
+    update_fields = {
+        "student_name": payload.student_name.strip(),
+        "class_name": (payload.class_name or "").strip(),
+        "section": (payload.section or "").strip(),
+        "roll_no": (payload.roll_no or "").strip(),
+        "father_name": (payload.father_name or "").strip(),
+        "mother_name": (payload.mother_name or "").strip(),
+        "phone": phone_clean,
+        "contact_no": phone_clean,
+        "updated_at": now_iso()
+    }
+    if new_adm and new_adm != target_adm:
+        update_fields["admission_no"] = new_adm
+
+    await db.navrang_roster.update_one(
+        {"admission_no": target_adm},
+        {"$set": update_fields, "$setOnInsert": {"created_at": now_iso()}},
+        upsert=True
+    )
+
+    # If admission number was changed, update active bookings for this student as well
+    if new_adm and new_adm != target_adm:
+        await db.navrang_bookings.update_many(
+            {"students.admission_no": target_adm},
+            {"$set": {"students.$.admission_no": new_adm}}
+        )
+
+    updated_doc = await db.navrang_roster.find_one({"admission_no": new_adm}, {"_id": 0})
+    return {
+        "status": "success",
+        "message": f"Student {new_adm} details updated successfully.",
+        "student": updated_doc
+    }
+
+@navrang_router.post("/admin/roster/student")
+async def create_roster_student(
+    payload: StudentRosterRecord,
+    token: TokenData = Depends(get_current_admin)
+):
+    adm = (payload.admission_no or "").strip()
+    name = (payload.student_name or "").strip()
+    if not adm or not name:
+        raise HTTPException(status_code=400, detail="Admission number and student name are required.")
+
+    existing = await db.navrang_roster.find_one({"admission_no": adm})
+    if existing:
+        raise HTTPException(status_code=400, detail=f"Student with admission number {adm} already exists in the Dandiya roster.")
+
+    phone_clean = (payload.phone or payload.contact_no or "").strip()
+    doc = {
+        "admission_no": adm,
+        "student_name": name,
+        "class_name": (payload.class_name or "").strip(),
+        "section": (payload.section or "").strip(),
+        "roll_no": (payload.roll_no or "").strip(),
+        "father_name": (payload.father_name or "").strip(),
+        "mother_name": (payload.mother_name or "").strip(),
+        "phone": phone_clean,
+        "contact_no": phone_clean,
+        "created_at": now_iso(),
+        "updated_at": now_iso()
+    }
+    await db.navrang_roster.insert_one(doc)
+    doc.pop("_id", None)
+    return {
+        "status": "success",
+        "message": f"Student {adm} added to Dandiya roster.",
+        "student": doc
+    }
+
