@@ -22,7 +22,8 @@ import {
   Phone,
   User,
   HeartHandshake,
-  Info
+  Info,
+  Pencil
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import api from '@/lib/api';
@@ -92,6 +93,7 @@ export default function NavrangBook() {
 
   const [bookingResult, setBookingResult] = useState(null);
   const [isVerifyingIdx, setIsVerifyingIdx] = useState(null);
+  const [editingPhoneIdx, setEditingPhoneIdx] = useState(null);
   const [isBooking, setIsBooking] = useState(false);
   const [error, setError] = useState(null);
 
@@ -560,13 +562,70 @@ export default function NavrangBook() {
                                   <span className="text-[10px] uppercase font-bold text-slate-400">
                                     Contact / Phone No.
                                   </span>
-                                  <span className="text-[9px] font-semibold text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded">
-                                    Can be changed
-                                  </span>
+                                  {editingPhoneIdx !== idx ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditingPhoneIdx(idx)}
+                                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-700 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-2 py-0.5 rounded transition-all cursor-pointer"
+                                      title="Click to change phone number"
+                                    >
+                                      <Pencil className="w-3 h-3 text-purple-600" />
+                                      <span>Change</span>
+                                    </button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditingPhoneIdx(null)}
+                                      className="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 hover:text-green-900 bg-green-100 px-2 py-0.5 rounded transition-all cursor-pointer"
+                                    >
+                                      <Check className="w-3 h-3" /> Done
+                                    </button>
+                                  )}
                                 </div>
-                                <span className="font-mono font-bold text-slate-800">
-                                  {student.data?.phone || student.data?.contact_no || 'N/A'}
-                                </span>
+                                {editingPhoneIdx === idx ? (
+                                  <div className="flex items-center gap-1.5 mt-1">
+                                    <span className="text-xs font-bold text-slate-400">+91</span>
+                                    <input
+                                      type="tel"
+                                      maxLength="10"
+                                      value={student.data?.phone || student.data?.contact_no || ''}
+                                      onChange={(e) => {
+                                        const clean = e.target.value.replace(/\D/g, '');
+                                        const newSt = [...students];
+                                        newSt[idx] = {
+                                          ...newSt[idx],
+                                          data: {
+                                            ...newSt[idx].data,
+                                            phone: clean,
+                                            contact_no: clean
+                                          }
+                                        };
+                                        setStudents(newSt);
+                                        setParentDetails(prev => ({ ...prev, phone: clean }));
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          e.preventDefault();
+                                          setEditingPhoneIdx(null);
+                                        }
+                                      }}
+                                      placeholder="10-digit mobile"
+                                      className="w-full px-2 py-1 text-xs font-mono font-bold border-2 border-purple-500 rounded bg-white focus:outline-none"
+                                      autoFocus
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditingPhoneIdx(null)}
+                                      className="bg-purple-700 hover:bg-purple-800 text-white text-[11px] font-bold px-2.5 py-1 rounded shrink-0 shadow-xs"
+                                    >
+                                      Save
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <span className="font-mono font-bold text-slate-800 text-sm">
+                                    {student.data?.phone || student.data?.contact_no || 'N/A'}
+                                  </span>
+                                )}
                               </div>
                             </div>
 
@@ -578,7 +637,7 @@ export default function NavrangBook() {
                                   Please check the contact number:
                                 </strong>
                                 <p className="mt-0.5 text-amber-900">
-                                  If this phone number is incorrect or outdated, <strong>you can easily change it in the next step</strong>. This number is used for sending your pass booking details, official QR entry tickets on WhatsApp, and gate verification.
+                                  If this phone number is incorrect or outdated, <strong>you can click Change above to edit it now, or in the next step</strong>. This number is used for sending your pass booking details, official QR entry tickets on WhatsApp, and gate verification.
                                 </p>
                               </div>
                             </div>
