@@ -406,17 +406,6 @@ async def verify_student(req: StudentVerifyRequest, request: Request):
             detail=f"The entered student name does not match school records for admission number {clean_adm}. Please verify the spelling or enter the name registered with the school."
         )
 
-    # Check if student has already booked and paid
-    existing_paid = await db.navrang_bookings.find_one({
-        "students.admission_no": student["admission_no"],
-        "payment_status": {"$in": ["paid", "cash"]}
-    })
-    if existing_paid:
-        raise HTTPException(
-            status_code=400, 
-            detail="A confirmed pass has already been booked for this student. Duplicate bookings are not allowed. If you have already booked, your digital entry pass was sent to your registered WhatsApp number, or you can retrieve it under 'Find My Tickets' using your registered mobile number."
-        )
-
     phone_val = (
         student.get("phone") or 
         student.get("contact_no") or 
@@ -494,17 +483,6 @@ async def book_tickets(req: BookRequest):
         if not student:
             raise HTTPException(status_code=404, detail=f"Student with admission number {adm_val} not found in SDPS roster.")
             
-        # Check if already booked and confirmed
-        existing_paid = await db.navrang_bookings.find_one({
-            "students.admission_no": student["admission_no"],
-            "payment_status": {"$in": ["paid", "cash"]}
-        })
-        if existing_paid:
-            raise HTTPException(
-                status_code=400, 
-                detail="A confirmed pass has already been booked for this student. Duplicate bookings are not allowed."
-            )
-
         # Clear any stale abandoned pending bookings for this student
         await db.navrang_bookings.delete_many({
             "students.admission_no": student["admission_no"],
