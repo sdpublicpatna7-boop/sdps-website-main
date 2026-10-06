@@ -278,8 +278,16 @@ const BookingsTab = ({ onOpenCashBooking }) => {
   const updateBookingStatus = async (bookingId, action) => {
     try {
       setActionLoadingId(bookingId);
-      await api.post(`/navrang/admin/bookings/${bookingId}/action`, { action });
-      toast.success(`Booking ${bookingId} updated (${action})`);
+      const res = await api.post(`/navrang/admin/bookings/${bookingId}/action`, { action });
+      if (action === 'auto_sync_razorpay') {
+        if (res.data?.is_paid) {
+          toast.success(`🎉 Booking ${bookingId} verified & activated via Razorpay!`);
+        } else {
+          toast.info(res.data?.message || `Payment not captured on Razorpay for ${bookingId}.`);
+        }
+      } else {
+        toast.success(`Booking ${bookingId} updated (${action})`);
+      }
       fetchBookings();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to update booking');
@@ -461,9 +469,17 @@ const BookingsTab = ({ onOpenCashBooking }) => {
                             <>
                               <button 
                                 disabled={isBusy}
+                                onClick={() => updateBookingStatus(bId, 'auto_sync_razorpay')}
+                                className="text-xs bg-purple-700 hover:bg-purple-800 text-white font-bold px-2.5 py-1 rounded-lg shadow-sm transition-colors disabled:opacity-50 flex items-center gap-1 cursor-pointer"
+                                title="Query Razorpay API and auto-verify without manual checking"
+                              >
+                                <Zap className="w-3 h-3 text-amber-300 fill-amber-300" /> Auto-Sync Razorpay
+                              </button>
+                              <button 
+                                disabled={isBusy}
                                 onClick={() => updateBookingStatus(bId, 'verify_paid')}
-                                className="text-xs bg-green-600 hover:bg-green-700 text-white font-semibold px-2.5 py-1 rounded-lg shadow-sm transition-colors disabled:opacity-50"
-                                title="Verify UTR and mark as Paid"
+                                className="text-xs bg-green-600 hover:bg-green-700 text-white font-semibold px-2.5 py-1 rounded-lg shadow-sm transition-colors disabled:opacity-50 cursor-pointer"
+                                title="Manually mark as Paid"
                               >
                                 ✓ Verify Paid
                               </button>

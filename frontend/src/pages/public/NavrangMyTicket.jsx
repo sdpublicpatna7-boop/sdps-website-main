@@ -27,6 +27,7 @@ export default function NavrangMyTicket() {
   const [searched, setSearched] = useState(false);
   const [razorpayEnabled, setRazorpayEnabled] = useState(false);
   const [payingBookingId, setPayingBookingId] = useState(null);
+  const [checkingBookingId, setCheckingBookingId] = useState(null);
 
   useEffect(() => {
     const fetchConfig = async () => {
@@ -176,6 +177,25 @@ export default function NavrangMyTicket() {
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Failed to initiate online payment.');
       setPayingBookingId(null);
+    }
+  };
+
+  const handleAutoVerify = async (ticket) => {
+    try {
+      setCheckingBookingId(ticket.booking_id);
+      const res = await api.post('/navrang/check-payment-status', { booking_id: ticket.booking_id });
+      if (res.data?.is_paid && res.data?.booking) {
+        toast.success(`🎉 Payment verified for ${ticket.booking_id}! Pass is now active.`);
+        setTickets(prev => prev.map(t => 
+          t.booking_id === ticket.booking_id ? res.data.booking : t
+        ));
+      } else {
+        toast.info(res.data?.message || 'Payment not yet captured on Razorpay. If you recently paid in your UPI app, please wait a few seconds and try again.');
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to verify payment status with Razorpay.');
+    } finally {
+      setCheckingBookingId(null);
     }
   };
 
@@ -358,21 +378,40 @@ export default function NavrangMyTicket() {
                           </span>
                         </div>
                       ) : (
-                        razorpayEnabled && (
-                          <div className="mt-3 p-3 bg-gradient-to-r from-purple-50 via-amber-50/40 to-purple-50 rounded-xl border border-purple-200 flex flex-col sm:flex-row items-center justify-between gap-2.5 shadow-xs">
-                            <div className="text-xs text-slate-800">
-                              <span className="font-bold text-purple-900 flex items-center gap-1.5">
-                                <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-400" /> Payment Pending • Instant Online Pay
-                              </span>
-                              <span className="text-slate-600 text-[11px] block mt-0.5">
-                                Pay ₹{ticket.price || 299} via UPI or Cards to instantly activate this pass.
-                              </span>
-                            </div>
+                        <div className="mt-3 p-3 bg-gradient-to-r from-purple-50 via-amber-50/40 to-purple-50 rounded-xl border border-purple-200 flex flex-col sm:flex-row items-center justify-between gap-2.5 shadow-xs">
+                          <div className="text-xs text-slate-800">
+                            <span className="font-bold text-purple-900 flex items-center gap-1.5">
+                              <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-400" /> Payment Pending • Instant Auto-Verify
+                            </span>
+                            <span className="text-slate-600 text-[11px] block mt-0.5">
+                              Already completed payment or need to complete checkout? Pass activates immediately upon verification.
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                            <button
+                              type="button"
+                              onClick={() => handleAutoVerify(ticket)}
+                              disabled={checkingBookingId === ticket.booking_id}
+                              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer disabled:opacity-60"
+                              title="Query Razorpay API to check if payment was captured"
+                            >
+                              {checkingBookingId === ticket.booking_id ? (
+                                <>
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  <span>Checking...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Zap className="w-3.5 h-3.5 text-amber-100 fill-amber-100" />
+                                  <span>⚡ Auto-Verify</span>
+                                </>
+                              )}
+                            </button>
                             <button
                               type="button"
                               onClick={() => handlePayNow(ticket)}
                               disabled={payingBookingId === ticket.booking_id}
-                              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md cursor-pointer disabled:opacity-60 shrink-0 transition-all"
+                              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-md cursor-pointer disabled:opacity-60 transition-all"
                             >
                               {payingBookingId === ticket.booking_id ? (
                                 <>
@@ -381,13 +420,12 @@ export default function NavrangMyTicket() {
                                 </>
                               ) : (
                                 <>
-                                  <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
-                                  <span>Pay ₹{ticket.price || 299} Online</span>
+                                  <span>Pay ₹{ticket.price || 299}</span>
                                 </>
                               )}
                             </button>
                           </div>
-                        )
+                        </div>
                       )}
                     </div>
                   </div>

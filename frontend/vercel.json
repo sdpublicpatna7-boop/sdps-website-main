@@ -1,6 +1,118 @@
 {
   "redirects": [
     {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "navrang.sdpublic.org"
+        },
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(WhatsApp|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|TelegramBot|Slackbot|SkypeUriPreview|discordbot|Applebot|Googlebot|bingbot|Pinterest|redditbot).*"
+        }
+      ],
+      "destination": "https://api.sdpublic.org/api/navrang/og-html?path=/",
+      "permanent": false
+    },
+    {
+      "source": "/index.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "navrang.sdpublic.org"
+        },
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(WhatsApp|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|TelegramBot|Slackbot|SkypeUriPreview|discordbot|Applebot|Googlebot|bingbot|Pinterest|redditbot).*"
+        }
+      ],
+      "destination": "https://api.sdpublic.org/api/navrang/og-html?path=/",
+      "permanent": false
+    },
+    {
+      "source": "/book",
+      "has": [
+        {
+          "type": "host",
+          "value": "navrang.sdpublic.org"
+        },
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(WhatsApp|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|TelegramBot|Slackbot|SkypeUriPreview|discordbot|Applebot|Googlebot|bingbot|Pinterest|redditbot).*"
+        }
+      ],
+      "destination": "https://api.sdpublic.org/api/navrang/og-html?path=/book",
+      "permanent": false
+    },
+    {
+      "source": "/my-ticket",
+      "has": [
+        {
+          "type": "host",
+          "value": "navrang.sdpublic.org"
+        },
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(WhatsApp|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|TelegramBot|Slackbot|SkypeUriPreview|discordbot|Applebot|Googlebot|bingbot|Pinterest|redditbot).*"
+        }
+      ],
+      "destination": "https://api.sdpublic.org/api/navrang/og-html?path=/my-ticket",
+      "permanent": false
+    },
+    {
+      "source": "/navrang",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(WhatsApp|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|TelegramBot|Slackbot|SkypeUriPreview|discordbot|Applebot|Googlebot|bingbot|Pinterest|redditbot).*"
+        }
+      ],
+      "destination": "https://api.sdpublic.org/api/navrang/og-html?path=/",
+      "permanent": false
+    },
+    {
+      "source": "/navrang/book",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(WhatsApp|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|TelegramBot|Slackbot|SkypeUriPreview|discordbot|Applebot|Googlebot|bingbot|Pinterest|redditbot).*"
+        }
+      ],
+      "destination": "https://api.sdpublic.org/api/navrang/og-html?path=/book",
+      "permanent": false
+    },
+    {
+      "source": "/navrang/my-ticket",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(WhatsApp|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|TelegramBot|Slackbot|SkypeUriPreview|discordbot|Applebot|Googlebot|bingbot|Pinterest|redditbot).*"
+        }
+      ],
+      "destination": "https://api.sdpublic.org/api/navrang/og-html?path=/my-ticket",
+      "permanent": false
+    },
+    {
+      "source": "/navrang/:match*",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(WhatsApp|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|TelegramBot|Slackbot|SkypeUriPreview|discordbot|Applebot|Googlebot|bingbot|Pinterest|redditbot).*"
+        }
+      ],
+      "destination": "https://api.sdpublic.org/api/navrang/og-html?path=/:match*",
+      "permanent": false
+    },
+    {
       "source": "/navrang",
       "missing": [
         {

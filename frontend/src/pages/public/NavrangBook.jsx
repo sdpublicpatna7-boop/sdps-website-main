@@ -95,17 +95,16 @@ export default function NavrangBook() {
   const [students, setStudents] = useState([]);
   const [parentDetails, setParentDetails] = useState({ name: '', phone: '', email: '' });
   
-  // Payment Gateway states (2nd Razorpay Account & Direct UPI)
-  const [paymentMethodTab, setPaymentMethodTab] = useState('razorpay'); // 'razorpay' | 'upi'
-  const [razorpayConfig, setRazorpayConfig] = useState({ enabled: false, key_id: '' });
-  const [upiConfig, setUpiConfig] = useState({
-    upi_id: 'sdpublicpatna@sbi',
-    merchant_name: 'S.D. Public School, Patna',
-    instructions: '1. Scan the QR code or tap Pay via Any UPI App.\n2. Complete the payment of exact amount.\n3. Enter the 12-digit UPI UTR / Transaction Reference Number below.'
+  // Payment Gateway states (2nd Razorpay Account - 100% Automated Instant Verification)
+  const [razorpayConfig, setRazorpayConfig] = useState({ enabled: true, key_id: '' });
+  const [pendingBookingId, setPendingBookingId] = useState(() => {
+    try {
+      return sessionStorage.getItem('navrang_pending_booking') || '';
+    } catch (e) {
+      return '';
+    }
   });
-  const [utrNumber, setUtrNumber] = useState('');
-  const [copiedUpi, setCopiedUpi] = useState(false);
-  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
 
   const [bookingResult, setBookingResult] = useState(null);
   const [isVerifyingIdx, setIsVerifyingIdx] = useState(null);
@@ -113,30 +112,16 @@ export default function NavrangBook() {
   const [isBooking, setIsBooking] = useState(false);
   const [error, setError] = useState(null);
 
-  // Fetch event config (UPI ID, merchant, 2nd Razorpay account, packages)
+  // Fetch event config (2nd Razorpay account, packages)
   useEffect(() => {
     const fetchConfig = async () => {
       try {
         const { data } = await api.get('/navrang/config');
-        if (data.upi_id) {
-          setUpiConfig({
-            upi_id: data.upi_id || 'sdpublicpatna@sbi',
-            merchant_name: data.upi_merchant_name || 'S.D. Public School, Patna',
-            instructions: data.upi_instructions || 'Scan and pay via UPI'
-          });
-        }
-        if (data.razorpay_enabled && data.razorpay_key_id) {
+        if (data.razorpay_key_id) {
           setRazorpayConfig({
-            enabled: true,
+            enabled: data.razorpay_enabled !== false,
             key_id: data.razorpay_key_id
           });
-          setPaymentMethodTab('razorpay');
-        } else {
-          setRazorpayConfig({
-            enabled: false,
-            key_id: ''
-          });
-          setPaymentMethodTab('upi');
         }
         if (data.packages) {
           const list = Object.entries(data.packages).map(([key, pkg]) => ({
@@ -242,58 +227,29 @@ export default function NavrangBook() {
   const selectedPkgObj = packages.find(p => p.id === selectedPackage) || packages[0];
   const totalPrice = selectedPkgObj?.price || 299;
 
-  // Build UPI URI for QR code and native app deep linking
-  const upiIntentUrl = `upi://pay?pa=${encodeURIComponent(upiConfig.upi_id)}&pn=${encodeURIComponent(upiConfig.merchant_name)}&am=${totalPrice}&cu=INR&tn=${encodeURIComponent(`Navrang Pass ${selectedPkgObj?.name || ''}`)}`;
-
-  const handleCopyUpi = () => {
-    if (navigator?.clipboard?.writeText) {
-      navigator.clipboard.writeText(upiConfig.upi_id);
-      setCopiedUpi(true);
-      setTimeout(() => setCopiedUpi(false), 2500);
-    }
-  };
-
-  const handleBookWithUpi = async (e) => {
-    if (e) e.preventDefault();
-    const cleanUtr = utrNumber.trim();
-    if (!cleanUtr || cleanUtr.length < 6) {
-      setError('Please enter a valid 12-digit UPI Transaction ID / UTR Number.');
+  // Automated payment status verification check
+  const handleAutoVerify = async (targetId) => {
+    const bId = targetId || pendingBookingId || (typeof window !== 'undefined' ? sessionStorage.getItem('navrang_pending_booking') : '');
+    if (!bId) {
+      toast.error('No pending booking reference found. Please proceed with payment.');
       return;
     }
-    if (!paymentConfirmed) {
-      setError('Please check the confirmation box to verify your UPI payment transfer.');
-      return;
-    }
-
     try {
-      setIsBooking(true);
+      setIsCheckingStatus(true);
       setError(null);
-      
-      const payload = {
-        package: selectedPackage,
-        package_id: selectedPackage,
-        parent_name: parentDetails.name.trim(),
-        parent_phone: parentDetails.phone.trim(),
-        phone: parentDetails.phone.trim(),
-        parent_email: parentDetails.email.trim(),
-        email: parentDetails.email.trim(),
-        payment_method: 'UPI',
-        payment_ref: cleanUtr,
-        utr_number: cleanUtr,
-        upi_id_used: upiConfig.upi_id,
-        students: students.map(s => ({
-          admission_no: s.data?.admission_no || s.admission_no,
-          student_name: s.data?.name || s.data?.student_name || ''
-        }))
-      };
-
-      const res = await api.post('/navrang/book', payload);
-      setBookingResult(res.data);
-      setStep(5);
+      const res = await api.post('/navrang/check-payment-status', { booking_id: bId });
+      if (res.data?.is_paid && res.data?.booking) {
+        toast.success('🎉 Payment verified via Razorpay! Pass activated.');
+        if (typeof window !== 'undefined') sessionStorage.removeItem('navrang_pending_booking');
+        setBookingResult(res.data.booking);
+        setStep(5);
+      } else {
+        toast.info(res.data?.message || 'Payment not yet confirmed by Razorpay. If you completed payment in your UPI app, please wait a few seconds and try again.');
+      }
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to submit booking. Please verify the UTR and try again.');
+      setError(err.response?.data?.detail || 'Could not verify payment status with Razorpay.');
     } finally {
-      setIsBooking(false);
+      setIsCheckingStatus(false);
     }
   };
 
@@ -322,26 +278,33 @@ export default function NavrangBook() {
       const bookingRes = await api.post('/navrang/book', payload);
       const bookingData = bookingRes.data;
       const bookingId = bookingData.booking_id;
+      setPendingBookingId(bookingId);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('navrang_pending_booking', bookingId);
+      }
 
       // 2. Load Razorpay checkout script
       const sdkReady = await loadRazorpay();
       if (!sdkReady) {
-        setError('Could not load Razorpay payment SDK. Please try the direct UPI QR option.');
+        setError('Could not load Razorpay payment SDK. Please check your internet connection.');
         setIsBooking(false);
         return;
       }
 
-      // 3. Create Order on backend using Navrang 2nd Razorpay account
-      const orderRes = await api.post('/navrang/create-order', { booking_id: bookingId });
-      const order = orderRes.data;
+      // 3. Obtain Razorpay Order details (from /book response or create-order)
+      let order = bookingData.razorpay_order;
+      if (!order || !order.order_id) {
+        const orderRes = await api.post('/navrang/create-order', { booking_id: bookingId });
+        order = orderRes.data;
+      }
 
       // 4. Open Razorpay Checkout modal
       const rzpOptions = {
         key: order.key_id,
         amount: order.amount,
         currency: order.currency || 'INR',
-        name: 'S.D. Public School',
-        description: `Navrang 2026 Pass - ${selectedPkgObj?.name}`,
+        name: 'S.D. Public School, Patna',
+        description: `Navrang 2026 Pass - ${selectedPkgObj?.name || ''}`,
         order_id: order.order_id,
         prefill: {
           name: parentDetails.name,
@@ -361,7 +324,10 @@ export default function NavrangBook() {
               razorpay_signature: resp.razorpay_signature
             });
 
-            toast.success('Payment Verified! Your entry QR pass is active.');
+            toast.success('🎉 Payment Verified! Your entry QR pass is active.');
+            if (typeof window !== 'undefined') {
+              sessionStorage.removeItem('navrang_pending_booking');
+            }
             setBookingResult(verifyRes.data.booking || {
               ...bookingData,
               payment_status: 'paid',
@@ -369,7 +335,7 @@ export default function NavrangBook() {
             });
             setStep(5);
           } catch (verErr) {
-            setError(verErr.response?.data?.detail || 'Payment verification failed. If money was deducted, our desk will verify your payment.');
+            setError(verErr.response?.data?.detail || 'Payment verification failed. If money was deducted, click "Auto-Verify with Razorpay" below.');
           } finally {
             setIsBooking(false);
           }
@@ -377,7 +343,7 @@ export default function NavrangBook() {
         modal: {
           ondismiss: () => {
             setIsBooking(false);
-            toast.info('Checkout closed. You can retry payment or use UPI QR.');
+            toast.info('Payment window closed. If you completed payment in your UPI app, click "Auto-Verify with Razorpay" below.');
           }
         }
       };
@@ -915,71 +881,33 @@ export default function NavrangBook() {
                 </motion.div>
               )}
 
-              {/* STEP 4: PAYMENT OPTIONS (2ND RAZORPAY GATEWAY OR DIRECT UPI) */}
+              {/* STEP 4: 100% AUTOMATED RAZORPAY PAYMENT (INSTANT AUTO-VERIFICATION & ZERO MANUAL UTR WAITING) */}
               {step === 4 && (
                 <motion.div key="step4" variants={slideVariants} initial="initial" animate="enter" exit="exit" className="space-y-6">
                   <div className="text-center max-w-xl mx-auto">
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-900 mb-2 border border-purple-200">
-                      <CreditCard className="w-3.5 h-3.5 text-purple-700" />
-                      Select Payment Method
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-900 mb-2 border border-emerald-200">
+                      <Zap className="w-3.5 h-3.5 text-emerald-700 fill-emerald-600" />
+                      100% Automated Instant Verification
                     </div>
                     <h2 className="text-2xl md:text-3xl font-outfit font-extrabold text-slate-900">
-                      Complete Payment • ₹{totalPrice}
+                      Review & Pay • ₹{totalPrice}
                     </h2>
                     <p className="text-xs md:text-sm text-slate-500 mt-1">
-                      {razorpayConfig.enabled 
-                        ? 'Pay online instantly with your preferred method, or transfer directly via school UPI.' 
-                        : 'Scan the QR code with any UPI app or tap the mobile button, then submit your 12-digit UPI UTR number.'}
+                      Pay securely via Google Pay, PhonePe, Paytm, Any UPI, Cards, or NetBanking. Pass is auto-verified in real-time.
                     </p>
                   </div>
 
-                  {/* Payment Method Switcher Tabs (when Razorpay is enabled) */}
-                  {razorpayConfig.enabled && (
-                    <div className="max-w-xl mx-auto grid grid-cols-2 p-1.5 bg-slate-100 rounded-2xl border border-slate-200 gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => { setPaymentMethodTab('razorpay'); setError(null); }}
-                        className={`flex items-center justify-center gap-2 py-3 px-3 rounded-xl font-bold text-xs md:text-sm transition-all cursor-pointer ${
-                          paymentMethodTab === 'razorpay'
-                            ? 'bg-purple-900 text-white shadow-md'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-                        }`}
-                      >
-                        <Zap className={`w-4 h-4 ${paymentMethodTab === 'razorpay' ? 'text-amber-300 fill-amber-300' : 'text-amber-500'}`} />
-                        <span>Instant Online Pay</span>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full uppercase tracking-wider font-extrabold ${
-                          paymentMethodTab === 'razorpay' ? 'bg-amber-400 text-purple-950' : 'bg-purple-100 text-purple-800'
-                        }`}>
-                          Fastest
-                        </span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => { setPaymentMethodTab('upi'); setError(null); }}
-                        className={`flex items-center justify-center gap-2 py-3 px-3 rounded-xl font-bold text-xs md:text-sm transition-all cursor-pointer ${
-                          paymentMethodTab === 'upi'
-                            ? 'bg-purple-900 text-white shadow-md'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-                        }`}
-                      >
-                        <Smartphone className="w-4 h-4 text-emerald-400" />
-                        <span>Direct UPI QR</span>
-                      </button>
-                    </div>
-                  )}
-
                   <div className="max-w-xl mx-auto bg-gradient-to-b from-purple-50/60 to-white rounded-2xl p-5 md:p-6 border border-purple-200 shadow-sm space-y-6">
-                    {/* Booking Breakdown Pill */}
-                    <div className="bg-white p-3.5 rounded-xl border border-purple-100 flex flex-col sm:flex-row justify-between sm:items-center gap-2 text-sm shadow-xs">
+                    {/* Booking Breakdown Card */}
+                    <div className="bg-white p-4 rounded-xl border border-purple-100 flex flex-col sm:flex-row justify-between sm:items-center gap-3 text-sm shadow-xs">
                       <div>
-                        <div className="font-bold text-slate-900">{selectedPkgObj?.name}</div>
-                        <div className="text-xs text-slate-500">
-                          {students.map(s => s.data?.name || s.admission_no).join(', ')}
+                        <div className="font-bold text-slate-900 text-base">{selectedPkgObj?.name}</div>
+                        <div className="text-xs text-slate-500 mt-0.5">
+                          Students: {students.map(s => s.data?.name || s.admission_no).join(', ')}
                         </div>
-                        <div className="text-xs text-purple-700 font-medium mt-1 flex items-center gap-1.5">
+                        <div className="text-xs text-purple-700 font-medium mt-1.5 flex items-center gap-1.5">
                           <MessageSquare className="w-3.5 h-3.5 text-green-600 shrink-0" />
-                          <span>WhatsApp Passes to: <strong className="text-slate-900 font-mono font-bold">+91 {parentDetails.phone}</strong></span>
+                          <span>WhatsApp Pass to: <strong className="text-slate-900 font-mono font-bold">+91 {parentDetails.phone}</strong></span>
                           <button 
                             type="button" 
                             onClick={() => setStep(3)} 
@@ -989,233 +917,115 @@ export default function NavrangBook() {
                           </button>
                         </div>
                       </div>
-                      <div className="text-xl font-black text-purple-700 shrink-0">
+                      <div className="text-2xl font-black text-purple-700 shrink-0">
                         ₹{totalPrice}
                       </div>
                     </div>
 
-                    {/* TAB 1: 2nd RAZORPAY INSTANT PAYMENT GATEWAY */}
-                    {razorpayConfig.enabled && paymentMethodTab === 'razorpay' && (
-                      <div className="space-y-5">
-                        {/* Auto-activation Highlight Banner */}
-                        <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border border-emerald-200 rounded-2xl p-4 text-emerald-950 flex items-start gap-3 shadow-xs">
-                          <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
-                            <Zap className="w-4 h-4 fill-white" />
-                          </div>
-                          <div className="text-xs space-y-1">
-                            <span className="font-bold text-emerald-900 block text-sm">
-                              ⚡ Instant Pass Activation & Zero Waiting
-                            </span>
-                            <p className="text-emerald-800 leading-relaxed">
-                              Pay securely using <strong>Google Pay, PhonePe, Paytm, Any UPI, Cards, or NetBanking</strong>. Your pass is <strong>immediately activated</strong> with an official gate entry QR code sent to your WhatsApp without manual UTR verification.
-                            </p>
-                          </div>
-                        </div>
+                    {/* Auto-activation Highlight Banner */}
+                    <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border border-emerald-200 rounded-2xl p-4 text-emerald-950 flex items-start gap-3 shadow-xs">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
+                        <Zap className="w-5 h-5 fill-white" />
+                      </div>
+                      <div className="text-xs space-y-1">
+                        <span className="font-bold text-emerald-900 block text-sm">
+                          ⚡ Instant QR Gate Pass Activation
+                        </span>
+                        <p className="text-emerald-800 leading-relaxed">
+                          Your pass is <strong>automatically verified and activated immediately</strong> by Razorpay upon completion. No manual UTR entry or admin verification needed!
+                        </p>
+                      </div>
+                    </div>
 
-                        {/* Supported Methods Badges */}
-                        <div className="bg-white p-4 rounded-xl border border-slate-200 text-center space-y-2">
-                          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                            Accepted Payment Methods
-                          </span>
-                          <div className="flex flex-wrap items-center justify-center gap-2 text-xs font-semibold text-slate-700">
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
-                              <Smartphone className="w-3.5 h-3.5 text-purple-600" /> UPI (GPay, PhonePe, Paytm, BHIM)
-                            </span>
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
-                              <CreditCard className="w-3.5 h-3.5 text-blue-600" /> Credit / Debit Cards
-                            </span>
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
-                              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> NetBanking (50+ Banks)
-                            </span>
-                          </div>
-                        </div>
+                    {/* Accepted Payment Methods */}
+                    <div className="bg-white p-4 rounded-xl border border-slate-200 text-center space-y-2">
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                        Supported Payment Options
+                      </span>
+                      <div className="flex flex-wrap items-center justify-center gap-2 text-xs font-semibold text-slate-700">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
+                          <Smartphone className="w-3.5 h-3.5 text-purple-600" /> UPI (GPay, PhonePe, Paytm, BHIM)
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
+                          <CreditCard className="w-3.5 h-3.5 text-blue-600" /> Credit / Debit Cards
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
+                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> NetBanking (50+ Banks)
+                        </span>
+                      </div>
+                    </div>
 
-                        {error && (
-                          <div className="bg-red-50 text-red-600 p-3.5 rounded-xl flex items-center gap-2.5 text-xs border border-red-200">
-                            <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
-                            <span>{error}</span>
-                          </div>
+                    {error && (
+                      <div className="bg-red-50 text-red-600 p-3.5 rounded-xl flex items-center gap-2.5 text-xs border border-red-200">
+                        <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+                        <span>{error}</span>
+                      </div>
+                    )}
+
+                    {/* Main Instant Pay CTA */}
+                    <div className="pt-1 space-y-3">
+                      <button
+                        type="button"
+                        onClick={handlePayWithRazorpay}
+                        disabled={isBooking || isCheckingStatus}
+                        className="w-full bg-gradient-to-r from-purple-700 via-indigo-700 to-purple-800 hover:from-purple-800 hover:to-indigo-800 text-white py-4 px-6 rounded-2xl font-bold text-base shadow-xl shadow-purple-900/20 flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer disabled:opacity-60"
+                      >
+                        {isBooking ? (
+                          <>
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            <span>Opening Secure Payment Gateway...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Zap className="w-5 h-5 text-amber-300 fill-amber-300" />
+                            <span>Pay ₹{totalPrice} & Activate Instant Pass</span>
+                          </>
                         )}
+                      </button>
 
-                        {/* Instant Pay Action Button */}
-                        <div className="pt-2">
+                      {/* Fallback Auto-Verify button if user paid and closed window or pending booking exists */}
+                      {pendingBookingId && (
+                        <div className="p-3 bg-amber-50/80 rounded-xl border border-amber-200/90 text-center space-y-2">
+                          <div className="text-xs text-amber-950 font-medium">
+                            Already completed payment in UPI / Razorpay but closed the window?
+                          </div>
                           <button
                             type="button"
-                            onClick={handlePayWithRazorpay}
-                            disabled={isBooking}
-                            className="w-full bg-gradient-to-r from-purple-700 via-indigo-700 to-purple-800 hover:from-purple-800 hover:to-indigo-800 text-white py-4 px-6 rounded-2xl font-bold text-base shadow-xl shadow-purple-900/20 flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer disabled:opacity-60"
+                            onClick={() => handleAutoVerify(pendingBookingId)}
+                            disabled={isCheckingStatus || isBooking}
+                            className="inline-flex items-center justify-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer disabled:opacity-60"
                           >
-                            {isBooking ? (
+                            {isCheckingStatus ? (
                               <>
-                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                <span>Opening Secure Gateway...</span>
+                                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                <span>Verifying with Razorpay...</span>
                               </>
                             ) : (
                               <>
-                                <Zap className="w-5 h-5 text-amber-300 fill-amber-300" />
-                                <span>Pay ₹{totalPrice} & Activate Instant Pass</span>
+                                <Zap className="w-3.5 h-3.5" />
+                                <span>⚡ Auto-Verify with Razorpay ({pendingBookingId})</span>
                               </>
                             )}
                           </button>
-
-                          <div className="flex items-center justify-center gap-2 text-[11px] text-slate-400 mt-3">
-                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                            <span>Official 2nd Razorpay Account dedicated to Navrang 2026 • 256-bit SSL Encrypted</span>
-                          </div>
                         </div>
+                      )}
 
-                        <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                          <button 
-                            type="button"
-                            onClick={() => setStep(3)}
-                            disabled={isBooking}
-                            className="text-slate-600 px-4 py-2.5 rounded-xl font-medium flex items-center gap-1.5 hover:bg-slate-100 transition-colors text-xs cursor-pointer"
-                          >
-                            <ArrowLeft className="w-4 h-4" /> Back to Details
-                          </button>
-                          
-                          <button
-                            type="button"
-                            onClick={() => { setPaymentMethodTab('upi'); setError(null); }}
-                            className="text-purple-700 hover:text-purple-900 text-xs font-semibold underline cursor-pointer"
-                          >
-                            Prefer Direct UPI QR instead?
-                          </button>
-                        </div>
+                      <div className="flex items-center justify-center gap-2 text-[11px] text-slate-400 pt-1">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Dedicated Navrang 2026 Razorpay Account • 256-bit SSL Bank Encrypted</span>
                       </div>
-                    )}
+                    </div>
 
-                    {/* TAB 2: DIRECT SCHOOL UPI QR & UTR FORM */}
-                    {(!razorpayConfig.enabled || paymentMethodTab === 'upi') && (
-                      <div className="space-y-6">
-                        {/* QR Code & Direct UPI Deep Link */}
-                        <div className="flex flex-col items-center justify-center bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-center">
-                          <div className="p-3 bg-white rounded-xl shadow-md border border-slate-100 inline-block mb-3">
-                            <QRCodeSVG 
-                              value={upiIntentUrl} 
-                              size={190} 
-                              level="H" 
-                              includeMargin={true}
-                            />
-                          </div>
-
-                          <div className="text-xs text-slate-500 mb-3">
-                            Scan using Google Pay, PhonePe, Paytm, BHIM, or any UPI App
-                          </div>
-
-                          {/* Deep link button for mobile devices */}
-                          <a 
-                            href={upiIntentUrl}
-                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-gradient-to-r from-purple-700 via-indigo-700 to-purple-800 hover:from-purple-800 hover:to-indigo-800 text-white px-6 py-2.5 rounded-xl text-xs md:text-sm font-bold shadow-md transition-all mb-3 cursor-pointer"
-                          >
-                            <Smartphone className="w-4 h-4" />
-                            Pay ₹{totalPrice} via Any UPI App (Mobile)
-                          </a>
-
-                          {/* Copy UPI ID */}
-                          <div className="flex items-center gap-2 bg-slate-100 px-3.5 py-1.5 rounded-xl border border-slate-200 max-w-full">
-                            <span className="text-xs text-slate-500 font-medium">UPI ID:</span>
-                            <code className="text-xs font-mono font-bold text-slate-800 truncate">
-                              {upiConfig.upi_id}
-                            </code>
-                            <button 
-                              type="button" 
-                              onClick={handleCopyUpi}
-                              className="ml-1 text-purple-700 hover:text-purple-900 p-1 rounded transition-colors cursor-pointer"
-                              title="Copy UPI ID"
-                            >
-                              {copiedUpi ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
-                            </button>
-                          </div>
-                          {copiedUpi && (
-                            <span className="text-[11px] text-green-600 font-semibold mt-1">
-                              UPI ID copied to clipboard!
-                            </span>
-                          )}
-                        </div>
-
-                        {/* 3 Step Instruction */}
-                        <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3.5 text-xs text-amber-900 space-y-1.5">
-                          <div className="font-bold flex items-center gap-1.5 text-amber-950">
-                            <HelpCircle className="w-3.5 h-3.5 text-amber-700" />
-                            How to complete payment:
-                          </div>
-                          <ol className="list-decimal pl-4 space-y-1 text-slate-700 text-[11px]">
-                            <li>Scan the QR code above or tap the <em>Pay via UPI App</em> button on mobile.</li>
-                            <li>Complete the payment of <strong>₹{totalPrice}</strong> in your UPI app.</li>
-                            <li>Copy the <strong>12-digit UPI UTR / Transaction Reference Number</strong> from your payment receipt and paste it below.</li>
-                          </ol>
-                        </div>
-
-                        {/* UTR Input Form */}
-                        <form onSubmit={handleBookWithUpi} className="space-y-4">
-                          <div>
-                            <label className="block text-xs font-bold text-slate-800 mb-1">
-                              12-Digit UPI Transaction ID / UTR Number <span className="text-red-500">*</span>
-                            </label>
-                            <input 
-                              type="text"
-                              maxLength="24"
-                              value={utrNumber}
-                              onChange={(e) => setUtrNumber(e.target.value.replace(/[^a-zA-Z0-9]/g, ''))}
-                              className="w-full px-4 py-3 rounded-xl border border-slate-300 font-mono text-base tracking-widest uppercase bg-white focus:ring-2 focus:ring-purple-600 focus:border-purple-600 outline-none"
-                              placeholder="e.g. 427819203847"
-                              required
-                            />
-                            <p className="text-[11px] text-slate-400 mt-1">
-                              Found in your UPI app under transaction details (GPay, PhonePe, Paytm, SBI, etc.).
-                            </p>
-                          </div>
-
-                          <label className="flex items-start gap-3 p-3 bg-white rounded-xl border border-purple-200 cursor-pointer">
-                            <input 
-                              type="checkbox" 
-                              className="mt-0.5 w-4 h-4 rounded text-purple-600 focus:ring-purple-500"
-                              checked={paymentConfirmed}
-                              onChange={(e) => setPaymentConfirmed(e.target.checked)}
-                            />
-                            <span className="text-xs text-slate-700 leading-relaxed">
-                              I confirm that I have transferred <strong>₹{totalPrice}</strong> to <strong>{upiConfig.upi_id}</strong> and the 12-digit UTR number entered is authentic.
-                            </span>
-                          </label>
-
-                          {error && (
-                            <div className="bg-red-50 text-red-600 p-3 rounded-xl flex items-center gap-2 text-xs border border-red-200">
-                              <AlertCircle className="w-4 h-4 shrink-0" />
-                              <span>{error}</span>
-                            </div>
-                          )}
-
-                          <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                            <button 
-                              type="button"
-                              onClick={() => setStep(3)}
-                              disabled={isBooking}
-                              className="text-slate-600 px-4 py-2.5 rounded-xl font-medium flex items-center gap-1.5 hover:bg-slate-100 transition-colors text-xs cursor-pointer"
-                            >
-                              <ArrowLeft className="w-4 h-4" /> Back
-                            </button>
-                            <button 
-                              type="submit"
-                              disabled={!utrNumber.trim() || !paymentConfirmed || isBooking}
-                              className="bg-green-600 hover:bg-green-700 text-white px-7 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-green-600/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm cursor-pointer"
-                            >
-                              {isBooking ? (
-                                <>
-                                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                  Submitting Booking & Sending WhatsApp...
-                                </>
-                              ) : (
-                                <>
-                                  <CheckCircle2 className="w-4 h-4" />
-                                  Submit Booking & UTR
-                                </>
-                              )}
-                            </button>
-                          </div>
-                        </form>
-                      </div>
-                    )}
+                    <div className="flex justify-between items-center pt-4 border-t border-slate-200">
+                      <button 
+                        type="button"
+                        onClick={() => setStep(3)}
+                        disabled={isBooking || isCheckingStatus}
+                        className="text-slate-600 px-4 py-2.5 rounded-xl font-medium flex items-center gap-1.5 hover:bg-slate-100 transition-colors text-xs cursor-pointer"
+                      >
+                        <ArrowLeft className="w-4 h-4" /> Back to Details
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -1293,9 +1103,9 @@ export default function NavrangBook() {
                       <div className="pt-2 border-t border-slate-100 flex justify-between items-center bg-purple-50/60 p-2.5 rounded-xl border border-purple-100">
                         <div>
                           <div className="text-[10px] uppercase text-purple-700 font-bold">
-                            {bookingResult.payment_status === 'paid' ? 'Payment Reference' : 'UPI UTR Reference'}
+                            Payment Reference
                           </div>
-                          <div className="font-mono font-bold text-slate-900">{bookingResult.payment_ref || utrNumber}</div>
+                          <div className="font-mono font-bold text-slate-900">{bookingResult.payment_ref || 'Razorpay Auto'}</div>
                         </div>
                         {bookingResult.payment_status === 'paid' ? (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full border border-emerald-200">
@@ -1303,10 +1113,24 @@ export default function NavrangBook() {
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full border border-amber-200">
-                            <Clock className="w-3 h-3" /> Verification Pending
+                            <Clock className="w-3 h-3" /> Awaiting Auto-Sync
                           </span>
                         )}
                       </div>
+
+                      {bookingResult.payment_status !== 'paid' && (
+                        <div className="pt-2">
+                          <button
+                            type="button"
+                            onClick={() => handleAutoVerify(bookingResult.booking_id)}
+                            disabled={isCheckingStatus}
+                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                          >
+                            <Zap className="w-4 h-4 text-amber-300 fill-amber-300" />
+                            {isCheckingStatus ? 'Checking Razorpay...' : '⚡ Auto-Verify with Razorpay'}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
 

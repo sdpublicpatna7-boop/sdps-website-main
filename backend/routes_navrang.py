@@ -291,10 +291,11 @@ class AdminCashBookingRequest(BaseModel):
 # --- 2nd Razorpay Account (Dedicated Exclusively to Navrang) ---
 async def _get_navrang_razorpay_config():
     """
-    Returns (key_id, key_secret, is_enabled) for the 2nd Razorpay account dedicated to Navrang only.
+    Returns (key_id, key_secret, is_enabled) for the Razorpay account dedicated to Navrang passes.
     Priority:
     1. db.navrang_config ("razorpay_key_id", "razorpay_key_secret", "razorpay_enabled")
     2. Environment variables NAVRANG_RAZORPAY_KEY_ID & NAVRANG_RAZORPAY_KEY_SECRET
+    3. Global school RAZORPAY_KEY_ID & RAZORPAY_KEY_SECRET
     """
     if db is None:
         return "", "", False
@@ -303,8 +304,18 @@ async def _get_navrang_razorpay_config():
     except Exception:
         cfg = {}
 
-    key_id = (cfg.get("razorpay_key_id") or os.environ.get("NAVRANG_RAZORPAY_KEY_ID") or "").strip()
-    key_secret = (cfg.get("razorpay_key_secret") or os.environ.get("NAVRANG_RAZORPAY_KEY_SECRET") or "").strip()
+    key_id = (
+        cfg.get("razorpay_key_id") or 
+        os.environ.get("NAVRANG_RAZORPAY_KEY_ID") or 
+        os.environ.get("RAZORPAY_KEY_ID") or 
+        ""
+    ).strip()
+    key_secret = (
+        cfg.get("razorpay_key_secret") or 
+        os.environ.get("NAVRANG_RAZORPAY_KEY_SECRET") or 
+        os.environ.get("RAZORPAY_KEY_SECRET") or 
+        ""
+    ).strip()
     
     # If explicitly toggled off in config, disabled. Otherwise enabled if both key_id and secret exist.
     is_enabled = bool(cfg.get("razorpay_enabled", True) and key_id and key_secret)
@@ -331,7 +342,7 @@ DEFAULT_PACKAGES = {
 
 @navrang_router.get("/config")
 async def get_config():
-    config = await db.navrang_config.find_one({}, {"_id": 0})
+    config = await db.navrang_config.find_one({}, {"_id": 0}) if db is not None else None
     if not config:
         config = {
             "event_name": "Navrang 2026",
@@ -395,16 +406,23 @@ async def verify_student(req: StudentVerifyRequest, request: Request):
             detail=f"The entered student name does not match school records for admission number {clean_adm}. Please verify the spelling or enter the name registered with the school."
         )
 
-    # Check if student has already booked
-    existing = await db.navrang_bookings.find_one({
+    # Check if student has already booked and paid
+    existing_paid = await db.navrang_bookings.find_one({
         "students.admission_no": student["admission_no"],
-        "payment_status": {"$ne": "failed"}
+        "payment_status": {"$in": ["paid", "cash"]}
     })
-    if existing:
+    if existing_paid:
         raise HTTPException(
             status_code=400, 
-            detail=f"Student {student['admission_no']} ({registered_name}) already has an active booking ({existing.get('booking_id')}). Duplicate bookings for the same student are prohibited."
+            detail=f"Student {student['admission_no']} ({registered_name}) already has an active confirmed booking ({existing_paid.get('booking_id')}). Duplicate bookings for the same student are prohibited."
         )
+
+    # Check if there is an existing pending booking for this student
+    pending_booking = await db.navrang_bookings.find_one({
+        "students.admission_no": student["admission_no"],
+        "payment_status": "pending"
+    })
+    pending_b_id = pending_booking.get("booking_id") if pending_booking else None
     
     phone_val = (
         student.get("phone") or 
@@ -422,6 +440,7 @@ async def verify_student(req: StudentVerifyRequest, request: Request):
     return {
         "status": "success",
         "verified": True,
+        "pending_booking_id": pending_b_id,
         "student": {
             "name": registered_name,
             "student_name": registered_name,
@@ -483,13 +502,22 @@ async def book_tickets(req: BookRequest):
         if not student:
             raise HTTPException(status_code=404, detail=f"Student with admission number {adm_val} not found in SDPS roster.")
             
-        # Check if already booked
-        existing_booking = await db.navrang_bookings.find_one({
+        # Check if already booked and confirmed
+        existing_paid = await db.navrang_bookings.find_one({
             "students.admission_no": student["admission_no"],
-            "payment_status": {"$ne": "failed"}
+            "payment_status": {"$in": ["paid", "cash"]}
         })
-        if existing_booking:
-            raise HTTPException(status_code=400, detail=f"Student {student['admission_no']} already has an active booking ({existing_booking.get('booking_id')}). Duplicate bookings are prohibited.")
+        if existing_paid:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Student {student['admission_no']} already has a confirmed, active pass ({existing_paid.get('booking_id')}). Duplicate bookings are prohibited."
+            )
+
+        # Clear any stale abandoned pending bookings for this student
+        await db.navrang_bookings.delete_many({
+            "students.admission_no": student["admission_no"],
+            "payment_status": "pending"
+        })
             
         st_name = student.get("student_name") or student.get("name") or student.get("Name") or ""
         c_name = student.get("class_name") or student.get("Class") or student.get("class") or ""
@@ -514,13 +542,10 @@ async def book_tickets(req: BookRequest):
 
     qr_token = str(uuid.uuid4())
     
-    is_razorpay = "razorpay" in (req.payment_method or "").lower()
+    is_razorpay = "razorpay" in (req.payment_method or "").lower() or not (req.payment_ref or req.utr_number)
     utr_val = (req.payment_ref or req.utr_number or "").strip()
     if not utr_val:
-        if is_razorpay:
-            utr_val = "pending_online_payment"
-        else:
-            raise HTTPException(status_code=400, detail="Please provide the 12-digit UPI Transaction ID / UTR reference number.")
+        utr_val = "pending_razorpay" if is_razorpay else "online_checkout"
 
     booking_doc = {
         "_id": new_id(),
@@ -532,70 +557,47 @@ async def book_tickets(req: BookRequest):
         "parent_name": req.parent_name.strip(),
         "parent_phone": parent_phone_clean,
         "parent_email": parent_email_val,
-        "payment_method": req.payment_method or "UPI",
+        "payment_method": req.payment_method or "razorpay",
         "payment_ref": utr_val,
         "upi_id_used": req.upi_id_used or config.get("upi_id", "sdpublicpatna@sbi"),
         "payment_status": "pending",
         "entry_status": "not_entered",
         "created_at": now_iso()
     }
+
+    # Automatically generate Razorpay order if Razorpay is configured
+    client, key_id = await _get_navrang_razorpay_client()
+    order_data = None
+    if client and key_id:
+        try:
+            amount_inr = int(pkg_info["price"] or 299)
+            amount_paise = amount_inr * 100
+            order = client.order.create({
+                "amount": amount_paise,
+                "currency": "INR",
+                "payment_capture": 1,
+                "notes": {
+                    "booking_id": booking_id,
+                    "event": "Navrang 2026 Dandiya",
+                    "parent_name": req.parent_name.strip(),
+                    "parent_phone": parent_phone_clean,
+                    "package": pkg_key
+                }
+            })
+            booking_doc["razorpay_order_id"] = order["id"]
+            booking_doc["razorpay_key_id"] = key_id
+            booking_doc["payment_gateway"] = "razorpay_navrang"
+            order_data = {
+                "order_id": order["id"],
+                "amount": amount_paise,
+                "currency": "INR",
+                "key_id": key_id
+            }
+        except Exception as rzp_e:
+            logger.error(f"Failed to auto-create Razorpay order for {booking_id}: {rzp_e}")
     
     await db.navrang_bookings.insert_one(booking_doc)
 
-    # Trigger transactional WhatsApp confirmation message for manual UPI
-    if not is_razorpay:
-        try:
-            student_lines = []
-            for s in verified_students:
-                s_name = s.get("name") or "Student"
-                s_adm = s.get("admission_no") or ""
-                s_cls = f"Class {s.get('class_name')} {s.get('section', '')}".strip() if s.get('class_name') else ""
-                line = f"• {s_name} (Adm: {s_adm})"
-                if s_cls:
-                    line += f" - {s_cls}"
-                student_lines.append(line)
-            students_text = "\n".join(student_lines)
-
-            pkg_title = pkg_info.get("name", f"{pkg_key.title()} Pass")
-            event_date = config.get("event_date", "15 Oct 2026")
-            event_time = config.get("event_time", "6:00 PM – 10:00 PM")
-            venue = config.get("venue", "S.D. Public School Main Campus, Patna")
-            ticket_link = f"https://navrang.sdpublic.org/my-ticket?booking_id={booking_id}"
-
-            wa_msg = (
-                f"🎉 *NAVRANG 2026 PASS BOOKING CONFIRMED!* 🎆\n"
-                f"*S.D. Public School, Patna*\n\n"
-                f"Dear *{booking_doc['parent_name']}*,\n"
-                f"Namaste! Your Navrang 2026 Dandiya & Durga Puja Celebration Night pass has been booked successfully.\n\n"
-                f"📋 *BOOKING DETAILS:*\n"
-                f"• *Booking ID:* {booking_id}\n"
-                f"• *Pass Package:* {pkg_title} (₹{pkg_info['price']})\n"
-                f"• *UPI UTR Number:* {utr_val}\n"
-                f"• *Payment Status:* Submitted (Pending Admin Approval)\n\n"
-                f"👨‍🎓 *STUDENT(S):*\n"
-                f"{students_text}\n\n"
-                f"🎟️ *ACCESS YOUR DIGITAL ENTRY PASS:*\n"
-                f"👉 {ticket_link}\n\n"
-                f"📍 *EVENT SCHEDULE:*\n"
-                f"• *Date & Time:* {event_date} | {event_time}\n"
-                f"• *Venue:* {venue}\n\n"
-                f"⚠️ *Important Entry Guidelines:*\n"
-                f"1. Please keep your QR pass handy on your mobile at the school entrance gate.\n"
-                f"2. Pass admits student(s) + 1 Mother and includes 1 pair of Dandiya sticks.\n"
-                f"3. Traditional festive attire is encouraged.\n\n"
-                f"📞 *School Desk:* +91 99551 90262\n"
-                f"— *S.D. Public School, Patna*"
-            )
-
-            from whatsapp_service import send_whatsapp_text
-            await send_whatsapp_text(
-                phone=booking_doc["parent_phone"],
-                message=wa_msg,
-                subject=f"Navrang 2026 Pass Confirmation - {booking_id}"
-            )
-        except Exception as wa_e:
-            logger.warning(f"Could not send WhatsApp booking message: {wa_e}")
-    
     return {
         "booking_id": booking_id,
         "qr_token": qr_token,
@@ -604,10 +606,12 @@ async def book_tickets(req: BookRequest):
         "students": verified_students,
         "parent_name": booking_doc["parent_name"],
         "parent_phone": booking_doc["parent_phone"],
+        "parent_email": booking_doc.get("parent_email", ""),
         "payment_method": booking_doc["payment_method"],
         "payment_ref": booking_doc["payment_ref"],
         "payment_status": booking_doc["payment_status"],
-        "message": "Booking created successfully. Pending school payment verification."
+        "razorpay_order": order_data,
+        "message": "Booking initiated. Complete payment on Razorpay for instant auto-verification."
     }
 
 @navrang_router.get("/booking/{booking_id}")
@@ -762,35 +766,216 @@ async def navrang_verify_payment(req: NavrangVerifyPaymentRequest):
         logger.warning(f"Navrang Razorpay signature verification failed for {b_id}: {e}")
         raise HTTPException(status_code=400, detail="Payment verification failed: invalid signature.")
 
-    update_data = {
-        "payment_status": "paid",
-        "payment_method": "razorpay",
-        "payment_ref": req.razorpay_payment_id,
-        "razorpay_order_id": req.razorpay_order_id,
-        "razorpay_payment_id": req.razorpay_payment_id,
-        "razorpay_signature": req.razorpay_signature,
-        "paid_at": now_iso(),
-        "verified_at": now_iso(),
-        "verified_by": "Razorpay_Navrang_Auto",
-        "updated_at": now_iso()
-    }
-
-    await db.navrang_bookings.update_one({"booking_id": booking["booking_id"]}, {"$set": update_data})
-    booking.update(update_data)
-    if "_id" in booking:
-        del booking["_id"]
-
-    # Send WhatsApp notification with activated QR pass
-    try:
-        await _send_navrang_verified_whatsapp(booking)
-    except Exception as e:
-        logger.warning(f"Failed to send auto WhatsApp for booking {b_id}: {e}")
+    verified_booking = await _auto_verify_booking(
+        booking=booking,
+        payment_id=req.razorpay_payment_id,
+        order_id=req.razorpay_order_id,
+        signature=req.razorpay_signature,
+        method="razorpay",
+        verified_by="Razorpay_Navrang_Auto"
+    )
 
     return {
         "status": "success",
         "message": "Payment verified and Navrang pass activated successfully!",
-        "booking": booking
+        "booking": verified_booking
     }
+
+
+async def _auto_verify_booking(
+    booking: dict,
+    payment_id: str,
+    order_id: Optional[str] = None,
+    signature: Optional[str] = None,
+    method: str = "razorpay",
+    verified_by: str = "Razorpay_Navrang_Auto"
+) -> dict:
+    """Marks booking as paid, records payment refs, and dispatches instant verified WhatsApp pass."""
+    b_id = booking.get("booking_id")
+    update_data = {
+        "payment_status": "paid",
+        "payment_method": method or "razorpay",
+        "payment_ref": payment_id,
+        "paid_at": now_iso(),
+        "verified_at": now_iso(),
+        "verified_by": verified_by,
+        "updated_at": now_iso()
+    }
+    if order_id:
+        update_data["razorpay_order_id"] = order_id
+    if payment_id:
+        update_data["razorpay_payment_id"] = payment_id
+    if signature:
+        update_data["razorpay_signature"] = signature
+
+    await db.navrang_bookings.update_one(
+        {"$or": [{"booking_id": b_id}, {"booking_id": b_id.upper()}]},
+        {"$set": update_data}
+    )
+    booking.update(update_data)
+    if "_id" in booking:
+        del booking["_id"]
+
+    try:
+        await _send_navrang_verified_whatsapp(booking)
+    except Exception as wa_err:
+        logger.warning(f"Failed to send auto-verified WhatsApp for {b_id}: {wa_err}")
+
+    return booking
+
+
+class NavrangCheckStatusRequest(BaseModel):
+    booking_id: Optional[str] = None
+    order_id: Optional[str] = None
+
+
+@navrang_router.post("/check-payment-status")
+@navrang_router.get("/check-payment-status")
+async def navrang_check_payment_status(
+    booking_id: Optional[str] = Query(None),
+    order_id: Optional[str] = Query(None),
+    body: Optional[NavrangCheckStatusRequest] = Body(None)
+):
+    """
+    Auto-verifies a booking directly against Razorpay's API.
+    If the parent paid but closed the tab or experienced a network drop,
+    this checks Razorpay orders/payments and automatically activates the pass.
+    """
+    b_id = booking_id or (body.booking_id if body else None)
+    ord_id = order_id or (body.order_id if body else None)
+    if not b_id and not ord_id:
+        raise HTTPException(status_code=400, detail="booking_id or order_id is required.")
+
+    query = {}
+    if b_id:
+        clean_b = b_id.strip().upper()
+        query["$or"] = [{"booking_id": clean_b}, {"booking_id": b_id.strip()}]
+    else:
+        query["razorpay_order_id"] = ord_id.strip()
+
+    booking = await db.navrang_bookings.find_one(query)
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found.")
+
+    if booking.get("payment_status") in ("paid", "cash"):
+        if "_id" in booking:
+            del booking["_id"]
+        return {
+            "status": "success",
+            "is_paid": True,
+            "message": "Payment verified and pass active.",
+            "booking": booking
+        }
+
+    client, key_id = await _get_navrang_razorpay_client()
+    if not client:
+        if "_id" in booking:
+            del booking["_id"]
+        return {
+            "status": "pending",
+            "is_paid": False,
+            "message": "Payment gateway keys are being configured. Please contact school desk or check again shortly.",
+            "booking": booking
+        }
+
+    target_order_id = booking.get("razorpay_order_id") or ord_id
+    if not target_order_id:
+        if "_id" in booking:
+            del booking["_id"]
+        return {
+            "status": "pending",
+            "is_paid": False,
+            "message": "No online payment order found for this booking.",
+            "booking": booking
+        }
+
+    try:
+        payments_data = client.order.payments(target_order_id)
+        items = payments_data.get("items", []) if isinstance(payments_data, dict) else []
+        captured = next((p for p in items if p.get("status") in ("captured", "authorized")), None)
+        if captured:
+            verified_booking = await _auto_verify_booking(
+                booking=booking,
+                payment_id=captured.get("id"),
+                order_id=target_order_id,
+                method=captured.get("method", "razorpay"),
+                verified_by="Razorpay_Auto_Sync"
+            )
+            return {
+                "status": "success",
+                "is_paid": True,
+                "message": "Payment automatically verified via Razorpay! Pass activated.",
+                "booking": verified_booking
+            }
+        else:
+            if "_id" in booking:
+                del booking["_id"]
+            return {
+                "status": "pending",
+                "is_paid": False,
+                "message": "Payment not yet captured on Razorpay.",
+                "booking": booking
+            }
+    except Exception as e:
+        logger.error(f"Razorpay status check error for {b_id}: {e}")
+        raise HTTPException(status_code=502, detail=f"Failed to query Razorpay: {str(e)}")
+
+
+@navrang_router.post("/webhook")
+@navrang_router.post("/razorpay-webhook")
+async def navrang_razorpay_webhook(request: Request):
+    """
+    Razorpay Webhook handler. Automatically marks bookings as paid and
+    activates QR passes upon receiving 'payment.captured' or 'order.paid' events.
+    """
+    try:
+        body_bytes = await request.body()
+        event_payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+
+    signature = request.headers.get("X-Razorpay-Signature", "")
+    key_id, key_secret, _ = await _get_navrang_razorpay_config()
+    cfg = await db.navrang_config.find_one({}, {"_id": 0}) or {}
+    webhook_secret = (cfg.get("razorpay_webhook_secret") or key_secret or "").strip()
+
+    if webhook_secret and signature:
+        import hmac
+        import hashlib
+        expected = hmac.new(webhook_secret.encode("utf-8"), body_bytes, hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(expected, signature):
+            logger.warning("Navrang Razorpay webhook signature invalid.")
+            raise HTTPException(status_code=400, detail="Invalid webhook signature")
+
+    event = event_payload.get("event", "")
+    logger.info(f"Navrang Razorpay webhook event: {event}")
+
+    if event in ("payment.captured", "order.paid"):
+        payment = event_payload.get("payload", {}).get("payment", {}).get("entity", {})
+        order_id = payment.get("order_id") or event_payload.get("payload", {}).get("order", {}).get("entity", {}).get("id")
+        notes = payment.get("notes") or {}
+        booking_id = notes.get("booking_id")
+
+        query = {}
+        if booking_id:
+            query["booking_id"] = booking_id
+        elif order_id:
+            query["razorpay_order_id"] = order_id
+
+        if query:
+            booking = await db.navrang_bookings.find_one(query)
+            if booking and booking.get("payment_status") != "paid":
+                pay_id = payment.get("id") or "rzp_webhook"
+                await _auto_verify_booking(
+                    booking=booking,
+                    payment_id=pay_id,
+                    order_id=order_id,
+                    method=payment.get("method", "razorpay"),
+                    verified_by="Razorpay_Webhook_Auto"
+                )
+                logger.info(f"Booking {booking.get('booking_id')} successfully auto-verified via webhook.")
+
+    return {"status": "ok"}
 
 # --- Admin Endpoints ---
 
@@ -1160,6 +1345,36 @@ async def update_booking_action(
         update_data["payment_status"] = "pending"
     elif action in ("reject", "reject_payment", "mark_failed", "failed"):
         update_data["payment_status"] = "failed"
+    elif action == "auto_sync_razorpay":
+        # Auto-query Razorpay API to verify payment
+        client, key_id = await _get_navrang_razorpay_client()
+        target_order = booking.get("razorpay_order_id")
+        if not client or not target_order:
+            raise HTTPException(status_code=400, detail="No online Razorpay order found for this booking, or gateway not configured.")
+        try:
+            payments_data = client.order.payments(target_order)
+            items = payments_data.get("items", []) if isinstance(payments_data, dict) else []
+            captured = next((p for p in items if p.get("status") in ("captured", "authorized")), None)
+            if captured:
+                verified_b = await _auto_verify_booking(
+                    booking=booking,
+                    payment_id=captured.get("id"),
+                    order_id=target_order,
+                    method=captured.get("method", "razorpay"),
+                    verified_by=f"Admin_Razorpay_Sync_{token.sub}"
+                )
+                return {
+                    "status": "success",
+                    "message": "Booking verified & activated via Razorpay API!",
+                    "is_paid": True,
+                    "booking": verified_b
+                }
+            else:
+                raise HTTPException(status_code=400, detail="Payment is not yet captured on Razorpay.")
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f"Failed to query Razorpay API: {str(e)}")
     elif req.payment_status:
         update_data["payment_status"] = req.payment_status
 
