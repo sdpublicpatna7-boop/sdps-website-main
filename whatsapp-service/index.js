@@ -212,6 +212,7 @@ async function startSock() {
       const { connection, lastDisconnect, qr } = update;
 
       if (qr) {
+        lastDisconnectInfo = null; // Clear previous disconnect warning as fresh QR is ready
         try {
           currentQR = await qrcode.toDataURL(qr, {
             margin: 2,
@@ -252,13 +253,16 @@ async function startSock() {
         const isLoggedOut = statusCode === DisconnectReason.loggedOut || statusCode === 401;
         const isRestart = statusCode === DisconnectReason.restartRequired || statusCode === 515;
 
-        lastDisconnectInfo = {
-          statusCode: statusCode || "unknown",
-          loggedOut: isLoggedOut,
-          restartRequired: isRestart,
-          message: err?.message || "Connection closed",
-          date: new Date().toISOString(),
-        };
+        // Code 428 is routine idle timeout before scanning; only track real disconnects
+        if (statusCode !== 428 || isConnected) {
+          lastDisconnectInfo = {
+            statusCode: statusCode || "unknown",
+            loggedOut: isLoggedOut,
+            restartRequired: isRestart,
+            message: err?.message || "Connection closed",
+            date: new Date().toISOString(),
+          };
+        }
 
         addLog(`Connection closed. StatusCode: ${statusCode} (loggedOut=${isLoggedOut}, restartRequired=${isRestart}, reason=${err?.message || 'none'})`);
 
@@ -345,6 +349,7 @@ app.post("/reset-session", async (req, res) => {
   isConnected = false;
   meUser = null;
   currentQR = null;
+  lastDisconnectInfo = null;
   starting = false;
 
   if (sock) {

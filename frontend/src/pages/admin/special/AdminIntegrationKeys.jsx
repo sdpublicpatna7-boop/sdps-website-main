@@ -416,7 +416,7 @@ export function AdminIntegrationKeys() {
                     )}
 
                     {/* Live WhatsApp Connection Diagnostics & Error Reporting */}
-                    {wa.lastDisconnectInfo && !wa.connected && (
+                    {wa.lastDisconnectInfo && !wa.connected && (!wa.qr || wa.lastDisconnectInfo.statusCode !== 428) && (
                       <div className="mt-3 bg-rose-50 border border-rose-200 rounded-xl p-3 text-xs text-rose-800 space-y-1">
                         <div className="font-semibold flex items-center gap-1.5 text-rose-900">
                           <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
@@ -424,9 +424,9 @@ export function AdminIntegrationKeys() {
                         </div>
                         <p className="text-[11px] text-rose-700 leading-relaxed">
                           {wa.lastDisconnectInfo.statusCode === 401 && "WhatsApp rejected the credentials (401 Logged Out). Click Force Refresh to clear stale session."}
-                          {wa.lastDisconnectInfo.statusCode === 405 && "Meta has temporarily placed a companion linking cooldown on this number (Too many attempts). Wait 12-24h."}
+                          {wa.lastDisconnectInfo.statusCode === 405 && "Meta has temporarily placed a companion linking cooldown on this number (Too many attempts). Wait 12-24h or use Phone Pairing Code."}
                           {wa.lastDisconnectInfo.statusCode === 408 && "Chat history sync timed out (408). Keep phone awake and unlocked during linking."}
-                          {wa.lastDisconnectInfo.statusCode === 428 && "Precondition Required (428). Please use Force Refresh and retry."}
+                          {wa.lastDisconnectInfo.statusCode === 428 && "Routine QR timeout (428). A fresh QR has been generated above or switch to the Phone Pairing Code tab."}
                           {wa.lastDisconnectInfo.statusCode === 440 && "Session replaced by another WhatsApp Web login (440). Check for duplicate bots."}
                           {wa.lastDisconnectInfo.statusCode === 515 && "Pairing code exchange handshake received (515 Restart Required)."}
                           {![401, 405, 408, 428, 440, 515].includes(wa.lastDisconnectInfo.statusCode) && (wa.lastDisconnectInfo.message || "Connection dropped by WhatsApp servers.")}
