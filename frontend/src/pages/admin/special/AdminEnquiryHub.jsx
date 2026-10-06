@@ -3,7 +3,7 @@ import {
   Users, Phone, Mail, Sparkles, Send, QrCode,
   CheckCircle2, Clock, Calendar, Plus, Search, Download,
   Trash2, Edit3, Eye, Copy, RefreshCw, X, FileText,
-  Megaphone, UserPlus, EyeOff
+  Megaphone, UserPlus, EyeOff, HelpCircle, MessageSquare, ExternalLink
 } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
@@ -59,6 +59,9 @@ export function AdminEnquiryHub() {
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [qrCampaign, setQrCampaign] = useState(null);
 
+  const [detailsEnquiry, setDetailsEnquiry] = useState(null);
+  const [questionsMap, setQuestionsMap] = useState({});
+
   const [walkInModalOpen, setWalkInModalOpen] = useState(false);
   const [walkInForm, setWalkInForm] = useState({
     parent_name: "",
@@ -73,14 +76,20 @@ export function AdminEnquiryHub() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [enqRes, campRes, statsRes] = await Promise.all([
+      const [enqRes, campRes, statsRes, qRes] = await Promise.all([
         api.get("/admin/admission-enquiries"),
         api.get("/admin/admission-campaigns"),
         api.get("/admin/admission-enquiries/stats"),
+        api.get("/admission/enquiry-questions").catch(() => ({ data: [] })),
       ]);
       setEnquiries(enqRes.data || []);
       setCampaigns(campRes.data || []);
       setStats(statsRes.data || null);
+      const qMap = {};
+      (qRes?.data || []).forEach((q) => {
+        if (q.id && q.label) qMap[q.id] = q.label;
+      });
+      setQuestionsMap(qMap);
     } catch (err) {
       console.error("Failed to load enquiries or campaigns:", err);
       toast.error("Failed to load admission enquiries data");
@@ -218,19 +227,29 @@ export function AdminEnquiryHub() {
       toast.error("No enquiries to export");
       return;
     }
-    const headers = ["ID", "Parent Name", "Student Name", "Class", "Phone", "Email", "Status", "Campaign", "Visit Date", "Date"];
-    const rows = filteredEnquiries.map((e) => [
-      e.id,
-      `"${(e.parent_name || "").replace(/"/g, '""')}"`,
-      `"${(e.student_name || "").replace(/"/g, '""')}"`,
-      `"${e.student_class || ""}"`,
-      `"${e.contact_phone || ""}"`,
-      `"${e.email || ""}"`,
-      `"${e.status || "new"}"`,
-      `"${e.campaign_slug || "direct"}"`,
-      `"${e.visit_date || ""}"`,
-      `"${e.created_at?.slice(0, 10) || ""}"`,
-    ]);
+    const headers = ["ID", "Parent Name", "Student Name", "Class", "Phone", "Email", "Status", "Enquiry Query", "Form Responses", "Campaign", "Visit Date", "Date"];
+    const rows = filteredEnquiries.map((e) => {
+      const qText = e.message || e.query || e.enquiry_details || e.note || e.answers?.message || e.answers?.query || "";
+      const otherAnswers = Object.entries(e.answers || {})
+        .filter(([k, v]) => k !== 'message' && k !== 'query' && v)
+        .map(([k, v]) => `${questionsMap[k] || k}: ${v}`)
+        .join("; ");
+
+      return [
+        e.id,
+        `"${(e.parent_name || "").replace(/"/g, '""')}"`,
+        `"${(e.student_name || "").replace(/"/g, '""')}"`,
+        `"${e.student_class || ""}"`,
+        `"${e.contact_phone || ""}"`,
+        `"${e.email || ""}"`,
+        `"${e.status || "new"}"`,
+        `"${(qText || "").replace(/"/g, '""')}"`,
+        `"${(otherAnswers || "").replace(/"/g, '""')}"`,
+        `"${e.campaign_slug || "direct"}"`,
+        `"${e.visit_date || ""}"`,
+        `"${e.created_at?.slice(0, 10) || ""}"`,
+      ];
+    });
 
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
     const encodedUri = encodeURI(csvContent);
@@ -493,6 +512,15 @@ export function AdminEnquiryHub() {
 
                       {/* Right Quick Action Buttons */}
                       <div className="flex flex-wrap items-center gap-2 shrink-0">
+                        {/* View Full Details Button */}
+                        <button
+                          onClick={() => setDetailsEnquiry(enq)}
+                          className="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border border-blue-200"
+                          title="View Complete Enquiry Details & Questions"
+                        >
+                          <Eye className="w-3.5 h-3.5 text-blue-600" /> View Details
+                        </button>
+
                         {/* 1-Click WhatsApp Promotional Pack */}
                         <button
                           onClick={() => openShareModal(enq)}
@@ -518,6 +546,62 @@ export function AdminEnquiryHub() {
                         </button>
                       </div>
                     </div>
+
+                    {/* What They Enquired For & Details */}
+                    {(() => {
+                      const queryText = enq.message || enq.query || enq.enquiry_details || enq.note || enq.answers?.message || enq.answers?.query || null;
+                      const otherAnswers = Object.entries(enq.answers || {}).filter(([k, v]) => 
+                        k !== 'message' && k !== 'query' && v !== null && v !== undefined && String(v).trim() !== ""
+                      );
+
+                      return (
+                        <div className="bg-slate-50/90 rounded-xl p-3 border border-slate-200/80 space-y-2 text-xs">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 font-bold text-slate-700">
+                              <HelpCircle className="w-3.5 h-3.5 text-brand-blue shrink-0" />
+                              <span>Enquired For: <strong className="text-brand-blue font-extrabold bg-blue-100/70 text-blue-900 px-2 py-0.5 rounded-md">{enq.student_class || "General Admission"}</strong></span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setDetailsEnquiry(enq)}
+                              className="text-[11px] text-brand-blue hover:underline font-bold flex items-center gap-1 cursor-pointer"
+                            >
+                              <span>View full submission</span> →
+                            </button>
+                          </div>
+
+                          {queryText ? (
+                            <div className="bg-white rounded-lg p-2.5 border border-slate-200 text-slate-800 shadow-2xs">
+                              <span className="font-bold text-slate-400 uppercase text-[10px] block mb-1 tracking-wider flex items-center gap-1">
+                                <MessageSquare className="w-3 h-3 text-slate-500" /> Parent's Query / Message:
+                              </span>
+                              <p className="font-medium text-slate-900 leading-relaxed whitespace-pre-wrap">{queryText}</p>
+                            </div>
+                          ) : (
+                            <div className="text-slate-500 text-[11px] bg-white/70 p-2.5 rounded-lg border border-slate-200/60 flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                              <span>Admission enquiry lead for <strong>{enq.student_class}</strong>. (No custom query message written by parent).</span>
+                            </div>
+                          )}
+
+                          {otherAnswers.length > 0 && (
+                            <div className="pt-2 border-t border-slate-200/60">
+                              <span className="font-bold text-slate-400 uppercase text-[10px] block mb-1.5 tracking-wider">
+                                Form Responses:
+                              </span>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {otherAnswers.map(([k, val]) => (
+                                  <div key={k} className="bg-white p-2 rounded-lg border border-slate-200 text-[11px]">
+                                    <span className="text-slate-500 font-medium block truncate">{questionsMap[k] || k}:</span>
+                                    <span className="text-slate-900 font-bold">{String(val)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     {/* Metadata & Attribution Bar */}
                     <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400">
@@ -990,6 +1074,175 @@ export function AdminEnquiryHub() {
                 className="px-5 py-2 bg-brand-blue hover:bg-brand-blue-dark text-white text-xs font-bold rounded-xl transition"
               >
                 Save Updates
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: FULL ENQUIRY DETAILS & QUESTIONNAIRE ================= */}
+      {detailsEnquiry && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-2xl w-full shadow-2xl space-y-6 border border-slate-200 my-8 max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b border-slate-100 pb-4">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[11px] font-bold border border-blue-200 mb-1.5">
+                  <Sparkles className="w-3 h-3" /> Admission Enquiry Lead
+                </div>
+                <h3 className="font-black text-xl text-slate-900 flex items-center gap-2">
+                  {detailsEnquiry.student_name}
+                  <span className="text-xs px-2.5 py-1 rounded-lg bg-blue-100 text-blue-800 font-black">
+                    {detailsEnquiry.student_class}
+                  </span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Parent: <strong className="text-slate-700">{detailsEnquiry.parent_name}</strong> • Submitted {detailsEnquiry.created_at?.slice(0, 16).replace("T", " ")}
+                </p>
+              </div>
+              <button 
+                onClick={() => setDetailsEnquiry(null)} 
+                className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Quick Action Contact Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <a
+                href={`tel:${detailsEnquiry.contact_phone}`}
+                className="p-3 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-2xl border border-blue-200 text-xs font-bold flex items-center justify-center gap-2 transition"
+              >
+                <Phone className="w-4 h-4 text-blue-600" /> Call {detailsEnquiry.contact_phone}
+              </a>
+              <a
+                href={`https://wa.me/${(detailsEnquiry.contact_phone || "").replace(/\D/g, "").length === 10 ? '91' + (detailsEnquiry.contact_phone || "").replace(/\D/g, "") : (detailsEnquiry.contact_phone || "").replace(/\D/g, "")}`}
+                target="_blank"
+                rel="noreferrer"
+                className="p-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-2xl border border-emerald-200 text-xs font-bold flex items-center justify-center gap-2 transition"
+              >
+                <Send className="w-4 h-4 text-emerald-600" /> Open WhatsApp
+              </a>
+              <a
+                href={`mailto:${detailsEnquiry.email}`}
+                className="p-3 bg-slate-50 hover:bg-slate-100 text-slate-800 rounded-2xl border border-slate-200 text-xs font-bold flex items-center justify-center gap-2 transition truncate"
+              >
+                <Mail className="w-4 h-4 text-slate-600" /> Send Email
+              </a>
+            </div>
+
+            {/* What They Enquired For */}
+            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 space-y-3">
+              <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                <HelpCircle className="w-4 h-4 text-brand-blue" /> What They Enquired For:
+              </h4>
+
+              <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-2">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-500 font-semibold">Class Seeking Admission:</span>
+                  <span className="font-extrabold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200 text-sm">
+                    {detailsEnquiry.student_class}
+                  </span>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100">
+                  <span className="text-slate-500 font-semibold text-xs block mb-1">Enquiry Query / Parent Message:</span>
+                  {(() => {
+                    const qText = detailsEnquiry.message || detailsEnquiry.query || detailsEnquiry.enquiry_details || detailsEnquiry.note || detailsEnquiry.answers?.message || detailsEnquiry.answers?.query || null;
+                    return qText ? (
+                      <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">
+                        {qText}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-slate-500 italic bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
+                        General admission enquiry for {detailsEnquiry.student_class}. The parent did not type any extra notes in the web form.
+                      </p>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* Dynamic / Custom Form Answers */}
+              {(() => {
+                const otherAnswers = Object.entries(detailsEnquiry.answers || {}).filter(([k, v]) => 
+                  k !== 'message' && k !== 'query' && v !== null && v !== undefined && String(v).trim() !== ""
+                );
+                if (!otherAnswers.length) return null;
+
+                return (
+                  <div className="space-y-2 pt-2 border-t border-slate-200">
+                    <span className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                      Submitted Form Responses & Questionnaire:
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {otherAnswers.map(([k, v]) => (
+                        <div key={k} className="bg-white p-2.5 rounded-xl border border-slate-200 text-xs">
+                          <span className="text-slate-500 font-medium block truncate text-[11px]">{questionsMap[k] || k}</span>
+                          <span className="font-bold text-slate-900 mt-0.5 block">{String(v)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Pipeline Status & Counsellor History */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Follow-up Notes & Timeline ({detailsEnquiry.notes?.length || 0}):
+                </h4>
+                <button
+                  type="button"
+                  onClick={() => {
+                    openStatusModal(detailsEnquiry);
+                    setDetailsEnquiry(null);
+                  }}
+                  className="text-xs font-bold text-brand-blue hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <Edit3 className="w-3.5 h-3.5" /> Log Note / Change Status
+                </button>
+              </div>
+
+              {detailsEnquiry.notes && detailsEnquiry.notes.length > 0 ? (
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {detailsEnquiry.notes.map((n, idx) => (
+                    <div key={idx} className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1">
+                      <div className="flex justify-between items-center text-[10px] text-slate-400">
+                        <span className="font-bold text-slate-600">{n.author || "Admissions Counsellor"}</span>
+                        <span>{n.timestamp ? new Date(n.timestamp).toLocaleString() : ""}</span>
+                      </div>
+                      <p className="text-slate-800 font-medium">{n.text}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-xs text-slate-400 bg-slate-50 p-3 rounded-xl border border-slate-200 text-center">
+                  No counsellor notes logged yet.
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  openShareModal(detailsEnquiry);
+                  setDetailsEnquiry(null);
+                }}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+              >
+                <Send className="w-3.5 h-3.5" /> Share Promotional Pack
+              </button>
+              <button
+                type="button"
+                onClick={() => setDetailsEnquiry(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer"
+              >
+                Close
               </button>
             </div>
           </div>
