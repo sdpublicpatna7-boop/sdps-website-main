@@ -3121,25 +3121,25 @@ const ScannerTab = () => {
 
                 {/* 3. HEADCOUNT & FREEBIE COMBO (Like Movie Ticket seats & combos!) */}
                 {currentResult.booking && (() => {
-                  const pkgInfo = getPackageInfo(currentResult.booking.package);
+                  const pkgInfo = getPackageInfo(currentResult.booking.package, currentResult.booking);
                   return (
                     <div className="p-4 sm:p-5 bg-slate-50/70 border-b border-slate-200">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {/* HEADCOUNT BADGE */}
-                        <div className="bg-white p-3.5 rounded-2xl border-2 border-purple-200 shadow-xs flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center text-purple-700 shrink-0 font-black text-xl">
-                            {pkgInfo.totalAdmits}
-                          </div>
+                        <div className="bg-purple-900 text-white p-4 rounded-2xl border-2 border-purple-500 shadow-sm flex items-center justify-between gap-3">
                           <div>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600 block">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-purple-200 block">
                               Total Headcount
                             </span>
-                            <strong className="text-base text-slate-900 font-extrabold block">
+                            <strong className="text-xl sm:text-2xl text-amber-300 font-black block">
                               ADMIT {pkgInfo.totalAdmits} PERSONS
                             </strong>
-                            <span className="text-xs text-slate-600 font-medium">
+                            <span className="text-xs text-purple-100 font-medium">
                               {pkgInfo.breakdown}
                             </span>
+                          </div>
+                          <div className="w-14 h-14 rounded-2xl bg-amber-400 text-purple-950 flex items-center justify-center shrink-0 font-black text-2xl shadow-md">
+                            {pkgInfo.totalAdmits}
                           </div>
                         </div>
 
