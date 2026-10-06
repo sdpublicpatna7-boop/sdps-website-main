@@ -3375,11 +3375,26 @@ const ScannerTab = () => {
                         }`}>
                           {formatFriendlyScanMessage(log.message, log.booking)}
                         </div>
-                        {log.booking?.package && (
-                          <div className="mt-1 flex items-center gap-1.5 text-[10px]">
-                            <span className="font-bold text-slate-600 uppercase">{log.booking.package} Pass</span>
-                            <span className="text-slate-400">•</span>
-                            <span className="text-slate-500">{(log.booking.students || []).length} Student(s)</span>
+                        {log.booking && (
+                          <div className="mt-1.5 space-y-1">
+                            <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                              <span className="font-extrabold bg-purple-100 text-purple-900 border border-purple-200 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                👥 Admit {log.booking.total_persons || (1 + ((log.booking.students || []).length || 1))} Persons
+                              </span>
+                              <span className="font-bold bg-amber-100 text-amber-900 border border-amber-200 px-2 py-0.5 rounded-md">
+                                🪘 1 Pair Dandiya
+                              </span>
+                              {log.booking.package && (
+                                <span className="font-bold uppercase text-slate-500 text-[10px]">
+                                  • {log.booking.package} Pass
+                                </span>
+                              )}
+                            </div>
+                            {(log.booking.students || []).length > 0 && (
+                              <div className="text-[10px] text-slate-500 font-medium">
+                                Students: {log.booking.students.map(s => `${s.name || s.student_name || 'Student'} (${s.admission_no || ''})`).join(', ')}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
