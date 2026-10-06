@@ -1977,6 +1977,49 @@ const RosterTab = () => {
 // ==========================================
 // TAB 4: GATE SCANNER (LIVE CAMERA & MANUAL)
 // ==========================================
+// Human-readable scan message formatter (converts coder ISO timestamps & UUIDs into plain friendly English)
+const formatFriendlyScanMessage = (msg, booking) => {
+  if (!msg) return '';
+  const cleanMsg = String(msg);
+  
+  if (cleanMsg.includes('ALREADY USED') || cleanMsg.includes('already checked in')) {
+    let timeStr = '';
+    const rawTime = booking?.entry_time;
+    if (rawTime) {
+      try {
+        const d = new Date(rawTime);
+        if (!isNaN(d.getTime())) {
+          const tPart = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+          const isToday = new Date().toDateString() === d.toDateString();
+          timeStr = isToday ? `Today at ${tPart}` : `${d.toLocaleDateString([], { day: '2-digit', month: 'short' })} at ${tPart}`;
+        }
+      } catch (e) {}
+    }
+    
+    let officer = booking?.entry_marked_by || 'Gate Officer';
+    // Clean raw UUID like 880a4260-59be-49f8-9c4b-ab86e63642cc
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}/i.test(officer)) {
+      officer = 'Gate Staff / Admin Desk';
+    }
+    
+    if (timeStr) {
+      return `ALREADY USED: This ticket was already checked in ${timeStr} by ${officer}.`;
+    }
+    return `ALREADY USED: This ticket has already been checked in.`;
+  }
+  
+  if (cleanMsg.includes('PAYMENT UNPAID') || cleanMsg.includes('UNPAID PASS')) {
+    const amt = booking?.price || 299;
+    return `UNPAID PASS: Payment is not completed yet. Collect ₹${amt} cash or ask parent for payment receipt.`;
+  }
+  
+  if (cleanMsg.includes('INVALID TICKET') || cleanMsg.includes('INVALID PASS')) {
+    return 'INVALID PASS: No booking record found for this code or QR pass.';
+  }
+  
+  return cleanMsg;
+};
+
 // ==========================================
 // TAB 4: GATE SCANNER (MOVIE TICKET GUARD MODE)
 // ==========================================
@@ -2289,8 +2332,8 @@ const ScannerTab = () => {
     } catch (error) {
       const errData = error.response?.data;
       const status = errData?.status || (error.response?.status === 404 ? 'not_found' : 'error');
-      const booking = errData?.booking || null;
-      const msg = errData?.detail || error.message || 'Ticket verification failed';
+      const rawMsg = errData?.detail || error.message || 'Ticket verification failed';
+      const msg = formatFriendlyScanMessage(rawMsg, booking);
       
       if (status === 'unpaid') {
         playCinemaSound('unpaid');
@@ -2883,12 +2926,12 @@ const ScannerTab = () => {
 
                   {(currentResult.status === 'already_used' || currentResult.status === 'error' || currentResult.status === 'not_found') && (
                     <div className="flex items-center justify-center gap-2">
-                      <XCircle className="w-6 h-6" />
+                      <XCircle className="w-6 h-6 shrink-0" />
                       <div className="text-left">
                         <div className="text-lg font-black tracking-wide uppercase">
                           {currentResult.status === 'already_used' ? 'ENTRY DENIED: ALREADY CHECKED IN ✕' : 'ENTRY DENIED: INVALID PASS ✕'}
                         </div>
-                        <div className="text-[11px] font-medium opacity-90">{currentResult.error}</div>
+                        <div className="text-[11px] font-medium opacity-90">{formatFriendlyScanMessage(currentResult.error, currentResult.booking)}</div>
                       </div>
                     </div>
                   )}
@@ -3135,7 +3178,7 @@ const ScannerTab = () => {
                             ? 'text-amber-800'
                             : 'text-red-700'
                         }`}>
-                          {log.message}
+                          {formatFriendlyScanMessage(log.message, log.booking)}
                         </div>
                         {log.booking?.package && (
                           <div className="mt-1 flex items-center gap-1.5 text-[10px]">

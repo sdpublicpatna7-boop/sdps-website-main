@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from pymongo import UpdateOne
 import uuid
-import datetime
+from datetime import datetime, timezone, timedelta
 import re
 import random
 import string
@@ -1102,6 +1102,48 @@ async def get_admin_bookings(
         "limit": limit
     }
 
+def _format_friendly_datetime(iso_str: str) -> str:
+    """Format ISO timestamp into friendly IST string e.g. 'Today at 02:27 PM' or '06 Oct 2026, 02:27 PM'"""
+    if not iso_str:
+        return "earlier"
+    try:
+        clean_iso = str(iso_str).replace("Z", "+00:00")
+        dt = datetime.fromisoformat(clean_iso)
+        # Indian Standard Time (IST = UTC + 5:30)
+        ist_tz = timezone(timedelta(hours=5, minutes=30))
+        dt_ist = dt.astimezone(ist_tz)
+        now_ist = datetime.now(timezone.utc).astimezone(ist_tz)
+        
+        time_str = dt_ist.strftime("%I:%M %p")
+        if dt_ist.date() == now_ist.date():
+            return f"Today at {time_str}"
+        elif (now_ist.date() - dt_ist.date()).days == 1:
+            return f"Yesterday at {time_str}"
+        else:
+            return dt_ist.strftime("%d %b %Y, %I:%M %p")
+    except Exception:
+        return str(iso_str)
+
+def _clean_marked_by(name: str) -> str:
+    if not name or not isinstance(name, str):
+        return "Gate Officer"
+    clean = name.strip()
+    # If it's a raw UUID (e.g. 880a4260-59be-49f8-9c4b-ab86e63642cc)
+    if re.match(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", clean, re.IGNORECASE):
+        return "Gate Staff / School Admin"
+    return clean
+
+def _get_admin_friendly_name(token: TokenData) -> str:
+    if not token:
+        return "Gate Officer"
+    if getattr(token, "email", None) and token.email:
+        prefix = token.email.split("@")[0].replace(".", " ").title()
+        role = (token.role or "Admin").title()
+        return f"{prefix} ({role})"
+    if getattr(token, "role", None) and token.role:
+        return f"{token.role.title()} Admin"
+    return "Gate Officer"
+
 @navrang_router.post("/admin/verify-entry")
 async def admin_verify_entry(req: VerifyEntryRequest, token: TokenData = Depends(get_current_admin)):
     identifier = (req.qr_token or req.booking_id or "").strip()
@@ -1127,25 +1169,28 @@ async def admin_verify_entry(req: VerifyEntryRequest, token: TokenData = Depends
             status_code=400,
             content={
                 "status": "unpaid",
-                "detail": f"PAYMENT UNPAID: Payment status is '{booking.get('payment_status', 'pending')}'. Please collect ₹{booking.get('price', 0)} cash or verify UTR first.",
+                "detail": f"UNPAID PASS: Payment is not completed yet (Status: {booking.get('payment_status', 'pending').title()}). Please collect ₹{booking.get('price', 0)} cash or verify payment receipt.",
                 "booking": booking
             }
         )
         
     if booking.get("entry_status") == "entered":
+        friendly_time = _format_friendly_datetime(booking.get("entry_time"))
+        officer = _clean_marked_by(booking.get("entry_marked_by"))
         return JSONResponse(
             status_code=400,
             content={
                 "status": "already_used",
-                "detail": f"ALREADY USED: This ticket was already checked in at {booking.get('entry_time', 'earlier')} by {booking.get('entry_marked_by', 'Gate Officer')}.",
+                "detail": f"ALREADY USED: This ticket was already checked in {friendly_time} by {officer}.",
                 "booking": booking
             }
         )
         
+    officer_name = _get_admin_friendly_name(token)
     update_data = {
         "entry_status": "entered",
         "entry_time": now_iso(),
-        "entry_marked_by": token.sub
+        "entry_marked_by": officer_name
     }
     
     await db.navrang_bookings.update_one({"booking_id": booking["booking_id"]}, {"$set": update_data})
@@ -1165,12 +1210,13 @@ async def admin_admit_cash(booking_id: str, token: TokenData = Depends(get_curre
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
         
+    officer_name = _get_admin_friendly_name(token)
     update_data = {
         "payment_status": "cash",
         "entry_status": "entered",
         "entry_time": now_iso(),
-        "entry_marked_by": token.sub,
-        "verified_by": token.sub,
+        "entry_marked_by": officer_name,
+        "verified_by": officer_name,
         "verified_at": now_iso(),
         "updated_at": now_iso()
     }
