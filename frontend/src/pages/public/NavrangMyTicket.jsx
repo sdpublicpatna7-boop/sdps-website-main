@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
 import api from '@/lib/api';
 import NavrangNavbar from '@/components/layout/NavrangNavbar';
+import WalletPassButton from '@/components/festive/WalletPassButton';
 
 function loadRazorpay() {
   return new Promise((resolve) => {
@@ -521,6 +522,19 @@ export default function NavrangMyTicket() {
                           </div>
                         </div>
                       )}
+
+                      {/* Mobile Wallet Passes */}
+                      <div className="mt-4 pt-3 border-t border-slate-100">
+                        <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center justify-between">
+                          <span>Add to Mobile Wallet</span>
+                          <span className="text-[10px] text-purple-600 font-normal">Offline Lock Screen Pass</span>
+                        </div>
+                        <WalletPassButton 
+                          bookingId={ticket.booking_id} 
+                          booking={ticket} 
+                          compact={true} 
+                        />
+                      </div>
                     </div>
                   </div>
 

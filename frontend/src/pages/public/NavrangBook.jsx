@@ -32,6 +32,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import api from '@/lib/api';
 import { Link } from 'react-router-dom';
 import NavrangNavbar from '@/components/layout/NavrangNavbar';
+import WalletPassButton from '@/components/festive/WalletPassButton';
 
 function loadRazorpay() {
   return new Promise((resolve) => {
@@ -1135,6 +1136,14 @@ export default function NavrangBook() {
                         </div>
                       )}
                     </div>
+                  </div>
+
+                  {/* Digital Mobile Wallet Passes */}
+                  <div className="max-w-md mx-auto mb-6">
+                    <WalletPassButton 
+                      bookingId={bookingResult.booking_id} 
+                      booking={bookingResult} 
+                    />
                   </div>
 
                   {/* Actions */}

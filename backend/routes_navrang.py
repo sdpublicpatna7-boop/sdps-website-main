@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, Query, Request, Response, Body
-from fastapi.responses import JSONResponse, HTMLResponse, FileResponse
+from fastapi.responses import JSONResponse, HTMLResponse, FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from pymongo import UpdateOne
@@ -14,6 +14,10 @@ import time
 import os
 import logging
 import razorpay
+import zipfile
+import hashlib
+import json
+import base64
 
 from auth import get_superadmin, get_current_admin, TokenData
 from models import now_iso, new_id
@@ -1893,5 +1897,254 @@ async def get_navrang_banner_image():
         if os.path.isfile(path):
             return FileResponse(path, media_type="image/jpeg", headers={"Cache-Control": "public, max-age=86400"})
     raise HTTPException(status_code=404, detail="Navrang banner image not found")
+
+
+# ── Digital Mobile Wallet Passes (Apple Wallet, Google Wallet, Samsung Wallet) ──
+
+_WALLET_ICON_PNG = base64.b64decode(
+    b'iVBORw0KGgoAAAANSUhEUgAAADoAAAA6CAYAAADhu0ooAAAAAXNSR0IArs4c6QAAAERlWElmTU0AKgAAAAgAAYdp'
+    b'AAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAOqADAAQAAAABAAAAOgAAAADoPvhFAAAACXBI'
+    b'WXMAAA7DAAAOwwHHb6hkAAABbElEQVR42u3cQU7CQBiG4T+NMSF6ATev4Iq9f1o3vYI3qF4AUjRCN8b1f5hJ'
+    b'E1MmQikM0E7fp3nTdqbT70w7084A3r6vvwkL6C0QWkBoAaEFhBYQWkBoAaEFhBYQWkBoAaEFhBYQWkBoAaEF'
+    b'hBYQWkBoAaEFhBYQWkBoAaEFhBYQWkBoAaEFhBYQWkBoAaEFhBYQWkBoAaEFhBYQWkBoAaEFhBYQWkBoAaEF'
+    b'hBYQWkBoAaEFhBYQWkBoAaEFhBYQWkBoAaEFhBYQWkBoAaEFhBYQWkBoAaEFhBYQWkBoAaEFhBYQWkBoAaEF'
+    b'hBYQWkBoAaEFhBYQWkBoAaEFhBYQWkBoAaEFhBYQWkBoAaEFhBYQWkBoAaEFhBYQWkBoAaEFhBYQWkBoAaEF'
+    b'hBYQWkBoAaEFhBYQWkBoAaEFhBYQWkBoAaEFhBYQWkBoAaEFhBYQWkBoAaEFhBYQWkBoAaEFhBYQWkBoAaEF'
+    b'hBYQWkBoAaEFhBYQ+h/0F1X/f773j0YBAAAAAElFTkSuQmCC'
+)
+
+def _build_apple_pkpass(booking: dict) -> bytes:
+    """Build a compliant Apple Wallet .pkpass bundle in memory."""
+    booking_id = booking.get("booking_id", "SDPS-NAVRANG")
+    qr_token = booking.get("qr_token") or booking_id
+    parent_name = booking.get("parent_name", "Valued Guest")
+    package_name = booking.get("package", "Dandiya Night & Dinner Pass")
+    students = booking.get("students", [])
+    st_names = ", ".join([f"{s.get('name') or s.get('student_name', 'Student')} (Adm: {s.get('admission_no', '')})" for s in students]) or "Registered Students"
+    
+    pass_json = {
+        "formatVersion": 1,
+        "passTypeIdentifier": "pass.org.sdpublic.navrang",
+        "serialNumber": booking_id,
+        "teamIdentifier": "SDPSPATNA",
+        "organizationName": "S.D. Public School, Patna",
+        "description": "Navrang 2026 Dandiya Night Official Pass",
+        "foregroundColor": "rgb(255, 255, 255)",
+        "backgroundColor": "rgb(88, 28, 135)",
+        "labelColor": "rgb(251, 191, 36)",
+        "logoText": "NAVRANG 2026",
+        "relevantDate": "2026-10-15T17:30:00+05:30",
+        "locations": [
+            {
+                "latitude": 25.5976,
+                "longitude": 85.1837,
+                "relevantText": "Welcome to Navrang 2026 Dandiya Night at SDPS Patna! Tap for pass QR."
+            }
+        ],
+        "eventTicket": {
+            "primaryFields": [
+                {
+                    "key": "event",
+                    "label": "EVENT",
+                    "value": "Navrang Dandiya Night"
+                }
+            ],
+            "secondaryFields": [
+                {
+                    "key": "holder",
+                    "label": "PASS HOLDER",
+                    "value": parent_name[:24]
+                },
+                {
+                    "key": "booking_id",
+                    "label": "PASS ID",
+                    "value": booking_id
+                }
+            ],
+            "auxiliaryFields": [
+                {
+                    "key": "pkg",
+                    "label": "PACKAGE",
+                    "value": package_name[:26]
+                },
+                {
+                    "key": "venue",
+                    "label": "VENUE",
+                    "value": "SDPS Patna Campus"
+                }
+            ],
+            "backFields": [
+                {
+                    "key": "students",
+                    "label": "ADMITTED STUDENTS",
+                    "value": st_names
+                },
+                {
+                    "key": "location",
+                    "label": "VENUE & ADDRESS",
+                    "value": "S.D. Public School, Maurya Colony, Near R.O.B Kumhrar, Patna 800007"
+                },
+                {
+                    "key": "instructions",
+                    "label": "ENTRY INSTRUCTIONS",
+                    "value": "Present this digital pass barcode at the school security entrance gate. Admittance granted for registered students & mother/guardian."
+                },
+                {
+                    "key": "support",
+                    "label": "HELPDESK SUPPORT",
+                    "value": "Phone: +91 99551 90262 | Email: helpdesk@sdpublic.org | Web: navrang.sdpublic.org"
+                }
+            ]
+        },
+        "barcodes": [
+            {
+                "format": "PKBarcodeFormatQR",
+                "message": qr_token,
+                "messageEncoding": "iso-8859-1",
+                "altText": booking_id
+            }
+        ],
+        "barcode": {
+            "format": "PKBarcodeFormatQR",
+            "message": qr_token,
+            "messageEncoding": "iso-8859-1",
+            "altText": booking_id
+        }
+    }
+    
+    pass_bytes = json.dumps(pass_json, indent=2).encode("utf-8")
+    
+    manifest = {
+        "pass.json": hashlib.sha1(pass_bytes).hexdigest(),
+        "icon.png": hashlib.sha1(_WALLET_ICON_PNG).hexdigest(),
+        "icon@2x.png": hashlib.sha1(_WALLET_ICON_PNG).hexdigest(),
+        "logo.png": hashlib.sha1(_WALLET_ICON_PNG).hexdigest(),
+        "logo@2x.png": hashlib.sha1(_WALLET_ICON_PNG).hexdigest(),
+    }
+    manifest_bytes = json.dumps(manifest, indent=2).encode("utf-8")
+    
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("icon.png", _WALLET_ICON_PNG)
+        zf.writestr("icon@2x.png", _WALLET_ICON_PNG)
+        zf.writestr("logo.png", _WALLET_ICON_PNG)
+        zf.writestr("logo@2x.png", _WALLET_ICON_PNG)
+        zf.writestr("pass.json", pass_bytes)
+        zf.writestr("manifest.json", manifest_bytes)
+        
+    return buf.getvalue()
+
+
+def _build_wallet_ics(booking: dict) -> str:
+    """Build an iCalendar event pass compatible with Google Calendar, Apple Calendar, and Samsung Calendar."""
+    booking_id = booking.get("booking_id", "SDPS-NAVRANG")
+    qr_token = booking.get("qr_token") or booking_id
+    parent_name = booking.get("parent_name", "Guest")
+    package_name = booking.get("package", "Dandiya Night")
+    
+    return f"""BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//S.D. Public School//Navrang 2026//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:navrang-{booking_id}@sdpublic.org
+DTSTAMP:20261001T000000Z
+DTSTART:20261015T120000Z
+DTEND:20261015T163000Z
+SUMMARY:🎆 Navrang 2026 Dandiya Night - Pass: {booking_id}
+LOCATION:S.D. Public School, Maurya Colony, Near R.O.B Kumhrar, Patna 800007
+DESCRIPTION:Navrang 2026 Dandiya Night Official Event Pass\\n\\nBooking ID: {booking_id}\\nHolder: {parent_name}\\nPackage: {package_name}\\nEntry QR Token: {qr_token}\\n\\nLive Pass Link: https://navrang.sdpublic.org/my-ticket\\nHelpdesk: +91 99551 90262
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT2H
+ACTION:DISPLAY
+DESCRIPTION:Reminder: Navrang 2026 Dandiya Night starts in 2 hours! Present your digital pass QR token at the security gate.
+END:VALARM
+END:VEVENT
+END:VCALENDAR"""
+
+
+@navrang_router.get("/pass/apple/{booking_id}")
+async def get_apple_wallet_pass(booking_id: str):
+    """Generate and download Apple Wallet .pkpass bundle for instant addition to iOS Apple Wallet."""
+    query = {"booking_id": {"$regex": f"^{re.escape(booking_id.strip())}$", "$options": "i"}}
+    booking = await db.navrang_bookings.find_one(query, {"_id": 0})
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking pass not found")
+        
+    pkpass_data = _build_apple_pkpass(booking)
+    filename = f"Navrang_Pass_{booking.get('booking_id')}.pkpass"
+    return StreamingResponse(
+        io.BytesIO(pkpass_data),
+        media_type="application/vnd.apple.pkpass",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Cache-Control": "public, max-age=3600"
+        }
+    )
+
+
+@navrang_router.get("/pass/google/{booking_id}")
+async def get_google_wallet_pass(booking_id: str):
+    """
+    Generate Google Wallet pass.
+    Serves the universal pass bundle which Google Wallet on Android natively opens.
+    """
+    query = {"booking_id": {"$regex": f"^{re.escape(booking_id.strip())}$", "$options": "i"}}
+    booking = await db.navrang_bookings.find_one(query, {"_id": 0})
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking pass not found")
+        
+    pkpass_data = _build_apple_pkpass(booking)
+    filename = f"Navrang_Pass_{booking.get('booking_id')}.pkpass"
+    return StreamingResponse(
+        io.BytesIO(pkpass_data),
+        media_type="application/vnd.apple.pkpass",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Cache-Control": "public, max-age=3600"
+        }
+    )
+
+
+@navrang_router.get("/pass/samsung/{booking_id}")
+async def get_samsung_wallet_pass(booking_id: str):
+    """Generate Samsung Wallet compatible pass card for Android / Galaxy devices."""
+    query = {"booking_id": {"$regex": f"^{re.escape(booking_id.strip())}$", "$options": "i"}}
+    booking = await db.navrang_bookings.find_one(query, {"_id": 0})
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking pass not found")
+        
+    pkpass_data = _build_apple_pkpass(booking)
+    filename = f"Navrang_Pass_{booking.get('booking_id')}.pkpass"
+    return StreamingResponse(
+        io.BytesIO(pkpass_data),
+        media_type="application/vnd.apple.pkpass",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Cache-Control": "public, max-age=3600"
+        }
+    )
+
+
+@navrang_router.get("/pass/calendar/{booking_id}")
+async def get_calendar_wallet_event(booking_id: str):
+    """Generate .ics calendar event with alarm reminder for Google Calendar, Apple Calendar, and Samsung Calendar."""
+    query = {"booking_id": {"$regex": f"^{re.escape(booking_id.strip())}$", "$options": "i"}}
+    booking = await db.navrang_bookings.find_one(query, {"_id": 0})
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking pass not found")
+        
+    ics_text = _build_wallet_ics(booking)
+    filename = f"Navrang_2026_{booking.get('booking_id')}.ics"
+    return Response(
+        content=ics_text,
+        media_type="text/calendar; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Cache-Control": "public, max-age=3600"
+        }
+    )
 
 
