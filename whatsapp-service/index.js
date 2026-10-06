@@ -58,6 +58,16 @@ let currentQR = null;      // base64 PNG data URL while waiting to be scanned
 let isConnected = false;
 let meUser = null;
 let starting = false;
+let lastDisconnectInfo = null;
+let recentLogs = [];
+
+function addLog(msg) {
+  const ts = new Date().toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata" });
+  const entry = `[${ts}] ${msg}`;
+  recentLogs.unshift(entry);
+  if (recentLogs.length > 30) recentLogs.pop();
+  console.log(msg);
+}
 
 let bulkProgress = { total: 0, sent: 0, failed: 0, running: false, errors: [] };
 let stopRequested = false;
@@ -208,9 +218,10 @@ async function startSock() {
             scale: 8,
             color: { dark: "#0f172a", light: "#ffffff" },
           });
-          console.log("[WhatsApp] Fresh QR code generated and ready to scan!");
+          addLog("Fresh QR code generated and ready to scan");
         } catch (e) {
           console.error("[WhatsApp] QR generation error:", e.message);
+          addLog(`QR generation error: ${e.message}`);
           currentQR = null;
         }
       }
@@ -218,8 +229,9 @@ async function startSock() {
       if (connection === "open") {
         isConnected = true;
         currentQR = null;
+        lastDisconnectInfo = null;
         meUser = sock?.user || null;
-        console.log("[WhatsApp] Successfully connected to WhatsApp as:", meUser?.id || meUser?.name);
+        addLog(`Successfully connected to WhatsApp as: ${meUser?.id || meUser?.name}`);
       }
 
       if (connection === "close") {
@@ -227,7 +239,7 @@ async function startSock() {
         meUser = null;
 
         if (disconnecting) {
-          console.log("[WhatsApp] Socket closed during intentional disconnect/reset.");
+          addLog("Socket closed during intentional disconnect/reset.");
           return;
         }
 
@@ -240,22 +252,30 @@ async function startSock() {
         const isLoggedOut = statusCode === DisconnectReason.loggedOut || statusCode === 401;
         const isRestart = statusCode === DisconnectReason.restartRequired || statusCode === 515;
 
-        console.log(`[WhatsApp] Connection closed. StatusCode: ${statusCode} (loggedOut=${isLoggedOut}, restartRequired=${isRestart})`);
+        lastDisconnectInfo = {
+          statusCode: statusCode || "unknown",
+          loggedOut: isLoggedOut,
+          restartRequired: isRestart,
+          message: err?.message || "Connection closed",
+          date: new Date().toISOString(),
+        };
+
+        addLog(`Connection closed. StatusCode: ${statusCode} (loggedOut=${isLoggedOut}, restartRequired=${isRestart}, reason=${err?.message || 'none'})`);
 
         starting = false;
 
         if (isLoggedOut) {
-          console.log("[WhatsApp] Device was logged out (code 401). Cleaning auth directory and generating fresh session...");
+          addLog("Device was logged out (code 401). Cleaning auth directory and generating fresh session...");
           cleanAuthDir();
           currentQR = null;
           await sleep(2000);
           startSock();
         } else if (isRestart) {
-          console.log("[WhatsApp] Restart required (code 515: pairing handshake completed). Preserving credentials and restarting socket in 2s...");
+          addLog("Restart required (code 515: pairing handshake completed). Preserving credentials and restarting socket in 2s...");
           await sleep(2000);
           startSock();
         } else {
-          console.log(`[WhatsApp] Connection dropped (status code: ${statusCode}). Reconnecting in 3s...`);
+          addLog(`Connection dropped (status code: ${statusCode}). Reconnecting in 3s...`);
           await sleep(3000);
           startSock();
         }
@@ -314,6 +334,8 @@ app.get("/status", (req, res) => {
     user: meUser ? { id: meUser.id, name: meUser.name } : null,
     bulkProgress,
     uptimeSec: Math.floor(process.uptime()),
+    lastDisconnectInfo,
+    recentLogs: recentLogs.slice(0, 15),
   });
 });
 

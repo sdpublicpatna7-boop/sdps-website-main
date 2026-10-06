@@ -414,6 +414,44 @@ export function AdminIntegrationKeys() {
                         )}
                       </div>
                     )}
+
+                    {/* Live WhatsApp Connection Diagnostics & Error Reporting */}
+                    {wa.lastDisconnectInfo && !wa.connected && (
+                      <div className="mt-3 bg-rose-50 border border-rose-200 rounded-xl p-3 text-xs text-rose-800 space-y-1">
+                        <div className="font-semibold flex items-center gap-1.5 text-rose-900">
+                          <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                          <span>Last Connection Status: <strong>Code {wa.lastDisconnectInfo.statusCode}</strong></span>
+                        </div>
+                        <p className="text-[11px] text-rose-700 leading-relaxed">
+                          {wa.lastDisconnectInfo.statusCode === 401 && "WhatsApp rejected the credentials (401 Logged Out). Click Force Refresh to clear stale session."}
+                          {wa.lastDisconnectInfo.statusCode === 405 && "Meta has temporarily placed a companion linking cooldown on this number (Too many attempts). Wait 12-24h."}
+                          {wa.lastDisconnectInfo.statusCode === 408 && "Chat history sync timed out (408). Keep phone awake and unlocked during linking."}
+                          {wa.lastDisconnectInfo.statusCode === 428 && "Precondition Required (428). Please use Force Refresh and retry."}
+                          {wa.lastDisconnectInfo.statusCode === 440 && "Session replaced by another WhatsApp Web login (440). Check for duplicate bots."}
+                          {wa.lastDisconnectInfo.statusCode === 515 && "Pairing code exchange handshake received (515 Restart Required)."}
+                          {![401, 405, 408, 428, 440, 515].includes(wa.lastDisconnectInfo.statusCode) && (wa.lastDisconnectInfo.message || "Connection dropped by WhatsApp servers.")}
+                        </p>
+                        {wa.lastDisconnectInfo.date && (
+                          <div className="text-[10px] text-rose-500 font-mono">
+                            Timestamp: {new Date(wa.lastDisconnectInfo.date).toLocaleTimeString()}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Live Microservice Connection Logs */}
+                    {Array.isArray(wa.recentLogs) && wa.recentLogs.length > 0 && !wa.connected && (
+                      <div className="mt-3 bg-slate-900 text-slate-200 rounded-xl p-3 text-[11px] font-mono space-y-1">
+                        <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-1">
+                          Live Microservice Logs (Last 5 events):
+                        </div>
+                        <div className="space-y-0.5 max-h-32 overflow-y-auto">
+                          {wa.recentLogs.slice(0, 5).map((l, idx) => (
+                            <div key={idx} className="text-slate-300 truncate">{l}</div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
