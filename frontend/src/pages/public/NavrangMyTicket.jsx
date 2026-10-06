@@ -20,6 +20,7 @@ function loadRazorpay() {
 
 export default function NavrangMyTicket() {
   const [searchInput, setSearchInput] = useState('');
+  const [phoneInput, setPhoneInput] = useState('');
   const [searchType, setSearchType] = useState('phone'); // phone or booking_id
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -43,23 +44,52 @@ export default function NavrangMyTicket() {
     fetchConfig();
   }, []);
 
-  const autoFetchTicket = async (type, query) => {
-    if (!query) return;
+  const fetchTicketsByPhone = async (phone) => {
+    const clean = String(phone || '').replace(/\D/g, '').slice(-10);
+    if (clean.length !== 10) {
+      setError('Please enter a valid 10-digit registered mobile number.');
+      return;
+    }
     setIsLoading(true);
     setError(null);
     setSearched(true);
     try {
-      if (type === 'booking_id') {
-        const res = await api.get(`/navrang/booking/${query.trim().toUpperCase()}`);
-        setTickets(res.data ? [res.data] : []);
-      } else {
-        const res = await api.post('/navrang/my-tickets', { phone: query.trim() });
-        const list = res.data?.bookings || (Array.isArray(res.data) ? res.data : []);
-        setTickets(list);
-      }
+      const res = await api.post('/navrang/my-tickets', { phone: clean });
+      const list = res.data?.bookings || (Array.isArray(res.data) ? res.data : []);
+      setTickets(list);
     } catch (err) {
       if (err.response?.status === 404) {
         setTickets([]);
+      } else {
+        setError(err.response?.data?.detail || 'An error occurred while fetching tickets.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchBookingByIdAndPhone = async (bId, phone) => {
+    const cleanId = String(bId || '').trim().toUpperCase();
+    const cleanPhone = String(phone || '').replace(/\D/g, '').slice(-10);
+    if (!cleanId) {
+      setError('Please enter your Booking ID.');
+      return;
+    }
+    if (cleanPhone.length !== 10) {
+      setError('🔒 For ticket security, please enter the 10-digit registered mobile number used during booking.');
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+    setSearched(true);
+    try {
+      const res = await api.get(`/navrang/booking/${cleanId}?phone=${cleanPhone}`);
+      setTickets(res.data ? [res.data] : []);
+    } catch (err) {
+      if (err.response?.status === 404) {
+        setTickets([]);
+      } else if (err.response?.status === 403) {
+        setError('Verification failed: This mobile number does not match the registered booking contact.');
       } else {
         setError(err.response?.data?.detail || 'An error occurred while fetching tickets.');
       }
@@ -72,21 +102,29 @@ export default function NavrangMyTicket() {
     const urlParams = new URLSearchParams(window.location.search);
     const bId = urlParams.get('booking_id') || urlParams.get('id');
     const ph = urlParams.get('phone');
-    if (bId) {
+    if (bId && ph) {
       setSearchType('booking_id');
       setSearchInput(bId);
-      autoFetchTicket('booking_id', bId);
+      setPhoneInput(ph);
+      fetchBookingByIdAndPhone(bId, ph);
+    } else if (bId) {
+      setSearchType('booking_id');
+      setSearchInput(bId);
+      toast.info('Please enter your registered 10-digit mobile number to verify and view your pass.');
     } else if (ph) {
       setSearchType('phone');
       setSearchInput(ph);
-      autoFetchTicket('phone', ph);
+      fetchTicketsByPhone(ph);
     }
   }, []);
 
   const handleSearch = async (e) => {
     e.preventDefault();
-    if (!searchInput.trim()) return;
-    autoFetchTicket(searchType, searchInput);
+    if (searchType === 'phone') {
+      fetchTicketsByPhone(searchInput);
+    } else {
+      fetchBookingByIdAndPhone(searchInput, phoneInput);
+    }
   };
 
   const handleShare = (ticket) => {
@@ -183,7 +221,10 @@ export default function NavrangMyTicket() {
   const handleAutoVerify = async (ticket) => {
     try {
       setCheckingBookingId(ticket.booking_id);
-      const res = await api.post('/navrang/check-payment-status', { booking_id: ticket.booking_id });
+      const res = await api.post('/navrang/check-payment-status', { 
+        booking_id: ticket.booking_id, 
+        phone: ticket.parent_phone || phoneInput || searchInput 
+      });
       if (res.data?.is_paid && res.data?.booking) {
         toast.success(`🎉 Payment verified for ${ticket.booking_id}! Pass is now active.`);
         setTickets(prev => prev.map(t => 
@@ -246,17 +287,20 @@ export default function NavrangMyTicket() {
         {/* Search Form */}
         <div className="bg-white rounded-2xl shadow-xl p-6 border border-purple-100 mb-8">
           <form onSubmit={handleSearch} className="space-y-4">
-            <div className="flex gap-4 mb-4">
+            <div className="flex flex-wrap gap-4 mb-2">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input 
                   type="radio" 
                   name="searchType" 
                   value="phone" 
                   checked={searchType === 'phone'}
-                  onChange={() => setSearchType('phone')}
+                  onChange={() => {
+                    setSearchType('phone');
+                    setError(null);
+                  }}
                   className="text-purple-600 focus:ring-purple-500"
                 />
-                <span className="text-sm font-medium">By Phone Number</span>
+                <span className="text-sm font-semibold text-slate-800">By Registered Mobile Number</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input 
@@ -264,35 +308,85 @@ export default function NavrangMyTicket() {
                   name="searchType" 
                   value="booking_id" 
                   checked={searchType === 'booking_id'}
-                  onChange={() => setSearchType('booking_id')}
+                  onChange={() => {
+                    setSearchType('booking_id');
+                    setError(null);
+                  }}
                   className="text-purple-600 focus:ring-purple-500"
                 />
-                <span className="text-sm font-medium">By Booking ID</span>
+                <span className="text-sm font-semibold text-slate-800">By Booking ID + Mobile</span>
               </label>
             </div>
 
-            <div className="flex gap-3">
-              <div className="relative flex-1">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-slate-400" />
+            {searchType === 'phone' ? (
+              <div className="space-y-2">
+                <p className="text-xs text-slate-500">
+                  Enter the 10-digit mobile number provided during booking to retrieve all passes registered to your family.
+                </p>
+                <div className="flex gap-3">
+                  <div className="relative flex-1">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Search className="h-5 w-5 text-slate-400" />
+                    </div>
+                    <input
+                      type="tel"
+                      value={searchInput}
+                      onChange={(e) => setSearchInput(e.target.value)}
+                      placeholder="Enter 10-digit registered mobile number"
+                      maxLength={10}
+                      className="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-xl leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors font-mono"
+                      required
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isLoading || !searchInput.trim()}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 disabled:opacity-50 transition-colors shadow-sm"
+                  >
+                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Find Passes'}
+                  </button>
                 </div>
-                <input
-                  type={searchType === 'phone' ? 'tel' : 'text'}
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  placeholder={searchType === 'phone' ? "Enter 10-digit mobile number" : "e.g. NVR-123456"}
-                  className="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-xl leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
-                  required
-                />
               </div>
-              <button
-                type="submit"
-                disabled={isLoading || !searchInput}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 disabled:opacity-50 transition-colors"
-              >
-                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Find'}
-              </button>
-            </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-700 flex-shrink-0" />
+                  <span>🔒 <strong>Pass Theft Protection:</strong> To prevent unauthorized entry, your registered mobile number is verified before displaying any pass.</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Booking ID *</label>
+                    <input
+                      type="text"
+                      value={searchInput}
+                      onChange={(e) => setSearchInput(e.target.value.toUpperCase())}
+                      placeholder="e.g. NVR-2026-4LC8"
+                      className="block w-full px-3 py-2.5 border border-slate-300 rounded-xl bg-slate-50 font-mono text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-purple-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Registered Mobile Number *</label>
+                    <input
+                      type="tel"
+                      value={phoneInput}
+                      onChange={(e) => setPhoneInput(e.target.value)}
+                      placeholder="10-digit mobile number"
+                      maxLength={10}
+                      className="block w-full px-3 py-2.5 border border-slate-300 rounded-xl bg-slate-50 font-mono text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-purple-500"
+                      required
+                    />
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={isLoading || !searchInput.trim() || !phoneInput.trim()}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-xl font-medium flex items-center justify-center gap-2 disabled:opacity-50 transition-colors shadow-sm"
+                >
+                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Verify Identity & Unlock Pass'}
+                </button>
+              </div>
+            )}
           </form>
         </div>
 

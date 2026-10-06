@@ -414,16 +414,9 @@ async def verify_student(req: StudentVerifyRequest, request: Request):
     if existing_paid:
         raise HTTPException(
             status_code=400, 
-            detail=f"Student {student['admission_no']} ({registered_name}) already has an active confirmed booking ({existing_paid.get('booking_id')}). Duplicate bookings for the same student are prohibited."
+            detail="A confirmed pass has already been booked for this student. Duplicate bookings are not allowed. If you have already booked, your digital entry pass was sent to your registered WhatsApp number, or you can retrieve it under 'Find My Tickets' using your registered mobile number."
         )
 
-    # Check if there is an existing pending booking for this student
-    pending_booking = await db.navrang_bookings.find_one({
-        "students.admission_no": student["admission_no"],
-        "payment_status": "pending"
-    })
-    pending_b_id = pending_booking.get("booking_id") if pending_booking else None
-    
     phone_val = (
         student.get("phone") or 
         student.get("contact_no") or 
@@ -440,7 +433,6 @@ async def verify_student(req: StudentVerifyRequest, request: Request):
     return {
         "status": "success",
         "verified": True,
-        "pending_booking_id": pending_b_id,
         "student": {
             "name": registered_name,
             "student_name": registered_name,
@@ -510,7 +502,7 @@ async def book_tickets(req: BookRequest):
         if existing_paid:
             raise HTTPException(
                 status_code=400, 
-                detail=f"Student {student['admission_no']} already has a confirmed, active pass ({existing_paid.get('booking_id')}). Duplicate bookings are prohibited."
+                detail="A confirmed pass has already been booked for this student. Duplicate bookings are not allowed."
             )
 
         # Clear any stale abandoned pending bookings for this student
@@ -616,25 +608,39 @@ async def book_tickets(req: BookRequest):
 
 @navrang_router.get("/booking/{booking_id}")
 async def get_booking(booking_id: str, phone: Optional[str] = Query(None)):
-    query = {"$or": [{"booking_id": booking_id}, {"booking_id": booking_id.upper()}]}
+    if not phone:
+        raise HTTPException(
+            status_code=400, 
+            detail="Registered parent mobile number is required to verify identity and access this pass."
+        )
+    clean_phone = re.sub(r"\D", "", phone)[-10:]
+    if len(clean_phone) != 10:
+        raise HTTPException(
+            status_code=400, 
+            detail="Please provide a valid 10-digit registered mobile number."
+        )
+    query = {"$or": [{"booking_id": booking_id.strip()}, {"booking_id": booking_id.strip().upper()}]}
     booking = await db.navrang_bookings.find_one(query, {"_id": 0})
     if not booking:
-        raise HTTPException(status_code=404, detail="Booking not found")
-    if phone:
-        clean_phone = re.sub(r"\D", "", phone)[-10:]
-        if booking.get("parent_phone") != clean_phone:
-            raise HTTPException(status_code=403, detail="Phone number does not match this booking record.")
+        raise HTTPException(status_code=404, detail="Booking not found.")
+    if booking.get("parent_phone") != clean_phone:
+        raise HTTPException(
+            status_code=403, 
+            detail="Verification failed: The mobile number provided does not match the registered booking contact."
+        )
     return booking
 
 @navrang_router.post("/my-tickets")
 async def get_my_tickets(req: MyTicketsRequest):
-    clean_phone = re.sub(r"\D", "", req.phone)[-10:]
+    raw_input = (req.phone or "").strip()
+    clean_phone = re.sub(r"\D", "", raw_input)[-10:]
+    if len(clean_phone) != 10:
+        raise HTTPException(
+            status_code=400, 
+            detail="Please enter a valid 10-digit registered mobile number to retrieve passes."
+        )
     cursor = db.navrang_bookings.find(
-        {"$or": [
-            {"parent_phone": clean_phone},
-            {"booking_id": req.phone.strip().upper()},
-            {"booking_id": req.phone.strip()}
-        ]},
+        {"parent_phone": clean_phone},
         {"_id": 0}
     ).sort("created_at", -1)
     bookings = await cursor.to_list(length=None)
@@ -657,7 +663,8 @@ async def _send_navrang_verified_whatsapp(booking: dict):
         return
     booking_id = booking.get("booking_id")
     try:
-        ticket_link = f"https://navrang.sdpublic.org/my-ticket?booking_id={booking_id}"
+        p_ph = booking.get("parent_phone", "")
+        ticket_link = f"https://navrang.sdpublic.org/my-ticket?booking_id={booking_id}&phone={p_ph}"
         verified_wa_msg = (
             f"✅ *PAYMENT VERIFIED — NAVRANG 2026 PASS ACTIVATED!* 🎟️\n"
             f"*S.D. Public School, Patna*\n\n"
@@ -827,6 +834,7 @@ async def _auto_verify_booking(
 class NavrangCheckStatusRequest(BaseModel):
     booking_id: Optional[str] = None
     order_id: Optional[str] = None
+    phone: Optional[str] = None
 
 
 @navrang_router.post("/check-payment-status")
@@ -834,6 +842,7 @@ class NavrangCheckStatusRequest(BaseModel):
 async def navrang_check_payment_status(
     booking_id: Optional[str] = Query(None),
     order_id: Optional[str] = Query(None),
+    phone: Optional[str] = Query(None),
     body: Optional[NavrangCheckStatusRequest] = Body(None)
 ):
     """
@@ -843,6 +852,9 @@ async def navrang_check_payment_status(
     """
     b_id = booking_id or (body.booking_id if body else None)
     ord_id = order_id or (body.order_id if body else None)
+    raw_phone = phone or (body.phone if body else None)
+    clean_phone = re.sub(r"\D", "", raw_phone)[-10:] if raw_phone else None
+
     if not b_id and not ord_id:
         raise HTTPException(status_code=400, detail="booking_id or order_id is required.")
 
@@ -857,14 +869,23 @@ async def navrang_check_payment_status(
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found.")
 
+    def _sanitize_booking(b: dict) -> dict:
+        b_copy = dict(b)
+        if "_id" in b_copy:
+            del b_copy["_id"]
+        # Only reveal qr_token if parent phone or order_id is verified
+        is_owner = bool((clean_phone and b_copy.get("parent_phone") == clean_phone) or ord_id)
+        if not is_owner:
+            b_copy.pop("qr_token", None)
+            b_copy.pop("razorpay_signature", None)
+        return b_copy
+
     if booking.get("payment_status") in ("paid", "cash"):
-        if "_id" in booking:
-            del booking["_id"]
         return {
             "status": "success",
             "is_paid": True,
             "message": "Payment verified and pass active.",
-            "booking": booking
+            "booking": _sanitize_booking(booking)
         }
 
     client, key_id = await _get_navrang_razorpay_client()
@@ -886,7 +907,7 @@ async def navrang_check_payment_status(
             "status": "pending",
             "is_paid": False,
             "message": "No online payment order found for this booking.",
-            "booking": booking
+            "booking": _sanitize_booking(booking)
         }
 
     try:
@@ -905,16 +926,14 @@ async def navrang_check_payment_status(
                 "status": "success",
                 "is_paid": True,
                 "message": "Payment automatically verified via Razorpay! Pass activated.",
-                "booking": verified_booking
+                "booking": _sanitize_booking(verified_booking)
             }
         else:
-            if "_id" in booking:
-                del booking["_id"]
             return {
                 "status": "pending",
                 "is_paid": False,
                 "message": "Payment not yet captured on Razorpay.",
-                "booking": booking
+                "booking": _sanitize_booking(booking)
             }
     except Exception as e:
         logger.error(f"Razorpay status check error for {b_id}: {e}")
@@ -1290,7 +1309,8 @@ async def admin_book_cash(req: AdminCashBookingRequest, token: TokenData = Depen
         students_text = "\n".join(student_lines)
 
         pkg_title = pkg_info.get("name", f"{pkg_key.title()} Pass")
-        ticket_link = f"https://navrang.sdpublic.org/my-ticket?booking_id={booking_id}"
+        p_ph = booking_doc.get("parent_phone", "")
+        ticket_link = f"https://navrang.sdpublic.org/my-ticket?booking_id={booking_id}&phone={p_ph}"
         
         wa_msg = (
             f"✅ *CASH PAYMENT CONFIRMED — NAVRANG 2026 PASS ISSUED!* 🎟️\n"
@@ -1402,7 +1422,8 @@ async def update_booking_action(
     # If action is verify_paid or mark_paid, send WhatsApp confirmation
     if action in ("mark_paid", "paid", "verify_paid") and booking.get("parent_phone"):
         try:
-            ticket_link = f"https://navrang.sdpublic.org/my-ticket?booking_id={booking_id}"
+            p_ph = booking.get("parent_phone", "")
+            ticket_link = f"https://navrang.sdpublic.org/my-ticket?booking_id={booking_id}&phone={p_ph}"
             verified_wa_msg = (
                 f"✅ *PAYMENT VERIFIED — NAVRANG 2026 PASS ACTIVATED!* 🎟️\n"
                 f"*S.D. Public School, Patna*\n\n"

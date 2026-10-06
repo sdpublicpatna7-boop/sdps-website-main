@@ -237,7 +237,10 @@ export default function NavrangBook() {
     try {
       setIsCheckingStatus(true);
       setError(null);
-      const res = await api.post('/navrang/check-payment-status', { booking_id: bId });
+      const res = await api.post('/navrang/check-payment-status', { 
+        booking_id: bId,
+        phone: parentDetails.phone 
+      });
       if (res.data?.is_paid && res.data?.booking) {
         toast.success('🎉 Payment verified via Razorpay! Pass activated.');
         if (typeof window !== 'undefined') sessionStorage.removeItem('navrang_pending_booking');
