@@ -110,48 +110,64 @@ const DashboardTab = ({ onBookCash }) => {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm text-slate-500 font-medium">Total Bookings</p>
-              <h3 className="text-3xl font-bold text-slate-900 mt-2">{stats.total_bookings || 0}</h3>
+              <p className="text-xs text-slate-500 font-medium">Confirmed Passes</p>
+              <h3 className="text-2xl md:text-3xl font-bold text-slate-900 mt-1">{stats.total_bookings || 0}</h3>
+              <p className="text-[11px] text-emerald-600 font-semibold mt-0.5">Paid & Valid</p>
             </div>
-            <div className="p-3 bg-brand-navy/10 rounded-xl">
-              <Users className="w-6 h-6 text-brand-navy" />
+            <div className="p-2.5 bg-brand-navy/10 rounded-xl">
+              <Users className="w-5 h-5 text-brand-navy" />
             </div>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm text-slate-500 font-medium">Total Revenue</p>
-              <h3 className="text-3xl font-bold text-green-700 mt-2">₹{stats.total_revenue || 0}</h3>
+              <p className="text-xs text-slate-500 font-medium">Total Revenue</p>
+              <h3 className="text-2xl md:text-3xl font-bold text-green-700 mt-1">₹{stats.total_revenue || 0}</h3>
+              <p className="text-[11px] text-slate-400 mt-0.5">Collected</p>
             </div>
-            <div className="p-3 bg-green-500/10 rounded-xl">
-              <DollarSign className="w-6 h-6 text-green-600" />
+            <div className="p-2.5 bg-green-500/10 rounded-xl">
+              <DollarSign className="w-5 h-5 text-green-600" />
             </div>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm text-slate-500 font-medium">Entries Recorded</p>
-              <h3 className="text-3xl font-bold text-slate-900 mt-2">{stats.entries_recorded || 0}</h3>
+              <p className="text-xs text-slate-500 font-medium">Entries Recorded</p>
+              <h3 className="text-2xl md:text-3xl font-bold text-blue-700 mt-1">{stats.entries_recorded || 0}</h3>
+              <p className="text-[11px] text-blue-600 font-medium mt-0.5">Checked In</p>
             </div>
-            <div className="p-3 bg-blue-500/10 rounded-xl">
-              <LogIn className="w-6 h-6 text-blue-600" />
+            <div className="p-2.5 bg-blue-500/10 rounded-xl">
+              <LogIn className="w-5 h-5 text-blue-600" />
             </div>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm text-slate-500 font-medium">Pending Payments</p>
-              <h3 className="text-3xl font-bold text-amber-600 mt-2">{stats.pending_payments || 0}</h3>
+              <p className="text-xs text-slate-500 font-medium">Pending Payments</p>
+              <h3 className="text-2xl md:text-3xl font-bold text-amber-600 mt-1">{stats.pending_payments || 0}</h3>
+              <p className="text-[11px] text-amber-600 font-medium mt-0.5">Awaiting Sync</p>
             </div>
-            <div className="p-3 bg-yellow-500/10 rounded-xl">
-              <Clock className="w-6 h-6 text-yellow-600" />
+            <div className="p-2.5 bg-yellow-500/10 rounded-xl">
+              <Clock className="w-5 h-5 text-yellow-600" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 col-span-2 lg:col-span-1">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-xs text-slate-500 font-medium">Failed / Declined</p>
+              <h3 className="text-2xl md:text-3xl font-bold text-red-600 mt-1">{stats.failed_bookings || 0}</h3>
+              <p className="text-[11px] text-red-500 font-medium mt-0.5">Not Counted</p>
+            </div>
+            <div className="p-2.5 bg-red-500/10 rounded-xl">
+              <XCircle className="w-5 h-5 text-red-600" />
             </div>
           </div>
         </div>

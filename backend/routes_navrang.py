@@ -984,7 +984,11 @@ async def get_admin_stats(token: TokenData = Depends(get_current_admin)):
     pipeline = [
         {"$group": {
             "_id": None,
-            "total_bookings": {"$sum": 1},
+            "total_bookings": {
+                "$sum": {
+                    "$cond": [{"$in": ["$payment_status", ["paid", "cash"]]}, 1, 0]
+                }
+            },
             "total_revenue": {
                 "$sum": {
                     "$cond": [{"$in": ["$payment_status", ["paid", "cash"]]}, "$price", 0]
@@ -994,12 +998,17 @@ async def get_admin_stats(token: TokenData = Depends(get_current_admin)):
                 "$sum": {
                     "$cond": [{"$eq": ["$entry_status", "entered"]}, 1, 0]
                 }
+            },
+            "failed_bookings": {
+                "$sum": {
+                    "$cond": [{"$eq": ["$payment_status", "failed"]}, 1, 0]
+                }
             }
         }}
     ]
     
     stats_res = await db.navrang_bookings.aggregate(pipeline).to_list(1)
-    stats = stats_res[0] if stats_res else {"total_bookings": 0, "total_revenue": 0, "total_entered": 0}
+    stats = stats_res[0] if stats_res else {"total_bookings": 0, "total_revenue": 0, "total_entered": 0, "failed_bookings": 0}
     if "_id" in stats:
         del stats["_id"]
 
@@ -1007,8 +1016,12 @@ async def get_admin_stats(token: TokenData = Depends(get_current_admin)):
     async for b in db.navrang_bookings.aggregate([{"$group": {"_id": "$payment_status", "count": {"$sum": 1}}}]):
         payment_breakdown[b["_id"] or "pending"] = b["count"]
 
+    # Only count confirmed (paid / cash) passes in packages breakdown
     package_breakdown = {}
-    async for b in db.navrang_bookings.aggregate([{"$group": {"_id": "$package", "count": {"$sum": 1}}}]):
+    async for b in db.navrang_bookings.aggregate([
+        {"$match": {"payment_status": {"$in": ["paid", "cash"]}}},
+        {"$group": {"_id": "$package", "count": {"$sum": 1}}}
+    ]):
         package_breakdown[b["_id"] or "silver"] = b["count"]
 
     recent_cursor = db.navrang_bookings.find({}, {"_id": 0}).sort("created_at", -1).limit(10)
@@ -1025,6 +1038,7 @@ async def get_admin_stats(token: TokenData = Depends(get_current_admin)):
         "total_revenue": stats.get("total_revenue", 0),
         "entries_recorded": stats.get("total_entered", 0),
         "pending_payments": payment_breakdown.get("pending", 0),
+        "failed_bookings": stats.get("failed_bookings", 0),
         "packages": packages_list,
         "recent_bookings": recent_bookings
     }
