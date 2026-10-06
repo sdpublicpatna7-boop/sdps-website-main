@@ -21,7 +21,7 @@ function DynamicField({ q, value, onChange }) {
 
 export function AdmissionEnquiry() {
   const [questions, setQuestions] = useState([]);
-  const [form, setForm] = useState({ parent_name: "", student_name: "", contact_phone: "", email: "", student_class: "", answers: {} });
+  const [form, setForm] = useState({ parent_name: "", student_name: "", contact_phone: "", email: "", student_class: "", message: "", answers: {} });
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -75,6 +75,17 @@ export function AdmissionEnquiry() {
             <div><label className="text-xs font-semibold uppercase tracking-wider text-brand-ink/60">Contact Phone *</label><input required type="tel" className="w-full mt-1 px-4 py-2.5 rounded-xl border border-black/10 outline-none focus:border-brand-blue" value={form.contact_phone} onChange={e => setForm({ ...form, contact_phone: e.target.value })} data-testid="enquiry-phone" /></div>
             <div><label className="text-xs font-semibold uppercase tracking-wider text-brand-ink/60">Email *</label><input required type="email" className="w-full mt-1 px-4 py-2.5 rounded-xl border border-black/10 outline-none focus:border-brand-blue" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} data-testid="enquiry-email" /></div>
             <div className="sm:col-span-2"><label className="text-xs font-semibold uppercase tracking-wider text-brand-ink/60">Class Seeking Admission *</label><input required className="w-full mt-1 px-4 py-2.5 rounded-xl border border-black/10 outline-none focus:border-brand-blue" placeholder="e.g. Class V" value={form.student_class} onChange={e => setForm({ ...form, student_class: e.target.value })} data-testid="enquiry-class" /></div>
+            <div className="sm:col-span-2">
+              <label className="text-xs font-semibold uppercase tracking-wider text-brand-ink/60">Enquiry Details / Query (What are you enquiring about?)</label>
+              <textarea
+                rows={3}
+                className="w-full mt-1 px-4 py-2.5 rounded-xl border border-black/10 outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 text-sm"
+                placeholder="e.g. Enquiring about Class 9 admission availability, entrance syllabus, fee structure, hostel, or transport facility..."
+                value={form.message}
+                onChange={e => setForm({ ...form, message: e.target.value })}
+                data-testid="enquiry-message"
+              />
+            </div>
           </div>
 
           {questions.map(q => (

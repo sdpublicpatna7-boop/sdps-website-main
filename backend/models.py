@@ -181,12 +181,16 @@ class FormQuestion(BaseDoc):
 
 
 class AdmissionEnquiry(BaseDoc):
+    model_config = ConfigDict(extra="allow")
     id: str = Field(default_factory=new_id)
     parent_name: str
     student_name: str
     contact_phone: str
     email: EmailStr
     student_class: str
+    message: Optional[str] = None
+    query: Optional[str] = None
+    enquiry_details: Optional[str] = None
     answers: Dict[str, Any] = {}
     status: str = "new"  # new/contacted/campus_visit_scheduled/visited_campus/form_purchased/admitted/cold
     notes: List[Dict[str, Any]] = []  # [{"text": "...", "author": "...", "timestamp": "...", "status": "..."}]

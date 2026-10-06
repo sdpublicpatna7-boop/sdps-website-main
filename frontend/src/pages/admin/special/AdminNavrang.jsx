@@ -8,7 +8,7 @@ import {
   Smartphone, Filter, Pencil, Plus, X, Sparkles,
   Camera, CameraOff, SwitchCamera, ScanLine, Volume2, VolumeX, Upload,
   Flashlight, FlashlightOff, Maximize, Minimize, Ticket, ShieldCheck, UserCheck, Play, Pause, PhoneCall,
-  CreditCard, Lock, Eye, EyeOff, Banknote, Receipt, Printer, MessageSquare, PartyPopper
+  CreditCard, Lock, Eye, EyeOff, Banknote, Receipt, Printer, MessageSquare, MessageCircle, PartyPopper
 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
@@ -66,6 +66,19 @@ const DEFAULT_PACKAGES = [
 const DashboardTab = ({ onBookCash }) => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [resendingRecentId, setResendingRecentId] = useState(null);
+
+  const handleResendRecentWa = async (bookingId, phone) => {
+    try {
+      setResendingRecentId(bookingId);
+      const res = await api.post(`/navrang/admin/bookings/${bookingId}/resend-whatsapp`);
+      toast.success(res.data?.message || `Pass sent to WhatsApp (${phone})!`);
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Failed to dispatch WhatsApp pass.');
+    } finally {
+      setResendingRecentId(null);
+    }
+  };
 
   useEffect(() => {
     fetchStats();
@@ -203,7 +216,7 @@ const DashboardTab = ({ onBookCash }) => {
                   <th className="py-3 px-4 rounded-tl-lg">Booking ID / Parent</th>
                   <th className="py-3 px-4">Package</th>
                   <th className="py-3 px-4">Payment</th>
-                  <th className="py-3 px-4 rounded-tr-lg">Date</th>
+                  <th className="py-3 px-4 rounded-tr-lg">Date & Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -215,7 +228,25 @@ const DashboardTab = ({ onBookCash }) => {
                     </td>
                     <td className="py-3 px-4"><Badge status={booking.package} /></td>
                     <td className="py-3 px-4"><Badge status={booking.payment_status} /></td>
-                    <td className="py-3 px-4 text-xs">{new Date(booking.created_at).toLocaleDateString()}</td>
+                    <td className="py-3 px-4 text-xs">
+                      <div className="flex items-center justify-between gap-1">
+                        <span>{new Date(booking.created_at).toLocaleDateString()}</span>
+                        {booking.parent_phone && (
+                          <button
+                            disabled={resendingRecentId === booking.booking_id}
+                            onClick={() => handleResendRecentWa(booking.booking_id, booking.parent_phone)}
+                            className="p-1 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded transition-colors cursor-pointer"
+                            title={`Resend pass to WhatsApp (${booking.parent_phone})`}
+                          >
+                            {resendingRecentId === booking.booking_id ? (
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-600" />
+                            ) : (
+                              <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -239,6 +270,19 @@ const BookingsTab = ({ onOpenCashBooking }) => {
   const [total, setTotal] = useState(0);
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [copiedUtr, setCopiedUtr] = useState(null);
+  const [resendingId, setResendingId] = useState(null);
+
+  const resendWhatsApp = async (bookingId, phone) => {
+    try {
+      setResendingId(bookingId);
+      const res = await api.post(`/navrang/admin/bookings/${bookingId}/resend-whatsapp`);
+      toast.success(res.data?.message || `Pass dispatched to WhatsApp (${phone || ''})!`);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to dispatch WhatsApp pass.');
+    } finally {
+      setResendingId(null);
+    }
+  };
   
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({
@@ -439,7 +483,20 @@ const BookingsTab = ({ onOpenCashBooking }) => {
                       </td>
                       <td className="py-4 px-4">
                         <div className="font-semibold text-slate-900 text-xs">{booking.parent_name}</div>
-                        <div className="text-xs text-slate-500 font-mono">{booking.parent_phone || booking.phone}</div>
+                        <div className="text-xs text-slate-500 font-mono flex items-center gap-1.5 mt-0.5">
+                          <span>{booking.parent_phone || booking.phone}</span>
+                          {(booking.parent_phone || booking.phone) && (
+                            <button
+                              type="button"
+                              disabled={resendingId === bId}
+                              onClick={() => resendWhatsApp(bId, booking.parent_phone || booking.phone)}
+                              className="text-emerald-600 hover:text-emerald-800 p-0.5 rounded hover:bg-emerald-50 transition-colors cursor-pointer"
+                              title={`Send pass directly to WhatsApp (${booking.parent_phone || booking.phone})`}
+                            >
+                              <MessageCircle className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </td>
                       <td className="py-4 px-4">
                         <div className="space-y-1">
@@ -481,6 +538,23 @@ const BookingsTab = ({ onOpenCashBooking }) => {
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex flex-wrap gap-1.5 items-center">
+                          {/* Resend Pass to WhatsApp */}
+                          {(booking.parent_phone || booking.phone) && (
+                            <button 
+                              disabled={isBusy || resendingId === bId}
+                              onClick={() => resendWhatsApp(bId, booking.parent_phone || booking.phone)}
+                              className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold px-2 py-1 rounded-lg border border-emerald-300 transition-colors disabled:opacity-50 flex items-center gap-1 cursor-pointer"
+                              title={`Resend digital entry pass to WhatsApp (${booking.parent_phone || booking.phone})`}
+                            >
+                              {resendingId === bId ? (
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-700" />
+                              ) : (
+                                <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                              )}
+                              <span>WhatsApp</span>
+                            </button>
+                          )}
+
                           {booking.payment_status === 'pending' && (
                             <>
                               <button 
@@ -2044,6 +2118,7 @@ const ScannerTab = () => {
   const [autoCountdown, setAutoCountdown] = useState(null);
   const [isPaused, setIsPaused] = useState(false);
   const [cashCollecting, setCashCollecting] = useState(false);
+  const [resendingScanWa, setResendingScanWa] = useState(null);
 
   // Live gate attendance stats
   const [gateStats, setGateStats] = useState({
@@ -2271,6 +2346,19 @@ const ScannerTab = () => {
       toast.error(err.response?.data?.detail || 'Failed to record cash payment');
     } finally {
       setCashCollecting(false);
+    }
+  };
+
+  const handleResendScanWhatsApp = async (bookingId, phone) => {
+    if (!bookingId) return;
+    try {
+      setResendingScanWa(bookingId);
+      const res = await api.post(`/navrang/admin/bookings/${bookingId}/resend-whatsapp`);
+      toast.success(res.data?.message || `Pass dispatched to WhatsApp (${phone || ''})!`);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to dispatch WhatsApp pass.');
+    } finally {
+      setResendingScanWa(null);
     }
   };
 
@@ -3039,13 +3127,29 @@ const ScannerTab = () => {
                       </div>
 
                       {currentResult.booking.parent_phone && (
-                        <a 
-                          href={`tel:${currentResult.booking.parent_phone}`}
-                          className="inline-flex items-center gap-1.5 bg-white border border-slate-300 hover:border-slate-400 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-2xs self-start sm:self-auto"
-                        >
-                          <PhoneCall className="w-3 h-3 text-emerald-600" />
-                          <span>Call Mother</span>
-                        </a>
+                        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                          <button
+                            type="button"
+                            disabled={resendingScanWa === currentResult.booking.booking_id}
+                            onClick={() => handleResendScanWhatsApp(currentResult.booking.booking_id, currentResult.booking.parent_phone)}
+                            className="inline-flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+                            title="Resend digital pass to parent's WhatsApp"
+                          >
+                            {resendingScanWa === currentResult.booking.booking_id ? (
+                              <RefreshCw className="w-3 h-3 animate-spin text-emerald-700" />
+                            ) : (
+                              <MessageCircle className="w-3 h-3 text-emerald-600" />
+                            )}
+                            <span>Send Pass via WhatsApp</span>
+                          </button>
+                          <a 
+                            href={`tel:${currentResult.booking.parent_phone}`}
+                            className="inline-flex items-center gap-1.5 bg-white border border-slate-300 hover:border-slate-400 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-2xs"
+                          >
+                            <PhoneCall className="w-3 h-3 text-emerald-600" />
+                            <span>Call Mother</span>
+                          </a>
+                        </div>
                       )}
                     </div>
 
@@ -3189,11 +3293,29 @@ const ScannerTab = () => {
                         )}
                       </div>
                     </div>
-                    {log.time && (
-                      <span className="text-[10px] text-slate-400 font-mono shrink-0 ml-2">
-                        {log.time}
-                      </span>
-                    )}
+                    <div className="flex flex-col items-end gap-1 shrink-0 ml-2">
+                      {log.time && (
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          {log.time}
+                        </span>
+                      )}
+                      {log.booking?.booking_id && (log.booking?.parent_phone || log.booking?.phone) && (
+                        <button
+                          type="button"
+                          disabled={resendingScanWa === log.booking.booking_id}
+                          onClick={() => handleResendScanWhatsApp(log.booking.booking_id, log.booking.parent_phone || log.booking.phone)}
+                          className="text-[10px] bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.5 rounded flex items-center gap-1 cursor-pointer transition-colors"
+                          title="Resend WhatsApp Pass"
+                        >
+                          {resendingScanWa === log.booking.booking_id ? (
+                            <RefreshCw className="w-2.5 h-2.5 animate-spin text-emerald-700" />
+                          ) : (
+                            <MessageCircle className="w-2.5 h-2.5 text-emerald-600" />
+                          )}
+                          <span>WhatsApp</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))
               )}

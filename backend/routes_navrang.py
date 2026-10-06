@@ -639,34 +639,82 @@ class NavrangVerifyPaymentRequest(BaseModel):
     razorpay_payment_id: str
     razorpay_signature: str
 
+async def send_navrang_pass_whatsapp(booking: dict) -> bool:
+    """Dispatches full official Navrang 2026 pass confirmation directly to parent's WhatsApp."""
+    if not booking:
+        return False
+    parent_phone = booking.get("parent_phone") or booking.get("phone") or ""
+    p_ph = re.sub(r"\D", "", parent_phone)[-10:]
+    if len(p_ph) != 10:
+        return False
+        
+    booking_id = booking.get("booking_id", "")
+    ticket_link = f"https://navrang.sdpublic.org/my-ticket?booking_id={booking_id}&phone={p_ph}"
+    
+    pkg = (booking.get("package") or "silver").lower()
+    pkg_name = f"{pkg.title()} Pass"
+    if pkg == "platinum":
+        pkg_desc = "3 Students + 1 Mother (includes 1 pair Dandiya sticks)"
+    elif pkg == "gold":
+        pkg_desc = "2 Students + 1 Mother (includes 1 pair Dandiya sticks)"
+    else:
+        pkg_desc = "1 Student + 1 Mother (includes 1 pair Dandiya sticks)"
+
+    students = booking.get("students") or []
+    student_lines = []
+    for s in students:
+        s_name = s.get("student_name") or s.get("name") or "Student"
+        s_adm = s.get("admission_no") or ""
+        s_cls = f"{s.get('class_name', '')} {s.get('section', '')}".strip()
+        line = f"• {s_name}"
+        if s_adm:
+            line += f" ({s_adm})"
+        if s_cls:
+            line += f" - {s_cls}"
+        student_lines.append(line)
+    students_str = "\n".join(student_lines) if student_lines else "• S.D. Public School Student"
+
+    pay_status = str(booking.get("payment_status", "paid")).upper()
+    entry_status = "ALREADY CHECKED IN ✓" if booking.get("entry_status") == "entered" else "ACTIVE & READY FOR ENTRY"
+    price_val = booking.get("price") or 299
+
+    msg = (
+        f"🎟️ *NAVRANG 2026 — OFFICIAL ENTRY PASS* 🎆\n"
+        f"*S.D. Public School, Patna*\n\n"
+        f"Dear *{booking.get('parent_name', 'Parent')}*,\n"
+        f"Here is your official digital entry pass for *Navrang 2026 Dandiya & Durga Puja Celebration Night*!\n\n"
+        f"📋 *PASS DETAILS:*\n"
+        f"• *Booking ID:* {booking_id}\n"
+        f"• *Package:* {pkg_name} ({pkg_desc})\n"
+        f"• *Amount:* ₹{price_val} ({pay_status})\n"
+        f"• *Payment Ref:* {booking.get('payment_ref') or 'VERIFIED'}\n"
+        f"• *Gate Entry Status:* {entry_status}\n\n"
+        f"👨‍🎓 *STUDENT(S):*\n"
+        f"{students_str}\n\n"
+        f"👉 *TAP HERE TO VIEW & SCAN YOUR ENTRY QR PASS:*\n"
+        f"{ticket_link}\n\n"
+        f"📍 *Event Venue:* S.D. Public School Main Campus, Patna\n"
+        f"⏰ *Date & Time:* Oct 15, 2026 | 6:00 PM – 10:00 PM\n\n"
+        f"⚠️ *Important Notice:*\n"
+        f"Please show the digital QR code from the link above at the school entrance gate for rapid turnstile verification.\n\n"
+        f"— *S.D. Public School, Patna*"
+    )
+    
+    from whatsapp_service import send_whatsapp_text
+    try:
+        res = await send_whatsapp_text(
+            phone=p_ph,
+            message=msg,
+            subject=f"Navrang 2026 Digital Pass - {booking_id}"
+        )
+        return True
+    except Exception as wa_err:
+        logger.warning(f"Could not send WhatsApp pass for {booking_id}: {wa_err}")
+        return False
+
 async def _send_navrang_verified_whatsapp(booking: dict):
     """Send immediate WhatsApp pass confirmation with live entry QR link."""
-    if not booking or not booking.get("parent_phone"):
-        return
-    booking_id = booking.get("booking_id")
-    try:
-        p_ph = booking.get("parent_phone", "")
-        ticket_link = f"https://navrang.sdpublic.org/my-ticket?booking_id={booking_id}&phone={p_ph}"
-        verified_wa_msg = (
-            f"✅ *PAYMENT VERIFIED — NAVRANG 2026 PASS ACTIVATED!* 🎟️\n"
-            f"*S.D. Public School, Patna*\n\n"
-            f"Dear *{booking.get('parent_name', 'Parent')}*,\n"
-            f"Your payment via *{booking.get('payment_method', 'Razorpay Online').upper()}* (Ref: {booking.get('payment_ref', 'N/A')}) for Navrang 2026 has been *VERIFIED & APPROVED*.\n\n"
-            f"🎫 *Booking ID:* {booking_id}\n"
-            f"✨ *Pass Status:* ACTIVE & READY FOR GATE ENTRY\n\n"
-            f"👉 *Open Your Verified Entry QR Pass:*\n"
-            f"{ticket_link}\n\n"
-            f"See you at the Navrang celebration! 🎆\n"
-            f"— *S.D. Public School, Patna*"
-        )
-        from whatsapp_service import send_whatsapp_text
-        await send_whatsapp_text(
-            phone=booking.get("parent_phone"),
-            message=verified_wa_msg,
-            subject=f"Navrang 2026 Pass Verified - {booking_id}"
-        )
-    except Exception as wa_err:
-        logger.warning(f"Could not send WhatsApp verification message for {booking_id}: {wa_err}")
+    return await send_navrang_pass_whatsapp(booking)
 
 @navrang_router.post("/create-order")
 async def navrang_create_order(req: NavrangCreateOrderRequest):
@@ -1437,6 +1485,16 @@ async def update_booking_action(
             raise
         except Exception as e:
             raise HTTPException(status_code=502, detail=f"Failed to query Razorpay API: {str(e)}")
+    elif action in ("resend_whatsapp", "whatsapp"):
+        sent = await send_navrang_pass_whatsapp(booking)
+        parent_phone = booking.get("parent_phone") or booking.get("phone") or ""
+        clean_phone = re.sub(r"\D", "", parent_phone)[-10:]
+        if not sent:
+            raise HTTPException(status_code=500, detail="Could not send WhatsApp message. Please verify gateway configuration.")
+        return {
+            "status": "success",
+            "message": f"Official digital pass resent to WhatsApp ({clean_phone})!"
+        }
     elif req.payment_status:
         update_data["payment_status"] = req.payment_status
 
@@ -1450,30 +1508,34 @@ async def update_booking_action(
     # If action is verify_paid or mark_paid, send WhatsApp confirmation
     if action in ("mark_paid", "paid", "verify_paid") and booking.get("parent_phone"):
         try:
-            p_ph = booking.get("parent_phone", "")
-            ticket_link = f"https://navrang.sdpublic.org/my-ticket?booking_id={booking_id}&phone={p_ph}"
-            verified_wa_msg = (
-                f"✅ *PAYMENT VERIFIED — NAVRANG 2026 PASS ACTIVATED!* 🎟️\n"
-                f"*S.D. Public School, Patna*\n\n"
-                f"Dear *{booking.get('parent_name', 'Parent')}*,\n"
-                f"Your UPI payment (UTR: {booking.get('payment_ref', 'N/A')}) for Navrang 2026 has been *VERIFIED & APPROVED* by the school administration.\n\n"
-                f"🎫 *Booking ID:* {booking_id}\n"
-                f"✨ *Pass Status:* ACTIVE & READY FOR GATE ENTRY\n\n"
-                f"👉 *Open Your Verified Entry QR Pass:*\n"
-                f"{ticket_link}\n\n"
-                f"See you at the Navrang celebration! 🎆\n"
-                f"— *S.D. Public School, Patna*"
-            )
-            from whatsapp_service import send_whatsapp_text
-            await send_whatsapp_text(
-                phone=booking.get("parent_phone"),
-                message=verified_wa_msg,
-                subject=f"Navrang 2026 Pass Verified - {booking_id}"
-            )
+            await send_navrang_pass_whatsapp(booking)
         except Exception as wa_err:
             logger.warning(f"Could not send WhatsApp verification message: {wa_err}")
 
     return {"status": "success", "message": "Booking updated successfully."}
+
+@navrang_router.post("/admin/bookings/{booking_id}/resend-whatsapp")
+async def admin_resend_whatsapp(booking_id: str, token: TokenData = Depends(get_current_admin)):
+    clean_id = booking_id.strip()
+    booking = await db.navrang_bookings.find_one({
+        "$or": [{"booking_id": clean_id}, {"booking_id": clean_id.upper()}]
+    })
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found.")
+        
+    parent_phone = booking.get("parent_phone") or booking.get("phone") or ""
+    clean_phone = re.sub(r"\D", "", parent_phone)[-10:]
+    if len(clean_phone) != 10:
+        raise HTTPException(status_code=400, detail="This booking has no valid 10-digit registered mobile number.")
+        
+    sent = await send_navrang_pass_whatsapp(booking)
+    if not sent:
+        raise HTTPException(status_code=500, detail="WhatsApp service could not deliver the pass. Please check logs.")
+        
+    return {
+        "status": "success",
+        "message": f"Official digital pass resent to WhatsApp ({clean_phone})!"
+    }
 
 @navrang_router.get("/admin/export")
 async def export_bookings(token: TokenData = Depends(get_current_admin)):

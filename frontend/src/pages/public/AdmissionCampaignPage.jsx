@@ -24,6 +24,7 @@ export function AdmissionCampaignPage() {
     contact_phone: "",
     email: "",
     student_class: "Nursery",
+    message: "",
     answers: {},
   });
   const [submitting, setSubmitting] = useState(false);
@@ -435,6 +436,19 @@ export function AdmissionCampaignPage() {
                       <option value="Class VII">Class VII</option>
                       <option value="Class VIII">Class VIII</option>
                     </select>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="text-xs font-bold text-slate-700 block mb-1">
+                      Enquiry Details / Query (What are you enquiring about?)
+                    </label>
+                    <textarea
+                      rows={3}
+                      placeholder="e.g. Enquiring about admission availability, syllabus, fee structure, hostel, or transport facility..."
+                      value={form.message}
+                      onChange={(e) => setForm({ ...form, message: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:bg-white focus:border-brand-blue"
+                    />
                   </div>
                 </div>
 
