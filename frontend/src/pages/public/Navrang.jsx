@@ -79,10 +79,10 @@ export default function Navrang() {
   });
 
   const timeBlocks = [
-    { label: 'Days', value: timeLeft.days },
-    { label: 'Hours', value: timeLeft.hours },
-    { label: 'Minutes', value: timeLeft.minutes },
-    { label: 'Seconds', value: timeLeft.seconds },
+    { label: 'Days', short: 'Days', value: timeLeft.days },
+    { label: 'Hours', short: 'Hours', value: timeLeft.hours },
+    { label: 'Minutes', short: 'Mins', value: timeLeft.minutes },
+    { label: 'Seconds', short: 'Secs', value: timeLeft.seconds },
   ];
 
   const packages = [
@@ -250,37 +250,62 @@ export default function Navrang() {
               </span>
             </p>
 
-            {/* Countdown Timer flanked by glowing diyas */}
-            <div className="flex items-center justify-center gap-2 sm:gap-6 mb-7 w-full">
-              <motion.div
-                className="hidden sm:block"
-                animate={{ y: [0, -6, 0] }}
-                transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
-              >
-                <FloatingDiya size={52} />
-              </motion.div>
-
-              <div className="flex items-center justify-center gap-1.5 sm:gap-4 bg-gradient-to-b from-slate-900/90 to-purple-950/80 backdrop-blur-xl px-2.5 py-2.5 sm:px-6 sm:py-4 rounded-2xl sm:rounded-3xl border-2 border-amber-400/40 shadow-[0_0_35px_rgba(245,158,11,0.3)] max-w-full">
-                {timeBlocks.map((block, idx) => (
-                  <div key={idx} className="flex flex-col items-center">
-                    <div className="w-13 h-13 sm:w-20 sm:h-20 bg-black/50 backdrop-blur-md rounded-xl sm:rounded-2xl border border-amber-300/30 flex items-center justify-center mb-1 shadow-inner relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-b from-amber-400/10 to-transparent"></div>
-                      <span className="relative text-xl sm:text-4xl font-black text-amber-300 tabular-nums drop-shadow-md">
-                        {String(block.value).padStart(2, '0')}
-                      </span>
-                    </div>
-                    <span className="text-[9px] sm:text-xs text-amber-200/80 uppercase tracking-wider sm:tracking-widest font-bold">{block.label}</span>
-                  </div>
-                ))}
+            {/* Event Countdown Section */}
+            <div className="w-full max-w-xs xs:max-w-sm sm:max-w-xl mx-auto mb-8">
+              {/* Header Badge */}
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <span className="h-px w-6 sm:w-12 bg-gradient-to-r from-transparent to-amber-400/60" />
+                <span className="text-[11px] sm:text-xs font-bold uppercase tracking-[0.22em] text-amber-300 font-headline flex items-center gap-1.5 drop-shadow-sm">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                  Celebration Starts In
+                </span>
+                <span className="h-px w-6 sm:w-12 bg-gradient-to-l from-transparent to-amber-400/60" />
               </div>
 
-              <motion.div
-                className="hidden sm:block"
-                animate={{ y: [0, -6, 0] }}
-                transition={{ duration: 3.8, repeat: Infinity, ease: 'easeInOut', delay: 0.6 }}
-              >
-                <FloatingDiya size={52} />
-              </motion.div>
+              {/* Countdown Cards Grid with Flanking Diyas on desktop */}
+              <div className="flex items-center justify-center gap-3 sm:gap-6">
+                <motion.div
+                  className="hidden md:block shrink-0"
+                  animate={{ y: [0, -6, 0] }}
+                  transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
+                >
+                  <FloatingDiya size={52} />
+                </motion.div>
+
+                <div className="grid grid-cols-4 gap-2 xs:gap-2.5 sm:gap-3.5 w-full">
+                  {timeBlocks.map((block, idx) => (
+                    <div
+                      key={idx}
+                      className="relative flex flex-col items-center justify-center py-2.5 px-1 xs:py-3 xs:px-2 sm:py-4 sm:px-3 rounded-2xl bg-gradient-to-b from-slate-900/95 via-purple-950/80 to-slate-950/95 border border-amber-400/40 shadow-[0_6px_25px_rgba(0,0,0,0.7),0_0_18px_rgba(245,158,11,0.2)] backdrop-blur-xl overflow-hidden group hover:border-amber-300 transition-all"
+                    >
+                      {/* Top Golden Light Sheen */}
+                      <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-amber-300 to-transparent opacity-80" />
+
+                      {/* Ambient Inner Glow */}
+                      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-400/10 via-transparent to-transparent pointer-events-none" />
+
+                      {/* Number */}
+                      <span className="relative text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-100 via-amber-300 to-amber-400 tabular-nums font-headline drop-shadow-[0_2px_12px_rgba(251,191,36,0.5)]">
+                        {String(block.value).padStart(2, '0')}
+                      </span>
+
+                      {/* Unit Label */}
+                      <span className="relative text-[9px] xs:text-[10px] sm:text-xs font-bold uppercase tracking-wider text-amber-200/90 mt-1 font-sans">
+                        <span className="inline sm:hidden">{block.short}</span>
+                        <span className="hidden sm:inline">{block.label}</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <motion.div
+                  className="hidden md:block shrink-0"
+                  animate={{ y: [0, -6, 0] }}
+                  transition={{ duration: 3.8, repeat: Infinity, ease: 'easeInOut', delay: 0.6 }}
+                >
+                  <FloatingDiya size={52} />
+                </motion.div>
+              </div>
             </div>
 
             {/* Action Buttons */}
