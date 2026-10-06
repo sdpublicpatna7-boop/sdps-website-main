@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, Query, Request, Response, Body
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse, FileResponse
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from pymongo import UpdateOne
@@ -1516,4 +1516,108 @@ async def create_roster_student(
         "message": f"Student {adm} added to Dandiya roster.",
         "student": doc
     }
+
+
+@navrang_router.get("/og-html", response_class=HTMLResponse)
+@navrang_router.get("/og-html/{subpath:path}", response_class=HTMLResponse)
+async def get_navrang_og_html(
+    request: Request,
+    subpath: Optional[str] = None,
+    path: Optional[str] = Query(None, description="Subpath parameter")
+):
+    """
+    Returns server-side rendered HTML with rich OpenGraph and Twitter Card metadata for
+    navrang.sdpublic.org links. When links are shared on WhatsApp, Facebook, iMessage,
+    Telegram, LinkedIn, Twitter, etc., this ensures the official Navrang Dandiya Night
+    banner and description preview is always shown.
+    """
+    raw_path = subpath or path or "/"
+    clean_path = raw_path.strip()
+    if not clean_path.startswith("/"):
+        clean_path = "/" + clean_path
+
+    canonical_url = f"https://navrang.sdpublic.org{clean_path if clean_path != '/' else ''}"
+    banner_url = "https://navrang.sdpublic.org/navrang-banner.jpg"
+
+    if "/book" in clean_path:
+        title = "Book Navrang 2026 Passes | S.D. Public School, Patna"
+        desc = "Book your exclusive passes online for Navrang 2026 - Dandiya Raas, Garba & Durga Puja Celebration Night at S.D. Public School, Patna. Student verification, QR ticketing & instant confirmation."
+    elif "/my-ticket" in clean_path:
+        title = "My Tickets & QR Entry Pass | Navrang 2026 | S.D. Public School, Patna"
+        desc = "Access, view and download your official Navrang 2026 QR entry passes and booking receipts for Dandiya Night at S.D. Public School, Patna."
+    else:
+        title = "Navrang 2026 | Grand Dandiya Raas & Durga Puja Celebration | S.D. Public School, Patna"
+        desc = "Join S.D. Public School for Navrang 2026 - The grandest Dandiya Raas, Garba & Durga Puja celebration night in Patna on October 15, 2026. Live DJ, food stalls, games, prizes & festive vibes. Book your passes online now!"
+
+    html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{title}</title>
+    <meta name="description" content="{desc}">
+    <link rel="canonical" href="{canonical_url}">
+
+    <!-- Open Graph / Facebook / WhatsApp / iMessage / Telegram / LinkedIn -->
+    <meta property="og:site_name" content="Navrang 2026 — S.D. Public School, Patna">
+    <meta property="og:title" content="{title}">
+    <meta property="og:description" content="{desc}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{canonical_url}">
+    <meta property="og:image" content="{banner_url}">
+    <meta property="og:image:secure_url" content="{banner_url}">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:width" content="1024">
+    <meta property="og:image:height" content="576">
+    <meta property="og:image:alt" content="Navrang 2026 Dandiya Night Celebration - S.D. Public School, Patna">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{title}">
+    <meta name="twitter:description" content="{desc}">
+    <meta name="twitter:image" content="{banner_url}">
+    <meta name="twitter:image:alt" content="Navrang 2026 Dandiya Night Celebration - S.D. Public School, Patna">
+
+    <!-- Automatic redirection for regular visitors -->
+    <script>
+        window.location.replace("{canonical_url}");
+    </script>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #090d16; color: #f8fafc; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
+    <div style="max-width: 540px; width: 100%; background: #131b2e; border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 20px; padding: 24px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);">
+        <img src="{banner_url}" alt="Navrang 2026" style="width: 100%; height: auto; aspect-ratio: 16/9; object-fit: cover; border-radius: 14px; margin-bottom: 20px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5);">
+        <span style="display: inline-block; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">
+            S.D. Public School, Patna
+        </span>
+        <h1 style="color: #ffffff; font-size: 20px; font-weight: 700; margin: 0 0 12px 0; line-height: 1.4;">
+            {title}
+        </h1>
+        <p style="color: #94a3b8; font-size: 14px; line-height: 1.6; margin: 0 0 24px 0;">
+            {desc}
+        </p>
+        <a href="{canonical_url}" style="display: inline-block; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #0f172a; font-weight: 700; font-size: 15px; text-decoration: none; padding: 12px 32px; border-radius: 12px; box-shadow: 0 4px 14px 0 rgba(245, 158, 11, 0.39);">
+            Open Navrang Portal &rarr;
+        </a>
+    </div>
+</body>
+</html>"""
+    return HTMLResponse(content=html_content, status_code=200)
+
+
+@navrang_router.get("/banner.jpg")
+@navrang_router.get("/navrang-banner.jpg")
+@navrang_router.get("/navrang-og.jpg")
+async def get_navrang_banner_image():
+    """Serves the official Navrang 2026 high-resolution banner image directly."""
+    candidates = [
+        os.path.join(os.path.dirname(__file__), "navrang-banner.jpg"),
+        os.path.join(os.path.dirname(__file__), "uploads", "navrang-banner.jpg"),
+        os.path.join(os.path.dirname(__file__), "..", "frontend", "public", "navrang-banner.jpg"),
+        os.path.join(os.path.dirname(__file__), "..", "frontend", "public", "navrang-hero-bg.jpg"),
+    ]
+    for path in candidates:
+        if os.path.isfile(path):
+            return FileResponse(path, media_type="image/jpeg", headers={"Cache-Control": "public, max-age=86400"})
+    raise HTTPException(status_code=404, detail="Navrang banner image not found")
+
 

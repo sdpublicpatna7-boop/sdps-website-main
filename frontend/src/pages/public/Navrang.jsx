@@ -150,11 +150,29 @@ export default function Navrang() {
   return (
     <div className="min-h-screen bg-slate-950 font-sans text-slate-100 overflow-x-clip selection:bg-brand-orange selection:text-white relative">
       <Helmet>
-        <title>Navrang 2026 | Grand Dandiya & Durga Puja Celebration | S.D. Public School</title>
-        <meta name="description" content="Join S.D. Public School for Navrang 2026 - The grandest Dandiya Raas, Garba & Durga Puja celebration night in Patna." />
+        <title>Navrang 2026 | Grand Dandiya & Durga Puja Celebration | S.D. Public School, Patna</title>
+        <meta name="description" content="Join S.D. Public School for Navrang 2026 - The grandest Dandiya Raas, Garba & Durga Puja celebration night in Patna on October 15, 2026. Book passes online." />
+        <link rel="canonical" href="https://navrang.sdpublic.org/" />
+
+        {/* OpenGraph / WhatsApp / Facebook / Telegram */}
+        <meta property="og:site_name" content="Navrang 2026 — S.D. Public School, Patna" />
         <meta property="og:title" content="Navrang 2026 | Grand Dandiya & Durga Puja Celebration" />
-        <meta property="og:description" content="Join S.D. Public School for Navrang 2026 - The grandest Dandiya Raas, Garba & Durga Puja celebration night in Patna." />
-        <meta property="og:image" content="https://sdpublic.org/navrang-hero-bg.jpg" />
+        <meta property="og:description" content="Join S.D. Public School for Navrang 2026 - The grandest Dandiya Raas, Garba & Durga Puja celebration night in Patna on October 15, 2026. Book passes online." />
+        <meta property="og:image" content="https://navrang.sdpublic.org/navrang-banner.jpg" />
+        <meta property="og:image:secure_url" content="https://navrang.sdpublic.org/navrang-banner.jpg" />
+        <meta property="og:image:type" content="image/jpeg" />
+        <meta property="og:image:width" content="1024" />
+        <meta property="og:image:height" content="576" />
+        <meta property="og:image:alt" content="Navrang 2026 Dandiya Night Celebration" />
+        <meta property="og:url" content="https://navrang.sdpublic.org/" />
+        <meta property="og:type" content="website" />
+
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Navrang 2026 | Grand Dandiya & Durga Puja Celebration" />
+        <meta name="twitter:description" content="Join S.D. Public School for Navrang 2026 - The grandest Dandiya Raas, Garba & Durga Puja celebration night in Patna on October 15, 2026. Book passes online." />
+        <meta name="twitter:image" content="https://navrang.sdpublic.org/navrang-banner.jpg" />
+        <meta name="twitter:image:alt" content="Navrang 2026 Dandiya Night Celebration" />
       </Helmet>
 
       {/* Floating Canvas Animation (Marigold Flower Petals & Golden Sparkles) */}

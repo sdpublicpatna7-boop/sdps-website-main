@@ -182,7 +182,29 @@ export default function NavrangMyTicket() {
   return (
     <div className="min-h-screen bg-slate-900 font-sans text-brand-navy pb-12 selection:bg-brand-orange selection:text-white">
       <Helmet>
-        <title>My Tickets | Navrang 2026 | S.D. Public School</title>
+        <title>My Tickets & QR Pass | Navrang 2026 | S.D. Public School, Patna</title>
+        <meta name="description" content="View and download your official Navrang 2026 QR entry passes and booking receipts for Dandiya Night at S.D. Public School, Patna." />
+        <link rel="canonical" href="https://navrang.sdpublic.org/my-ticket" />
+
+        {/* OpenGraph / WhatsApp / Facebook / Telegram */}
+        <meta property="og:site_name" content="Navrang 2026 — S.D. Public School, Patna" />
+        <meta property="og:title" content="My Tickets & QR Pass | Navrang 2026 | S.D. Public School" />
+        <meta property="og:description" content="View and download your official Navrang 2026 QR entry passes and booking receipts for Dandiya Night at S.D. Public School, Patna." />
+        <meta property="og:image" content="https://navrang.sdpublic.org/navrang-banner.jpg" />
+        <meta property="og:image:secure_url" content="https://navrang.sdpublic.org/navrang-banner.jpg" />
+        <meta property="og:image:type" content="image/jpeg" />
+        <meta property="og:image:width" content="1024" />
+        <meta property="og:image:height" content="576" />
+        <meta property="og:image:alt" content="Navrang 2026 Dandiya Night Celebration" />
+        <meta property="og:url" content="https://navrang.sdpublic.org/my-ticket" />
+        <meta property="og:type" content="website" />
+
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="My Tickets & QR Pass | Navrang 2026 | S.D. Public School" />
+        <meta name="twitter:description" content="View and download your official Navrang 2026 QR entry passes and booking receipts for Dandiya Night at S.D. Public School, Patna." />
+        <meta name="twitter:image" content="https://navrang.sdpublic.org/navrang-banner.jpg" />
+        <meta name="twitter:image:alt" content="Navrang 2026 Dandiya Night Celebration" />
       </Helmet>
 
       {/* Shared School-Styled Navrang Header */}

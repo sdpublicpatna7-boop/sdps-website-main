@@ -403,8 +403,29 @@ export default function NavrangBook() {
   return (
     <div className="min-h-screen bg-slate-950 font-sans text-brand-navy selection:bg-brand-orange selection:text-white pb-16">
       <Helmet>
-        <title>Book Navrang 2026 Passes | S.D. Public School</title>
-        <meta name="description" content="Exclusive online Dandiya night pass booking for current students of S.D. Public School, Patna." />
+        <title>Book Navrang 2026 Passes | S.D. Public School, Patna</title>
+        <meta name="description" content="Exclusive online Dandiya Raas & Durga Puja night pass booking for students and parents of S.D. Public School, Patna." />
+        <link rel="canonical" href="https://navrang.sdpublic.org/book" />
+
+        {/* OpenGraph / WhatsApp / Facebook / Telegram */}
+        <meta property="og:site_name" content="Navrang 2026 — S.D. Public School, Patna" />
+        <meta property="og:title" content="Book Navrang 2026 Passes | S.D. Public School" />
+        <meta property="og:description" content="Exclusive online Dandiya Raas & Durga Puja night pass booking for students and parents of S.D. Public School, Patna." />
+        <meta property="og:image" content="https://navrang.sdpublic.org/navrang-banner.jpg" />
+        <meta property="og:image:secure_url" content="https://navrang.sdpublic.org/navrang-banner.jpg" />
+        <meta property="og:image:type" content="image/jpeg" />
+        <meta property="og:image:width" content="1024" />
+        <meta property="og:image:height" content="576" />
+        <meta property="og:image:alt" content="Navrang 2026 Dandiya Night Celebration" />
+        <meta property="og:url" content="https://navrang.sdpublic.org/book" />
+        <meta property="og:type" content="website" />
+
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Book Navrang 2026 Passes | S.D. Public School" />
+        <meta name="twitter:description" content="Exclusive online Dandiya Raas & Durga Puja night pass booking for students and parents of S.D. Public School, Patna." />
+        <meta name="twitter:image" content="https://navrang.sdpublic.org/navrang-banner.jpg" />
+        <meta name="twitter:image:alt" content="Navrang 2026 Dandiya Night Celebration" />
       </Helmet>
 
       {/* Shared School-Styled Navrang Header */}

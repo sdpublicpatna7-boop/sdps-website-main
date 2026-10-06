@@ -224,6 +224,17 @@ const ROUTE_META_MAP = {
 };
 
 export default function RouteSEOManager() {
+  const isNavrangSubdomain = typeof window !== "undefined" && (
+    window.location.hostname.startsWith("navrang.") ||
+    window.location.hostname.startsWith("navrang-") ||
+    window.location.hostname === "navrang.localhost"
+  );
+
+  // Navrang subdomain pages manage their own dedicated SEO and metadata tags
+  if (isNavrangSubdomain) {
+    return null;
+  }
+
   const location = useLocation();
   const path = location.pathname.toLowerCase().replace(/\/$/, "") || "/";
 
