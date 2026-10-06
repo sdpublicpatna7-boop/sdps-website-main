@@ -1028,6 +1028,29 @@ async def navrang_razorpay_webhook(request: Request):
 
 # --- Admin Endpoints ---
 
+def enrich_booking_headcount(booking: dict) -> dict:
+    if not booking:
+        return booking
+    pkg = (booking.get("package") or "silver").lower().strip()
+    students = booking.get("students") or []
+    stu_count = len(students)
+    if stu_count == 0:
+        if pkg == "platinum":
+            stu_count = 3
+        elif pkg == "gold":
+            stu_count = 2
+        else:
+            stu_count = 1
+            
+    total_persons = 1 + stu_count  # 1 Mother / Guardian + verified students
+    
+    booking["student_count"] = stu_count
+    booking["total_persons"] = total_persons
+    booking["headcount"] = total_persons
+    booking["dandiya_pairs"] = 1
+    booking["headcount_breakdown"] = f"1 Mother + {stu_count} Student{'s' if stu_count > 1 else ''}"
+    return booking
+
 @navrang_router.get("/admin/stats")
 async def get_admin_stats(token: TokenData = Depends(get_current_admin)):
     pipeline = [
@@ -1075,6 +1098,22 @@ async def get_admin_stats(token: TokenData = Depends(get_current_admin)):
 
     recent_cursor = db.navrang_bookings.find({}, {"_id": 0}).sort("created_at", -1).limit(10)
     recent_bookings = await recent_cursor.to_list(length=10)
+    recent_bookings = [enrich_booking_headcount(b) for b in recent_bookings]
+
+    # Calculate live headcounts for gate check-in & turnstile
+    entered_cursor = db.navrang_bookings.find({"entry_status": "entered"}, {"_id": 0}).sort("entry_time", -1)
+    entered_bookings = await entered_cursor.to_list(length=1000)
+    
+    total_passes_entered = len(entered_bookings)
+    total_persons_entered = 0
+    total_dandiya_pairs = total_passes_entered
+    
+    enriched_recent_checkins = []
+    for eb in entered_bookings:
+        enriched = enrich_booking_headcount(eb)
+        total_persons_entered += enriched.get("total_persons", 2)
+        if len(enriched_recent_checkins) < 50:
+            enriched_recent_checkins.append(enriched)
 
     packages_list = [
         {"name": "silver", "count": package_breakdown.get("silver", 0)},
@@ -1085,11 +1124,16 @@ async def get_admin_stats(token: TokenData = Depends(get_current_admin)):
     return {
         "total_bookings": stats.get("total_bookings", 0),
         "total_revenue": stats.get("total_revenue", 0),
-        "entries_recorded": stats.get("total_entered", 0),
+        "entries_recorded": total_passes_entered,
+        "total_entered": total_passes_entered,
+        "total_passes_entered": total_passes_entered,
+        "total_persons_entered": total_persons_entered,
+        "total_dandiya_pairs": total_dandiya_pairs,
         "pending_payments": payment_breakdown.get("pending", 0),
         "failed_bookings": stats.get("failed_bookings", 0),
         "packages": packages_list,
-        "recent_bookings": recent_bookings
+        "recent_bookings": recent_bookings,
+        "recent_checkins": enriched_recent_checkins
     }
 
 @navrang_router.get("/admin/bookings")
@@ -1125,8 +1169,10 @@ async def get_admin_bookings(
     bookings = await cursor.to_list(length=None)
     total = await db.navrang_bookings.count_documents(query)
 
+    enriched_bookings = [enrich_booking_headcount(b) for b in bookings]
+
     return {
-        "bookings": bookings,
+        "bookings": enriched_bookings,
         "total": total,
         "page": page,
         "limit": limit
@@ -1191,8 +1237,7 @@ async def admin_verify_entry(req: VerifyEntryRequest, token: TokenData = Depends
     if not booking:
         raise HTTPException(status_code=404, detail="INVALID TICKET: No booking found for this code.")
         
-    if "_id" in booking:
-        del booking["_id"]
+    booking = enrich_booking_headcount(booking)
 
     if booking.get("payment_status") not in ["paid", "cash"]:
         return JSONResponse(
@@ -1226,11 +1271,12 @@ async def admin_verify_entry(req: VerifyEntryRequest, token: TokenData = Depends
     await db.navrang_bookings.update_one({"booking_id": booking["booking_id"]}, {"$set": update_data})
     
     booking.update(update_data)
+    booking = enrich_booking_headcount(booking)
         
     return {
         "status": "success",
         "verified": True,
-        "message": "ENTRY GRANTED ✓",
+        "message": f"ENTRY GRANTED: ADMIT {booking['total_persons']} PERSONS ✓",
         "booking": booking
     }
 
@@ -1255,10 +1301,11 @@ async def admin_admit_cash(booking_id: str, token: TokenData = Depends(get_curre
     booking.update(update_data)
     if "_id" in booking:
         del booking["_id"]
+    booking = enrich_booking_headcount(booking)
         
     return {
         "status": "success",
-        "message": "Cash collected & Entry Granted ✓",
+        "message": f"Cash Collected & Entry Granted: ADMIT {booking['total_persons']} PERSONS ✓",
         "booking": booking
     }
 

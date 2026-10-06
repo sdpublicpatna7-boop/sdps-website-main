@@ -2119,10 +2119,14 @@ const ScannerTab = () => {
   const [isPaused, setIsPaused] = useState(false);
   const [cashCollecting, setCashCollecting] = useState(false);
   const [resendingScanWa, setResendingScanWa] = useState(null);
+  const [lastScannedTicket, setLastScannedTicket] = useState(null);
 
   // Live gate attendance stats
   const [gateStats, setGateStats] = useState({
     total_entered: 0,
+    total_passes_entered: 0,
+    total_persons_entered: 0,
+    total_dandiya_pairs: 0,
     total_bookings: 0,
     total_revenue: 0
   });
@@ -2136,13 +2140,18 @@ const ScannerTab = () => {
   const countdownTimerRef = useRef(null);
 
   // Helper for package breakdown & prop hand-outs (Movie Ticket style)
-  const getPackageInfo = (pkg) => {
+  const getPackageInfo = (pkg, booking = null) => {
     const p = (pkg || '').toLowerCase().trim();
+    const students = booking?.students || [];
+    const stuCount = students.length || (p === 'platinum' ? 3 : p === 'gold' ? 2 : 1);
+    const totalAdmits = booking?.total_persons || (1 + stuCount);
+    const breakdown = booking?.headcount_breakdown || `1 Mother + ${stuCount} Student${stuCount > 1 ? 's' : ''}`;
+
     if (p === 'platinum') {
       return {
         name: 'Platinum Pass',
-        totalAdmits: 4,
-        breakdown: '1 Mother + 3 Students',
+        totalAdmits,
+        breakdown,
         dandiyaSticks: '1 Pair Dandiya Sticks',
         themeColor: 'purple',
         badgeClass: 'bg-purple-100 text-purple-900 border-purple-300'
@@ -2151,8 +2160,8 @@ const ScannerTab = () => {
     if (p === 'gold') {
       return {
         name: 'Gold Pass',
-        totalAdmits: 3,
-        breakdown: '1 Mother + 2 Students',
+        totalAdmits,
+        breakdown,
         dandiyaSticks: '1 Pair Dandiya Sticks',
         themeColor: 'amber',
         badgeClass: 'bg-amber-100 text-amber-900 border-amber-300'
@@ -2160,8 +2169,8 @@ const ScannerTab = () => {
     }
     return {
       name: 'Silver Pass',
-      totalAdmits: 2,
-      breakdown: '1 Mother + 1 Student',
+      totalAdmits,
+      breakdown,
       dandiyaSticks: '1 Pair Dandiya Sticks',
       themeColor: 'slate',
       badgeClass: 'bg-slate-100 text-slate-900 border-slate-300'
@@ -2172,11 +2181,36 @@ const ScannerTab = () => {
   const fetchGateStats = async () => {
     try {
       const { data } = await api.get('/navrang/admin/stats');
+      const passesEntered = data.total_passes_entered ?? data.total_entered ?? data.entries_recorded ?? 0;
+      const personsEntered = data.total_persons_entered ?? (passesEntered * 2);
+      const dandiyaPairs = data.total_dandiya_pairs ?? passesEntered;
+
       setGateStats({
-        total_entered: data.total_entered || 0,
+        total_entered: passesEntered,
+        total_passes_entered: passesEntered,
+        total_persons_entered: personsEntered,
+        total_dandiya_pairs: dandiyaPairs,
         total_bookings: data.total_bookings || 0,
         total_revenue: data.total_revenue || 0
       });
+
+      if (data.recent_checkins && data.recent_checkins.length > 0) {
+        setLogs(prev => {
+          const existingIds = new Set(prev.map(l => l.token || l.booking?.booking_id));
+          const newEntries = data.recent_checkins
+            .filter(b => !existingIds.has(b.booking_id))
+            .map(b => ({
+              token: b.booking_id,
+              success: true,
+              status: 'admitted',
+              message: `Entry Allowed: Admit ${b.total_persons || 2} Persons ✓`,
+              booking: b,
+              time: b.entry_time ? new Date(b.entry_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'Earlier'
+            }));
+          const combined = [...prev, ...newEntries].slice(0, 30);
+          return combined;
+        });
+      }
     } catch (e) {
       console.log('Gate stats error', e);
     }
@@ -2273,7 +2307,7 @@ const ScannerTab = () => {
   // Auto-scan countdown controls for rapid movie turnstile flow
   const startAutoCountdown = () => {
     if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
-    setAutoCountdown(4);
+    setAutoCountdown(12);
     setIsPaused(false);
 
     countdownTimerRef.current = setInterval(() => {
@@ -2293,6 +2327,9 @@ const ScannerTab = () => {
     if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
     setAutoCountdown(null);
     setIsPaused(false);
+    if (currentResult) {
+      setLastScannedTicket(currentResult);
+    }
     setCurrentResult(null);
     setInputValue('');
     isProcessingRef.current = false;
@@ -2320,24 +2357,28 @@ const ScannerTab = () => {
       if (navigator?.vibrate) {
         try { navigator.vibrate([120, 60, 120]); } catch (e) {}
       }
-      toast.success('Cash collected & Entry Granted!');
+      toast.success(data.message || 'Cash collected & Entry Granted!');
       
       const updatedBooking = data.booking || currentResult?.booking;
-      setCurrentResult({
+      const headCount = updatedBooking?.total_persons || 2;
+      const resultObj = {
         success: true,
         status: 'admitted',
         booking: updatedBooking,
-        message: 'Cash Collected & Entry Granted ✓',
+        message: `Cash Paid & Entry Granted: Admit ${headCount} Persons ✓`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-      });
+      };
+
+      setCurrentResult(resultObj);
+      setLastScannedTicket(resultObj);
 
       addLog({
         token: bookingId,
         success: true,
         status: 'admitted',
-        message: 'Cash Paid & Admitted ✓',
+        message: `Cash Paid & Admitted ${headCount} Persons ✓`,
         booking: updatedBooking,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        time: resultObj.timestamp
       });
 
       fetchGateStats();
@@ -2396,32 +2437,36 @@ const ScannerTab = () => {
         try { navigator.vibrate([120, 60, 120]); } catch (e) {}
       }
       
+      const headCount = data.booking?.total_persons || 2;
       const resultObj = { 
         success: true, 
-        status: 'admitted',
+        status: 'admitted', 
         booking: data.booking,
-        message: 'Entry Granted ✓',
+        message: data.message || `Entry Granted: Admit ${headCount} Persons ✓`,
         rawToken: token,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
       };
       
       setCurrentResult(resultObj);
+      setLastScannedTicket(resultObj);
+
       addLog({ 
         token: data.booking?.booking_id || token, 
         success: true, 
-        status: 'admitted',
-        message: 'Entry Granted ✓', 
+        status: 'admitted', 
+        message: `Entry Allowed: Admit ${headCount} Persons ✓`, 
         booking: data.booking,
         time: resultObj.timestamp
       });
-      toast.success(`Entry Granted: ${data.booking?.booking_id || token}`);
+      toast.success(`Entry Granted: Admit ${headCount} Persons (${data.booking?.booking_id || token})`);
       fetchGateStats();
       startAutoCountdown();
     } catch (error) {
       const errData = error.response?.data;
       const status = errData?.status || (error.response?.status === 404 ? 'not_found' : 'error');
       const rawMsg = errData?.detail || error.message || 'Ticket verification failed';
-      const msg = formatFriendlyScanMessage(rawMsg, booking);
+      const errBooking = errData?.booking || null;
+      const msg = formatFriendlyScanMessage(rawMsg, errBooking);
       
       if (status === 'unpaid') {
         playCinemaSound('unpaid');
@@ -2438,19 +2483,22 @@ const ScannerTab = () => {
       const resultObj = { 
         success: false, 
         status, 
-        booking,
+        booking: errBooking, 
         error: msg, 
         rawToken: token,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
       };
 
       setCurrentResult(resultObj);
+      if (errBooking) {
+        setLastScannedTicket(resultObj);
+      }
       addLog({ 
-        token: booking?.booking_id || token, 
+        token: errBooking?.booking_id || token, 
         success: false, 
-        status,
+        status, 
         message: msg, 
-        booking,
+        booking: errBooking, 
         time: resultObj.timestamp
       });
       toast.error(msg);
@@ -2664,19 +2712,30 @@ const ScannerTab = () => {
 
         {/* Live Attendance Stats Chips & Guard Quick Controls */}
         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-between md:justify-end">
-          <div className="flex items-center gap-2 bg-slate-950/80 border border-slate-800 px-3 py-1.5 rounded-xl">
-            <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
+          {/* 1. TOTAL HEADCOUNT / PERSONS CHIP */}
+          <div className="flex items-center gap-2 bg-emerald-950/80 border border-emerald-500/50 px-3.5 py-1.5 rounded-xl shadow-xs" title="Total attendees admitted inside the event">
+            <UserCheck className="w-4 h-4 text-emerald-400 shrink-0" />
             <div className="text-xs">
-              <span className="text-slate-400">Admitted: </span>
-              <strong className="text-white font-mono">{gateStats.total_entered}</strong>
+              <span className="text-emerald-300 font-semibold">Headcount: </span>
+              <strong className="text-white font-mono font-black text-sm">{gateStats.total_persons_entered || 0} Persons</strong>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 bg-slate-950/80 border border-slate-800 px-3 py-1.5 rounded-xl">
-            <Ticket className="w-3.5 h-3.5 text-amber-400" />
+          {/* 2. PASSES SCANNED CHIP */}
+          <div className="flex items-center gap-2 bg-purple-950/80 border border-purple-500/50 px-3 py-1.5 rounded-xl shadow-xs" title="Total booking passes scanned at gate">
+            <ScanLine className="w-4 h-4 text-purple-400 shrink-0" />
             <div className="text-xs">
-              <span className="text-slate-400">Dandiya: </span>
-              <strong className="text-amber-300 font-mono">{gateStats.total_entered} Prs</strong>
+              <span className="text-purple-300 font-semibold">Passes: </span>
+              <strong className="text-white font-mono font-bold">{gateStats.total_passes_entered || gateStats.total_entered || 0}</strong>
+            </div>
+          </div>
+
+          {/* 3. DANDIYA PAIRS CHIP */}
+          <div className="flex items-center gap-2 bg-amber-950/80 border border-amber-500/50 px-3 py-1.5 rounded-xl shadow-xs" title="Total Dandiya pairs handed over to attendees">
+            <Ticket className="w-4 h-4 text-amber-400 shrink-0" />
+            <div className="text-xs">
+              <span className="text-amber-300 font-semibold">Dandiya: </span>
+              <strong className="text-amber-300 font-mono font-bold">{gateStats.total_dandiya_pairs || gateStats.total_entered || 0} Prs</strong>
             </div>
           </div>
 
@@ -2724,6 +2783,38 @@ const ScannerTab = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* LEFT COLUMN: VIEWPORT & TICKET VERIFICATION (7 Cols) */}
         <div className="lg:col-span-7 space-y-5">
+          {/* PERSISTENT LAST ADMITTED GUEST SUMMARY (Always visible so guard never loses headcount context) */}
+          {lastScannedTicket && (
+            <div className="bg-slate-900 border border-emerald-500/40 p-3.5 rounded-2xl flex items-center justify-between gap-3 text-xs shadow-md">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center justify-center font-black text-xl shrink-0">
+                  {lastScannedTicket.booking?.total_persons || 2}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-white text-sm">
+                      Last Admitted: {lastScannedTicket.booking?.booking_id || lastScannedTicket.token}
+                    </span>
+                    <span className="text-[10px] bg-emerald-400 text-slate-950 font-black px-1.5 py-0.5 rounded uppercase">
+                      Admitted ✓
+                    </span>
+                  </div>
+                  <div className="text-slate-300 font-medium text-xs mt-0.5">
+                    👥 <strong className="text-emerald-300 font-bold">Admit {lastScannedTicket.booking?.total_persons || 2} Persons</strong> ({lastScannedTicket.booking?.headcount_breakdown || '1 Mother + Student'}) • 🪘 1 Pair Dandiya
+                    {lastScannedTicket.booking?.parent_name && ` • ${lastScannedTicket.booking.parent_name}`}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCurrentResult(lastScannedTicket)}
+                className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-xl shrink-0 transition-colors cursor-pointer font-bold"
+              >
+                View Full Pass
+              </button>
+            </div>
+          )}
+
           {/* SCANNER CONTAINER */}
           <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl">
             {/* MODE SELECTOR */}

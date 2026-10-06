@@ -955,6 +955,38 @@ async def list_admissions(admin: TokenData = Depends(require_permission("admissi
     return items
 
 
+@admin_router.patch("/admissions/{item_id}")
+async def update_admission_status(
+    item_id: str,
+    payload: Dict[str, Any] = Body(...),
+    admin: TokenData = Depends(require_permission("admissions"))
+):
+    update_data = {}
+    if "status" in payload:
+        update_data["status"] = str(payload["status"]).strip().lower()
+    if "admin_notes" in payload:
+        update_data["admin_notes"] = str(payload["admin_notes"]).strip()
+    if update_data:
+        update_data["updated_at"] = now_iso()
+        await db.admissions.update_one({"id": item_id}, {"$set": update_data})
+    doc = await db.admissions.find_one({"id": item_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Application not found")
+    return doc
+
+
+@admin_router.delete("/admissions/{item_id}")
+async def delete_admission(
+    item_id: str,
+    admin: TokenData = Depends(require_permission("admissions"))
+):
+    res = await db.admissions.delete_one({"id": item_id})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Application not found")
+    return {"deleted": True, "id": item_id}
+
+
+
 @admin_router.get("/career-applications")
 async def list_career_apps(admin: TokenData = Depends(require_permission("career"))):
     items = await db.career_applications.find({}, {"_id": 0}).sort("created_at", -1).to_list(2000)
