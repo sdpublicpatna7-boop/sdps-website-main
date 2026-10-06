@@ -72,14 +72,14 @@ export default function WalletPassButton({ bookingId, booking = {}, compact = fa
   if (compact) {
     return (
       <div className={`relative ${className}`}>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-stretch sm:items-center gap-2">
           {/* Apple Wallet Badge */}
           <button
             type="button"
             onClick={() => handleDownloadPass('apple', 'Apple Wallet Pass')}
             disabled={downloading === 'apple'}
             title="Add pass to Apple Wallet (iPhone / Apple Watch)"
-            className="inline-flex items-center gap-1.5 bg-black hover:bg-neutral-800 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow-xs transition-all cursor-pointer disabled:opacity-60 active:scale-95"
+            className="inline-flex items-center justify-center gap-1.5 bg-black hover:bg-neutral-800 text-white px-3 py-2 rounded-xl text-xs font-semibold shadow-xs transition-all cursor-pointer disabled:opacity-60 active:scale-95"
           >
             {/* Apple Icon */}
             <svg className="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 170 170">
@@ -94,7 +94,7 @@ export default function WalletPassButton({ bookingId, booking = {}, compact = fa
             onClick={() => handleDownloadPass('google', 'Google Wallet Pass')}
             disabled={downloading === 'google'}
             title="Add pass to Google Wallet (Android / Pixel)"
-            className="inline-flex items-center gap-1.5 bg-[#1F1F1F] hover:bg-black text-white px-3 py-1.5 rounded-xl text-xs font-semibold border border-neutral-700/80 shadow-xs transition-all cursor-pointer disabled:opacity-60 active:scale-95"
+            className="inline-flex items-center justify-center gap-1.5 bg-[#1F1F1F] hover:bg-black text-white px-3 py-2 rounded-xl text-xs font-semibold border border-neutral-700/80 shadow-xs transition-all cursor-pointer disabled:opacity-60 active:scale-95"
           >
             {/* Google Wallet 4-color icon */}
             <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none">
@@ -112,7 +112,7 @@ export default function WalletPassButton({ bookingId, booking = {}, compact = fa
             onClick={() => handleDownloadPass('samsung', 'Samsung Wallet Pass')}
             disabled={downloading === 'samsung'}
             title="Add pass to Samsung Wallet (Galaxy phones & Watch)"
-            className="inline-flex items-center gap-1.5 bg-[#0654BA] hover:bg-[#003c8f] text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow-xs transition-all cursor-pointer disabled:opacity-60 active:scale-95"
+            className="inline-flex items-center justify-center gap-1.5 bg-[#0654BA] hover:bg-[#003c8f] text-white px-3 py-2 rounded-xl text-xs font-semibold shadow-xs transition-all cursor-pointer disabled:opacity-60 active:scale-95"
           >
             <span className="font-black text-[11px] tracking-tight bg-white text-[#0654BA] px-1 py-0.2 rounded font-mono">S</span>
             <span>Samsung Wallet</span>
@@ -124,7 +124,7 @@ export default function WalletPassButton({ bookingId, booking = {}, compact = fa
               type="button"
               onClick={() => setShowCalendarMenu(!showCalendarMenu)}
               title="Add event to Calendar (Google, Apple, Samsung)"
-              className="inline-flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-xl text-xs font-semibold border border-slate-300 shadow-2xs transition-all cursor-pointer"
+              className="w-full h-full inline-flex items-center justify-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-semibold border border-slate-300 shadow-2xs transition-all cursor-pointer"
             >
               <Calendar className="w-3.5 h-3.5 text-slate-600" />
               <span>Calendar</span>

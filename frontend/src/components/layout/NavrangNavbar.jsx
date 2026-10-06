@@ -90,47 +90,47 @@ export default function NavrangNavbar({ activePage = "home" }) {
 
   return (
     <header ref={headerRef} className="sticky top-0 z-50 shadow-md">
-      {/* Top utility bar — identical to school's original dark-navy topbar */}
+      {/* Top utility bar — sleek single-line on mobile, full details on desktop */}
       <div className="bg-brand-blue-dark text-white text-xs">
-        <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-4 opacity-90">
-            <a href="tel:+919955190262" className="flex items-center gap-1.5 hover:text-brand-orange-light transition">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3 sm:gap-4 opacity-90 truncate">
+            <a href="tel:+919955190262" className="flex items-center gap-1.5 hover:text-brand-orange-light transition shrink-0">
               <Phone className="w-3.5 h-3.5 text-brand-orange-light" />
-              <span>+91 99551 90262</span>
+              <span className="font-medium">+91 99551 90262</span>
             </a>
-            <a href="mailto:helpdesk@sdpublic.org" className="hidden sm:flex items-center gap-1.5 hover:text-brand-orange-light transition">
-              <Mail className="w-3.5 h-3.5 text-brand-orange-light" />
-              <span>helpdesk@sdpublic.org</span>
+            <a href="mailto:helpdesk@sdpublic.org" className="hidden sm:flex items-center gap-1.5 hover:text-brand-orange-light transition truncate">
+              <Mail className="w-3.5 h-3.5 text-brand-orange-light shrink-0" />
+              <span className="truncate">helpdesk@sdpublic.org</span>
             </a>
-            <span className="hidden md:inline-flex items-center gap-1 text-amber-300/90 font-medium pl-2 border-l border-white/20">
-              🎆 Navrang 2026 • Dandiya & Durga Puja Celebration Night
+            <span className="hidden md:inline-flex items-center gap-1 text-amber-300/90 font-medium pl-2 border-l border-white/20 truncate">
+              🎆 Navrang 2026 • Dandiya & Durga Puja Night
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <a
               href="https://sdpublic.org"
               target="_blank"
               rel="noreferrer"
-              className="px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 transition border border-white/20 text-white flex items-center gap-1 text-xs"
+              className="px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 transition border border-white/20 text-white flex items-center gap-1 text-[11px] sm:text-xs font-medium"
             >
               <Home className="w-3 h-3" />
-              <span className="hidden sm:inline">School</span> Main Site
+              <span>Main Site</span>
             </a>
             <Link
               to={resolvePath("/my-ticket")}
-              className={`px-3 py-1 rounded-full transition border text-xs flex items-center gap-1 ${
+              className={`px-2.5 py-1 rounded-full transition border text-[11px] sm:text-xs flex items-center gap-1 ${
                 location.pathname.includes("my-ticket")
-                  ? "bg-amber-400 text-slate-950 border-amber-300 font-semibold"
+                  ? "bg-amber-400 text-slate-950 border-amber-300 font-bold"
                   : "bg-white/10 hover:bg-white/20 border-white/20 text-white"
               }`}
             >
               <Ticket className="w-3 h-3" />
-              <span>My Tickets</span>
+              <span>My Passes</span>
             </Link>
             <Link
               to={resolvePath("/book")}
-              className="px-3.5 py-1 rounded-full bg-brand-orange hover:bg-orange-600 transition text-white font-semibold flex items-center gap-1 text-xs shadow-sm"
+              className="hidden sm:inline-flex px-3.5 py-1 rounded-full bg-brand-orange hover:bg-orange-600 transition text-white font-semibold items-center gap-1 text-xs shadow-sm"
             >
               <Sparkles className="w-3 h-3" />
               <span>Book Now</span>
@@ -141,10 +141,10 @@ export default function NavrangNavbar({ activePage = "home" }) {
 
       {/* Main navigation bar — matching original school navbar styling with glass card */}
       <div className="bg-white/95 backdrop-blur-md border-b border-black/5">
-        <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between">
           {/* School Brand Logo & Title */}
-          <Link to={resolvePath("/")} className="flex items-center gap-3 group">
-            <div className="w-12 h-12 rounded-full ring-2 ring-brand-gold/50 overflow-hidden p-0.5 bg-white flex items-center justify-center relative shrink-0 shadow-sm transition-transform group-hover:scale-105">
+          <Link to={resolvePath("/")} className="flex items-center gap-2.5 sm:gap-3 group min-w-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full ring-2 ring-brand-gold/50 overflow-hidden p-0.5 bg-white flex items-center justify-center relative shrink-0 shadow-sm transition-transform group-hover:scale-105">
               <img
                 src="https://res.cloudinary.com/drx3kb809/image/upload/q_auto,f_auto,w_120/v1782313772/sdps/misc/hffxigjkpw7cbc7cmdm5.jpg"
                 alt="S.D. Public School"
@@ -155,14 +155,14 @@ export default function NavrangNavbar({ activePage = "home" }) {
                 className="w-full h-full object-contain rounded-full"
               />
             </div>
-            <div className="leading-tight">
-              <div className="flex items-center gap-2">
-                <div className="font-legacy text-2xl text-brand-blue tracking-tight">S.D. Public School</div>
-                <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-gradient-to-r from-amber-500/15 via-orange-500/15 to-purple-500/15 text-purple-900 border border-amber-400/40">
+            <div className="leading-tight min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="font-legacy text-lg sm:text-2xl text-brand-blue tracking-tight truncate">S.D. Public School</div>
+                <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-gradient-to-r from-amber-500/15 via-orange-500/15 to-purple-500/15 text-purple-900 border border-amber-400/40 shrink-0">
                   🎆 Navrang 2026
                 </span>
               </div>
-              <div className="text-[10px] uppercase tracking-[0.2em] text-brand-orange font-headline font-bold">
+              <div className="text-[9px] sm:text-[10px] uppercase tracking-[0.16em] sm:tracking-[0.2em] text-brand-orange font-headline font-bold truncate">
                 Empowering Generations Since 1994
               </div>
             </div>
@@ -218,17 +218,17 @@ export default function NavrangNavbar({ activePage = "home" }) {
             </Link>
           </nav>
 
-          {/* Mobile Menu Toggle Button */}
-          <div className="flex items-center gap-2 lg:hidden">
+          {/* Mobile Menu Toggle Button & Quick Action */}
+          <div className="flex items-center gap-1.5 sm:gap-2 lg:hidden shrink-0">
             <Link
               to={resolvePath("/book")}
-              className="px-3 py-1.5 rounded-full bg-brand-orange text-white text-xs font-bold shadow-sm flex items-center gap-1"
+              className="px-3 py-1.5 rounded-full bg-brand-orange hover:bg-orange-600 text-white text-xs font-bold shadow-sm flex items-center gap-1 active:scale-95 transition-transform"
             >
-              <Sparkles className="w-3 h-3" />
+              <Sparkles className="w-3.5 h-3.5" />
               <span>Book</span>
             </Link>
             <button
-              className="p-2 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 transition"
+              className="p-2 sm:p-2.5 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 active:scale-95 transition cursor-pointer"
               onClick={() => setOpen(!open)}
               aria-label="Toggle navigation menu"
             >

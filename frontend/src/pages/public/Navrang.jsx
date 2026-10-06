@@ -148,7 +148,7 @@ export default function Navrang() {
   const ticketPath = isSubdomain ? "/my-ticket" : "/navrang/my-ticket";
 
   return (
-    <div className="min-h-screen bg-slate-950 font-sans text-slate-100 overflow-x-clip selection:bg-brand-orange selection:text-white relative">
+    <div className="min-h-screen bg-slate-950 font-sans text-slate-100 overflow-x-hidden selection:bg-brand-orange selection:text-white relative pb-20 lg:pb-0">
       <Helmet>
         <title>Navrang 2026 | Grand Dandiya & Durga Puja Celebration | S.D. Public School, Patna</title>
         <meta name="description" content="Join S.D. Public School for Navrang 2026 - The grandest Dandiya Raas, Garba & Durga Puja celebration night in Patna on October 15, 2026. Book passes online." />
@@ -200,8 +200,13 @@ export default function Navrang() {
         <div className="absolute bottom-0 right-1/4 w-[420px] h-[420px] bg-gradient-to-br from-amber-600/20 to-rose-600/15 rounded-full blur-[140px] pointer-events-none"></div>
 
         {/* Sacred Spinning Rangoli Mandala — centered behind the content */}
-        <div className="absolute inset-0 flex items-center justify-center z-0 pointer-events-none">
-          <RangoliMandala size={600} opacity={0.22} />
+        <div className="absolute inset-0 flex items-center justify-center z-0 pointer-events-none overflow-hidden">
+          <div className="block sm:hidden">
+            <RangoliMandala size={340} opacity={0.25} />
+          </div>
+          <div className="hidden sm:block">
+            <RangoliMandala size={600} opacity={0.22} />
+          </div>
         </div>
 
         <div className="relative z-20 w-full max-w-4xl mx-auto px-4 flex flex-col items-center text-center">
@@ -212,12 +217,12 @@ export default function Navrang() {
             className="w-full flex flex-col items-center"
           >
             {/* Top Festive Chip */}
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-purple-500/20 rounded-full px-4 sm:px-5 py-2 backdrop-blur-md border border-amber-400/40 mb-4 shadow-[0_0_20px_rgba(245,158,11,0.25)]">
-              <span className="relative flex h-2.5 w-2.5">
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-purple-500/20 rounded-full px-3.5 sm:px-5 py-1.5 sm:py-2 backdrop-blur-md border border-amber-400/40 mb-4 shadow-[0_0_20px_rgba(245,158,11,0.25)]">
+              <span className="relative flex h-2 w-2 sm:h-2.5 sm:w-2.5">
                 <span className="absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75 animate-ping"></span>
-                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-amber-400"></span>
+                <span className="relative inline-flex h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full bg-amber-400"></span>
               </span>
-              <span className="text-[11px] sm:text-sm font-bold text-amber-200 uppercase tracking-[0.18em] font-headline">
+              <span className="text-[10px] sm:text-sm font-bold text-amber-200 uppercase tracking-[0.16em] sm:tracking-[0.18em] font-headline">
                 Shubh Navratri • Dandiya Utsav
               </span>
             </div>
@@ -229,16 +234,16 @@ export default function Navrang() {
 
             {/* Main Festive Title */}
             <h1 className="font-black tracking-tight leading-none mb-3">
-              <span className="block text-6xl sm:text-8xl md:text-9xl text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-200 drop-shadow-[0_4px_25px_rgba(251,191,36,0.6)]">
+              <span className="block text-5xl sm:text-8xl md:text-9xl text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-200 drop-shadow-[0_4px_25px_rgba(251,191,36,0.6)]">
                 NAVRANG
               </span>
-              <span className="block mt-1 text-4xl sm:text-5xl md:text-6xl text-fuchsia-200 font-bold drop-shadow-[0_0_20px_rgba(217,70,239,0.7)]">
+              <span className="block mt-1 text-3xl sm:text-5xl md:text-6xl text-fuchsia-200 font-bold drop-shadow-[0_0_20px_rgba(217,70,239,0.7)]">
                 2026
               </span>
             </h1>
 
             {/* Subtitle & School Credential */}
-            <p className="text-base sm:text-xl text-slate-200 font-light mb-6 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-sm sm:text-xl text-slate-200 font-light mb-6 max-w-2xl mx-auto leading-relaxed px-2">
               Grand Dandiya Raas, Garba Beats &amp; Durga Puja Celebration Night
               <span className="block mt-1 font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-orange-400 font-headline">
                 S.D. Public School, Patna
@@ -246,7 +251,7 @@ export default function Navrang() {
             </p>
 
             {/* Countdown Timer flanked by glowing diyas */}
-            <div className="flex items-center justify-center gap-3 sm:gap-6 mb-7">
+            <div className="flex items-center justify-center gap-2 sm:gap-6 mb-7 w-full">
               <motion.div
                 className="hidden sm:block"
                 animate={{ y: [0, -6, 0] }}
@@ -255,16 +260,16 @@ export default function Navrang() {
                 <FloatingDiya size={52} />
               </motion.div>
 
-              <div className="flex items-center justify-center gap-2 sm:gap-4 bg-gradient-to-b from-slate-900/90 to-purple-950/80 backdrop-blur-xl px-3 py-3 sm:px-6 sm:py-4 rounded-3xl border-2 border-amber-400/40 shadow-[0_0_35px_rgba(245,158,11,0.3)]">
+              <div className="flex items-center justify-center gap-1.5 sm:gap-4 bg-gradient-to-b from-slate-900/90 to-purple-950/80 backdrop-blur-xl px-2.5 py-2.5 sm:px-6 sm:py-4 rounded-2xl sm:rounded-3xl border-2 border-amber-400/40 shadow-[0_0_35px_rgba(245,158,11,0.3)] max-w-full">
                 {timeBlocks.map((block, idx) => (
                   <div key={idx} className="flex flex-col items-center">
-                    <div className="w-14 h-14 sm:w-20 sm:h-20 bg-black/50 backdrop-blur-md rounded-2xl border border-amber-300/30 flex items-center justify-center mb-1.5 shadow-inner relative overflow-hidden">
+                    <div className="w-13 h-13 sm:w-20 sm:h-20 bg-black/50 backdrop-blur-md rounded-xl sm:rounded-2xl border border-amber-300/30 flex items-center justify-center mb-1 shadow-inner relative overflow-hidden">
                       <div className="absolute inset-0 bg-gradient-to-b from-amber-400/10 to-transparent"></div>
-                      <span className="relative text-2xl sm:text-4xl font-black text-amber-300 tabular-nums drop-shadow-md">
+                      <span className="relative text-xl sm:text-4xl font-black text-amber-300 tabular-nums drop-shadow-md">
                         {String(block.value).padStart(2, '0')}
                       </span>
                     </div>
-                    <span className="text-[9px] sm:text-xs text-amber-200/80 uppercase tracking-widest font-bold">{block.label}</span>
+                    <span className="text-[9px] sm:text-xs text-amber-200/80 uppercase tracking-wider sm:tracking-widest font-bold">{block.label}</span>
                   </div>
                 ))}
               </div>
@@ -588,6 +593,26 @@ export default function Navrang() {
           </div>
         </div>
       </footer>
+
+      {/* Mobile Sticky Quick-Action Bar */}
+      <aside aria-label="Mobile quick actions" className="fixed bottom-0 inset-x-0 z-40 p-2.5 sm:p-3 bg-slate-950/95 backdrop-blur-xl border-t border-amber-400/30 lg:hidden pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgba(0,0,0,0.8)]">
+        <div className="max-w-md mx-auto flex items-center gap-2">
+          <Link
+            to={ticketPath}
+            className="flex-1 py-2.5 px-3 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-amber-200 border border-white/20 text-xs font-bold font-headline flex items-center justify-center gap-1.5 transition text-center"
+          >
+            <Ticket className="w-4 h-4 text-amber-400 shrink-0" />
+            <span className="truncate">My Passes</span>
+          </Link>
+          <button
+            onClick={() => navigate(bookPath)}
+            className="flex-[1.4] py-2.5 px-3 rounded-full bg-gradient-to-r from-brand-orange via-amber-500 to-orange-600 text-white text-xs font-black font-headline shadow-[0_0_20px_rgba(248,125,14,0.6)] flex items-center justify-center gap-1.5 active:scale-95 transition border border-amber-300/40 text-center"
+          >
+            <Sparkles className="w-4 h-4 text-yellow-200 shrink-0" />
+            <span className="truncate">Book Passes (₹299+)</span>
+          </button>
+        </div>
+      </aside>
     </div>
   );
 }

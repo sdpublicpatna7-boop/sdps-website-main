@@ -284,39 +284,40 @@ export default function NavrangMyTicket() {
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 -mt-8 relative z-20">
+      <div className="max-w-2xl mx-auto px-3 sm:px-4 -mt-8 relative z-20">
         {/* Search Form */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 border border-purple-100 mb-8">
+        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl p-4 sm:p-6 border border-purple-100 mb-8">
           <form onSubmit={handleSearch} className="space-y-4">
-            <div className="flex flex-wrap gap-4 mb-2">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input 
-                  type="radio" 
-                  name="searchType" 
-                  value="phone" 
-                  checked={searchType === 'phone'}
-                  onChange={() => {
-                    setSearchType('phone');
-                    setError(null);
-                  }}
-                  className="text-purple-600 focus:ring-purple-500"
-                />
-                <span className="text-sm font-semibold text-slate-800">By Registered Mobile Number</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input 
-                  type="radio" 
-                  name="searchType" 
-                  value="booking_id" 
-                  checked={searchType === 'booking_id'}
-                  onChange={() => {
-                    setSearchType('booking_id');
-                    setError(null);
-                  }}
-                  className="text-purple-600 focus:ring-purple-500"
-                />
-                <span className="text-sm font-semibold text-slate-800">By Booking ID + Mobile</span>
-              </label>
+            {/* Segmented Pill Selector for Mobile */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl mb-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchType('phone');
+                  setError(null);
+                }}
+                className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  searchType === 'phone'
+                    ? 'bg-purple-700 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                }`}
+              >
+                <span>📱 By Registered Mobile</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchType('booking_id');
+                  setError(null);
+                }}
+                className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  searchType === 'booking_id'
+                    ? 'bg-purple-700 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                }`}
+              >
+                <span>🎫 By Booking ID + Mobile</span>
+              </button>
             </div>
 
             {searchType === 'phone' ? (
@@ -324,34 +325,36 @@ export default function NavrangMyTicket() {
                 <p className="text-xs text-slate-500">
                   Enter the 10-digit mobile number provided during booking to retrieve all passes registered to your family.
                 </p>
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3">
                   <div className="relative flex-1">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Search className="h-5 w-5 text-slate-400" />
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                      <Search className="h-4 w-4 text-slate-400" />
                     </div>
                     <input
                       type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
                       value={searchInput}
                       onChange={(e) => setSearchInput(e.target.value)}
-                      placeholder="Enter 10-digit registered mobile number"
+                      placeholder="Enter 10-digit registered mobile"
                       maxLength={10}
-                      className="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-xl leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors font-mono"
+                      className="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-xl leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors font-mono text-sm"
                       required
                     />
                   </div>
                   <button
                     type="submit"
                     disabled={isLoading || !searchInput.trim()}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 disabled:opacity-50 transition-colors shadow-sm"
+                    className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 active:scale-98 text-white px-6 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-50 transition-all shadow-sm cursor-pointer text-sm shrink-0"
                   >
-                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Find Passes'}
+                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Search className="w-4 h-4" /><span>Find Passes</span></>}
                   </button>
                 </div>
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-amber-700 flex-shrink-0" />
+                <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
                   <span>🔒 <strong>Pass Theft Protection:</strong> To prevent unauthorized entry, your registered mobile number is verified before displaying any pass.</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -359,10 +362,14 @@ export default function NavrangMyTicket() {
                     <label className="block text-xs font-semibold text-slate-700 mb-1">Booking ID *</label>
                     <input
                       type="text"
+                      inputMode="text"
+                      autoCapitalize="characters"
+                      autoCorrect="off"
+                      spellCheck={false}
                       value={searchInput}
                       onChange={(e) => setSearchInput(e.target.value.toUpperCase())}
                       placeholder="e.g. NVR-2026-4LC8"
-                      className="block w-full px-3 py-2.5 border border-slate-300 rounded-xl bg-slate-50 font-mono text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-purple-500"
+                      className="block w-full px-3.5 py-2.5 border border-slate-300 rounded-xl bg-slate-50 font-mono text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-purple-500 uppercase"
                       required
                     />
                   </div>
@@ -370,11 +377,13 @@ export default function NavrangMyTicket() {
                     <label className="block text-xs font-semibold text-slate-700 mb-1">Registered Mobile Number *</label>
                     <input
                       type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
                       value={phoneInput}
                       onChange={(e) => setPhoneInput(e.target.value)}
                       placeholder="10-digit mobile number"
                       maxLength={10}
-                      className="block w-full px-3 py-2.5 border border-slate-300 rounded-xl bg-slate-50 font-mono text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-purple-500"
+                      className="block w-full px-3.5 py-2.5 border border-slate-300 rounded-xl bg-slate-50 font-mono text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-purple-500"
                       required
                     />
                   </div>
@@ -382,9 +391,9 @@ export default function NavrangMyTicket() {
                 <button
                   type="submit"
                   disabled={isLoading || !searchInput.trim() || !phoneInput.trim()}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-xl font-medium flex items-center justify-center gap-2 disabled:opacity-50 transition-colors shadow-sm"
+                  className="w-full bg-purple-600 hover:bg-purple-700 active:scale-98 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-50 transition-all shadow-sm cursor-pointer text-sm"
                 >
-                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Verify Identity & Unlock Pass'}
+                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Verify Identity & Unlock Pass</span>}
                 </button>
               </div>
             )}
@@ -418,7 +427,7 @@ export default function NavrangMyTicket() {
                 className="bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-200 flex flex-col md:flex-row"
               >
                 {/* Left side: QR Code */}
-                <div className="bg-purple-50 p-6 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-purple-100 min-w-[240px]">
+                <div className="bg-purple-50 p-4 sm:p-6 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-purple-100 min-w-0 sm:min-w-[240px]">
                   <div className="bg-white p-3 rounded-xl shadow-sm mb-3">
                     <QRCodeSVG 
                       value={ticket.qr_token || ticket.booking_id} 
@@ -432,7 +441,7 @@ export default function NavrangMyTicket() {
                 </div>
 
                 {/* Right side: Details */}
-                <div className="p-6 flex-1 flex flex-col justify-between">
+                <div className="p-4 sm:p-6 flex-1 flex flex-col justify-between">
                   <div>
                     <div className="flex justify-between items-start mb-4">
                       <div>
