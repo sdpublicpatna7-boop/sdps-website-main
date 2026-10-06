@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Ticket, QrCode, Share2, AlertCircle, Loader2, Zap, CheckCircle2 } from 'lucide-react';
+import { Search, Ticket, QrCode, Share2, AlertCircle, Loader2, Zap, CheckCircle2, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
 import api from '@/lib/api';
@@ -438,6 +438,10 @@ export default function NavrangMyTicket() {
                       <div>
                         <h3 className="text-xl font-bold text-brand-navy capitalize">{ticket.package_id || ticket.package} Package</h3>
                         <p className="text-slate-500 text-sm">{ticket.parent_name} • {ticket.phone}</p>
+                        <div className="flex items-center gap-1.5 text-xs text-rose-700 font-semibold mt-1">
+                          <MapPin className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                          <span>Venue: <strong>SDPS Homeground, Patna</strong> • Oct 15 (6:00 PM)</span>
+                        </div>
                       </div>
                       <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${getStatusColor(ticket.payment_status)}`}>
                         {ticket.payment_status || 'Pending'}

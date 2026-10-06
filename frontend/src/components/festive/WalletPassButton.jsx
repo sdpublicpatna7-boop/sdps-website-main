@@ -20,10 +20,10 @@ function makeGoogleCalendarUrl(bookingId, booking = {}) {
     `Package: ${pkg}\n` +
     `QR Token: ${qrToken}\n\n` +
     `View Live Pass: https://navrang.sdpublic.org/my-ticket\n` +
-    `Venue: S.D. Public School, Maurya Colony, Near R.O.B Kumhrar, Patna 800007\n` +
+    `Venue: SDPS Homeground, S.D. Public School, Maurya Colony, Near R.O.B Kumhrar, Patna 800007\n` +
     `Helpdesk: +91 99551 90262`
   );
-  const location = encodeURIComponent("S.D. Public School, Maurya Colony, Near R.O.B Kumhrar, Patna 800007");
+  const location = encodeURIComponent("SDPS Homeground, S.D. Public School, Maurya Colony, Near R.O.B Kumhrar, Patna 800007");
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}&location=${location}`;
 }
 

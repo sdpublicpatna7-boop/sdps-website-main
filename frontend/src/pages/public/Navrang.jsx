@@ -329,8 +329,8 @@ export default function Navrang() {
               },
               {
                 icon: MapPin,
-                title: "School Campus Ground",
-                desc: "S.D. Public School Main Campus, Kankarbagh, Patna, Bihar.",
+                title: "SDPS Homeground",
+                desc: "SDPS Homeground, S.D. Public School Campus, Patna, Bihar.",
                 color: "text-rose-400",
                 border: "border-rose-400/30"
               },

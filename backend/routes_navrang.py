@@ -352,7 +352,7 @@ async def get_config():
             "event_name": "Navrang 2026",
             "event_date": "2026-10-15",
             "event_time": "6:00 PM – 10:00 PM",
-            "venue": "S.D. Public School Main Campus, Patna",
+            "venue": "SDPS Homeground, Patna",
             "booking_open": True,
             "max_tickets": 1000,
             "rules": [
@@ -367,6 +367,10 @@ async def get_config():
             "upi_merchant_name": "S.D. Public School, Patna",
             "upi_instructions": "1. Scan the QR code or tap 'Pay via Any UPI App' (GPay, PhonePe, Paytm, BHIM).\n2. Pay the exact pass amount.\n3. Enter the 12-digit UPI UTR / Transaction Reference Number from your payment receipt."
         }
+    if not config.get("venue") or "Main Campus" in str(config.get("venue", "")):
+        config["venue"] = "SDPS Homeground, Patna"
+        if db is not None:
+            await db.navrang_config.update_one({}, {"$set": {"venue": "SDPS Homeground, Patna"}}, upsert=True)
     if not config.get("upi_id"):
         config["upi_id"] = "sdpublicpatna@sbi"
     if not config.get("upi_merchant_name"):
@@ -693,7 +697,7 @@ async def send_navrang_pass_whatsapp(booking: dict) -> bool:
         f"{students_str}\n\n"
         f"👉 *TAP HERE TO VIEW & SCAN YOUR ENTRY QR PASS:*\n"
         f"{ticket_link}\n\n"
-        f"📍 *Event Venue:* S.D. Public School Main Campus, Patna\n"
+        f"📍 *Event Venue:* SDPS Homeground, Patna\n"
         f"⏰ *Date & Time:* Oct 15, 2026 | 6:00 PM – 10:00 PM\n\n"
         f"⚠️ *Important Notice:*\n"
         f"Please show the digital QR code from the link above at the school entrance gate for rapid turnstile verification.\n\n"
@@ -1451,6 +1455,8 @@ async def admin_book_cash(req: AdminCashBookingRequest, token: TokenData = Depen
             f"{students_text}\n\n"
             f"🎟️ *VIEW / DOWNLOAD YOUR ENTRY QR PASS:*\n"
             f"👉 {ticket_link}\n\n"
+            f"📍 *Event Venue:* SDPS Homeground, Patna\n"
+            f"⏰ *Date & Time:* Oct 15, 2026 | 6:00 PM – 10:00 PM\n\n"
             f"⚠️ *Important Guidelines:*\n"
             f"1. Please show your QR pass at the entrance gate for quick verification.\n"
             f"2. Package admits student(s) + 1 Mother and includes 1 pair of Dandiya sticks.\n"
@@ -2079,7 +2085,7 @@ def _build_apple_pkpass(booking: dict) -> bytes:
                 {
                     "key": "venue",
                     "label": "VENUE",
-                    "value": "SDPS Patna Campus"
+                    "value": "SDPS Homeground"
                 }
             ],
             "backFields": [
@@ -2091,7 +2097,7 @@ def _build_apple_pkpass(booking: dict) -> bytes:
                 {
                     "key": "location",
                     "label": "VENUE & ADDRESS",
-                    "value": "S.D. Public School, Maurya Colony, Near R.O.B Kumhrar, Patna 800007"
+                    "value": "SDPS Homeground, S.D. Public School, Maurya Colony, Near R.O.B Kumhrar, Patna 800007"
                 },
                 {
                     "key": "instructions",
@@ -2162,7 +2168,7 @@ DTSTAMP:20261001T000000Z
 DTSTART:20261015T120000Z
 DTEND:20261015T163000Z
 SUMMARY:🎆 Navrang 2026 Dandiya Night - Pass: {booking_id}
-LOCATION:S.D. Public School, Maurya Colony, Near R.O.B Kumhrar, Patna 800007
+LOCATION:SDPS Homeground, S.D. Public School, Maurya Colony, Near R.O.B Kumhrar, Patna 800007
 DESCRIPTION:Navrang 2026 Dandiya Night Official Event Pass\\n\\nBooking ID: {booking_id}\\nHolder: {parent_name}\\nPackage: {package_name}\\nEntry QR Token: {qr_token}\\n\\nLive Pass Link: https://navrang.sdpublic.org/my-ticket\\nHelpdesk: +91 99551 90262
 STATUS:CONFIRMED
 BEGIN:VALARM

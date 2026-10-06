@@ -3468,7 +3468,7 @@ const SettingsTab = () => {
         event_name: 'Navrang 2026',
         event_date: '',
         event_time: '',
-        venue: '',
+        venue: 'SDPS Homeground, Patna',
         contact_phone: '',
         is_booking_open: true,
         max_tickets: 1000,

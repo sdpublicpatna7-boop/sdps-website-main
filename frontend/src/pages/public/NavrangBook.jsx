@@ -25,7 +25,8 @@ import {
   Info,
   Pencil,
   CreditCard,
-  Zap
+  Zap,
+  MapPin
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
@@ -412,7 +413,7 @@ export default function NavrangBook() {
             Navrang 2026 Passes
           </h1>
           <p className="text-slate-300 text-sm md:text-base max-w-xl mx-auto">
-            Dandiya & Durga Puja Celebration Night • Instant WhatsApp Pass Confirmation
+            Dandiya & Durga Puja Celebration Night • SDPS Homeground • Instant WhatsApp Pass
           </p>
         </div>
       </div>
@@ -909,6 +910,10 @@ export default function NavrangBook() {
                         <div className="text-xs text-slate-500 mt-0.5">
                           Students: {students.map(s => s.data?.name || s.admission_no).join(', ')}
                         </div>
+                        <div className="text-xs text-slate-600 mt-1 flex items-center gap-1.5 font-medium">
+                          <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                          <span>Venue: <strong className="text-slate-800">SDPS Homeground, Patna</strong> • Oct 15 (6:00 PM)</span>
+                        </div>
                         <div className="text-xs text-purple-700 font-medium mt-1.5 flex items-center gap-1.5">
                           <MessageSquare className="w-3.5 h-3.5 text-green-600 shrink-0" />
                           <span>WhatsApp Pass to: <strong className="text-slate-900 font-mono font-bold">+91 {parentDetails.phone}</strong></span>
@@ -1058,7 +1063,7 @@ export default function NavrangBook() {
                   <div id="navrang-pass-ticket" className="max-w-md mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-200 mb-6 text-left">
                     <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-purple-950 text-white p-5 text-center relative overflow-hidden">
                       <div className="text-[10px] font-bold uppercase tracking-widest text-amber-400 mb-1">
-                        S.D. Public School • Navrang 2026
+                        S.D. Public School • Navrang 2026 • SDPS Homeground
                       </div>
                       <div className="text-2xl font-mono font-black tracking-wider text-white">
                         {bookingResult.booking_id}
@@ -1091,6 +1096,13 @@ export default function NavrangBook() {
                             </div>
                           ))}
                         </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 text-slate-700 bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-[11px] font-medium">
+                        <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                        <span>Venue: <strong>SDPS Homeground, Patna</strong></span>
+                        <span className="text-slate-400">•</span>
+                        <span>Oct 15, 6:00 PM</span>
                       </div>
 
                       <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-slate-700">
