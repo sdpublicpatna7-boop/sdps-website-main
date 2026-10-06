@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Phone, Mail, Ticket, Sparkles, Menu, X, ArrowLeft, Calendar, ShieldCheck, Home } from "lucide-react";
-import ToranGarland from "@/components/festive/ToranGarland";
 
 const navLinks = [
   { id: "details", label: "Overview" },
@@ -295,9 +294,6 @@ export default function NavrangNavbar({ activePage = "home" }) {
           </div>
         )}
       </div>
-
-      {/* Decorative Marigold & Mango Leaf Toran */}
-      <ToranGarland />
     </header>
   );
 }

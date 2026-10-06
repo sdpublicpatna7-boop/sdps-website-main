@@ -28,6 +28,7 @@ import FestivePetalCanvas from '@/components/festive/FestivePetalCanvas';
 import FloatingDiya from '@/components/festive/FloatingDiya';
 import DandiyaClash from '@/components/festive/DandiyaClash';
 import RangoliMandala from '@/components/festive/RangoliMandala';
+import ToranGarland from '@/components/festive/ToranGarland';
 
 const defaultEventDate = "2026-10-15T18:00:00";
 
@@ -183,6 +184,10 @@ export default function Navrang() {
 
       {/* Hero Section */}
       <section className="relative flex items-center justify-center py-10 sm:py-14 min-h-[calc(100vh-7.5rem)] overflow-hidden">
+        {/* Festive Marigold Toran Garland */}
+        <div className="absolute top-0 inset-x-0 z-20 pointer-events-none">
+          <ToranGarland />
+        </div>
         {/* Full-Bleed Festive Artwork Hero Background */}
         <div className="absolute inset-0 z-0 overflow-hidden">
           <img

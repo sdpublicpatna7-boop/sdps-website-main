@@ -78,10 +78,9 @@ const DEFAULT_PACKAGES = [
 
 const steps = [
   { id: 1, name: 'Pass', icon: Ticket },
-  { id: 2, name: 'Student Lookup', icon: Search },
-  { id: 3, name: 'Parent & WhatsApp', icon: MessageSquare },
+  { id: 2, name: 'Student', icon: Search },
+  { id: 3, name: 'Contact', icon: MessageSquare },
   { id: 4, name: 'Payment', icon: CreditCard },
-  { id: 5, name: 'Ticket Pass', icon: CheckCircle2 },
 ];
 
 export default function NavrangBook() {
@@ -451,11 +450,13 @@ export default function NavrangBook() {
             </div>
 
             {/* Mobile Current Step Banner */}
-            <div className="text-center sm:hidden mt-2 pt-1 border-t border-purple-100/60">
-              <span className="text-[11px] font-bold text-purple-900">
-                Step {step} of 4: {steps.find(s => s.id === step)?.name}
-              </span>
-            </div>
+            {step <= 4 && (
+              <div className="text-center sm:hidden mt-2 pt-1 border-t border-purple-100/60">
+                <span className="text-[11px] font-bold text-purple-900">
+                  Step {step} of 4: {steps.find(s => s.id === step)?.name}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Form Area */}
@@ -906,82 +907,65 @@ export default function NavrangBook() {
                 </motion.div>
               )}
 
-              {/* STEP 4: 100% AUTOMATED RAZORPAY PAYMENT (INSTANT AUTO-VERIFICATION & ZERO MANUAL UTR WAITING) */}
+              {/* STEP 4: SECURE PAYMENT CHECKOUT */}
               {step === 4 && (
                 <motion.div key="step4" variants={slideVariants} initial="initial" animate="enter" exit="exit" className="space-y-6">
                   <div className="text-center max-w-xl mx-auto">
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-900 mb-2 border border-emerald-200">
-                      <Zap className="w-3.5 h-3.5 text-emerald-700 fill-emerald-600" />
-                      100% Automated Instant Verification
-                    </div>
                     <h2 className="text-2xl md:text-3xl font-outfit font-extrabold text-slate-900">
                       Review & Pay • ₹{totalPrice}
                     </h2>
                     <p className="text-xs md:text-sm text-slate-500 mt-1">
-                      Pay securely via Google Pay, PhonePe, Paytm, Any UPI, Cards, or NetBanking. Pass is auto-verified in real-time.
+                      Fast and secure checkout via UPI, Cards, or NetBanking.
                     </p>
                   </div>
 
-                  <div className="max-w-xl mx-auto bg-gradient-to-b from-purple-50/60 to-white rounded-2xl p-5 md:p-6 border border-purple-200 shadow-sm space-y-6">
+                  <div className="max-w-xl mx-auto bg-white rounded-2xl p-5 md:p-6 border border-purple-100 shadow-sm space-y-5">
                     {/* Booking Breakdown Card */}
-                    <div className="bg-white p-4 rounded-xl border border-purple-100 flex flex-col sm:flex-row justify-between sm:items-center gap-3 text-sm shadow-xs">
-                      <div>
-                        <div className="font-bold text-slate-900 text-base">{selectedPkgObj?.name}</div>
-                        <div className="text-xs text-slate-500 mt-0.5">
-                          Students: {students.map(s => s.data?.name || s.admission_no).join(', ')}
+                    <div className="bg-gradient-to-b from-purple-50/50 to-white p-4 sm:p-5 rounded-2xl border border-purple-100/80 space-y-3.5">
+                      <div className="flex justify-between items-start gap-3">
+                        <div>
+                          <span className="text-xs font-bold uppercase tracking-wider text-purple-700 bg-purple-100/70 px-2.5 py-1 rounded-full border border-purple-200 inline-block mb-1">
+                            {selectedPkgObj?.name}
+                          </span>
+                          <div className="text-sm font-semibold text-slate-900 mt-1">
+                            {students.map(s => s.data?.name || s.admission_no).join(', ')}
+                          </div>
+                          <div className="text-xs text-slate-500 flex items-center gap-1.5 mt-1 font-medium">
+                            <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                            <span>SDPS Homeground, Patna • Oct 15, 6:00 PM</span>
+                          </div>
                         </div>
-                        <div className="text-xs text-slate-600 mt-1 flex items-center gap-1.5 font-medium">
-                          <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                          <span>Venue: <strong className="text-slate-800">SDPS Homeground, Patna</strong> • Oct 15 (6:00 PM)</span>
+                        <div className="text-right shrink-0">
+                          <div className="text-2xl sm:text-3xl font-black text-purple-700 font-headline">
+                            ₹{totalPrice}
+                          </div>
+                          <span className="text-[11px] text-slate-400 font-medium">All inclusive</span>
                         </div>
-                        <div className="text-xs text-purple-700 font-medium mt-1.5 flex items-center gap-1.5">
+                      </div>
+
+                      <div className="pt-3 border-t border-purple-100/80 flex items-center justify-between text-xs text-slate-600">
+                        <div className="flex items-center gap-1.5 min-w-0">
                           <MessageSquare className="w-3.5 h-3.5 text-green-600 shrink-0" />
-                          <span>WhatsApp Pass to: <strong className="text-slate-900 font-mono font-bold">+91 {parentDetails.phone}</strong></span>
-                          <button 
-                            type="button" 
-                            onClick={() => setStep(3)} 
-                            className="text-[11px] text-purple-600 hover:text-purple-800 underline ml-1 font-semibold cursor-pointer"
-                          >
-                            Change
-                          </button>
+                          <span className="truncate">WhatsApp Pass to: <strong className="text-slate-900 font-mono font-bold">+91 {parentDetails.phone}</strong></span>
                         </div>
-                      </div>
-                      <div className="text-2xl font-black text-purple-700 shrink-0">
-                        ₹{totalPrice}
-                      </div>
-                    </div>
-
-                    {/* Auto-activation Highlight Banner */}
-                    <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border border-emerald-200 rounded-2xl p-4 text-emerald-950 flex items-start gap-3 shadow-xs">
-                      <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
-                        <Zap className="w-5 h-5 fill-white" />
-                      </div>
-                      <div className="text-xs space-y-1">
-                        <span className="font-bold text-emerald-900 block text-sm">
-                          ⚡ Instant QR Gate Pass Activation
-                        </span>
-                        <p className="text-emerald-800 leading-relaxed">
-                          Your pass is <strong>automatically verified and activated immediately</strong> by Razorpay upon completion. No manual UTR entry or admin verification needed!
-                        </p>
+                        <button 
+                          type="button" 
+                          onClick={() => setStep(3)} 
+                          className="text-xs font-semibold text-purple-600 hover:text-purple-800 underline ml-2 shrink-0 cursor-pointer"
+                        >
+                          Change
+                        </button>
                       </div>
                     </div>
 
-                    {/* Accepted Payment Methods */}
-                    <div className="bg-white p-4 rounded-xl border border-slate-200 text-center space-y-2">
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                        Supported Payment Options
+                    {/* Supported Payment Options Preview */}
+                    <div className="flex flex-wrap items-center justify-center gap-2 text-xs font-medium text-slate-600 pt-1">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700">
+                        <Smartphone className="w-3.5 h-3.5 text-purple-600" /> UPI (GPay, PhonePe, Paytm)
                       </span>
-                      <div className="flex flex-wrap items-center justify-center gap-2 text-xs font-semibold text-slate-700">
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
-                          <Smartphone className="w-3.5 h-3.5 text-purple-600" /> UPI (GPay, PhonePe, Paytm, BHIM)
-                        </span>
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
-                          <CreditCard className="w-3.5 h-3.5 text-blue-600" /> Credit / Debit Cards
-                        </span>
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
-                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> NetBanking (50+ Banks)
-                        </span>
-                      </div>
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700">
+                        <CreditCard className="w-3.5 h-3.5 text-blue-600" /> Cards &amp; NetBanking
+                      </span>
                     </div>
 
                     {error && (
@@ -991,32 +975,32 @@ export default function NavrangBook() {
                       </div>
                     )}
 
-                    {/* Main Instant Pay CTA */}
+                    {/* Main Pay CTA */}
                     <div className="pt-1 space-y-3">
                       <button
                         type="button"
                         onClick={handlePayWithRazorpay}
                         disabled={isBooking || isCheckingStatus}
-                        className="w-full bg-gradient-to-r from-purple-700 via-indigo-700 to-purple-800 hover:from-purple-800 hover:to-indigo-800 text-white py-4 px-6 rounded-2xl font-bold text-base shadow-xl shadow-purple-900/20 flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer disabled:opacity-60"
+                        className="w-full bg-gradient-to-r from-purple-700 via-indigo-700 to-purple-800 hover:from-purple-800 hover:to-indigo-800 active:scale-98 text-white py-4 px-6 rounded-2xl font-bold text-base shadow-xl shadow-purple-900/20 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-60"
                       >
                         {isBooking ? (
                           <>
                             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            <span>Opening Secure Payment Gateway...</span>
+                            <span>Opening Secure Checkout...</span>
                           </>
                         ) : (
                           <>
-                            <Zap className="w-5 h-5 text-amber-300 fill-amber-300" />
-                            <span>Pay ₹{totalPrice} & Activate Instant Pass</span>
+                            <span>Pay ₹{totalPrice} Securely</span>
+                            <ArrowRight className="w-4 h-4" />
                           </>
                         )}
                       </button>
 
-                      {/* Fallback Auto-Verify button if user paid and closed window or pending booking exists */}
+                      {/* Fallback Check Status if pending session exists */}
                       {pendingBookingId && (
                         <div className="p-3 bg-amber-50/80 rounded-xl border border-amber-200/90 text-center space-y-2">
                           <div className="text-xs text-amber-950 font-medium">
-                            Already completed payment in UPI / Razorpay but closed the window?
+                            Already completed payment in your UPI app?
                           </div>
                           <button
                             type="button"
@@ -1027,12 +1011,12 @@ export default function NavrangBook() {
                             {isCheckingStatus ? (
                               <>
                                 <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                <span>Verifying with Razorpay...</span>
+                                <span>Checking Status...</span>
                               </>
                             ) : (
                               <>
-                                <Zap className="w-3.5 h-3.5" />
-                                <span>⚡ Auto-Verify with Razorpay ({pendingBookingId})</span>
+                                <Zap className="w-3.5 h-3.5 fill-current" />
+                                <span>Check Payment Status</span>
                               </>
                             )}
                           </button>
@@ -1041,16 +1025,16 @@ export default function NavrangBook() {
 
                       <div className="flex items-center justify-center gap-2 text-[11px] text-slate-400 pt-1">
                         <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Dedicated Navrang 2026 Razorpay Account • 256-bit SSL Bank Encrypted</span>
+                        <span>100% Secure 256-Bit SSL Bank Encrypted Checkout</span>
                       </div>
                     </div>
 
-                    <div className="flex justify-between items-center pt-4 border-t border-slate-200">
+                    <div className="flex justify-between items-center pt-3 border-t border-slate-100">
                       <button 
                         type="button"
                         onClick={() => setStep(3)}
                         disabled={isBooking || isCheckingStatus}
-                        className="text-slate-600 px-4 py-2.5 rounded-xl font-medium flex items-center gap-1.5 hover:bg-slate-100 transition-colors text-xs cursor-pointer"
+                        className="text-slate-600 px-4 py-2 rounded-xl font-medium flex items-center gap-1.5 hover:bg-slate-100 transition-colors text-xs cursor-pointer"
                       >
                         <ArrowLeft className="w-4 h-4" /> Back to Details
                       </button>

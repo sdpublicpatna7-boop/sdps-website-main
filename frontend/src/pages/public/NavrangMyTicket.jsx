@@ -469,7 +469,7 @@ export default function NavrangMyTicket() {
                       </div>
                       {ticket.payment_ref && (
                         <div className="mt-2 text-xs text-slate-600 bg-purple-50/50 p-2 rounded-lg border border-purple-100 flex justify-between items-center">
-                          <span className="font-semibold text-purple-900">UPI Ref / UTR:</span>
+                          <span className="font-semibold text-purple-900">Payment Ref / Txn ID:</span>
                           <span className="font-mono font-bold text-purple-800">{ticket.payment_ref}</span>
                         </div>
                       )}
