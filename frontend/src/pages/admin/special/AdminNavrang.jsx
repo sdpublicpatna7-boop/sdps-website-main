@@ -8,7 +8,7 @@ import {
   Smartphone, Filter, Pencil, Plus, X, Sparkles,
   Camera, CameraOff, SwitchCamera, ScanLine, Volume2, VolumeX, Upload,
   Flashlight, FlashlightOff, Maximize, Minimize, Ticket, ShieldCheck, UserCheck, Play, Pause, PhoneCall,
-  CreditCard, Lock, Eye, EyeOff, Banknote, Receipt, Printer, MessageSquare, MessageCircle, PartyPopper
+  CreditCard, Lock, Eye, EyeOff, Banknote, Receipt, Printer, MessageSquare, MessageCircle, PartyPopper, Zap
 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';

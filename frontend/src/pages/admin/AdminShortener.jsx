@@ -4,7 +4,7 @@ import {
   Link2, Plus, Search, Copy, Trash2, BarChart3, ExternalLink,
   Loader2, X, Calendar, Globe, Smartphone, Chrome, ShieldAlert,
   ArrowRight, Check, TrendingUp, MousePointerClick, Zap, MapPin,
-  Monitor, Clock, ArrowUpRight, ChevronLeft, ChevronRight, QrCode
+  Monitor, Clock, ArrowUpRight, ChevronLeft, ChevronRight, QrCode, RefreshCw
 } from "lucide-react";
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip,
