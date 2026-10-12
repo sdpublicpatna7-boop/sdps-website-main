@@ -488,7 +488,7 @@ const app = express();
 app.use(express.json({ limit: process.env.WA_BODY_LIMIT || "20mb" }));
 
 // Public keep-alive endpoint (no secret) — for the pinger / uptime monitors.
-app.get("/ping", (req, res) => res.json({ status: "alive", connected: isConnected, version: "v2.10.3", uptimeSec: Math.floor(process.uptime()), messageCount: messageStore.map.size }));
+app.get("/ping", (req, res) => res.json({ status: "alive", connected: isConnected, hasQR: !!currentQR, hasUser: !!meUser, starting, lastDisconnect: lastDisconnectInfo?.message || null, version: "v2.10.3", uptimeSec: Math.floor(process.uptime()), messageCount: messageStore.map.size }));
 
 // Shared-secret auth for every other route (timing-safe comparison).
 const secretBuf = Buffer.from(WA_API_SECRET);
