@@ -75,8 +75,117 @@ let disconnecting = false;  // Flag to prevent close handler from interfering du
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// ── LRU / TTL Memory Cache (compatible with Baileys CacheStore) ──────────────
+class MemoryCache {
+  constructor(maxSize = 4000, ttlMs = 24 * 60 * 60 * 1000) {
+    this.map = new Map();
+    this.maxSize = maxSize;
+    this.ttlMs = ttlMs;
+  }
+
+  get(key) {
+    const k = String(key);
+    const item = this.map.get(k);
+    if (!item) return undefined;
+    if (Date.now() > item.expiry) {
+      this.map.delete(k);
+      return undefined;
+    }
+    return item.val;
+  }
+
+  set(key, val, ttlSeconds) {
+    const k = String(key);
+    if (this.map.size >= this.maxSize) {
+      const firstKey = this.map.keys().next().value;
+      if (firstKey) this.map.delete(firstKey);
+    }
+    const expiry = Date.now() + (ttlSeconds ? ttlSeconds * 1000 : this.ttlMs);
+    this.map.set(k, { val, expiry });
+    return this;
+  }
+
+  del(key) {
+    return this.map.delete(String(key));
+  }
+
+  flushAll() {
+    this.map.clear();
+  }
+}
+
+// Caches required by Baileys for message retry handshake & multi-device resolution
+const msgRetryCounterCache = new MemoryCache(4000, 30 * 60 * 1000); // 30-min window
+const userDevicesCache = new MemoryCache(2000, 60 * 60 * 1000);      // 1-hour window
+const messageStore = new MemoryCache(6000, 48 * 60 * 60 * 1000);     // 48-hour window for message retries
+
+function saveMessageToStore(id, messageContent, jid) {
+  if (!id || !messageContent) return;
+  messageStore.set(id, messageContent);
+  if (jid) {
+    messageStore.set(`${jid}:${id}`, messageContent);
+  }
+  persistMessagesDebounced();
+}
+
+function getMessageFromStore(id, jid) {
+  if (!id) return undefined;
+  let msg = messageStore.get(id);
+  if (!msg && jid) {
+    msg = messageStore.get(`${jid}:${id}`);
+  }
+  return msg;
+}
+
+let saveMsgTimeout = null;
+function persistMessagesDebounced() {
+  if (saveMsgTimeout) return;
+  saveMsgTimeout = setTimeout(() => {
+    saveMsgTimeout = null;
+    try {
+      const resolved = path.resolve(AUTH_DIR);
+      if (!fs.existsSync(resolved)) return;
+      const cacheFile = path.join(resolved, "messages_cache.json");
+      const entries = [];
+      for (const [k, v] of messageStore.map.entries()) {
+        if (!k.includes(":")) {
+          entries.push([k, v.val]);
+          if (entries.length >= 500) break;
+        }
+      }
+      fs.writeFileSync(cacheFile, JSON.stringify(entries), "utf-8");
+    } catch {
+      /* non-fatal */
+    }
+  }, 2500);
+}
+
+function loadPersistedMessages() {
+  try {
+    const resolved = path.resolve(AUTH_DIR);
+    const cacheFile = path.join(resolved, "messages_cache.json");
+    if (fs.existsSync(cacheFile)) {
+      const raw = fs.readFileSync(cacheFile, "utf-8");
+      const data = JSON.parse(raw);
+      if (Array.isArray(data)) {
+        for (const [id, msg] of data) {
+          if (id && msg) {
+            messageStore.set(id, msg);
+          }
+        }
+        console.log(`[WhatsApp] Loaded ${data.length} messages into store for decryption retry responses.`);
+      }
+    }
+  } catch (e) {
+    console.warn("[WhatsApp] Could not load message cache:", e.message);
+  }
+}
+
 /** Clean up persisted Baileys auth state folders completely */
 function cleanAuthDir() {
+  messageStore.flushAll();
+  msgRetryCounterCache.flushAll();
+  userDevicesCache.flushAll();
   const paths = [
     path.resolve(AUTH_DIR),
     path.join(__dirname, "auth_state"),
@@ -152,24 +261,25 @@ async function startSock() {
     }
 
     const { state, saveCreds } = await useMultiFileAuthState(resolvedAuthDir);
+    loadPersistedMessages();
 
-    let version = [2, 3000, 1021422409];
+    let version = [2, 3000, 1023793615];
     try {
-      if (typeof fetchLatestWaWebVersion === "function") {
-        const v = await fetchLatestWaWebVersion();
-        if (v?.version) {
-          version = v.version;
-          console.log("[WhatsApp] Using latest WhatsApp Web version:", version);
-        }
-      } else if (typeof fetchLatestBaileysVersion === "function") {
+      if (typeof fetchLatestBaileysVersion === "function") {
         const v = await fetchLatestBaileysVersion();
         if (v?.version) {
           version = v.version;
-          console.log("[WhatsApp] Using latest Baileys version:", version);
+          console.log("[WhatsApp] Using latest Baileys version:", version.join("."));
+        }
+      } else if (typeof fetchLatestWaWebVersion === "function") {
+        const v = await fetchLatestWaWebVersion();
+        if (v?.version) {
+          version = v.version;
+          console.log("[WhatsApp] Using latest WhatsApp Web version:", version.join("."));
         }
       }
     } catch (e) {
-      console.warn("[WhatsApp] Version fetch fallback, using default version:", version, e.message);
+      console.warn("[WhatsApp] Version fetch fallback, using default version:", version.join("."), e.message);
     }
 
     // Standard Desktop browser identity matches official Baileys tested pair profile
@@ -189,15 +299,26 @@ async function startSock() {
       printQRInTerminal: false,
       browser: browserConfig,
       qrTimeout: 90000,
-      markOnlineOnConnect: false,
+      markOnlineOnConnect: true,
       syncFullHistory: false,
       generateHighQualityLinkPreview: false,
       connectTimeoutMs: 120000,
       defaultQueryTimeoutMs: 120000,
       keepAliveIntervalMs: 25000,
-      retryRequestDelayMs: 500,
+      retryRequestDelayMs: 250,
       maxMsgRetryCount: 5,
-      getMessage: async () => ({ conversation: "" }),
+      msgRetryCounterCache,
+      userDevicesCache,
+      getMessage: async (key) => {
+        if (!key) return undefined;
+        const found = getMessageFromStore(key.id, key.remoteJid);
+        if (found) {
+          addLog(`[Decryption Retry] Re-encrypting stored message for ID: ${key.id} -> ${key.remoteJid}`);
+          return found;
+        }
+        addLog(`[Decryption Retry] Message ${key.id} not found in store for ${key.remoteJid}`);
+        return undefined;
+      },
     });
 
     sock.ev.on("creds.update", async () => {
@@ -205,6 +326,14 @@ async function startSock() {
         await saveCreds();
       } catch (err) {
         console.error("[WhatsApp] Error saving credentials:", err.message);
+      }
+    });
+
+    sock.ev.on("messages.upsert", async ({ messages, type }) => {
+      for (const m of (messages || [])) {
+        if (m.key?.id && m.message) {
+          saveMessageToStore(m.key.id, m.message, m.key.remoteJid);
+        }
       }
     });
 
@@ -294,16 +423,48 @@ async function startSock() {
 
 /** Send a text and/or media message to one JID. */
 async function sendMessage(jid, message, media) {
+  if (!sock) throw new Error("WhatsApp socket is not connected");
+
+  // Pre-send handshake: subscribe to presence & brief typing indicator.
+  // Signals WhatsApp server to exchange Signal E2EE ratchet keys before delivering payload,
+  // preventing "Waiting for this message" decryption lag on recipient phones.
+  try {
+    await sock.presenceSubscribe(jid);
+  } catch { /* non-fatal */ }
+
+  try {
+    await sock.sendPresenceUpdate("composing", jid);
+    await sleep(250);
+    await sock.sendPresenceUpdate("paused", jid);
+  } catch { /* non-fatal */ }
+
+  let sent;
   if (media && media.mediaBase64 && media.mediaType) {
     const buffer = Buffer.from(media.mediaBase64, "base64");
     if (media.mediaType === "image") {
-      return sock.sendMessage(jid, { image: buffer, caption: message || "" });
+      sent = await sock.sendMessage(jid, { image: buffer, caption: message || "" });
+    } else if (media.mediaType === "video") {
+      sent = await sock.sendMessage(jid, { video: buffer, caption: message || "" });
+    } else if (media.mediaType === "document" || media.mediaType === "pdf") {
+      sent = await sock.sendMessage(jid, {
+        document: buffer,
+        mimetype: media.mediaMime || "application/pdf",
+        fileName: media.fileName || "document.pdf",
+        caption: message || ""
+      });
+    } else {
+      sent = await sock.sendMessage(jid, { text: message || "" });
     }
-    if (media.mediaType === "video") {
-      return sock.sendMessage(jid, { video: buffer, caption: message || "" });
-    }
+  } else {
+    sent = await sock.sendMessage(jid, { text: message || "" });
   }
-  return sock.sendMessage(jid, { text: message || "" });
+
+  // Cache sent message immediately so recipient decryption retry requests can re-encrypt it
+  if (sent?.key?.id && sent?.message) {
+    saveMessageToStore(sent.key.id, sent.message, jid);
+  }
+
+  return sent;
 }
 
 // ── HTTP API ─────────────────────────────────────────────────────────────────
