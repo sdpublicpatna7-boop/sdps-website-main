@@ -425,43 +425,58 @@ async function startSock() {
 async function sendMessage(jid, message, media) {
   if (!sock) throw new Error("WhatsApp socket is not connected");
 
-  // Pre-send handshake: subscribe to presence & brief typing indicator.
+  // 1. Resolve canonical JID via onWhatsApp to handle LID vs standard Phone Number routing
+  // Especially critical for WhatsApp Business and Meta-secured accounts
+  let targetJid = jid;
+  try {
+    const results = await sock.onWhatsApp(jid);
+    if (Array.isArray(results) && results[0]?.exists && results[0]?.jid) {
+      targetJid = results[0].jid;
+    }
+  } catch (e) {
+    /* non-fatal, fallback to raw jid */
+  }
+
+  // 2. Pre-send handshake: subscribe to presence & brief typing indicator.
   // Signals WhatsApp server to exchange Signal E2EE ratchet keys before delivering payload,
   // preventing "Waiting for this message" decryption lag on recipient phones.
   try {
-    await sock.presenceSubscribe(jid);
+    await sock.presenceSubscribe(targetJid);
   } catch { /* non-fatal */ }
 
   try {
-    await sock.sendPresenceUpdate("composing", jid);
+    await sock.sendPresenceUpdate("composing", targetJid);
     await sleep(250);
-    await sock.sendPresenceUpdate("paused", jid);
+    await sock.sendPresenceUpdate("paused", targetJid);
   } catch { /* non-fatal */ }
 
   let sent;
   if (media && media.mediaBase64 && media.mediaType) {
     const buffer = Buffer.from(media.mediaBase64, "base64");
     if (media.mediaType === "image") {
-      sent = await sock.sendMessage(jid, { image: buffer, caption: message || "" });
+      sent = await sock.sendMessage(targetJid, { image: buffer, caption: message || "" });
     } else if (media.mediaType === "video") {
-      sent = await sock.sendMessage(jid, { video: buffer, caption: message || "" });
+      sent = await sock.sendMessage(targetJid, { video: buffer, caption: message || "" });
     } else if (media.mediaType === "document" || media.mediaType === "pdf") {
-      sent = await sock.sendMessage(jid, {
+      sent = await sock.sendMessage(targetJid, {
         document: buffer,
         mimetype: media.mediaMime || "application/pdf",
         fileName: media.fileName || "document.pdf",
         caption: message || ""
       });
     } else {
-      sent = await sock.sendMessage(jid, { text: message || "" });
+      sent = await sock.sendMessage(targetJid, { text: message || "" });
     }
   } else {
-    sent = await sock.sendMessage(jid, { text: message || "" });
+    sent = await sock.sendMessage(targetJid, { text: message || "" });
   }
 
   // Cache sent message immediately so recipient decryption retry requests can re-encrypt it
   if (sent?.key?.id && sent?.message) {
-    saveMessageToStore(sent.key.id, sent.message, jid);
+    saveMessageToStore(sent.key.id, sent.message, targetJid);
+    if (targetJid !== jid) {
+      saveMessageToStore(sent.key.id, sent.message, jid);
+    }
   }
 
   return sent;
