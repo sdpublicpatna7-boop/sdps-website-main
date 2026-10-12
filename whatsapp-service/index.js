@@ -24,6 +24,7 @@ import qrcode from "qrcode";
 import pino from "pino";
 import { Boom } from "@hapi/boom";
 import * as baileysAll from "@whiskeysockets/baileys";
+import { MongoClient } from "mongodb";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -39,11 +40,26 @@ const DisconnectReason = baileysAll.DisconnectReason || baileysAll.default?.Disc
 const fetchLatestBaileysVersion = baileysAll.fetchLatestBaileysVersion || baileysAll.default?.fetchLatestBaileysVersion || baileys.fetchLatestBaileysVersion;
 const fetchLatestWaWebVersion = baileysAll.fetchLatestWaWebVersion || baileysAll.default?.fetchLatestWaWebVersion || baileys.fetchLatestWaWebVersion;
 const Browsers = baileysAll.Browsers || baileysAll.default?.Browsers || baileys.Browsers;
+const initAuthCreds = baileysAll.initAuthCreds || baileys.initAuthCreds || baileysAll.default?.initAuthCreds;
+const BufferJSON = baileysAll.BufferJSON || baileys.BufferJSON || baileysAll.default?.BufferJSON;
+const proto = baileysAll.proto || baileys.proto || baileysAll.default?.proto;
 
 const PORT = process.env.PORT || 3001;
 const WA_API_SECRET = process.env.WA_API_SECRET || "";
 const AUTH_DIR = process.env.WA_AUTH_DIR || "./auth_state";
 const DEFAULT_DELAY_MS = parseInt(process.env.WA_BULK_DELAY_MS || "2000", 10);
+
+// MongoDB configuration for cloud-persistent session & message storage across deploys
+const MONGO_URL = process.env.MONGO_URL || process.env.MONGODB_URI || process.env.MONGO_URI || "";
+const DB_NAME = process.env.DB_NAME || "sdps_portal";
+const WA_MONGO_AUTH_COLLECTION = process.env.WA_MONGO_AUTH_COLLECTION || "baileys_auth";
+const WA_MONGO_MESSAGES_COLLECTION = process.env.WA_MONGO_MESSAGES_COLLECTION || "baileys_messages";
+
+let mongoClient = null;
+let mongoDb = null;
+let authCollection = null;
+let messagesCollection = null;
+let activeStorageType = "filesystem";
 
 if (!WA_API_SECRET || WA_API_SECRET === "change-me-secret") {
   console.error("FATAL: WA_API_SECRET must be set to a strong shared secret.");
@@ -119,22 +135,168 @@ const msgRetryCounterCache = new MemoryCache(4000, 30 * 60 * 1000); // 30-min wi
 const userDevicesCache = new MemoryCache(2000, 60 * 60 * 1000);      // 1-hour window
 const messageStore = new MemoryCache(6000, 48 * 60 * 60 * 1000);     // 48-hour window for message retries
 
-function saveMessageToStore(id, messageContent, jid) {
+async function initMongoDb() {
+  if (!MONGO_URL) return null;
+  if (mongoDb && authCollection) return mongoDb;
+
+  try {
+    mongoClient = new MongoClient(MONGO_URL, {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 7000,
+      connectTimeoutMS: 10000,
+    });
+    await mongoClient.connect();
+    mongoDb = mongoClient.db(DB_NAME);
+    authCollection = mongoDb.collection(WA_MONGO_AUTH_COLLECTION);
+    messagesCollection = mongoDb.collection(WA_MONGO_MESSAGES_COLLECTION);
+
+    try {
+      await messagesCollection.createIndex({ createdAt: 1 }, { expireAfterSeconds: 7 * 24 * 3600, background: true });
+    } catch { /* ok if index exists */ }
+
+    addLog(`[MongoDB] Connected successfully to database: ${DB_NAME}`);
+    return mongoDb;
+  } catch (e) {
+    console.error("[MongoDB] Connection failed:", e.message);
+    addLog(`[MongoDB] Connection error: ${e.message}. Using filesystem fallback.`);
+    mongoClient = null;
+    mongoDb = null;
+    authCollection = null;
+    messagesCollection = null;
+    return null;
+  }
+}
+
+async function useMongoDBAuthState() {
+  const db = await initMongoDb();
+  if (!db || !authCollection) return null;
+
+  const writeData = async (data, key) => {
+    try {
+      const stringified = JSON.stringify(data, BufferJSON.replacer);
+      await authCollection.updateOne(
+        { _id: String(key) },
+        { $set: { data: stringified, updatedAt: new Date() } },
+        { upsert: true }
+      );
+    } catch (err) {
+      console.warn(`[MongoDB Auth] writeData error for ${key}:`, err.message);
+    }
+  };
+
+  const readData = async (key) => {
+    try {
+      const doc = await authCollection.findOne({ _id: String(key) });
+      if (!doc?.data) return null;
+      return JSON.parse(doc.data, BufferJSON.reviver);
+    } catch (err) {
+      console.warn(`[MongoDB Auth] readData error for ${key}:`, err.message);
+      return null;
+    }
+  };
+
+  const removeData = async (key) => {
+    try {
+      await authCollection.deleteOne({ _id: String(key) });
+    } catch { /* ok */ }
+  };
+
+  let creds = await readData("creds");
+  if (!creds) {
+    creds = typeof initAuthCreds === "function" ? initAuthCreds() : {};
+    await writeData(creds, "creds");
+  }
+
+  const state = {
+    creds,
+    keys: {
+      get: async (type, ids) => {
+        const data = {};
+        await Promise.all(
+          ids.map(async (id) => {
+            let value = await readData(`${type}-${id}`);
+            if (type === "app-state-sync-key" && value && proto?.Message?.AppStateSyncKeyData) {
+              try {
+                value = proto.Message.AppStateSyncKeyData.fromObject(value);
+              } catch { /* fallback to raw */ }
+            }
+            data[id] = value;
+          })
+        );
+        return data;
+      },
+      set: async (data) => {
+        const tasks = [];
+        for (const category of Object.keys(data)) {
+          for (const id of Object.keys(data[category])) {
+            const value = data[category][id];
+            const key = `${category}-${id}`;
+            if (value) {
+              tasks.push(writeData(value, key));
+            } else {
+              tasks.push(removeData(key));
+            }
+          }
+        }
+        await Promise.all(tasks);
+      },
+    },
+  };
+
+  return {
+    state,
+    saveCreds: () => writeData(state.creds, "creds"),
+  };
+}
+
+async function saveMessageToStore(id, messageContent, jid) {
   if (!id || !messageContent) return;
   messageStore.set(id, messageContent);
   if (jid) {
     messageStore.set(`${jid}:${id}`, messageContent);
   }
-  persistMessagesDebounced();
+
+  if (messagesCollection) {
+    try {
+      const serialized = JSON.stringify(messageContent, BufferJSON.replacer);
+      await messagesCollection.updateOne(
+        { _id: String(id) },
+        { 
+          $set: { 
+            data: serialized, 
+            jid: jid || null, 
+            createdAt: new Date() 
+          } 
+        },
+        { upsert: true }
+      );
+    } catch { /* non-fatal */ }
+  } else {
+    persistMessagesDebounced();
+  }
 }
 
-function getMessageFromStore(id, jid) {
+async function getMessageFromStore(id, jid) {
   if (!id) return undefined;
   let msg = messageStore.get(id);
   if (!msg && jid) {
     msg = messageStore.get(`${jid}:${id}`);
   }
-  return msg;
+  if (msg) return msg;
+
+  if (messagesCollection) {
+    try {
+      const doc = await messagesCollection.findOne({ _id: String(id) });
+      if (doc?.data) {
+        const parsed = JSON.parse(doc.data, BufferJSON.reviver);
+        if (parsed) {
+          messageStore.set(id, parsed);
+          return parsed;
+        }
+      }
+    } catch { /* non-fatal */ }
+  }
+  return undefined;
 }
 
 let saveMsgTimeout = null;
@@ -160,7 +322,30 @@ function persistMessagesDebounced() {
   }, 2500);
 }
 
-function loadPersistedMessages() {
+async function loadPersistedMessages() {
+  if (messagesCollection) {
+    try {
+      const cursor = messagesCollection.find({}).sort({ createdAt: -1 }).limit(1000);
+      const docs = await cursor.toArray();
+      let count = 0;
+      for (const doc of docs) {
+        if (doc?._id && doc?.data) {
+          try {
+            const parsed = JSON.parse(doc.data, BufferJSON.reviver);
+            messageStore.set(doc._id, parsed);
+            count++;
+          } catch { /* skip */ }
+        }
+      }
+      if (count > 0) {
+        console.log(`[WhatsApp] Loaded ${count} messages from MongoDB into store for decryption retry responses.`);
+      }
+      return;
+    } catch (e) {
+      console.warn("[WhatsApp] Could not load messages from MongoDB:", e.message);
+    }
+  }
+
   try {
     const resolved = path.resolve(AUTH_DIR);
     const cacheFile = path.join(resolved, "messages_cache.json");
@@ -173,19 +358,37 @@ function loadPersistedMessages() {
             messageStore.set(id, msg);
           }
         }
-        console.log(`[WhatsApp] Loaded ${data.length} messages into store for decryption retry responses.`);
+        console.log(`[WhatsApp] Loaded ${data.length} messages from disk into store for decryption retry responses.`);
       }
     }
   } catch (e) {
-    console.warn("[WhatsApp] Could not load message cache:", e.message);
+    console.warn("[WhatsApp] Could not load message cache from disk:", e.message);
   }
 }
 
-/** Clean up persisted Baileys auth state folders completely */
-function cleanAuthDir() {
+/** Clean up persisted Baileys auth state completely (MongoDB collections & disk) */
+async function cleanAuthDir() {
   messageStore.flushAll();
   msgRetryCounterCache.flushAll();
   userDevicesCache.flushAll();
+
+  if (authCollection) {
+    try {
+      await authCollection.deleteMany({});
+      console.log("[WhatsApp] Wiped clean MongoDB auth collection:", WA_MONGO_AUTH_COLLECTION);
+    } catch (e) {
+      console.warn("[WhatsApp] Error wiping Mongo auth collection:", e.message);
+    }
+  }
+  if (messagesCollection) {
+    try {
+      await messagesCollection.deleteMany({});
+      console.log("[WhatsApp] Wiped clean MongoDB messages collection:", WA_MONGO_MESSAGES_COLLECTION);
+    } catch (e) {
+      console.warn("[WhatsApp] Error wiping Mongo messages collection:", e.message);
+    }
+  }
+
   const paths = [
     path.resolve(AUTH_DIR),
     path.join(__dirname, "auth_state"),
@@ -254,14 +457,33 @@ async function startSock() {
       sock = null;
     }
 
-    const resolvedAuthDir = path.resolve(AUTH_DIR);
+    let authState = null;
+    activeStorageType = "filesystem";
 
-    if (!fs.existsSync(resolvedAuthDir)) {
-      fs.mkdirSync(resolvedAuthDir, { recursive: true });
+    if (MONGO_URL) {
+      try {
+        authState = await useMongoDBAuthState();
+        if (authState) {
+          activeStorageType = "mongodb";
+          addLog(`[WhatsApp] Using MongoDB persistent session storage (${DB_NAME}.${WA_MONGO_AUTH_COLLECTION}).`);
+        }
+      } catch (e) {
+        console.warn("[WhatsApp] MongoDB auth init failed, falling back to disk:", e.message);
+      }
     }
 
-    const { state, saveCreds } = await useMultiFileAuthState(resolvedAuthDir);
-    loadPersistedMessages();
+    if (!authState) {
+      const resolvedAuthDir = path.resolve(AUTH_DIR);
+      if (!fs.existsSync(resolvedAuthDir)) {
+        fs.mkdirSync(resolvedAuthDir, { recursive: true });
+      }
+      authState = await useMultiFileAuthState(resolvedAuthDir);
+      activeStorageType = "filesystem";
+      addLog("[WhatsApp] Using local filesystem session storage.");
+    }
+
+    const { state, saveCreds } = authState;
+    await loadPersistedMessages();
 
     let version = [2, 3000, 1023793615];
     try {
@@ -311,7 +533,7 @@ async function startSock() {
       userDevicesCache,
       getMessage: async (key) => {
         if (!key) return undefined;
-        const found = getMessageFromStore(key.id, key.remoteJid);
+        const found = await getMessageFromStore(key.id, key.remoteJid);
         if (found) {
           addLog(`[Decryption Retry] Re-encrypting stored message for ID: ${key.id} -> ${key.remoteJid}`);
           return found;
@@ -332,7 +554,7 @@ async function startSock() {
     sock.ev.on("messages.upsert", async ({ messages, type }) => {
       for (const m of (messages || [])) {
         if (m.key?.id && m.message) {
-          saveMessageToStore(m.key.id, m.message, m.key.remoteJid);
+          await saveMessageToStore(m.key.id, m.message, m.key.remoteJid);
         }
       }
     });
@@ -399,7 +621,7 @@ async function startSock() {
 
         if (isLoggedOut) {
           addLog("Device was logged out (code 401). Cleaning auth directory and generating fresh session...");
-          cleanAuthDir();
+          await cleanAuthDir();
           currentQR = null;
           await sleep(2000);
           startSock();
@@ -473,9 +695,9 @@ async function sendMessage(jid, message, media) {
 
   // Cache sent message immediately so recipient decryption retry requests can re-encrypt it
   if (sent?.key?.id && sent?.message) {
-    saveMessageToStore(sent.key.id, sent.message, targetJid);
+    await saveMessageToStore(sent.key.id, sent.message, targetJid);
     if (targetJid !== jid) {
-      saveMessageToStore(sent.key.id, sent.message, jid);
+      await saveMessageToStore(sent.key.id, sent.message, jid);
     }
   }
 
@@ -488,7 +710,19 @@ const app = express();
 app.use(express.json({ limit: process.env.WA_BODY_LIMIT || "20mb" }));
 
 // Public keep-alive endpoint (no secret) — for the pinger / uptime monitors.
-app.get("/ping", (req, res) => res.json({ status: "alive", connected: isConnected, hasQR: !!currentQR, hasUser: !!meUser, starting, lastDisconnect: lastDisconnectInfo?.message || null, version: "v2.10.3", uptimeSec: Math.floor(process.uptime()), messageCount: messageStore.map.size }));
+app.get("/ping", (req, res) => res.json({
+  status: "alive",
+  connected: isConnected,
+  hasQR: !!currentQR,
+  hasUser: !!meUser,
+  starting,
+  lastDisconnect: lastDisconnectInfo?.message || null,
+  version: "v2.10.4",
+  storage: activeStorageType,
+  mongoConnected: !!mongoClient,
+  uptimeSec: Math.floor(process.uptime()),
+  messageCount: messageStore.map.size,
+}));
 
 // Shared-secret auth for every other route (timing-safe comparison).
 const secretBuf = Buffer.from(WA_API_SECRET);
@@ -515,6 +749,8 @@ app.get("/status", (req, res) => {
     bulkProgress,
     uptimeSec: Math.floor(process.uptime()),
     lastDisconnectInfo,
+    storage: activeStorageType,
+    mongoConnected: !!mongoClient,
     recentLogs: recentLogs.slice(0, 15),
   });
 });
@@ -535,7 +771,7 @@ app.post("/reset-session", async (req, res) => {
     sock = null;
   }
 
-  cleanAuthDir();
+  await cleanAuthDir();
   await sleep(1500);
 
   disconnecting = false;
