@@ -31,47 +31,80 @@ def init_db(database):
     global db
     db = database
 
-async def _lookup_in_collection(coll, raw: str, digits: str):
+async def _lookup_in_collection(coll, raw: str, digits: str = ""):
     if coll is None:
         return None
+    clean = (raw or "").strip()
+    if not clean:
+        return None
+
     # 1. Exact match on raw string
-    student = await coll.find_one({"admission_no": raw}, {"_id": 0})
+    student = await coll.find_one({"admission_no": clean}, {"_id": 0})
     if student:
         return student
 
     # 2. Case-insensitive exact match
-    student = await coll.find_one({"admission_no": {"$regex": f"^{re.escape(raw)}$", "$options": "i"}}, {"_id": 0})
+    student = await coll.find_one({"admission_no": {"$regex": f"^{re.escape(clean)}$", "$options": "i"}}, {"_id": 0})
     if student:
         return student
 
-    # 3. If raw doesn't start with SDPS, try adding SDPS (e.g. user entered "2" -> "SDPS2")
-    if not raw.upper().startswith("SDPS"):
-        student = await coll.find_one({"admission_no": f"SDPS{raw}"}, {"_id": 0})
-        if student:
-            return student
-        student = await coll.find_one({"admission_no": {"$regex": f"^SDPS{re.escape(raw)}$", "$options": "i"}}, {"_id": 0})
-        if student:
-            return student
-        if digits:
-            digits_int = str(int(digits))
-            student = await coll.find_one({"admission_no": f"SDPS{digits_int}"}, {"_id": 0})
+    # Parse prefix and digits
+    clean_upper = clean.upper()
+    m = re.match(r'^([A-Z]+)[\s\-_/]*(0*\d+)(.*)$', clean_upper)
+
+    if m:
+        prefix = m.group(1)
+        digits_str = m.group(2)
+        digits_int = str(int(digits_str)) if digits_str.isdigit() else digits_str
+        suffix = m.group(3).strip()
+        escaped_suffix = re.escape(suffix)
+
+        if prefix == "SDPSS":
+            # Strict match for SDPSS prefix (e.g. SDPSS2188, SDPSS-2188, SDPSS 2188, SDPSS02188)
+            # NEVER match SDPS or plain digits to prevent cross-prefix student collision
+            pat = f"^SDPSS[\\s\\-_/]*0*{digits_int}{escaped_suffix}$"
+            student = await coll.find_one({"admission_no": {"$regex": pat, "$options": "i"}}, {"_id": 0})
             if student:
                 return student
-            student = await coll.find_one({"admission_no": {"$regex": f"^SDPS0*{digits_int}$", "$options": "i"}}, {"_id": 0})
+            return None
+
+        elif prefix == "SDPSE":
+            # Strict match for SDPSE prefix (staff / teacher)
+            pat = f"^SDPSE[\\s\\-_/]*0*{digits_int}{escaped_suffix}$"
+            student = await coll.find_one({"admission_no": {"$regex": pat, "$options": "i"}}, {"_id": 0})
+            if student:
+                return student
+            return None
+
+        elif prefix == "SDPS":
+            # Strict match for SDPS prefix (ensure next char is NOT a letter to prevent matching SDPSS/SDPSE)
+            pat = f"^SDPS(?![A-Za-z])[\\s\\-_/]*0*{digits_int}{escaped_suffix}$"
+            student = await coll.find_one({"admission_no": {"$regex": pat, "$options": "i"}}, {"_id": 0})
             if student:
                 return student
 
-    # 4. If raw starts with SDPS, try stripping it (e.g. user entered "SDPS2", roster stored "2")
-    if raw.upper().startswith("SDPS"):
-        stripped = raw[4:].strip().lstrip("-").lstrip("_")
-        student = await coll.find_one({"admission_no": stripped}, {"_id": 0})
-        if student:
-            return student
-        student = await coll.find_one({"admission_no": {"$regex": f"^{re.escape(stripped)}$", "$options": "i"}}, {"_id": 0})
-        if student:
-            return student
-        if digits:
-            digits_int = str(int(digits))
+            # Also check if roster stored plain digits without prefix (e.g. user entered "SDPS15", roster stored "15")
+            if not suffix:
+                pat_num = f"^0*{digits_int}$"
+                student = await coll.find_one({"admission_no": {"$regex": pat_num, "$options": "i"}}, {"_id": 0})
+                if student:
+                    return student
+            return None
+
+        else:
+            # Custom / other prefix (e.g. FOOBAR2188, DPS2188) - strictly match that prefix only
+            pat = f"^{re.escape(prefix)}[\\s\\-_/]*0*{digits_int}{escaped_suffix}$"
+            student = await coll.find_one({"admission_no": {"$regex": pat, "$options": "i"}}, {"_id": 0})
+            if student:
+                return student
+            return None
+
+    else:
+        # User entered pure digits without alphabetic prefix (e.g. "2" or "2188" or "02188")
+        digits_only = re.sub(r'\D', '', clean)
+        if digits_only:
+            digits_int = str(int(digits_only))
+            # 1. Plain numeric in roster
             student = await coll.find_one({"admission_no": digits_int}, {"_id": 0})
             if student:
                 return student
@@ -79,13 +112,17 @@ async def _lookup_in_collection(coll, raw: str, digits: str):
             if student:
                 return student
 
-    # 5. Regex match with optional SDPS prefix, hyphens, and leading zeros
-    if digits:
-        digits_int = str(int(digits))
-        pattern = f"^(SDPS|sdps)?[\\s\\-_]*0*{digits_int}$"
-        student = await coll.find_one({"admission_no": {"$regex": pattern, "$options": "i"}}, {"_id": 0})
-        if student:
-            return student
+            # 2. SDPS prefix in roster (e.g. user entered "2" -> matches "SDPS2")
+            pat_sdps = f"^SDPS(?![A-Za-z])[\\s\\-_/]*0*{digits_int}$"
+            student = await coll.find_one({"admission_no": {"$regex": pat_sdps, "$options": "i"}}, {"_id": 0})
+            if student:
+                return student
+
+            # 3. SDPSS prefix in roster (e.g. user entered "1" -> matches "SDPSS001")
+            pat_sdpss = f"^SDPSS[\\s\\-_/]*0*{digits_int}$"
+            student = await coll.find_one({"admission_no": {"$regex": pat_sdpss, "$options": "i"}}, {"_id": 0})
+            if student:
+                return student
 
     return None
 
@@ -93,11 +130,12 @@ async def _find_roster_student(adm_no: str):
     if not adm_no or db is None:
         return None
     raw = str(adm_no).strip()
-    digits = re.sub(r'\D', '', raw)
+    if not raw:
+        return None
 
     # 1. Search in dedicated Dandiya roster first
     try:
-        student = await _lookup_in_collection(db.navrang_roster, raw, digits)
+        student = await _lookup_in_collection(db.navrang_roster, raw)
         if student:
             return student
     except Exception as e:
@@ -105,7 +143,7 @@ async def _find_roster_student(adm_no: str):
 
     # 2. Fallback to main school apaar_roster
     try:
-        student = await _lookup_in_collection(db.apaar_roster, raw, digits)
+        student = await _lookup_in_collection(db.apaar_roster, raw)
         if student:
             return student
     except Exception as e:
@@ -399,9 +437,13 @@ async def verify_student(req: StudentVerifyRequest, request: Request):
 
     student = await _find_roster_student(clean_adm)
     if not student:
+        m_sdpss = re.match(r'^SDPSS[\s\-_/]*(0*\d+)', clean_adm.upper())
+        hint = ""
+        if m_sdpss:
+            hint = f" Note: School admission numbers typically use prefix 'SDPS' (e.g. SDPS{str(int(m_sdpss.group(1)))}). Please check your school fee receipt or ID card."
         raise HTTPException(
             status_code=404, 
-            detail=f"Student with admission number '{clean_adm}' not found in SDPS school roster. Only verified current SDPS students are eligible to book passes."
+            detail=f"Student with admission number '{clean_adm}' not found in SDPS school roster.{hint} Only verified current SDPS students are eligible to book passes."
         )
     
     registered_name = (student.get("student_name") or student.get("name") or "").strip()

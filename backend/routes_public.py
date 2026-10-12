@@ -54,7 +54,7 @@ public_router = APIRouter(prefix="/api", tags=["public"])
 @public_router.get("/version")
 async def get_system_version():
     """Return current system version."""
-    return {"version": "v2.10.0"}
+    return {"version": "v2.10.1"}
 
 def get_real_ip(request: Request) -> str:
     forwarded = request.headers.get("X-Forwarded-For")
@@ -1819,38 +1819,88 @@ async def pdf_proxy(url: str):
 
 async def _find_roster_student(adm_no: str):
     """Finds a student in the APAAR roster with flexible prefix and formatting matching."""
-    if not adm_no:
+    if not adm_no or db is None:
         return None
-    raw = adm_no.strip()
-    digits = re.sub(r'\D', '', raw)
-    
-    # 1. Exact match
-    student = await db.apaar_roster.find_one({"admission_no": raw}, {"_id": 0})
+    clean = str(adm_no).strip()
+    if not clean:
+        return None
+
+    # 1. Exact match on raw string
+    student = await db.apaar_roster.find_one({"admission_no": clean}, {"_id": 0})
     if student:
         return student
-        
+
     # 2. Case-insensitive exact match
-    student = await db.apaar_roster.find_one({"admission_no": {"$regex": f"^{re.escape(raw)}$", "$options": "i"}}, {"_id": 0})
+    student = await db.apaar_roster.find_one({"admission_no": {"$regex": f"^{re.escape(clean)}$", "$options": "i"}}, {"_id": 0})
     if student:
         return student
-        
-    # 3. Try with SDPS prefix if not present
-    if not raw.upper().startswith("SDPS"):
-        student = await db.apaar_roster.find_one({"admission_no": f"SDPS{raw}"}, {"_id": 0})
-        if student:
-            return student
-        student = await db.apaar_roster.find_one({"admission_no": {"$regex": f"^SDPS{re.escape(raw)}$", "$options": "i"}}, {"_id": 0})
-        if student:
-            return student
-            
-    # 4. Try matching digits (e.g. 098 or 98 or SDPS98 or SDPS098)
-    if digits:
-        digits_int = str(int(digits))
-        pattern = f"^(SDPS|sdps)?\\s*0*{digits_int}$"
-        student = await db.apaar_roster.find_one({"admission_no": {"$regex": pattern, "$options": "i"}}, {"_id": 0})
-        if student:
-            return student
-            
+
+    # Parse prefix and digits
+    clean_upper = clean.upper()
+    m = re.match(r'^([A-Z]+)[\s\-_/]*(0*\d+)(.*)$', clean_upper)
+
+    if m:
+        prefix = m.group(1)
+        digits_str = m.group(2)
+        digits_int = str(int(digits_str)) if digits_str.isdigit() else digits_str
+        suffix = m.group(3).strip()
+        escaped_suffix = re.escape(suffix)
+
+        if prefix == "SDPSS":
+            pat = f"^SDPSS[\\s\\-_/]*0*{digits_int}{escaped_suffix}$"
+            student = await db.apaar_roster.find_one({"admission_no": {"$regex": pat, "$options": "i"}}, {"_id": 0})
+            if student:
+                return student
+            return None
+
+        elif prefix == "SDPSE":
+            pat = f"^SDPSE[\\s\\-_/]*0*{digits_int}{escaped_suffix}$"
+            student = await db.apaar_roster.find_one({"admission_no": {"$regex": pat, "$options": "i"}}, {"_id": 0})
+            if student:
+                return student
+            return None
+
+        elif prefix == "SDPS":
+            pat = f"^SDPS(?![A-Za-z])[\\s\\-_/]*0*{digits_int}{escaped_suffix}$"
+            student = await db.apaar_roster.find_one({"admission_no": {"$regex": pat, "$options": "i"}}, {"_id": 0})
+            if student:
+                return student
+
+            if not suffix:
+                pat_num = f"^0*{digits_int}$"
+                student = await db.apaar_roster.find_one({"admission_no": {"$regex": pat_num, "$options": "i"}}, {"_id": 0})
+                if student:
+                    return student
+            return None
+
+        else:
+            pat = f"^{re.escape(prefix)}[\\s\\-_/]*0*{digits_int}{escaped_suffix}$"
+            student = await db.apaar_roster.find_one({"admission_no": {"$regex": pat, "$options": "i"}}, {"_id": 0})
+            if student:
+                return student
+            return None
+
+    else:
+        digits_only = re.sub(r'\D', '', clean)
+        if digits_only:
+            digits_int = str(int(digits_only))
+            student = await db.apaar_roster.find_one({"admission_no": digits_int}, {"_id": 0})
+            if student:
+                return student
+            student = await db.apaar_roster.find_one({"admission_no": {"$regex": f"^0*{digits_int}$", "$options": "i"}}, {"_id": 0})
+            if student:
+                return student
+
+            pat_sdps = f"^SDPS(?![A-Za-z])[\\s\\-_/]*0*{digits_int}$"
+            student = await db.apaar_roster.find_one({"admission_no": {"$regex": pat_sdps, "$options": "i"}}, {"_id": 0})
+            if student:
+                return student
+
+            pat_sdpss = f"^SDPSS[\\s\\-_/]*0*{digits_int}$"
+            student = await db.apaar_roster.find_one({"admission_no": {"$regex": pat_sdpss, "$options": "i"}}, {"_id": 0})
+            if student:
+                return student
+
     return None
 
 
