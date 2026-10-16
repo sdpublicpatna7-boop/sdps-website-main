@@ -6,7 +6,7 @@ import {
   AlertCircle, Link as LinkIcon, Image as ImageIcon, Layers, Eye, TrendingUp,
   Award, BarChart3, Share2, CheckSquare, Square, Star, Check, Plus, X, Edit3, SlidersHorizontal,
   Flame, Smartphone, Monitor, Tablet, Calendar, Filter, Search, FileSpreadsheet, Crown,
-  ArrowUpRight, Activity, Clock, PieChart, ChevronDown, CheckCircle2, Columns
+  ArrowUpRight, Activity, Clock, PieChart, ChevronDown, CheckCircle2, Columns, ArrowUpDown
 } from "lucide-react";
 
 export default function AdminGDriveSharing() {
@@ -616,6 +616,14 @@ export default function AdminGDriveSharing() {
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
+                        onClick={() => setExtractedPhotos((prev) => [...prev].reverse())}
+                        className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition flex items-center gap-1 cursor-pointer"
+                        title="Flip photo order between Ascending and Descending"
+                      >
+                        <ArrowUpDown className="w-3.5 h-3.5" /> Flip Order
+                      </button>
+                      <button
+                        type="button"
                         onClick={selectAllPhotos}
                         className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition"
                       >
@@ -648,7 +656,7 @@ export default function AdminGDriveSharing() {
                         >
                           <img
                             src={`https://lh3.googleusercontent.com/d/${photo.file_id}=w500`}
-                            alt={`Photo #${idx + 1}`}
+                            alt={photo.title || `Photo #${idx + 1}`}
                             className="w-full h-full object-cover bg-slate-100"
                             loading="lazy"
                           />
@@ -686,7 +694,9 @@ export default function AdminGDriveSharing() {
                           </button>
 
                           <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-900/90 via-slate-900/60 to-transparent p-2 pt-4">
-                            <p className="text-[10px] font-bold text-white truncate">Photo #{idx + 1}</p>
+                            <p className="text-[10px] font-bold text-white truncate" title={photo.title || `Photo #${idx + 1}`}>
+                              {photo.title || `Photo #${idx + 1}`}
+                            </p>
                           </div>
                         </div>
                       );
@@ -1672,6 +1682,14 @@ export default function AdminGDriveSharing() {
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
+                      onClick={() => setEditPhotos((prev) => [...prev].reverse())}
+                      className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-bold border border-slate-200 transition cursor-pointer flex items-center gap-1"
+                      title="Flip photo order between Ascending and Descending"
+                    >
+                      <ArrowUpDown className="w-3 h-3" /> Flip Order
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => setEditSelectedIds(new Set(editPhotos.map((f) => f.file_id)))}
                       className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-bold border border-emerald-200 transition cursor-pointer"
                     >
@@ -1712,7 +1730,7 @@ export default function AdminGDriveSharing() {
                       >
                         <img
                           src={`https://lh3.googleusercontent.com/d/${photo.file_id}=w500`}
-                          alt={`Photo #${idx + 1}`}
+                          alt={photo.title || `Photo #${idx + 1}`}
                           className="w-full h-full object-cover bg-slate-100"
                           loading="lazy"
                         />
@@ -1750,7 +1768,9 @@ export default function AdminGDriveSharing() {
                         </button>
 
                         <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-900/90 via-slate-900/60 to-transparent p-2 pt-4">
-                          <p className="text-[10px] font-bold text-white truncate">Photo #{idx + 1}</p>
+                          <p className="text-[10px] font-bold text-white truncate" title={photo.title || `Photo #${idx + 1}`}>
+                            {photo.title || `Photo #${idx + 1}`}
+                          </p>
                         </div>
                       </div>
                     );

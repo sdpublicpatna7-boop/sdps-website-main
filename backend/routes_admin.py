@@ -1835,6 +1835,11 @@ async def extract_gdrive_photos_admin(payload: Dict[str, Any] = Body(...), admin
                     "download_url": f"/api/gdrive-download/{fid}"
                 })
 
+    def _nat_key(x):
+        t = x.get("title") or x.get("file_id") or ""
+        return [int(c) if c.isdigit() else c.lower() for c in re.split(r'(\d+)', str(t))]
+    extracted_files.sort(key=_nat_key)
+
     return {
         "count": len(extracted_files),
         "files": extracted_files
@@ -1906,6 +1911,11 @@ async def create_gdrive_folder_admin(payload: Dict[str, Any] = Body(...), admin:
                     })
         final_files = extracted_files
 
+    def _nat_key(x):
+        t = x.get("title") or x.get("file_id") or ""
+        return [int(c) if c.isdigit() else c.lower() for c in re.split(r'(\d+)', str(t))]
+    final_files.sort(key=_nat_key)
+
     if not cover_file_id and final_files:
         cover_file_id = final_files[0].get("file_id", "")
 
@@ -1971,6 +1981,10 @@ async def update_gdrive_folder_admin(slug: str, payload: Dict[str, Any] = Body(.
                         "proxy_url": f"/api/gdrive-proxy/{fid}",
                         "download_url": f"/api/gdrive-download/{fid}"
                     })
+        def _nat_key(x):
+            t = x.get("title") or x.get("file_id") or ""
+            return [int(c) if c.isdigit() else c.lower() for c in re.split(r'(\d+)', str(t))]
+        final_files.sort(key=_nat_key)
         update_fields["files"] = final_files
         update_fields["file_count"] = len(final_files)
         if not cover_file_id and final_files:
@@ -2052,6 +2066,11 @@ async def resync_gdrive_folder_admin(
             title = ef.get("title") or f"Photo #{len(existing_files) + len(discovered_new) + 1}"
             ef["title"] = title
             discovered_new.append(ef)
+        else:
+            exist_file = existing_by_id[fid]
+            # Upgrade generic title to actual Drive filename if available
+            if (not exist_file.get("title") or exist_file.get("title").startswith("Photo #")) and ef.get("title") and not ef.get("title").startswith("Photo #"):
+                exist_file["title"] = ef.get("title")
 
     # 4. Prune missing or merge safely
     if prune_missing and newly_extracted:
@@ -2061,6 +2080,11 @@ async def resync_gdrive_folder_admin(
             all_files.append(ef)
     else:
         all_files = list(existing_files) + discovered_new
+
+    def _nat_key(x):
+        t = x.get("title") or x.get("file_id") or ""
+        return [int(c) if c.isdigit() else c.lower() for c in re.split(r'(\d+)', str(t))]
+    all_files.sort(key=_nat_key)
 
     # Set cover photo if missing
     cover_file_id = folder.get("cover_file_id")

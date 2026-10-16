@@ -221,8 +221,8 @@ export default function GDriveFolderPage() {
                 </div>
 
                 <div className="p-3 bg-slate-900 flex justify-between items-center gap-2">
-                  <span className="text-xs font-bold text-slate-200 truncate">
-                    Photo #{idx + 1}
+                  <span className="text-xs font-bold text-slate-200 truncate" title={g.title || `Photo #${idx + 1}`}>
+                    {g.title || `Photo #${idx + 1}`}
                   </span>
 
                   <a

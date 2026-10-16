@@ -54,7 +54,7 @@ public_router = APIRouter(prefix="/api", tags=["public"])
 @public_router.get("/version")
 async def get_system_version():
     """Return current system version."""
-    return {"version": "v2.10.7"}
+    return {"version": "v2.10.8"}
 
 def get_real_ip(request: Request) -> str:
     forwarded = request.headers.get("X-Forwarded-For")
@@ -2447,7 +2447,7 @@ async def extract_gdrive_folder_files(folder_url_or_id: str, recursive: bool = T
 
                 while True:
                     query = urllib.parse.quote(f"'{fid}' in parents and trashed=false")
-                    url = f"https://www.googleapis.com/drive/v3/files?q={query}&pageSize=1000&fields=nextPageToken,files(id,name,mimeType)&key={key}"
+                    url = f"https://www.googleapis.com/drive/v3/files?q={query}&orderBy=name_natural&pageSize=1000&fields=nextPageToken,files(id,name,mimeType)&key={key}"
                     if page_token:
                         url += f"&pageToken={urllib.parse.quote(page_token)}"
 
@@ -2492,7 +2492,11 @@ async def extract_gdrive_folder_files(folder_url_or_id: str, recursive: bool = T
     try:
         api_files = await _fetch_via_drive_api(folder_id, depth=0)
         if api_files and len(api_files) > 0:
-            logging.info(f"Drive API successfully extracted {len(api_files)} photos for folder {folder_id}")
+            def _nat_key(x):
+                t = x.get("title") or x.get("file_id") or ""
+                return [int(c) if c.isdigit() else c.lower() for c in re.split(r'(\d+)', str(t))]
+            api_files.sort(key=_nat_key)
+            logging.info(f"Drive API successfully extracted {len(api_files)} photos in ascending order for folder {folder_id}")
             return api_files
     except Exception as api_err:
         logging.warning(f"Drive API failed for {folder_id}, falling back to web scraping: {api_err}")
@@ -2625,6 +2629,10 @@ async def extract_gdrive_folder_files(folder_url_or_id: str, recursive: bool = T
         return folder_files
 
     files = await _scrape_single_folder(folder_id, resource_key, depth=0)
+    def _nat_key(x):
+        t = x.get("title") or x.get("file_id") or ""
+        return [int(c) if c.isdigit() else c.lower() for c in re.split(r'(\d+)', str(t))]
+    files.sort(key=_nat_key)
     return files
 
 

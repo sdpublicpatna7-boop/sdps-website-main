@@ -717,7 +717,7 @@ app.get("/ping", (req, res) => res.json({
   hasUser: !!meUser,
   starting,
   lastDisconnect: lastDisconnectInfo?.message || null,
-  version: "v2.10.7",
+  version: "v2.10.8",
   storage: activeStorageType,
   mongoConnected: !!mongoClient,
   uptimeSec: Math.floor(process.uptime()),
