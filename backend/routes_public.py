@@ -54,7 +54,7 @@ public_router = APIRouter(prefix="/api", tags=["public"])
 @public_router.get("/version")
 async def get_system_version():
     """Return current system version."""
-    return {"version": "v2.10.6"}
+    return {"version": "v2.10.7"}
 
 def get_real_ip(request: Request) -> str:
     forwarded = request.headers.get("X-Forwarded-For")
@@ -2416,9 +2416,88 @@ async def extract_gdrive_folder_files(folder_url_or_id: str, recursive: bool = T
     if not folder_id:
         return []
 
+    import urllib.parse
+
     files: List[Dict[str, str]] = []
     seen_ids = set()
 
+    # ── STRATEGY 1: Google Drive REST API with full pagination (supports 1000+ files per folder) ──
+    async def _fetch_via_drive_api(fid: str, depth: int = 0) -> List[Dict[str, str]]:
+        if depth > max_depth or not fid:
+            return []
+
+        api_keys = [
+            os.environ.get("GOOGLE_DRIVE_API_KEY"),
+            "AIzaSyAWGrfCCr7albM3lmCc937gx4uIphbpeKQ",
+            "AIzaSyC1qbk75NzWBvSaDh6KnsjjA9pIrP4lYIE"
+        ]
+        api_keys = [k.strip() for k in api_keys if k and k.strip()]
+
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+            "Referer": "https://drive.google.com/"
+        }
+
+        async with httpx.AsyncClient(follow_redirects=True, timeout=30.0, headers=headers) as client:
+            for key in api_keys:
+                folder_results = []
+                child_folders = []
+                page_token = None
+                success = False
+
+                while True:
+                    query = urllib.parse.quote(f"'{fid}' in parents and trashed=false")
+                    url = f"https://www.googleapis.com/drive/v3/files?q={query}&pageSize=1000&fields=nextPageToken,files(id,name,mimeType)&key={key}"
+                    if page_token:
+                        url += f"&pageToken={urllib.parse.quote(page_token)}"
+
+                    try:
+                        resp = await client.get(url)
+                        if resp.status_code != 200:
+                            break
+                        data = resp.json()
+                        items = data.get("files", [])
+                        for item in items:
+                            item_id = item.get("id")
+                            item_name = item.get("name", "")
+                            item_mime = item.get("mimeType", "")
+                            if item_mime == "application/vnd.google-apps.folder":
+                                child_folders.append(item_id)
+                            elif item_id and item_id not in seen_ids and item_id != fid:
+                                seen_ids.add(item_id)
+                                folder_results.append({
+                                    "file_id": item_id,
+                                    "title": item_name or f"Photo #{len(seen_ids)}",
+                                    "proxy_url": f"/api/gdrive-proxy/{item_id}",
+                                    "download_url": f"/api/gdrive-download/{item_id}"
+                                })
+
+                        page_token = data.get("nextPageToken")
+                        if not page_token:
+                            success = True
+                            break
+                    except Exception as err:
+                        logging.warning(f"Error calling Drive API with key for folder {fid}: {err}")
+                        break
+
+                if success and (folder_results or child_folders):
+                    if recursive and child_folders and depth < max_depth:
+                        for cf_id in child_folders:
+                            sub_res = await _fetch_via_drive_api(cf_id, depth=depth + 1)
+                            folder_results.extend(sub_res)
+                    return folder_results
+
+        return []
+
+    try:
+        api_files = await _fetch_via_drive_api(folder_id, depth=0)
+        if api_files and len(api_files) > 0:
+            logging.info(f"Drive API successfully extracted {len(api_files)} photos for folder {folder_id}")
+            return api_files
+    except Exception as api_err:
+        logging.warning(f"Drive API failed for {folder_id}, falling back to web scraping: {api_err}")
+
+    # ── STRATEGY 2: Web Scraping Fallback (_DRIVE_ivd, DOM, and embeddedfolderview) ──
     async def _scrape_single_folder(fid: str, rk: Optional[str] = None, depth: int = 0) -> List[Dict[str, str]]:
         if depth > max_depth or not fid:
             return []
