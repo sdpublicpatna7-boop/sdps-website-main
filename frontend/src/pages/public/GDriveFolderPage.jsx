@@ -17,9 +17,10 @@ function getFullUrl(fileId) {
   return `https://lh3.googleusercontent.com/d/${fileId}=w1000`;
 }
 
-function getDownloadUrl(fileId) {
-  // Direct Google Drive 100% original full-res download link (0 Render server bandwidth!)
-  return `https://drive.google.com/uc?export=download&id=${fileId}`;
+function getDownloadUrl(fileId, targetSlug) {
+  // Routes through backend 307 redirect to record real-time download analytics and redirect to Google Drive
+  const query = targetSlug ? `?slug=${encodeURIComponent(targetSlug)}` : "";
+  return `${API_BASE}/api/gdrive-download/${fileId}${query}`;
 }
 
 export default function GDriveFolderPage() {
@@ -96,9 +97,10 @@ export default function GDriveFolderPage() {
   };
 
   const handleDownloadTrack = (fileId, photoTitle) => {
-    if (slug && fileId) {
+    const targetSlug = slug || folder?.slug;
+    if (targetSlug && fileId) {
       const deviceType = typeof window !== "undefined" && window.innerWidth < 768 ? "Mobile" : "Desktop";
-      api.post(`/gdrive-folders/${slug}/track-download`, {
+      api.post(`/gdrive-folders/${targetSlug}/track-download`, {
         file_id: fileId,
         photo_title: photoTitle,
         device_type: deviceType,
@@ -226,7 +228,7 @@ export default function GDriveFolderPage() {
                   </span>
 
                   <a
-                    href={getDownloadUrl(g.file_id)}
+                    href={getDownloadUrl(g.file_id, slug || folder?.slug)}
                     target="_blank"
                     rel="noopener noreferrer"
                     download
@@ -269,7 +271,7 @@ export default function GDriveFolderPage() {
 
               <div className="flex items-center gap-2 shrink-0">
                 <a
-                  href={getDownloadUrl(activeFile.file_id)}
+                  href={getDownloadUrl(activeFile.file_id, slug || folder?.slug)}
                   target="_blank"
                   rel="noopener noreferrer"
                   download

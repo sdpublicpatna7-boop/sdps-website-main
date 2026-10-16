@@ -1932,8 +1932,15 @@ async def create_gdrive_folder_admin(payload: Dict[str, Any] = Body(...), admin:
         "created_at": datetime.now(timezone.utc).isoformat()
     }
 
-    # Upsert by slug
-    await db.gdrive_folders.update_one({"slug": custom_slug}, {"$set": doc}, upsert=True)
+    # Upsert by slug without wiping views or downloads if already existing
+    await db.gdrive_folders.update_one(
+        {"slug": custom_slug},
+        {
+            "$set": doc,
+            "$setOnInsert": {"views": 0, "downloads": 0}
+        },
+        upsert=True
+    )
     return {k: v for k, v in doc.items() if k != "_id"}
 
 
@@ -1963,24 +1970,23 @@ async def update_gdrive_folder_admin(slug: str, payload: Dict[str, Any] = Body(.
     if selected_files is not None and isinstance(selected_files, list):
         final_files = []
         seen_ids = set()
+        existing_folder_files = {file_item.get("file_id"): file_item for file_item in (folder.get("files") or []) if file_item.get("file_id")}
         for f in selected_files:
             fid = f.get("file_id") if isinstance(f, dict) else str(f)
             if fid and fid not in seen_ids:
                 seen_ids.add(fid)
-                if isinstance(f, dict):
-                    final_files.append({
-                        "file_id": fid,
-                        "title": f.get("title") or f"Photo #{len(final_files) + 1}",
-                        "proxy_url": f"/api/gdrive-proxy/{fid}",
-                        "download_url": f"/api/gdrive-download/{fid}"
-                    })
-                else:
-                    final_files.append({
-                        "file_id": fid,
-                        "title": f"Photo #{len(final_files) + 1}",
-                        "proxy_url": f"/api/gdrive-proxy/{fid}",
-                        "download_url": f"/api/gdrive-download/{fid}"
-                    })
+                old_file = existing_folder_files.get(fid, {})
+                f_title = (f.get("title") if isinstance(f, dict) else None) or old_file.get("title") or f"Photo #{len(final_files) + 1}"
+                dl_count = (f.get("downloads") if isinstance(f, dict) and f.get("downloads") is not None else old_file.get("downloads", 0)) or 0
+                last_dl = (f.get("last_downloaded_at") if isinstance(f, dict) else None) or old_file.get("last_downloaded_at")
+                final_files.append({
+                    "file_id": fid,
+                    "title": f_title,
+                    "proxy_url": f"/api/gdrive-proxy/{fid}",
+                    "download_url": f"/api/gdrive-download/{fid}",
+                    "downloads": dl_count,
+                    "last_downloaded_at": last_dl
+                })
         def _nat_key(x):
             t = x.get("title") or x.get("file_id") or ""
             return [int(c) if c.isdigit() else c.lower() for c in re.split(r'(\d+)', str(t))]
