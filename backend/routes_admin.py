@@ -2424,7 +2424,7 @@ async def get_gdrive_folder_photo_analytics(slug: str, admin: TokenData = Depend
             "conversion_rate": round((dl / max(views, 1)) * 100, 1) if views else 0,
             "thumb_url": f"https://lh3.googleusercontent.com/d/{fid}=w500",
             "preview_url": f"https://lh3.googleusercontent.com/d/{fid}=w1200",
-            "download_url": f"https://drive.google.com/uc?export=download&id={fid}"
+            "download_url": f"/api/gdrive-download/{fid}?slug={folder.get('slug')}"
         })
 
     # Sort by downloads descending

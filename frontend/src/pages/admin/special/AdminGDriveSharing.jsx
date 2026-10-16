@@ -1515,7 +1515,7 @@ export default function AdminGDriveSharing() {
                   href={`/photos/${inspectAlbumModal.slug}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-blue-600 font-bold hover:underline inline-flex items-center gap-1 mt-0.5"
+                  className="text-base font-black text-blue-600 hover:underline inline-flex items-center gap-1"
                 >
                   View Album ↗
                 </a>
@@ -1529,10 +1529,33 @@ export default function AdminGDriveSharing() {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
                   <h4 className="text-sm font-bold text-slate-900">
                     Photos Ranked by Downloads ({inspectPhotosData?.photos?.length || 0})
                   </h4>
+
+                  <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+                    <button
+                      type="button"
+                      onClick={() => setImageFitMode("cover")}
+                      className={`px-2.5 py-1 rounded-lg transition cursor-pointer text-xs font-semibold ${
+                        imageFitMode === "cover" ? "bg-white text-slate-900 shadow-xs font-bold" : "text-slate-500 hover:text-slate-700"
+                      }`}
+                      title="Crop photos to fill the 4:3 frame uniformly"
+                    >
+                      Fill / Crop
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setImageFitMode("contain")}
+                      className={`px-2.5 py-1 rounded-lg transition cursor-pointer text-xs font-semibold ${
+                        imageFitMode === "contain" ? "bg-white text-slate-900 shadow-xs font-bold" : "text-slate-500 hover:text-slate-700"
+                      }`}
+                      title="Show full portrait or landscape photo with ambient backdrop"
+                    >
+                      Fit Full Photo
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5">
@@ -1542,41 +1565,60 @@ export default function AdminGDriveSharing() {
                     return (
                       <div
                         key={p.file_id}
-                        className={`rounded-xl overflow-hidden border bg-white shadow-2xs flex flex-col justify-between ${
-                          hasDownloads ? "border-amber-300 ring-1 ring-amber-300/30" : "border-slate-200"
+                        className={`rounded-2xl overflow-hidden border bg-white shadow-xs flex flex-col justify-between transition hover:shadow-md ${
+                          hasDownloads ? "border-amber-300 ring-2 ring-amber-300/30" : "border-slate-200"
                         }`}
                       >
-                        <div className="relative aspect-square bg-slate-100">
-                          <img
-                            src={p.thumb_url}
-                            alt={p.title}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                          />
-                          <span className={`absolute top-2 left-2 px-2 py-0.5 rounded-md text-[10px] font-black shadow-sm ${
-                            hasDownloads ? "bg-amber-500 text-slate-950" : "bg-slate-800 text-white"
+                        {/* Strictly uniform 4:3 aspect frame across all portrait & landscape photos */}
+                        <div className="relative w-full aspect-[4/3] overflow-hidden bg-slate-950 flex items-center justify-center shrink-0">
+                          {imageFitMode === "contain" ? (
+                            <>
+                              <img
+                                src={p.thumb_url}
+                                alt=""
+                                aria-hidden="true"
+                                className="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-35 pointer-events-none"
+                              />
+                              <img
+                                src={p.thumb_url}
+                                alt={p.title}
+                                className="relative max-w-full max-h-full object-contain z-1"
+                                loading="lazy"
+                              />
+                            </>
+                          ) : (
+                            <img
+                              src={p.thumb_url}
+                              alt={p.title}
+                              className="absolute inset-0 w-full h-full object-cover bg-slate-100"
+                              loading="lazy"
+                            />
+                          )}
+
+                          <span className={`absolute top-2 left-2 z-10 px-2 py-0.5 rounded-md text-[10px] font-black shadow-md ${
+                            hasDownloads ? "bg-amber-500 text-slate-950" : "bg-slate-900/80 backdrop-blur-xs text-white"
                           }`}>
                             #{p.rank}
                           </span>
 
-                          <span className={`absolute top-2 right-2 px-2 py-0.5 rounded-md text-[10px] font-black shadow-sm ${
-                            hasDownloads ? "bg-emerald-600 text-white" : "bg-slate-900/80 text-slate-400"
+                          <span className={`absolute top-2 right-2 z-10 px-2 py-0.5 rounded-md text-[10px] font-black shadow-md flex items-center gap-1 ${
+                            hasDownloads ? "bg-emerald-600 text-white" : "bg-slate-900/80 backdrop-blur-xs text-slate-300"
                           }`}>
                             {hasDownloads ? `🔥 ${p.downloads}` : "0 dl"}
                           </span>
                         </div>
 
-                        <div className="p-3 space-y-1">
-                          <div className="font-bold text-slate-900 text-xs truncate">
+                        <div className="p-3 flex flex-col justify-between flex-1 bg-white min-h-[64px]">
+                          <div className="font-bold text-slate-900 text-xs truncate" title={p.title}>
                             {p.title}
                           </div>
-                          <div className="flex items-center justify-between text-[10px] text-slate-500">
-                            <span>{p.downloads} download{p.downloads === 1 ? "" : "s"}</span>
+                          <div className="flex items-center justify-between text-[10px] text-slate-500 pt-1.5 border-t border-slate-100 mt-1.5">
+                            <span className="font-medium">{p.downloads} download{p.downloads === 1 ? "" : "s"}</span>
                             <a
                               href={p.download_url}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-blue-600 hover:underline font-bold"
+                              className="text-blue-600 hover:text-blue-800 font-bold transition flex items-center gap-0.5 cursor-pointer"
                             >
                               Download ↗
                             </a>
