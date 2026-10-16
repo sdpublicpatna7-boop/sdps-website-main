@@ -1982,34 +1982,149 @@ async def update_gdrive_folder_admin(slug: str, payload: Dict[str, Any] = Body(.
 
 
 @admin_router.post("/gdrive-folders/{slug}/sync")
-async def resync_gdrive_folder_admin(slug: str, admin: TokenData = Depends(require_permission("gallery"))):
-    """Re-sync Google Drive folder to discover newly added photos."""
+async def resync_gdrive_folder_admin(
+    slug: str,
+    payload: Optional[Dict[str, Any]] = Body(default=None),
+    admin: TokenData = Depends(require_permission("gallery"))
+):
+    """
+    Re-sync Google Drive folder to discover newly added photos.
+    Supports multiple folder links, payload overrides, manual links, and pruning.
+    """
+    import re
     from datetime import datetime, timezone
-    from routes_public import extract_gdrive_folder_files
+    from routes_public import extract_gdrive_folder_files, extract_gdrive_file_id
+
     folder = await db.gdrive_folders.find_one({"$or": [{"slug": slug}, {"id": slug}]})
     if not folder:
-        raise HTTPException(status_code=404, detail="Folder not found")
+        raise HTTPException(status_code=404, detail="Album not found")
 
-    drive_url = folder.get("drive_folder_url", "")
-    extracted_files = await extract_gdrive_folder_files(drive_url)
+    payload = payload or {}
+    drive_url_input = (payload.get("drive_folder_url") or "").strip() or folder.get("drive_folder_url", "").strip()
+    manual_urls = payload.get("manual_urls", "")
+    prune_missing = bool(payload.get("prune_missing", False))
 
-    if extracted_files:
-        existing_files = folder.get("files", [])
-        existing_ids = {f.get("file_id") for f in existing_files if f.get("file_id")}
-        
-        # Merge new extracted files
-        all_files = list(existing_files)
-        for ef in extracted_files:
-            if ef.get("file_id") not in existing_ids:
-                existing_ids.add(ef.get("file_id"))
-                all_files.append(ef)
-
-        await db.gdrive_folders.update_one(
-            {"$or": [{"slug": slug}, {"id": slug}]},
-            {"$set": {"files": all_files, "file_count": len(all_files), "updated_at": datetime.now(timezone.utc).isoformat()}}
+    if not drive_url_input and not manual_urls and not folder.get("files"):
+        raise HTTPException(
+            status_code=400,
+            detail="No Google Drive folder URL is linked to this album. Please edit the album to add a Drive link."
         )
-        return {"status": "synced", "count": len(all_files), "files": all_files}
-    return {"status": "no_change", "count": len(folder.get("files", [])), "files": folder.get("files", [])}
+
+    # 1. Extract from all provided Google Drive folder URLs (multi-link support)
+    newly_extracted = []
+    seen_ids = set()
+
+    if drive_url_input:
+        folder_urls = [u.strip() for u in re.split(r'[\s,\n]+', drive_url_input) if u.strip()]
+        for url in folder_urls:
+            try:
+                extracted = await extract_gdrive_folder_files(url)
+                for ef in extracted:
+                    fid = ef.get("file_id")
+                    if fid and fid not in seen_ids:
+                        seen_ids.add(fid)
+                        newly_extracted.append(ef)
+            except Exception as e:
+                logging.warning(f"Error re-syncing URL {url}: {e}")
+
+    # 2. Extract from manual photo links if provided
+    if manual_urls:
+        lines = manual_urls.replace(",", "\n").split("\n") if isinstance(manual_urls, str) else manual_urls
+        for line in lines:
+            fid = extract_gdrive_file_id(line)
+            if fid and fid not in seen_ids:
+                seen_ids.add(fid)
+                newly_extracted.append({
+                    "file_id": fid,
+                    "title": f"Photo #{len(newly_extracted) + 1}",
+                    "proxy_url": f"/api/gdrive-proxy/{fid}",
+                    "download_url": f"/api/gdrive-download/{fid}"
+                })
+
+    existing_files = folder.get("files", [])
+    existing_by_id = {f.get("file_id"): f for f in existing_files if f.get("file_id")}
+
+    # 3. Discover new files and assign clean titles
+    discovered_new = []
+    for ef in newly_extracted:
+        fid = ef.get("file_id")
+        if fid not in existing_by_id:
+            title = ef.get("title") or f"Photo #{len(existing_files) + len(discovered_new) + 1}"
+            ef["title"] = title
+            discovered_new.append(ef)
+
+    # 4. Prune missing or merge safely
+    if prune_missing and newly_extracted:
+        new_id_set = {ef.get("file_id") for ef in newly_extracted if ef.get("file_id")}
+        all_files = [f for f in existing_files if f.get("file_id") in new_id_set or f.get("downloads", 0) > 0]
+        for ef in discovered_new:
+            all_files.append(ef)
+    else:
+        all_files = list(existing_files) + discovered_new
+
+    # Set cover photo if missing
+    cover_file_id = folder.get("cover_file_id")
+    if not cover_file_id and all_files:
+        cover_file_id = all_files[0].get("file_id", "")
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    update_data = {
+        "files": all_files,
+        "file_count": len(all_files),
+        "cover_file_id": cover_file_id,
+        "updated_at": now_iso
+    }
+    if drive_url_input and drive_url_input != folder.get("drive_folder_url"):
+        update_data["drive_folder_url"] = drive_url_input
+
+    await db.gdrive_folders.update_one(
+        {"$or": [{"slug": slug}, {"id": slug}]},
+        {"$set": update_data}
+    )
+
+    return {
+        "status": "synced" if discovered_new else "no_change",
+        "added_count": len(discovered_new),
+        "existing_count": len(existing_files),
+        "total_count": len(all_files),
+        "count": len(all_files),
+        "files": all_files,
+        "folder_slug": slug,
+        "folder_title": folder.get("title", ""),
+        "message": f"Added {len(discovered_new)} new photo(s). Total: {len(all_files)}" if discovered_new else f"Album is already up to date ({len(all_files)} photos)."
+    }
+
+
+@admin_router.post("/gdrive-folders/sync-all")
+async def resync_all_gdrive_folders_admin(admin: TokenData = Depends(require_permission("gallery"))):
+    """Re-sync all albums that have a linked Google Drive folder URL."""
+    folders = await db.gdrive_folders.find({}, {"slug": 1, "drive_folder_url": 1, "title": 1}).to_list(200)
+    results = []
+    total_added = 0
+    for f in folders:
+        slug = f.get("slug")
+        drive_url = f.get("drive_folder_url", "").strip()
+        if not slug or not drive_url:
+            continue
+        try:
+            res = await resync_gdrive_folder_admin(slug=slug, payload={"drive_folder_url": drive_url}, admin=admin)
+            added = res.get("added_count", 0)
+            total_added += added
+            results.append({
+                "slug": slug,
+                "title": f.get("title", slug),
+                "added": added,
+                "total": res.get("total_count", 0),
+                "status": res.get("status")
+            })
+        except Exception as e:
+            results.append({"slug": slug, "error": str(e)})
+
+    return {
+        "total_albums_synced": len(results),
+        "total_photos_added": total_added,
+        "albums": results
+    }
 
 
 @admin_router.delete("/gdrive-folders/{slug}")

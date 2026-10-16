@@ -54,7 +54,7 @@ public_router = APIRouter(prefix="/api", tags=["public"])
 @public_router.get("/version")
 async def get_system_version():
     """Return current system version."""
-    return {"version": "v2.10.5"}
+    return {"version": "v2.10.6"}
 
 def get_real_ip(request: Request) -> str:
     forwarded = request.headers.get("X-Forwarded-For")
@@ -2379,54 +2379,173 @@ async def list_investiture_gallery(category: Optional[str] = None):
 
 # ============= GOOGLE DRIVE FOLDER SHARING & ALBUM CONVERTER =============
 
-async def extract_gdrive_folder_files(folder_url_or_id: str) -> List[Dict[str, str]]:
-    """Scrape public Google Drive folder page or embedded view to extract all image file IDs."""
-    import re
-    import httpx
-    
-    # Extract folder ID
-    m = re.search(r'/folders/([a-zA-Z0-9_-]+)', folder_url_or_id)
-    folder_id = m.group(1) if m else str(folder_url_or_id).strip()
-    
-    files = []
-    seen_ids = set()
-    
-    target_urls = [
-        f"https://drive.google.com/embeddedfolderview?id={folder_id}#grid",
-        f"https://drive.google.com/embeddedfolderview?id={folder_id}#list",
-        f"https://drive.google.com/drive/folders/{folder_id}"
-    ]
-    
-    async with httpx.AsyncClient(follow_redirects=True, timeout=20.0, headers={
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    }) as client:
-        for target in target_urls:
-            try:
-                resp = await client.get(target)
-                if resp.status_code == 200:
-                    text = resp.text
-                    matched_ids = re.findall(r'id=["\']entry-([a-zA-Z0-9_-]+)["\']', text)
-                    if not matched_ids:
-                        matched_ids = re.findall(r'drive\.google\.com/file/d/([a-zA-Z0-9_-]+)', text)
-                    if not matched_ids:
-                        matched_ids = re.findall(r'["\']([a-zA-Z0-9_-]{25,50})["\']', text)
-                        matched_ids = [fid for fid in matched_ids if fid != folder_id and not fid.startswith("http")]
-                        
-                    for fid in matched_ids:
-                        if fid and fid not in seen_ids and len(fid) >= 20 and fid != folder_id:
-                            seen_ids.add(fid)
-                            files.append({
-                                "file_id": fid,
-                                "title": f"Photo #{len(files) + 1}",
-                                "proxy_url": f"/api/gdrive-proxy/{fid}",
-                                "download_url": f"/api/gdrive-download/{fid}"
-                            })
-                    if len(files) > 0:
-                        break
-            except Exception as err:
-                logging.warning(f"Error fetching gdrive folder {target}: {err}")
-                continue
+def parse_gdrive_folder_id(url_or_id: str) -> tuple:
+    """Parse folder ID and optional resourcekey from any Google Drive folder URL or ID."""
+    if not url_or_id:
+        return None, None
+    s = str(url_or_id).strip()
+    rk_match = re.search(r'[?&]resourcekey=([a-zA-Z0-9_-]+)', s)
+    resource_key = rk_match.group(1) if rk_match else None
 
+    m = re.search(r'/folders/([a-zA-Z0-9_-]+)', s)
+    if m:
+        return m.group(1), resource_key
+    m = re.search(r'[?&]id=([a-zA-Z0-9_-]+)', s)
+    if m:
+        return m.group(1), resource_key
+    m = re.search(r'/folderview\?id=([a-zA-Z0-9_-]+)', s)
+    if m:
+        return m.group(1), resource_key
+    if re.match(r'^[a-zA-Z0-9_-]{20,50}$', s):
+        return s, resource_key
+    return None, resource_key
+
+
+async def extract_gdrive_folder_files(folder_url_or_id: str, recursive: bool = True, max_depth: int = 2) -> List[Dict[str, str]]:
+    """
+    Scrape public Google Drive folder page or embedded view to extract all image file IDs.
+    Supports modern Google Drive (_DRIVE_ivd state, DOM data-id, AF_initDataCallback)
+    and legacy embeddedfolderview with automatic recursive subfolder traversal and title extraction.
+    """
+    import re
+    import json
+    import codecs
+    import httpx
+
+    folder_id, resource_key = parse_gdrive_folder_id(folder_url_or_id)
+    if not folder_id:
+        return []
+
+    files: List[Dict[str, str]] = []
+    seen_ids = set()
+
+    async def _scrape_single_folder(fid: str, rk: Optional[str] = None, depth: int = 0) -> List[Dict[str, str]]:
+        if depth > max_depth or not fid:
+            return []
+
+        rk_param = f"&resourcekey={rk}" if rk else ""
+        rk_query = f"?resourcekey={rk}" if rk else ""
+
+        target_urls = [
+            f"https://drive.google.com/drive/folders/{fid}{rk_query}",
+            f"https://drive.google.com/embeddedfolderview?id={fid}{rk_param}#grid",
+            f"https://drive.google.com/embeddedfolderview?id={fid}{rk_param}#list",
+        ]
+
+        folder_files = []
+        child_subfolders = []
+
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9"
+        }
+
+        async with httpx.AsyncClient(follow_redirects=True, timeout=25.0, headers=headers) as client:
+            for target in target_urls:
+                try:
+                    resp = await client.get(target)
+                    if resp.status_code != 200:
+                        continue
+                    text = resp.text
+
+                    # Strategy 1: Modern Google Drive _DRIVE_ivd JSON state chunk
+                    m_ivd = re.search(r'window\[\'_DRIVE_ivd\'\]\s*=\s*\'(.*?)\';', text, re.DOTALL)
+                    if m_ivd:
+                        try:
+                            raw = m_ivd.group(1)
+                            decoded = codecs.decode(raw, 'unicode_escape')
+                            data = json.loads(decoded)
+                            rows = data[0] if isinstance(data, list) and len(data) > 0 and isinstance(data[0], list) else []
+                            for r in rows:
+                                if isinstance(r, list) and len(r) >= 4:
+                                    item_id = str(r[0]).strip()
+                                    item_name = str(r[2]).strip() if r[2] else ""
+                                    item_mime = str(r[3]).strip() if r[3] else ""
+                                    if item_mime == "application/vnd.google-apps.folder":
+                                        child_subfolders.append((item_id, item_name))
+                                    elif item_id and item_id not in seen_ids and item_id != fid and len(item_id) >= 20:
+                                        seen_ids.add(item_id)
+                                        folder_files.append({
+                                            "file_id": item_id,
+                                            "title": item_name or f"Photo #{len(seen_ids)}",
+                                            "proxy_url": f"/api/gdrive-proxy/{item_id}",
+                                            "download_url": f"/api/gdrive-download/{item_id}"
+                                        })
+                        except Exception as e:
+                            logging.debug(f"Error parsing _DRIVE_ivd for {fid}: {e}")
+
+                    # Strategy 2: DOM elements with data-id & aria-label / data-tooltip
+                    if not folder_files:
+                        blocks = re.split(r'data-selectable|<tr|<div\s+class=[\"\']flip-entry[\"\']', text)
+                        for block in blocks:
+                            m_id = re.search(r'data-id=[\"\']([a-zA-Z0-9_-]{25,50})[\"\']', block) or re.search(r'id=[\"\']entry-([a-zA-Z0-9_-]{25,50})[\"\']', block)
+                            if m_id:
+                                item_id = m_id.group(1)
+                                if item_id != fid and item_id not in seen_ids:
+                                    m_title = re.search(r'(?:aria-label|data-tooltip)=[\"\']([^\"\']+)[\"\']', block)
+                                    title = m_title.group(1) if m_title else ""
+                                    if "folder" in title.lower() or "folder" in block.lower():
+                                        child_subfolders.append((item_id, title))
+                                    else:
+                                        seen_ids.add(item_id)
+                                        folder_files.append({
+                                            "file_id": item_id,
+                                            "title": title or f"Photo #{len(seen_ids)}",
+                                            "proxy_url": f"/api/gdrive-proxy/{item_id}",
+                                            "download_url": f"/api/gdrive-download/{item_id}"
+                                        })
+
+                    # Strategy 3: Embedded folderview <a> tag links
+                    if not folder_files:
+                        a_files = re.findall(r'<a\s+[^>]*href=[\"\']https://drive\.google\.com/file/d/([a-zA-Z0-9_-]{25,50})/view[\"\'][^>]*>(.*?)</a>', text, re.DOTALL)
+                        for item_id, html_name in a_files:
+                            clean_name = re.sub(r'<[^>]+>', '', html_name).strip()
+                            if item_id not in seen_ids and item_id != fid:
+                                seen_ids.add(item_id)
+                                folder_files.append({
+                                    "file_id": item_id,
+                                    "title": clean_name or f"Photo #{len(seen_ids)}",
+                                    "proxy_url": f"/api/gdrive-proxy/{item_id}",
+                                    "download_url": f"/api/gdrive-download/{item_id}"
+                                })
+
+                        a_folders = re.findall(r'<a\s+[^>]*href=[\"\']https://drive\.google\.com/drive/folders/([a-zA-Z0-9_-]{25,50})[\"\'][^>]*>(.*?)</a>', text, re.DOTALL)
+                        for sfid, sfname in a_folders:
+                            clean_sfname = re.sub(r'<[^>]+>', '', sfname).strip()
+                            child_subfolders.append((sfid, clean_sfname))
+
+                    # Strategy 4: Fallback regex for drive.google.com/file/d/
+                    if not folder_files:
+                        matched_ids = re.findall(r'drive\.google\.com/file/d/([a-zA-Z0-9_-]{25,50})', text)
+                        for item_id in matched_ids:
+                            if item_id not in seen_ids and item_id != fid:
+                                seen_ids.add(item_id)
+                                folder_files.append({
+                                    "file_id": item_id,
+                                    "title": f"Photo #{len(seen_ids)}",
+                                    "proxy_url": f"/api/gdrive-proxy/{item_id}",
+                                    "download_url": f"/api/gdrive-download/{item_id}"
+                                })
+
+                    if folder_files or child_subfolders:
+                        break
+
+                except Exception as err:
+                    logging.warning(f"Error fetching Google Drive folder target {target}: {err}")
+                    continue
+
+        # Strategy 5: Recursively discover subfolder photos if enabled
+        if recursive and child_subfolders and depth < max_depth:
+            for sfid, sfname in child_subfolders:
+                if sfid != fid and sfid not in seen_ids:
+                    seen_ids.add(sfid)
+                    child_files = await _scrape_single_folder(sfid, rk=None, depth=depth + 1)
+                    folder_files.extend(child_files)
+
+        return folder_files
+
+    files = await _scrape_single_folder(folder_id, resource_key, depth=0)
     return files
 
 

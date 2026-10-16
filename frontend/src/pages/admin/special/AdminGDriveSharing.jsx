@@ -17,6 +17,7 @@ export default function AdminGDriveSharing() {
   const [creating, setCreating] = useState(false);
   const [extracting, setExtracting] = useState(false);
   const [syncingSlug, setSyncingSlug] = useState(null);
+  const [syncingAll, setSyncingAll] = useState(false);
 
   const [timeRange, setTimeRange] = useState("all"); // "all" | "30d" | "7d" | "today"
   const [selectedAlbumFilter, setSelectedAlbumFilter] = useState("");
@@ -248,13 +249,33 @@ export default function AdminGDriveSharing() {
     if (!editingFolder?.slug) return;
     setSyncingSlug(editingFolder.slug);
     try {
-      const res = await api.post(`/admin/gdrive-folders/${editingFolder.slug}/sync`);
+      const res = await api.post(`/admin/gdrive-folders/${editingFolder.slug}/sync`, {
+        drive_folder_url: editDriveUrl.trim(),
+        manual_urls: extraFolderUrl.trim()
+      });
       const updatedFiles = res.data?.files || [];
+      const addedCount = res.data?.added_count || 0;
       setEditPhotos(updatedFiles);
-      setEditSelectedIds(new Set(updatedFiles.map((f) => f.file_id)));
-      toast.success(`Re-synced album! ${updatedFiles.length} photos available.`);
+
+      // Keep existing selections AND automatically select newly discovered photos
+      setEditSelectedIds((prev) => {
+        const next = new Set(prev);
+        for (const f of updatedFiles) {
+          if (!prev.has(f.file_id) && addedCount > 0) {
+            next.add(f.file_id);
+          }
+        }
+        return next;
+      });
+
+      if (addedCount > 0) {
+        toast.success(`🎉 Re-synced album! Discovered ${addedCount} new photo(s) (${updatedFiles.length} total).`);
+      } else {
+        toast.info(res.data?.message || `Album is up to date (${updatedFiles.length} photos).`);
+      }
     } catch (err) {
-      toast.error("Failed to re-sync folder from Google Drive.");
+      const msg = err.response?.data?.detail || "Failed to re-sync folder from Google Drive.";
+      toast.error(msg);
     } finally {
       setSyncingSlug(null);
     }
@@ -269,11 +290,12 @@ export default function AdminGDriveSharing() {
     setAppendingFolder(true);
     try {
       const res = await api.post("/admin/gdrive-folders/extract", {
-        drive_folder_url: extraFolderUrl.trim()
+        drive_folder_url: extraFolderUrl.trim(),
+        manual_urls: extraFolderUrl.trim()
       });
       const newFiles = res.data?.files || [];
       if (newFiles.length === 0) {
-        toast.error("No photos found in this additional folder link.");
+        toast.error("No photos found in this link. Make sure the folder is set to 'Anyone with the link can view'.");
       } else {
         const existingIds = new Set(editPhotos.map((f) => f.file_id));
         let addedCount = 0;
@@ -292,7 +314,11 @@ export default function AdminGDriveSharing() {
         setEditPhotos(combined);
         setEditSelectedIds(updatedSelected);
         setExtraFolderUrl("");
-        toast.success(`Appended ${addedCount} new photos from additional folder!`);
+        if (addedCount > 0) {
+          toast.success(`Appended ${addedCount} new photo${addedCount > 1 ? "s" : ""} from additional link!`);
+        } else {
+          toast.info("All photos in that link were already present in this album.");
+        }
       }
     } catch (err) {
       toast.error("Failed to extract photos from additional folder link.");
@@ -333,12 +359,38 @@ export default function AdminGDriveSharing() {
     setSyncingSlug(folderSlug);
     try {
       const res = await api.post(`/admin/gdrive-folders/${folderSlug}/sync`);
-      toast.success(`Synced folder! ${res.data?.count || 0} total photos found.`);
+      const { added_count, total_count, count, message } = res.data || {};
+      const finalCount = total_count || count || 0;
+      if (added_count > 0) {
+        toast.success(`🎉 Synced! Added ${added_count} new photo${added_count > 1 ? "s" : ""} (Total: ${finalCount})`);
+      } else {
+        toast.info(message || `Album is up to date (${finalCount} photos).`);
+      }
       loadData();
     } catch (err) {
-      toast.error("Failed to re-sync folder from Google Drive");
+      const msg = err.response?.data?.detail || "Failed to re-sync folder from Google Drive";
+      toast.error(msg);
     } finally {
       setSyncingSlug(null);
+    }
+  };
+
+  const handleSyncAll = async () => {
+    if (!window.confirm("Re-sync all albums from their linked Google Drive folders? This will check for any newly added photos.")) return;
+    setSyncingAll(true);
+    try {
+      const res = await api.post("/admin/gdrive-folders/sync-all");
+      const { total_albums_synced, total_photos_added } = res.data || {};
+      if (total_photos_added > 0) {
+        toast.success(`🎉 Synced ${total_albums_synced} album(s)! Discovered ${total_photos_added} new photo(s).`);
+      } else {
+        toast.info(`Synced ${total_albums_synced} album(s). All albums are already up to date!`);
+      }
+      loadData();
+    } catch (err) {
+      toast.error("Failed to sync all albums.");
+    } finally {
+      setSyncingAll(false);
     }
   };
 
@@ -663,10 +715,22 @@ export default function AdminGDriveSharing() {
 
           {/* Album Management Table */}
           <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-sm">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                 <Layers className="w-5 h-5 text-blue-600" /> Hosted Photo Albums ({folders.length})
               </h2>
+              {folders.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleSyncAll}
+                  disabled={syncingAll || !!syncingSlug}
+                  className="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold border border-blue-200 transition inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50 self-start sm:self-auto"
+                  title="Check and re-sync all albums with their linked Google Drive folders"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${syncingAll ? "animate-spin" : ""}`} />
+                  {syncingAll ? "Syncing All Albums..." : "Sync All Albums"}
+                </button>
+              )}
             </div>
 
             {folders.length === 0 ? (
@@ -1626,7 +1690,7 @@ export default function AdminGDriveSharing() {
                       disabled={syncingSlug === editingFolder?.slug}
                       className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold border border-blue-200 transition cursor-pointer flex items-center gap-1"
                     >
-                      <RefreshCw className={`w-3 h-3 ${syncingSlug === editingFolder?.slug ? "animate-spin" : ""}`} /> Re-sync Drive
+                      <RefreshCw className={`w-3 h-3 ${syncingSlug === editingFolder?.slug ? "animate-spin" : ""}`} /> {syncingSlug === editingFolder?.slug ? "Re-syncing..." : "Re-sync Drive"}
                     </button>
                   </div>
                 </div>
