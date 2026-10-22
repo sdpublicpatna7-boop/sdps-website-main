@@ -596,22 +596,44 @@ async function startSock() {
       maxMsgRetryCount: 5,
       msgRetryCounterCache,
       userDevicesCache,
+      patchMessageBeforeSending: async (message, recipientJids) => {
+        try {
+          if (typeof sock?.uploadPreKeysToServerIfRequired === "function") {
+            await sock.uploadPreKeysToServerIfRequired();
+          }
+        } catch { /* ok */ }
+
+        const requiresPatch = !!(
+          message?.buttonsMessage ||
+          message?.templateMessage ||
+          message?.listMessage
+        );
+        if (requiresPatch) {
+          message = {
+            viewOnceMessage: {
+              message: {
+                messageContextInfo: {
+                  deviceListMetadataVersion: 2,
+                  deviceListMetadata: {},
+                },
+                ...message,
+              },
+            },
+          };
+        }
+        return message;
+      },
       getMessage: async (key) => {
-        if (!key) return undefined;
+        if (!key?.id) return undefined;
         const found = await getMessageFromStore(key.id, key.remoteJid);
         if (found) {
           addLog(`[Decryption Retry] Re-encrypting stored message for ID: ${key.id} -> ${key.remoteJid}`);
-          if (proto?.Message?.fromObject && typeof proto.Message.fromObject === "function") {
-            try {
-              return proto.Message.fromObject(found);
-            } catch {
-              return found;
-            }
-          }
-          return found;
+          return found; // Return raw plain object (proto.IMessage)
         }
-        addLog(`[Decryption Retry] Message ${key.id} not found in store for ${key.remoteJid}`);
-        return undefined;
+        addLog(`[Decryption Retry] Message ${key.id} not found in store, returning fallback.`);
+        return {
+          conversation: "Message received"
+        };
       },
     });
 
@@ -660,6 +682,14 @@ async function startSock() {
         lastDisconnectInfo = null;
         meUser = sock?.user || null;
         addLog(`Successfully connected to WhatsApp as: ${meUser?.id || meUser?.name}`);
+        try {
+          if (typeof sock?.uploadPreKeysToServerIfRequired === "function") {
+            await sock.uploadPreKeysToServerIfRequired();
+            addLog("[WhatsApp] Initial pre-keys checked and uploaded to WhatsApp servers.");
+          }
+        } catch (pkErr) {
+          console.warn("[WhatsApp] Pre-key upload check warning:", pkErr.message);
+        }
       }
 
       if (connection === "close") {
@@ -755,6 +785,13 @@ async function sendMessage(jid, message, media) {
     await sock.sendPresenceUpdate("paused", targetJid);
   } catch { /* non-fatal */ }
 
+  // 3. Pre-upload pre-keys if required so recipient phone has active decryption keys on Meta server
+  try {
+    if (typeof sock?.uploadPreKeysToServerIfRequired === "function") {
+      await sock.uploadPreKeysToServerIfRequired();
+    }
+  } catch { /* non-fatal */ }
+
   let sent;
   if (media && media.mediaBase64 && media.mediaType) {
     const buffer = Buffer.from(media.mediaBase64, "base64");
@@ -800,7 +837,7 @@ app.get("/ping", (req, res) => res.json({
   hasUser: !!meUser,
   starting,
   lastDisconnect: lastDisconnectInfo?.message || null,
-  version: "v2.10.13",
+  version: "v2.10.14",
   storage: activeStorageType,
   mongoConnected: !!mongoClient && !!mongoDb,
   mongoConfigured: !!MONGO_URL,
@@ -840,7 +877,7 @@ app.get("/status", (req, res) => {
     mongoConfigured: !!MONGO_URL,
     mongoError: lastMongoError,
     dbName: DB_NAME,
-    version: "v2.10.13",
+    version: "v2.10.14",
     recentLogs: recentLogs.slice(0, 15),
   });
 });
