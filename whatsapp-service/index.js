@@ -596,6 +596,13 @@ async function startSock() {
         const found = await getMessageFromStore(key.id, key.remoteJid);
         if (found) {
           addLog(`[Decryption Retry] Re-encrypting stored message for ID: ${key.id} -> ${key.remoteJid}`);
+          if (proto?.Message?.fromObject && typeof proto.Message.fromObject === "function") {
+            try {
+              return proto.Message.fromObject(found);
+            } catch {
+              return found;
+            }
+          }
           return found;
         }
         addLog(`[Decryption Retry] Message ${key.id} not found in store for ${key.remoteJid}`);
@@ -716,13 +723,15 @@ async function startSock() {
 async function sendMessage(jid, message, media) {
   if (!sock) throw new Error("WhatsApp socket is not connected");
 
-  // 1. Resolve canonical JID via onWhatsApp to handle LID vs standard Phone Number routing
-  // Especially critical for WhatsApp Business and Meta-secured accounts
+  // 1. Resolve canonical JID via onWhatsApp (preserve standard @s.whatsapp.net, never overwrite with @lid)
+  // Companion devices cannot initiate raw @lid encryption sessions, which triggers "Waiting for this message"
   let targetJid = jid;
   try {
     const results = await sock.onWhatsApp(jid);
     if (Array.isArray(results) && results[0]?.exists && results[0]?.jid) {
-      targetJid = results[0].jid;
+      if (!results[0].jid.endsWith("@lid")) {
+        targetJid = results[0].jid;
+      }
     }
   } catch (e) {
     /* non-fatal, fallback to raw jid */
@@ -786,7 +795,7 @@ app.get("/ping", (req, res) => res.json({
   hasUser: !!meUser,
   starting,
   lastDisconnect: lastDisconnectInfo?.message || null,
-  version: "v2.10.11",
+  version: "v2.10.12",
   storage: activeStorageType,
   mongoConnected: !!mongoClient && !!mongoDb,
   mongoConfigured: !!MONGO_URL,
@@ -826,7 +835,7 @@ app.get("/status", (req, res) => {
     mongoConfigured: !!MONGO_URL,
     mongoError: lastMongoError,
     dbName: DB_NAME,
-    version: "v2.10.11",
+    version: "v2.10.12",
     recentLogs: recentLogs.slice(0, 15),
   });
 });
