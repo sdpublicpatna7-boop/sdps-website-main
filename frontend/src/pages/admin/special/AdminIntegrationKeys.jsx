@@ -3,7 +3,7 @@ import api from "@/lib/api";
 import { toast, Toaster } from "sonner";
 import {
   Loader2, Plug, CheckCircle2, Wifi, RefreshCw, Smartphone,
-  QrCode, Copy, Check, RotateCcw, KeyRound, AlertCircle, ArrowRight
+  QrCode, Copy, Check, RotateCcw, KeyRound, AlertCircle, ArrowRight, Database
 } from "lucide-react";
 
 const STATUS_META = {
@@ -38,6 +38,7 @@ export function AdminIntegrationKeys() {
   const [pairingCode, setPairingCode] = useState(null);
   const [pairingLoading, setPairingLoading] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [syncingMongo, setSyncingMongo] = useState(false);
 
   // Audio Tunnel Nodes
   const [tunnelNodes, setTunnelNodes] = useState([]);
@@ -134,6 +135,20 @@ export function AdminIntegrationKeys() {
       toast.error(e?.response?.data?.detail || "Session reset failed");
     } finally {
       setWaResetting(false);
+    }
+  };
+
+  const syncMongo = async () => {
+    setSyncingMongo(true);
+    try {
+      const res = await api.post("/whatsapp/sync-mongo");
+      toast.success(res.data?.message || "Synced MongoDB Atlas credentials with WhatsApp service!");
+      await loadWa();
+      await loadStatus();
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Could not sync MongoDB with WhatsApp service");
+    } finally {
+      setSyncingMongo(false);
     }
   };
 
@@ -235,6 +250,32 @@ export function AdminIntegrationKeys() {
             {/* WhatsApp connection controls live inside its card */}
             {ig.manageable && ig.key === "whatsapp" && (
               <div className="mt-4 border-t border-slate-100 pt-4">
+                {/* Storage & Persistence Status Banner */}
+                <div className="flex items-center justify-between gap-2 p-2.5 mb-3 bg-slate-50 border border-slate-200 rounded-xl flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <Database className={`w-4 h-4 shrink-0 ${wa.mongoConnected ? "text-emerald-600" : "text-amber-500"}`} />
+                    <div className="text-xs">
+                      <span className="font-semibold text-slate-800">Storage: </span>
+                      {wa.mongoConnected ? (
+                        <span className="text-emerald-700 font-medium">MongoDB Atlas (Cloud Persistent)</span>
+                      ) : (
+                        <span className="text-amber-700 font-medium">Ephemeral Filesystem (Lost on restart)</span>
+                      )}
+                    </div>
+                  </div>
+                  {!wa.mongoConnected && (
+                    <button
+                      type="button"
+                      onClick={syncMongo}
+                      disabled={syncingMongo}
+                      className="text-[11px] font-semibold bg-emerald-700 text-white hover:bg-emerald-800 px-2.5 py-1 rounded-md transition-colors flex items-center gap-1 shadow-xs disabled:opacity-50"
+                    >
+                      {syncingMongo ? <Loader2 className="w-3 h-3 animate-spin" /> : <Database className="w-3 h-3" />}
+                      Sync MongoDB
+                    </button>
+                  )}
+                </div>
+
                 {waLoading && !wa.qr && !wa.connected ? (
                   <div className="text-xs text-slate-400 flex items-center gap-1.5 py-3">
                     <Loader2 className="w-3.5 h-3.5 animate-spin text-brand-blue" /> Checking link status…
@@ -412,6 +453,29 @@ export function AdminIntegrationKeys() {
                             </div>
                           </div>
                         )}
+                      </div>
+                    )}
+
+                    {/* MongoDB Connection Diagnostics */}
+                    {wa.mongoError && !wa.mongoConnected && (
+                      <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 space-y-1">
+                        <div className="font-semibold flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 text-amber-900">
+                            <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                            <span>MongoDB Warning: Running in Filesystem Fallback</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={syncMongo}
+                            disabled={syncingMongo}
+                            className="text-[10px] font-semibold bg-amber-600 text-white px-2 py-0.5 rounded hover:bg-amber-700 transition-colors"
+                          >
+                            Retry Sync
+                          </button>
+                        </div>
+                        <p className="text-[11px] text-amber-700 leading-relaxed font-mono">
+                          {wa.mongoError}
+                        </p>
                       </div>
                     )}
 

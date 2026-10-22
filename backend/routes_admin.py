@@ -1286,10 +1286,14 @@ async def _check_whatsapp(url: str, secret: str) -> tuple:
         async with httpx.AsyncClient(timeout=6.0) as c:
             r = await c.get(f"{url}/status", headers={"X-WA-Secret": secret})
         if r.status_code < 300:
-            connected = bool(r.json().get("connected"))
+            payload = r.json()
+            connected = bool(payload.get("connected"))
+            storage = payload.get("storage", "filesystem")
+            mongo_ok = bool(payload.get("mongoConnected"))
+            storage_label = "MongoDB Atlas" if mongo_ok else "Ephemeral Filesystem"
             if connected:
-                return "ok", "Linked & connected", True
-            return "configured", "Service up — not linked (scan QR)", False
+                return "ok", f"Linked & connected ({storage_label})", True
+            return "configured", f"Service up — not linked ({storage_label})", False
         return "down", f"Service error {r.status_code}", False
     except Exception:
         return "down", "Service unreachable", False

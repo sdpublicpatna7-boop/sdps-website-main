@@ -316,9 +316,37 @@ def _parse_fee_rows(content: bytes, min_balance: float, month: str, template: st
 async def wa_status(admin: TokenData = Depends(get_superadmin)):
     """Connection status + QR code (base64 PNG) when not yet linked."""
     try:
-        return await _wa_get("/status")
+        data = await _wa_get("/status")
+        # Auto-heal: If WhatsApp service is not connected to MongoDB, but backend has a remote MONGO_URL, sync it
+        if not data.get("mongoConnected"):
+            mongo_url = os.environ.get("MONGO_URL", "")
+            db_name = os.environ.get("DB_NAME", "sdps_portal")
+            if mongo_url and "localhost" not in mongo_url and "127.0.0.1" not in mongo_url:
+                try:
+                    sync_res = await _wa_post("/configure-storage", json={"mongoUrl": mongo_url, "dbName": db_name})
+                    if sync_res.get("success"):
+                        data = await _wa_get("/status")
+                except Exception as sync_err:
+                    logger.warning(f"[WhatsApp] Auto-sync MongoDB failed: {sync_err}")
+        return data
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"WhatsApp service unavailable: {e}")
+
+
+@wa_router.post("/sync-mongo")
+async def wa_sync_mongo(admin: TokenData = Depends(get_superadmin)):
+    """Explicitly sync MongoDB Atlas connection parameters to WhatsApp microservice."""
+    mongo_url = os.environ.get("MONGO_URL", "")
+    db_name = os.environ.get("DB_NAME", "sdps_portal")
+    if not mongo_url or "localhost" in mongo_url or "127.0.0.1" in mongo_url:
+        raise HTTPException(
+            status_code=400,
+            detail="Backend MONGO_URL is not set to a remote MongoDB Atlas cluster."
+        )
+    try:
+        return await _wa_post("/configure-storage", json={"mongoUrl": mongo_url, "dbName": db_name})
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Failed to sync MongoDB with WhatsApp service: {e}")
 
 
 @wa_router.post("/disconnect")

@@ -50,16 +50,33 @@ const AUTH_DIR = process.env.WA_AUTH_DIR || "./auth_state";
 const DEFAULT_DELAY_MS = parseInt(process.env.WA_BULK_DELAY_MS || "2000", 10);
 
 // MongoDB configuration for cloud-persistent session & message storage across deploys
-const MONGO_URL = process.env.MONGO_URL || process.env.MONGODB_URI || process.env.MONGO_URI || "";
-const DB_NAME = process.env.DB_NAME || "sdps_portal";
-const WA_MONGO_AUTH_COLLECTION = process.env.WA_MONGO_AUTH_COLLECTION || "baileys_auth";
-const WA_MONGO_MESSAGES_COLLECTION = process.env.WA_MONGO_MESSAGES_COLLECTION || "baileys_messages";
+let MONGO_URL = process.env.MONGO_URL || process.env.MONGODB_URI || process.env.MONGO_URI || "";
+let DB_NAME = process.env.DB_NAME || "sdps_portal";
+let WA_MONGO_AUTH_COLLECTION = process.env.WA_MONGO_AUTH_COLLECTION || "baileys_auth";
+let WA_MONGO_MESSAGES_COLLECTION = process.env.WA_MONGO_MESSAGES_COLLECTION || "baileys_messages";
+
+// Load persisted MongoDB configuration file if present
+const CONFIG_FILE = path.join(__dirname, "mongo_config.json");
+try {
+  if (fs.existsSync(CONFIG_FILE)) {
+    const raw = fs.readFileSync(CONFIG_FILE, "utf-8");
+    const parsed = JSON.parse(raw);
+    if (parsed?.mongoUrl && !MONGO_URL) {
+      MONGO_URL = parsed.mongoUrl;
+      if (parsed.dbName) DB_NAME = parsed.dbName;
+      console.log(`[MongoDB] Loaded connection URL from persisted config (${DB_NAME})`);
+    }
+  }
+} catch (e) {
+  /* ignore */
+}
 
 let mongoClient = null;
 let mongoDb = null;
 let authCollection = null;
 let messagesCollection = null;
 let activeStorageType = "filesystem";
+let lastMongoError = null;
 
 if (!WA_API_SECRET || WA_API_SECRET === "change-me-secret") {
   console.error("FATAL: WA_API_SECRET must be set to a strong shared secret.");
@@ -135,18 +152,31 @@ const msgRetryCounterCache = new MemoryCache(4000, 30 * 60 * 1000); // 30-min wi
 const userDevicesCache = new MemoryCache(2000, 60 * 60 * 1000);      // 1-hour window
 const messageStore = new MemoryCache(6000, 48 * 60 * 60 * 1000);     // 48-hour window for message retries
 
-async function initMongoDb() {
-  if (!MONGO_URL) return null;
-  if (mongoDb && authCollection) return mongoDb;
+async function initMongoDb(overrideUrl, overrideDb) {
+  const targetUrl = overrideUrl || MONGO_URL;
+  const targetDbName = overrideDb || DB_NAME;
+  if (!targetUrl) {
+    lastMongoError = "MONGO_URL is not configured";
+    return null;
+  }
+  if (mongoDb && authCollection && !overrideUrl) return mongoDb;
 
   try {
-    mongoClient = new MongoClient(MONGO_URL, {
-      maxPoolSize: 10,
-      serverSelectionTimeoutMS: 7000,
-      connectTimeoutMS: 10000,
+    if (mongoClient) {
+      try { await mongoClient.close(); } catch { /* ok */ }
+      mongoClient = null;
+      mongoDb = null;
+      authCollection = null;
+      messagesCollection = null;
+    }
+
+    mongoClient = new MongoClient(targetUrl, {
+      maxPoolSize: 15,
+      serverSelectionTimeoutMS: 8000,
+      connectTimeoutMS: 12000,
     });
     await mongoClient.connect();
-    mongoDb = mongoClient.db(DB_NAME);
+    mongoDb = mongoClient.db(targetDbName);
     authCollection = mongoDb.collection(WA_MONGO_AUTH_COLLECTION);
     messagesCollection = mongoDb.collection(WA_MONGO_MESSAGES_COLLECTION);
 
@@ -154,15 +184,21 @@ async function initMongoDb() {
       await messagesCollection.createIndex({ createdAt: 1 }, { expireAfterSeconds: 7 * 24 * 3600, background: true });
     } catch { /* ok if index exists */ }
 
+    MONGO_URL = targetUrl;
+    DB_NAME = targetDbName;
+    lastMongoError = null;
+    activeStorageType = "mongodb";
     addLog(`[MongoDB] Connected successfully to database: ${DB_NAME}`);
     return mongoDb;
   } catch (e) {
+    lastMongoError = e.message;
     console.error("[MongoDB] Connection failed:", e.message);
     addLog(`[MongoDB] Connection error: ${e.message}. Using filesystem fallback.`);
     mongoClient = null;
     mongoDb = null;
     authCollection = null;
     messagesCollection = null;
+    activeStorageType = "filesystem";
     return null;
   }
 }
@@ -220,25 +256,48 @@ async function useMongoDBAuthState() {
                 value = proto.Message.AppStateSyncKeyData.fromObject(value);
               } catch { /* fallback to raw */ }
             }
-            data[id] = value;
+            if (value !== null && value !== undefined) {
+              data[id] = value;
+            }
           })
         );
         return data;
       },
       set: async (data) => {
-        const tasks = [];
+        const operations = [];
         for (const category of Object.keys(data)) {
           for (const id of Object.keys(data[category])) {
             const value = data[category][id];
             const key = `${category}-${id}`;
             if (value) {
-              tasks.push(writeData(value, key));
+              operations.push({
+                updateOne: {
+                  filter: { _id: String(key) },
+                  update: {
+                    $set: {
+                      data: JSON.stringify(value, BufferJSON.replacer),
+                      updatedAt: new Date()
+                    }
+                  },
+                  upsert: true,
+                }
+              });
             } else {
-              tasks.push(removeData(key));
+              operations.push({
+                deleteOne: {
+                  filter: { _id: String(key) },
+                }
+              });
             }
           }
         }
-        await Promise.all(tasks);
+        if (operations.length > 0) {
+          try {
+            await authCollection.bulkWrite(operations, { ordered: false });
+          } catch (bulkErr) {
+            console.warn("[MongoDB Auth] bulkWrite error:", bulkErr.message);
+          }
+        }
       },
     },
   };
@@ -485,7 +544,7 @@ async function startSock() {
     const { state, saveCreds } = authState;
     await loadPersistedMessages();
 
-    let version = [2, 3000, 1023793615];
+    let version = [2, 3000, 1015901307];
     try {
       if (typeof fetchLatestBaileysVersion === "function") {
         const v = await fetchLatestBaileysVersion();
@@ -504,12 +563,13 @@ async function startSock() {
       console.warn("[WhatsApp] Version fetch fallback, using default version:", version.join("."), e.message);
     }
 
-    // Standard Desktop browser identity matches official Baileys tested pair profile
-    const browserConfig = Browsers?.macOS
-      ? Browsers.macOS("Desktop")
-      : Browsers?.ubuntu
-        ? Browsers.ubuntu("Chrome")
-        : ["Mac OS", "Desktop", "14.4.1"];
+    // Standard Ubuntu Chrome browser identity — optimal profile for Baileys web companion linking
+    // Meta rejects "Desktop" profiles for phone pairing codes and restricts them on web
+    const browserConfig = Browsers?.ubuntu
+      ? Browsers.ubuntu("Chrome")
+      : Browsers?.appropriate
+        ? Browsers.appropriate("Chrome")
+        : ["Ubuntu", "Chrome", "22.04.4"];
 
     sock = makeWASocket({
       version,
@@ -543,11 +603,15 @@ async function startSock() {
       },
     });
 
+    let isSavingCreds = false;
     sock.ev.on("creds.update", async () => {
       try {
+        isSavingCreds = true;
         await saveCreds();
       } catch (err) {
         console.error("[WhatsApp] Error saving credentials:", err.message);
+      } finally {
+        isSavingCreds = false;
       }
     });
 
@@ -627,6 +691,11 @@ async function startSock() {
           startSock();
         } else if (isRestart) {
           addLog("Restart required (code 515: pairing handshake completed). Preserving credentials and restarting socket in 2s...");
+          // Wait for any in-flight creds save to finish
+          for (let i = 0; i < 6; i++) {
+            if (!isSavingCreds) break;
+            await sleep(500);
+          }
           await sleep(2000);
           startSock();
         } else {
@@ -717,9 +786,12 @@ app.get("/ping", (req, res) => res.json({
   hasUser: !!meUser,
   starting,
   lastDisconnect: lastDisconnectInfo?.message || null,
-  version: "v2.10.10",
+  version: "v2.10.11",
   storage: activeStorageType,
-  mongoConnected: !!mongoClient,
+  mongoConnected: !!mongoClient && !!mongoDb,
+  mongoConfigured: !!MONGO_URL,
+  mongoError: lastMongoError,
+  dbName: DB_NAME,
   uptimeSec: Math.floor(process.uptime()),
   messageCount: messageStore.map.size,
 }));
@@ -750,9 +822,59 @@ app.get("/status", (req, res) => {
     uptimeSec: Math.floor(process.uptime()),
     lastDisconnectInfo,
     storage: activeStorageType,
-    mongoConnected: !!mongoClient,
+    mongoConnected: !!mongoClient && !!mongoDb,
+    mongoConfigured: !!MONGO_URL,
+    mongoError: lastMongoError,
+    dbName: DB_NAME,
+    version: "v2.10.11",
     recentLogs: recentLogs.slice(0, 15),
   });
+});
+
+app.post("/configure-storage", async (req, res) => {
+  const { mongoUrl, dbName } = req.body || {};
+  if (!mongoUrl) {
+    return res.status(400).json({ error: "mongoUrl is required" });
+  }
+  try {
+    addLog(`[Storage Config] Received storage configuration request for DB: ${dbName || DB_NAME}`);
+    
+    // Save to persisted config file
+    try {
+      fs.writeFileSync(
+        CONFIG_FILE,
+        JSON.stringify({ mongoUrl, dbName: dbName || DB_NAME, updatedAt: new Date().toISOString() }),
+        "utf-8"
+      );
+    } catch (writeErr) {
+      console.warn("[Storage Config] Failed to save mongo_config.json:", writeErr.message);
+    }
+
+    const db = await initMongoDb(mongoUrl, dbName);
+    if (!db) {
+      return res.status(500).json({
+        success: false,
+        error: lastMongoError || "Failed to connect to MongoDB with provided URL",
+        storage: activeStorageType,
+      });
+    }
+
+    // If socket is not connected, restart socket to use MongoDB auth
+    if (!isConnected) {
+      addLog("[Storage Config] Restarting WhatsApp socket with MongoDB auth persistence...");
+      await startSock();
+    }
+
+    res.json({
+      success: true,
+      storage: "mongodb",
+      mongoConnected: true,
+      dbName: DB_NAME,
+      message: "Successfully connected to MongoDB Atlas for session persistence.",
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message, storage: activeStorageType });
+  }
 });
 
 app.post("/reset-session", async (req, res) => {
@@ -809,21 +931,40 @@ app.post("/pairing-code", async (req, res) => {
     return res.status(400).json({ error: "Invalid mobile number. Please enter a valid 10-digit Indian phone number." });
   }
 
-  if (!sock) {
+  // Ensure socket is alive and ready
+  if (!sock || !sock.ws || sock.ws.readyState !== 1) {
+    addLog(`[Pairing Code] Initializing socket for pairing phone +${digits}...`);
     await startSock();
-    await sleep(2000);
+    for (let i = 0; i < 10; i++) {
+      if (sock?.ws?.readyState === 1 || currentQR) break;
+      await sleep(500);
+    }
   }
 
   try {
     if (typeof sock?.requestPairingCode !== "function") {
-      return res.status(500).json({ error: "Pairing code is not supported by the current socket." });
+      return res.status(500).json({ error: "Pairing code is not supported by the current Baileys build." });
     }
-    const rawCode = await sock.requestPairingCode(digits);
+
+    let rawCode;
+    try {
+      rawCode = await sock.requestPairingCode(digits);
+    } catch (firstErr) {
+      addLog(`[Pairing Code] Initial attempt failed (${firstErr.message}), cycling socket for clean pairing code...`);
+      await startSock();
+      for (let i = 0; i < 10; i++) {
+        if (sock?.ws?.readyState === 1 || currentQR) break;
+        await sleep(500);
+      }
+      rawCode = await sock.requestPairingCode(digits);
+    }
+
     const formattedCode = rawCode?.match(/.{1,4}/g)?.join("-") || rawCode;
-    console.log(`[WhatsApp] Pairing code generated for ${digits}: ${formattedCode}`);
+    addLog(`[WhatsApp] Pairing code successfully generated for +${digits}: ${formattedCode}`);
     res.json({ success: true, pairingCode: formattedCode, rawCode, phone: digits });
   } catch (e) {
     console.error("[WhatsApp] Pairing code generation error:", e.message);
+    addLog(`[WhatsApp] Pairing code error for +${digits}: ${e.message}`);
     res.status(500).json({ error: `Could not generate pairing code: ${e.message}` });
   }
 });
