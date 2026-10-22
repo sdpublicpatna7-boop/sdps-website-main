@@ -239,6 +239,11 @@ async function useMongoDBAuthState() {
 
   let creds = await readData("creds");
   if (!creds) {
+    // Purge any orphan keys left over from previous mismatched pairing attempts
+    try {
+      await authCollection.deleteMany({});
+      console.log("[MongoDB Auth] Purged orphan keys prior to initializing fresh credentials.");
+    } catch { /* ok */ }
     creds = typeof initAuthCreds === "function" ? initAuthCreds() : {};
     await writeData(creds, "creds");
   }
@@ -795,7 +800,7 @@ app.get("/ping", (req, res) => res.json({
   hasUser: !!meUser,
   starting,
   lastDisconnect: lastDisconnectInfo?.message || null,
-  version: "v2.10.12",
+  version: "v2.10.13",
   storage: activeStorageType,
   mongoConnected: !!mongoClient && !!mongoDb,
   mongoConfigured: !!MONGO_URL,
@@ -835,7 +840,7 @@ app.get("/status", (req, res) => {
     mongoConfigured: !!MONGO_URL,
     mongoError: lastMongoError,
     dbName: DB_NAME,
-    version: "v2.10.12",
+    version: "v2.10.13",
     recentLogs: recentLogs.slice(0, 15),
   });
 });
