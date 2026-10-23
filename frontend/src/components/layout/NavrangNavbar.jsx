@@ -208,24 +208,26 @@ export default function NavrangNavbar({ activePage = "home" }) {
               <span>My Tickets</span>
             </Link>
 
-            <Link
-              to={resolvePath("/book")}
-              className="ml-2 px-5 py-2.5 rounded-full bg-brand-orange hover:bg-orange-600 text-white font-headline font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center gap-1.5 transform hover:-translate-y-0.5"
+            <a
+              href={`${landingPath}#gallery`}
+              onClick={(e) => go(e, "gallery")}
+              className="ml-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-brand-orange via-amber-500 to-orange-600 hover:opacity-95 text-white font-headline font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center gap-1.5 transform hover:-translate-y-0.5 cursor-pointer"
             >
-              <Sparkles className="w-4 h-4" />
-              <span>Book Tickets</span>
-            </Link>
+              <Sparkles className="w-4 h-4 text-yellow-200" />
+              <span>Photo Gallery</span>
+            </a>
           </nav>
 
           {/* Mobile Menu Toggle Button & Quick Action */}
           <div className="flex items-center gap-1.5 sm:gap-2 lg:hidden shrink-0">
-            <Link
-              to={resolvePath("/book")}
-              className="px-3 py-1.5 rounded-full bg-brand-orange hover:bg-orange-600 text-white text-xs font-bold shadow-sm flex items-center gap-1 active:scale-95 transition-transform"
+            <a
+              href={`${landingPath}#gallery`}
+              onClick={(e) => go(e, "gallery")}
+              className="px-3 py-1.5 rounded-full bg-gradient-to-r from-brand-orange via-amber-500 to-orange-600 text-white text-xs font-bold shadow-sm flex items-center gap-1 active:scale-95 transition-transform cursor-pointer"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Book</span>
-            </Link>
+              <Sparkles className="w-3.5 h-3.5 text-yellow-200" />
+              <span>Gallery</span>
+            </a>
             <button
               className="p-2 sm:p-2.5 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 active:scale-95 transition cursor-pointer"
               onClick={() => setOpen(!open)}

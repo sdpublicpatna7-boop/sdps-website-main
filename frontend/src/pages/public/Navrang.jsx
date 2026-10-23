@@ -307,8 +307,13 @@ export default function Navrang() {
                 <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
               </div>
 
-              <h2 className="text-2xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-amber-300 to-yellow-100 font-headline mb-2">
-                See You Next Year at Navrang 2027! 🎆
+              <h2 className="text-2xl sm:text-4xl font-black font-headline mb-2 flex items-center justify-center gap-2 flex-wrap">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-amber-300 to-yellow-100">
+                  See You Next Year at Navrang 2027!
+                </span>
+                <span className="inline-block" style={{ WebkitTextFillColor: 'initial' }} aria-label="fireworks">
+                  🎆
+                </span>
               </h2>
               <p className="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto">
                 Mark your calendars! S.D. Public School will return next autumn with an even larger Garba arena, live performers, prizes, and cultural splendour.
@@ -591,8 +596,13 @@ export default function Navrang() {
             </span>
           </div>
 
-          <h2 className="text-4xl sm:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-200 font-headline mb-4">
-            See You at Navrang 2027! 🎆
+          <h2 className="text-4xl sm:text-6xl font-black font-headline mb-4 flex items-center justify-center gap-2 sm:gap-3 flex-wrap">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-200">
+              See You at Navrang 2027!
+            </span>
+            <span className="inline-block" style={{ WebkitTextFillColor: 'initial' }} aria-label="fireworks">
+              🎆
+            </span>
           </h2>
 
           <p className="text-base sm:text-xl text-slate-200 max-w-2xl mx-auto mb-10 leading-relaxed font-light">
