@@ -391,7 +391,11 @@ async def get_config():
             "event_date": "2026-10-15",
             "event_time": "6:00 PM – 10:00 PM",
             "venue": "SDPS Homeground, Patna",
-            "booking_open": True,
+            "booking_open": False,
+            "event_status": "concluded",
+            "next_event_name": "Navrang 2027",
+            "next_event_year": 2027,
+            "gallery_slug": "navrang-2026",
             "max_tickets": 1000,
             "rules": [
                 "Only current students of S.D. Public School are eligible to book.",
@@ -405,6 +409,14 @@ async def get_config():
             "upi_merchant_name": "S.D. Public School, Patna",
             "upi_instructions": "1. Scan the QR code or tap 'Pay via Any UPI App' (GPay, PhonePe, Paytm, BHIM).\n2. Pay the exact pass amount.\n3. Enter the 12-digit UPI UTR / Transaction Reference Number from your payment receipt."
         }
+    
+    # Enforce booking closed for Navrang 2026
+    config["booking_open"] = False
+    config["event_status"] = "concluded"
+    config["next_event_name"] = "Navrang 2027"
+    config["next_event_year"] = 2027
+    config["gallery_slug"] = "navrang-2026"
+
     if not config.get("venue") or "Main Campus" in str(config.get("venue", "")):
         config["venue"] = "SDPS Homeground, Patna"
         if db is not None:
@@ -489,8 +501,11 @@ async def verify_student(req: StudentVerifyRequest, request: Request):
 @navrang_router.post("/book")
 async def book_tickets(req: BookRequest):
     config = await get_config()
-    if not config.get("booking_open", True):
-        raise HTTPException(status_code=400, detail="Online bookings are currently closed.")
+    if not config.get("booking_open", False):
+        raise HTTPException(
+            status_code=400, 
+            detail="Navrang 2026 celebrations have concluded! Online booking is closed. Thank you for making Navrang 2026 unforgettable — See you at Navrang 2027!"
+        )
         
     total_bookings = await db.navrang_bookings.count_documents({"payment_status": {"$ne": "failed"}})
     if total_bookings >= config.get("max_tickets", 1000):
@@ -764,6 +779,13 @@ async def _send_navrang_verified_whatsapp(booking: dict):
 
 @navrang_router.post("/create-order")
 async def navrang_create_order(req: NavrangCreateOrderRequest):
+    config = await get_config()
+    if not config.get("booking_open", False):
+        raise HTTPException(
+            status_code=400, 
+            detail="Navrang 2026 celebrations have concluded! Online booking is closed. See you at Navrang 2027!"
+        )
+
     b_id = (req.booking_id or "").strip().upper()
     if not b_id:
         raise HTTPException(status_code=400, detail="Booking ID is required.")

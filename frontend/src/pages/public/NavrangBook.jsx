@@ -91,6 +91,7 @@ export default function NavrangBook() {
   );
 
   const [step, setStep] = useState(1);
+  const [bookingOpen, setBookingOpen] = useState(true);
   const [packages, setPackages] = useState(DEFAULT_PACKAGES);
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [students, setStudents] = useState([]);
@@ -118,6 +119,9 @@ export default function NavrangBook() {
     const fetchConfig = async () => {
       try {
         const { data } = await api.get('/navrang/config');
+        if (data.booking_open === false || data.event_status === 'concluded') {
+          setBookingOpen(false);
+        }
         if (data.razorpay_key_id) {
           setRazorpayConfig({
             enabled: data.razorpay_enabled !== false,
@@ -418,7 +422,59 @@ export default function NavrangBook() {
       </div>
 
       <div className="max-w-3xl mx-auto px-3 sm:px-4 py-4 sm:py-8 -mt-6">
-        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden border border-purple-100">
+        {!bookingOpen ? (
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl p-6 sm:p-12 text-center border border-purple-100 max-w-2xl mx-auto">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-full bg-amber-500/10 border-2 border-amber-400 flex items-center justify-center text-amber-500 mb-5">
+              <Sparkles className="w-8 h-8 sm:w-10 sm:h-10 text-amber-500 animate-pulse" />
+            </div>
+
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-200 mb-3">
+              Event Concluded
+            </span>
+
+            <h2 className="text-2xl sm:text-4xl font-black font-outfit text-slate-900 mb-3">
+              Navrang 2026 Online Bookings Closed
+            </h2>
+
+            <p className="text-slate-600 text-sm sm:text-base max-w-lg mx-auto mb-6 leading-relaxed">
+              Navrang 2026 has concluded with grand festivities! Online ticket booking is now closed. Thank you to all parents, students, and teachers who made this evening magnificent.
+            </p>
+
+            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-purple-50 via-amber-50 to-orange-50 border border-amber-200 mb-8 text-center">
+              <h3 className="font-bold text-purple-950 text-base sm:text-lg mb-1">
+                See You Next Year at Navrang 2027! 🎆
+              </h3>
+              <p className="text-xs sm:text-sm text-purple-900/80">
+                S.D. Public School looks forward to welcoming you back next autumn with even more festive joy.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <a
+                href={isSubdomain ? "/#gallery" : "/navrang#gallery"}
+                className="w-full sm:w-auto px-6 py-3 rounded-full bg-gradient-to-r from-brand-orange via-amber-500 to-orange-600 text-white font-bold text-sm shadow-md hover:opacity-95 transition flex items-center justify-center gap-2"
+              >
+                <Sparkles className="w-4 h-4 text-yellow-200" />
+                <span>View Navrang 2026 Photo Gallery</span>
+              </a>
+
+              <Link
+                to={isSubdomain ? "/my-ticket" : "/navrang/my-ticket"}
+                className="w-full sm:w-auto px-6 py-3 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-sm transition flex items-center justify-center gap-2 border border-slate-200"
+              >
+                <Ticket className="w-4 h-4 text-slate-600" />
+                <span>Find My Past Pass / QR</span>
+              </Link>
+            </div>
+
+            <div className="mt-8 pt-6 border-t border-slate-100 text-xs text-slate-400">
+              <Link to={isSubdomain ? "/" : "/navrang"} className="text-purple-700 font-medium hover:underline">
+                ← Return to Navrang Homepage
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden border border-purple-100">
           
           {/* Stepper */}
           <div className="bg-gradient-to-r from-purple-50/70 via-white to-purple-50/70 border-b border-purple-100 p-3 sm:p-4">
@@ -1182,6 +1238,7 @@ export default function NavrangBook() {
             </AnimatePresence>
           </div>
         </div>
+        )}
       </div>
     </div>
   );

@@ -3,10 +3,9 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Phone, Mail, Ticket, Sparkles, Menu, X, ArrowLeft, Calendar, ShieldCheck, Home } from "lucide-react";
 
 const navLinks = [
-  { id: "details", label: "Overview" },
-  { id: "packages", label: "Packages" },
-  { id: "how-it-works", label: "How It Works" },
-  { id: "rules", label: "Rules & Entry" },
+  { id: "gallery", label: "Photo Gallery" },
+  { id: "memories", label: "Celebration Highlights" },
+  { id: "navrang-2027", label: "Navrang 2027" },
 ];
 
 export default function NavrangNavbar({ activePage = "home" }) {
@@ -102,7 +101,7 @@ export default function NavrangNavbar({ activePage = "home" }) {
               <span className="truncate">helpdesk@sdpublic.org</span>
             </a>
             <span className="hidden md:inline-flex items-center gap-1 text-amber-300/90 font-medium pl-2 border-l border-white/20 truncate">
-              🎆 Navrang 2026 • Dandiya & Durga Puja Night
+              🎆 Navrang 2026 Concluded • See You at Navrang 2027!
             </span>
           </div>
 
@@ -127,13 +126,14 @@ export default function NavrangNavbar({ activePage = "home" }) {
               <Ticket className="w-3 h-3" />
               <span>My Passes</span>
             </Link>
-            <Link
-              to={resolvePath("/book")}
-              className="hidden sm:inline-flex px-3.5 py-1 rounded-full bg-brand-orange hover:bg-orange-600 transition text-white font-semibold items-center gap-1 text-xs shadow-sm"
+            <a
+              href={`${landingPath}#gallery`}
+              onClick={(e) => go(e, "gallery")}
+              className="hidden sm:inline-flex px-3.5 py-1 rounded-full bg-gradient-to-r from-brand-orange via-amber-500 to-orange-600 hover:opacity-95 transition text-white font-bold items-center gap-1 text-xs shadow-sm cursor-pointer"
             >
-              <Sparkles className="w-3 h-3" />
-              <span>Book Now</span>
-            </Link>
+              <Sparkles className="w-3 h-3 text-yellow-200" />
+              <span>Photo Gallery</span>
+            </a>
           </div>
         </div>
       </div>
@@ -282,14 +282,14 @@ export default function NavrangNavbar({ activePage = "home" }) {
             </Link>
 
             <div className="pt-2 border-t border-slate-100">
-              <Link
-                to={resolvePath("/book")}
-                onClick={() => setOpen(false)}
-                className="w-full py-3 rounded-xl bg-brand-orange text-white text-center font-bold font-headline flex items-center justify-center gap-2 shadow-md"
+              <a
+                href={`${landingPath}#gallery`}
+                onClick={(e) => go(e, "gallery")}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-orange via-amber-500 to-orange-600 text-white text-center font-bold font-headline flex items-center justify-center gap-2 shadow-md"
               >
-                <Sparkles className="w-4 h-4" />
-                <span>Book Tickets Now</span>
-              </Link>
+                <Sparkles className="w-4 h-4 text-yellow-200" />
+                <span>View Navrang 2026 Photo Gallery</span>
+              </a>
             </div>
           </div>
         )}
