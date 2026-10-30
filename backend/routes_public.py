@@ -41,7 +41,7 @@ from models import (
     ContactMessage, now_iso, new_id,
     EligibilityRow, FeeStructureRow, HostelFeeRow, HostelGalleryItem,
     AdministrationMember, LegalPage, ShortLinkClick, LinktreeSettings, LinktreeLink, LinktreeClick,
-    ApaarRosterStudent, ApaarSubmission, CampusTourFacility
+    ApaarRosterStudent, ApaarSubmission, CampusTourFacility, DMCATakedownRequest
 )
 from email_service import send_email, render_template
 from sms_service import send_sms
@@ -869,20 +869,114 @@ async def list_testimonials_public():
     return items
 
 
-# ---- Legal Pages ----
+# ---- Legal Pages & DMCA Policy ----
 @public_router.get("/legal/{page_id}")
 async def get_legal_page_public(page_id: str):
-    if page_id not in ("terms", "privacy"):
+    pid = page_id.lower().strip()
+    if pid in ("copyright", "copyright-policy"):
+        pid = "dmca"
+    if pid not in ("terms", "privacy", "dmca"):
         from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Not found")
-    doc = await db.legal_pages.find_one({"id": page_id}, {"_id": 0})
+    doc = await db.legal_pages.find_one({"id": pid}, {"_id": 0})
     if not doc:
+        dmca_default_html = (
+            "<h3>1. Statement of Copyright Compliance &amp; Safe Harbor</h3>"
+            "<p>S.D. Public School (Suryamuni Devi Public School), Patna, managed by The Suryamuni Devi Foundation Trust, "
+            "strictly adheres to the Digital Millennium Copyright Act of 1998 (17 U.S.C. § 512, 'DMCA'), the Indian Copyright Act, 1957, "
+            "and Rule 3 of the Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021. "
+            "As an educational provider hosting school community portals and photo albums, S.D. Public School maintains statutory Safe Harbor "
+            "protections under 17 U.S.C. § 512(c) and Section 79 of the Information Technology Act, 2000, upon expeditious removal of infringing content upon receipt of a compliant notification.</p>"
+            "<h3>2. Designated Copyright Agent &amp; Grievance Officer</h3>"
+            "<p>Pursuant to 17 U.S.C. § 512(c)(2), the designated agent to receive notifications of claimed copyright infringement is:</p>"
+            "<p><strong>Designated Agent:</strong> Legal &amp; Media Administration Cell<br/>"
+            "<strong>Institution:</strong> S.D. Public School<br/>"
+            "<strong>Campus:</strong> Maurya Colony, Near R.O.B Kumhrar, Biscoman Golambar, Gulzarbagh Road, Patna, Bihar 800007, India<br/>"
+            "<strong>DMCA Email:</strong> <a href='mailto:dmca@sdpublic.org'>dmca@sdpublic.org</a> (Cc: <a href='mailto:helpdesk@sdpublic.org'>helpdesk@sdpublic.org</a>)<br/>"
+            "<strong>Helpline:</strong> <a href='tel:+919955190262'>+91 99551 90262</a></p>"
+            "<h3>3. Requirements for a DMCA Notice of Claimed Infringement</h3>"
+            "<p>To file a legally sufficient notice under 17 U.S.C. § 512(c)(3), copyright owners or authorized agents must provide:</p>"
+            "<ol>"
+            "<li>A physical or electronic signature of the copyright owner or authorized representative.</li>"
+            "<li>Clear identification of the copyrighted work claimed to have been infringed.</li>"
+            "<li>Identification of the material claimed to be infringing with reasonably sufficient detail to locate it (e.g., exact URL or album identifier).</li>"
+            "<li>Contact details of the complaining party (name, physical address, telephone number, valid email).</li>"
+            "<li>A statement of good faith belief that use of the material is not authorized by the copyright owner, agent, or the law.</li>"
+            "<li>A statement under penalty of perjury that information in the notification is accurate and the complaining party is authorized to act.</li>"
+            "</ol>"
+            "<h3>4. Expedited Takedown Process</h3>"
+            "<p>Upon receipt of a compliant notice, S.D. Public School assigns an official tracking reference (e.g. <code>DMCA-2026-XXXX</code>) "
+            "and expeditiously disables public access within 24 to 36 hours while notifying the uploader or contributor.</p>"
+            "<h3>5. Counter-Notification (17 U.S.C. § 512(g))</h3>"
+            "<p>If an uploader believes material was removed by mistake or misidentification, they may file a formal counter-notification under 17 U.S.C. § 512(g)(3). "
+            "If no court action is filed by the original claimant within 10 to 14 business days, access may be restored.</p>"
+            "<h3>6. Repeat Infringer Policy</h3>"
+            "<p>Under 17 U.S.C. § 512(i)(1)(A), S.D. Public School will terminate publishing privileges, contributor rights, or portal accounts of repeat infringers.</p>"
+            "<h3>7. Educational Fair Use &amp; Child Privacy</h3>"
+            "<p>Academic citations, syllabi, and question papers are shared for non-commercial educational instruction under Section 52 of the Indian Copyright Act, 1957 "
+            "and 17 U.S.C. § 107 (Fair Use). Parents/guardians may also request photo removal of their enrolled minor child at any time by contacting <a href='mailto:helpdesk@sdpublic.org'>helpdesk@sdpublic.org</a>.</p>"
+        )
         defaults = {
             "terms": {"id": "terms", "title": "Terms & Conditions", "content": "<p>Our Terms &amp; Conditions are being finalised. Please check back soon or contact us at <a href='mailto:helpdesk@sdpublic.org'>helpdesk@sdpublic.org</a>.</p>", "updated_at": now_iso()},
-            "privacy": {"id": "privacy", "title": "Privacy Policy", "content": "<p>Our Privacy Policy is being finalised. Please check back soon or contact us at <a href='mailto:helpdesk@sdpublic.org'>helpdesk@sdpublic.org</a>.</p>", "updated_at": now_iso()}
+            "privacy": {"id": "privacy", "title": "Privacy Policy", "content": "<p>Our Privacy Policy is being finalised. Please check back soon or contact us at <a href='mailto:helpdesk@sdpublic.org'>helpdesk@sdpublic.org</a>.</p>", "updated_at": now_iso()},
+            "dmca": {"id": "dmca", "title": "DMCA Notice & Copyright Policy", "content": dmca_default_html, "updated_at": now_iso()}
         }
-        return defaults[page_id]
+        return defaults[pid]
     return doc
+
+
+# ---- DMCA Takedown Notice Submission ----
+@public_router.post("/dmca/takedown-request")
+@limiter.limit("10/minute")
+async def submit_dmca_takedown(request: Request, payload: DMCATakedownRequest):
+    if not payload.claimant_name or not payload.claimant_email:
+        raise HTTPException(status_code=400, detail="Claimant full legal name and email address are required.")
+    if not payload.copyrighted_work_desc or not payload.infringing_urls_or_items:
+        raise HTTPException(status_code=400, detail="Description of copyrighted work and specific URL/location of infringing material are required.")
+    if not payload.good_faith_confirmed or not payload.accuracy_and_perjury_confirmed:
+        raise HTTPException(status_code=400, detail="Both the Good Faith Statement and Penalty of Perjury verification must be confirmed.")
+    if not payload.electronic_signature:
+        raise HTTPException(status_code=400, detail="A valid electronic signature (full typed legal name) is required under 17 U.S.C. § 512(c)(3)(A)(i).")
+
+    import uuid
+    ref_code = f"DMCA-{datetime.now().year}-{uuid.uuid4().hex[:6].upper()}"
+    doc = payload.model_dump()
+    doc["id"] = payload.id or str(uuid.uuid4())
+    doc["reference_id"] = ref_code
+    doc["status"] = "pending"
+    doc["ip_address"] = request.client.host if request.client else ""
+    doc["created_at"] = now_iso()
+    doc["updated_at"] = now_iso()
+
+    await db.dmca_requests.insert_one(doc.copy())
+
+    # Send receipt/acknowledgement email to claimant if email service is active
+    try:
+        ack_body = render_template(
+            f"DMCA Takedown Notice Received — Ref #{ref_code}",
+            f"""
+            <p>Dear {html.escape(payload.claimant_name)},</p>
+            <p>We have officially received your Notice of Claimed Infringement submitted under the Digital Millennium Copyright Act (17 U.S.C. § 512) and the Indian Copyright Act, 1957.</p>
+            <table style="border-collapse:collapse;width:100%;margin:16px 0">
+              <tr><td style="padding:8px;border:1px solid #e2e8f0;font-weight:bold;background:#f8fafc">Tracking Reference ID</td><td style="padding:8px;border:1px solid #e2e8f0;color:#b45309;font-weight:bold">{ref_code}</td></tr>
+              <tr><td style="padding:8px;border:1px solid #e2e8f0;font-weight:bold;background:#f8fafc">Claimant Name</td><td style="padding:8px;border:1px solid #e2e8f0">{html.escape(payload.claimant_name)}</td></tr>
+              <tr><td style="padding:8px;border:1px solid #e2e8f0;font-weight:bold;background:#f8fafc">Reported Location</td><td style="padding:8px;border:1px solid #e2e8f0">{html.escape(payload.infringing_urls_or_items)}</td></tr>
+              <tr><td style="padding:8px;border:1px solid #e2e8f0;font-weight:bold;background:#f8fafc">Status</td><td style="padding:8px;border:1px solid #e2e8f0;color:#047857;font-weight:bold">Pending Review by Copyright Agent</td></tr>
+            </table>
+            <p>Our designated copyright officer is reviewing the reported material. If the notice satisfies all statutory requirements under 17 U.S.C. § 512(c)(3), public access to the infringing material will be expeditiously disabled within 24 to 36 hours.</p>
+            <p>For correspondence regarding this notice, please quote reference <strong>{ref_code}</strong> and write to <a href="mailto:dmca@sdpublic.org">dmca@sdpublic.org</a>.</p>
+            <br/><p>Respectfully,<br/><strong>Designated Copyright Agent &amp; Grievance Cell</strong><br/>S.D. Public School, Patna</p>
+            """
+        )
+        await send_email(payload.claimant_email, f"DMCA Notice Recorded: {ref_code} — S.D. Public School", ack_body)
+    except Exception as e:
+        logging.warning(f"Could not send DMCA email confirmation: {e}")
+
+    return {
+        "success": True,
+        "reference_id": ref_code,
+        "message": f"Your Notice of Claimed Infringement has been officially recorded under tracking reference ID {ref_code}. Our designated copyright agent will review and process your request expeditiously within 24 to 48 hours."
+    }
 
 
 # ============= EXAM PAPERS (public, published only) =============

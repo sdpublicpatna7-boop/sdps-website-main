@@ -1454,13 +1454,44 @@ async def update_hostel_gallery_item(item_id: str, payload: Dict[str, Any] = Bod
     return item
 
 
-# ============= LEGAL PAGES (Terms & Privacy) =============
+# ============= LEGAL PAGES (Terms, Privacy & DMCA) =============
 @admin_router.get("/legal/{page_id}")
 async def get_legal_page(page_id: str, admin: TokenData = Depends(require_permission("site-settings"))):
-    if page_id not in ("terms", "privacy"):
+    pid = page_id.lower().strip()
+    if pid in ("copyright", "copyright-policy"):
+        pid = "dmca"
+    if pid not in ("terms", "privacy", "dmca"):
         raise HTTPException(status_code=400, detail="Invalid page_id")
-    doc = await db.legal_pages.find_one({"id": page_id}, {"_id": 0})
+    doc = await db.legal_pages.find_one({"id": pid}, {"_id": 0})
     if not doc:
+        dmca_default_html = (
+            "<h2>DMCA Notice &amp; Copyright Compliance Policy</h2>"
+            "<p>S.D. Public School (Suryamuni Devi Public School), Patna, managed by The Suryamuni Devi Foundation Trust, "
+            "complies with the Digital Millennium Copyright Act (17 U.S.C. § 512, 'DMCA'), the Indian Copyright Act, 1957, "
+            "and the Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021.</p>"
+            "<h3>1. Designated Copyright Agent &amp; Grievance Officer</h3>"
+            "<p><strong>Designated Agent:</strong> Legal &amp; Media Administration Cell<br/>"
+            "<strong>Institution:</strong> S.D. Public School<br/>"
+            "<strong>Physical Campus:</strong> Maurya Colony, Near R.O.B Kumhrar, Biscoman Golambar, Gulzarbagh Road, Patna, Bihar 800007, India<br/>"
+            "<strong>Official DMCA Email:</strong> <a href='mailto:dmca@sdpublic.org'>dmca@sdpublic.org</a> (Cc: <a href='mailto:helpdesk@sdpublic.org'>helpdesk@sdpublic.org</a>)<br/>"
+            "<strong>Helpline:</strong> <a href='tel:+919955190262'>+91 99551 90262</a></p>"
+            "<h3>2. DMCA Notice of Claimed Infringement (Takedown Notice)</h3>"
+            "<p>To submit a legally compliant notice under 17 U.S.C. § 512(c)(3), copyright owners or authorized agents must provide all 6 statutory elements:</p>"
+            "<ol>"
+            "<li>A physical or electronic signature of the copyright owner or authorized representative.</li>"
+            "<li>Identification of the copyrighted work claimed to have been infringed.</li>"
+            "<li>Identification of the material claimed to be infringing and reasonably sufficient detail to locate it (exact URLs or file titles).</li>"
+            "<li>Contact information of the complaining party (name, physical address, phone number, email address).</li>"
+            "<li>A statement of good faith belief that the use is not authorized by the copyright owner, agent, or the law.</li>"
+            "<li>A statement under penalty of perjury that the information is accurate and the complaining party is authorized to act.</li>"
+            "</ol>"
+            "<h3>3. Counter-Notification &amp; Repeat Infringer Policy</h3>"
+            "<p>Uploaders may file formal counter-notifications pursuant to 17 U.S.C. § 512(g). In accordance with 17 U.S.C. § 512(i)(1)(A), "
+            "S.D. Public School maintains a strict policy to terminate publishing privileges or portal accounts of repeat infringers.</p>"
+            "<h3>4. Educational Fair Use &amp; Student Privacy</h3>"
+            "<p>Academic citations, syllabi, and question papers are shared for non-commercial educational instruction under Section 52 of the Indian Copyright Act, 1957 "
+            "and 17 U.S.C. § 107 (Fair Use). Parents/guardians may also request photo removal of their enrolled minor child at any time by contacting <a href='mailto:helpdesk@sdpublic.org'>helpdesk@sdpublic.org</a>.</p>"
+        )
         defaults = {
             "terms": {
                 "id": "terms", "title": "Terms & Conditions",
@@ -1471,22 +1502,59 @@ async def get_legal_page(page_id: str, admin: TokenData = Depends(require_permis
                 "id": "privacy", "title": "Privacy Policy",
                 "content": "<h2>Privacy Policy</h2><p><strong>S.D. Public School (Suryamuni Devi Public School)</strong>, managed by The Suryamuni Devi Foundation Trust, Patna, Bihar, is committed to protecting the privacy of all users of this website, including parents, students, and prospective applicants.</p><h3>1. Information We Collect</h3><p>We collect personal information when you interact with our website, including through:</p><ul><li>Admission enquiry forms (name, email, phone, student details)</li><li>Full admission application forms (additional academic and personal details)</li><li>Contact forms and career application forms</li><li>Alumni registration forms</li><li>Fee payment portal (transaction details processed by our payment partner)</li></ul><h3>2. How We Use Your Information</h3><p>Information collected is used strictly for:</p><ul><li>Processing admission applications and enquiries</li><li>Communicating with parents and students regarding school matters</li><li>Sending notifications, circulars, and academic updates via SMS and email</li><li>Generating TC (Transfer Certificate) and maintaining school records</li><li>Career application processing</li></ul><p>We do <strong>not</strong> sell, rent, or share your personal information with any third party for marketing purposes.</p><h3>3. Data Storage &amp; Security</h3><p>All data submitted through this website is stored securely. We implement appropriate technical and organisational measures to protect your personal information against unauthorised access, loss, or misuse.</p><h3>4. Cookies</h3><p>Our website may use cookies to improve your browsing experience. Cookies are small files stored on your device. You can disable cookies through your browser settings, though some website features may not function correctly as a result.</p><h3>5. Third-Party Services</h3><p>We use trusted third-party services including:</p><ul><li><strong>Razorpay / Payment Gateway</strong> — for fee processing (subject to their own privacy policy)</li><li><strong>Google Forms</strong> — for certain application forms</li><li><strong>GungungERP</strong> — for student management (subject to their privacy policy)</li></ul><h3>6. Children's Privacy</h3><p>Our website collects information about children only in the context of school admission and management, and only with parental consent. We do not knowingly collect personal data from children for any other purpose.</p><h3>7. Your Rights</h3><p>You have the right to request access to, correction of, or deletion of your personal data held by us. To exercise these rights, please write to <a href='mailto:helpdesk@sdpublic.org'>helpdesk@sdpublic.org</a>.</p><h3>8. Changes to This Policy</h3><p>This Privacy Policy may be updated from time to time. We encourage you to review it periodically.</p><h3>9. Contact Us</h3><p>For any privacy-related concerns, please contact:</p><p><strong>S.D. Public School</strong><br/>Maurya Colony, Near R.O.B. Kumhrar, Biscoman Golambar, Gulzarbagh Road, Patna, Bihar 800007<br/>Email: <a href='mailto:helpdesk@sdpublic.org'>helpdesk@sdpublic.org</a><br/>Phone: <a href='tel:+919955190262'>+91 99551 90262</a></p><p><em>Last reviewed: June 2025</em></p>",
                 "updated_at": now_iso()
+            },
+            "dmca": {
+                "id": "dmca", "title": "DMCA Notice & Copyright Policy",
+                "content": dmca_default_html,
+                "updated_at": now_iso()
             }
         }
-        doc = defaults[page_id]
+        doc = defaults[pid]
         await db.legal_pages.insert_one(doc.copy())
     return doc
 
 
 @admin_router.put("/legal/{page_id}")
 async def update_legal_page(page_id: str, payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(require_permission("site-settings"))):
-    if page_id not in ("terms", "privacy"):
+    pid = page_id.lower().strip()
+    if pid in ("copyright", "copyright-policy"):
+        pid = "dmca"
+    if pid not in ("terms", "privacy", "dmca"):
         raise HTTPException(status_code=400, detail="Invalid page_id")
     payload.pop("_id", None)
-    payload["id"] = page_id
+    payload["id"] = pid
     payload["updated_at"] = now_iso()
-    await db.legal_pages.update_one({"id": page_id}, {"$set": payload}, upsert=True)
-    return await db.legal_pages.find_one({"id": page_id}, {"_id": 0})
+    await db.legal_pages.update_one({"id": pid}, {"$set": payload}, upsert=True)
+    return await db.legal_pages.find_one({"id": pid}, {"_id": 0})
+
+
+# ============= DMCA TAKEDOWN REQUEST MANAGEMENT =============
+@admin_router.get("/dmca-requests")
+async def list_dmca_requests(status: Optional[str] = None, admin: TokenData = Depends(require_permission("site-settings"))):
+    q = {}
+    if status and status != "all":
+        q["status"] = status
+    items = await db.dmca_requests.find(q, {"_id": 0}).sort("created_at", -1).to_list(200)
+    return items
+
+
+@admin_router.put("/dmca-requests/{req_id}")
+async def update_dmca_request_status(req_id: str, payload: Dict[str, Any] = Body(...), admin: TokenData = Depends(require_permission("site-settings"))):
+    new_status = payload.get("status")
+    admin_notes = payload.get("admin_notes", "")
+    upd = {"updated_at": now_iso()}
+    if new_status:
+        upd["status"] = new_status
+    if "admin_notes" in payload:
+        upd["admin_notes"] = admin_notes
+
+    res = await db.dmca_requests.update_one(
+        {"$or": [{"id": req_id}, {"reference_id": req_id}]},
+        {"$set": upd}
+    )
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="DMCA request not found")
+    return {"success": True}
 
 
 # ============= STAFF USER MANAGEMENT (superadmin only) =============

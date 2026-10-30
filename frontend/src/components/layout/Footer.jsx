@@ -105,9 +105,11 @@ export default function Footer({ settings }) {
             © {new Date().getFullYear()} S.D. Public School. All Rights Reserved. | Located at Maurya Colony, Near R.O.B Kumhrar, Biscoman Golambar, Gulzarbagh Road, Patna, Bihar 800007. Proudly serving families across Kumhrar, Gulzarbagh, and Kankarbagh.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-            <a href="/terms" className="hover:opacity-100 hover:underline transition">Terms & Conditions</a>
+            <a href="/terms" className="hover:opacity-100 hover:underline transition">Terms &amp; Conditions</a>
             <span className="opacity-40">|</span>
             <a href="/privacy" className="hover:opacity-100 hover:underline transition">Privacy Policy</a>
+            <span className="opacity-40">|</span>
+            <a href="/dmca" className="hover:opacity-100 hover:underline transition">DMCA &amp; Copyright Policy</a>
           </div>
         </div>
       </div>

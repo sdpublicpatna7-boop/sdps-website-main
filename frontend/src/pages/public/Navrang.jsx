@@ -23,7 +23,8 @@ import {
   Download,
   X,
   Share2,
-  Trophy
+  Trophy,
+  ShieldAlert
 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/lib/api';
@@ -517,6 +518,16 @@ export default function Navrang() {
               </div>
               <div className="flex items-center gap-2">
                 <a
+                  href={`https://www.sdpublic.org/dmca?url=${encodeURIComponent(typeof window !== "undefined" ? window.location.href : "")}&title=${encodeURIComponent(activePhoto.title || `Photo #${activePhotoIdx + 1}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition flex items-center gap-1.5 text-xs font-semibold"
+                  title="Report copyright infringement or request photo removal under DMCA"
+                >
+                  <ShieldAlert className="w-3.5 h-3.5 text-amber-300" />
+                  <span className="hidden sm:inline">Report / DMCA</span>
+                </a>
+                <a
                   href={`https://lh3.googleusercontent.com/d/${activePhoto.file_id}=w1600`}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -815,6 +826,10 @@ export default function Navrang() {
             <span className="text-slate-600">•</span>
             <a href="https://www.sdpublic.org" className="text-amber-400 hover:text-amber-300 font-medium transition">
               School Website
+            </a>
+            <span className="text-slate-600">•</span>
+            <a href="https://www.sdpublic.org/dmca" className="text-amber-400 hover:text-amber-300 font-medium transition">
+              DMCA &amp; Copyright Policy
             </a>
           </div>
           <div className="text-xs text-slate-500">

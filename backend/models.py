@@ -475,11 +475,32 @@ class AdministrationMember(BaseDoc):
     order: int = 0
 
 
-# ---- Terms & Privacy ----
+# ---- Terms & Privacy & DMCA ----
 class LegalPage(BaseDoc):
-    id: str          # "terms" or "privacy"
+    id: str          # "terms", "privacy", "dmca"
     title: str
     content: str     # HTML/Markdown content
+    updated_at: str = Field(default_factory=now_iso)
+
+
+class DMCATakedownRequest(BaseModel):
+    id: str = Field(default_factory=new_id)
+    reference_id: str = ""
+    claimant_name: str
+    claimant_email: str
+    claimant_phone: Optional[str] = ""
+    organization_or_owner: Optional[str] = ""
+    physical_address: Optional[str] = ""
+    copyrighted_work_desc: str
+    original_work_url: Optional[str] = ""
+    infringing_urls_or_items: str
+    good_faith_confirmed: bool = True
+    accuracy_and_perjury_confirmed: bool = True
+    electronic_signature: str
+    ip_address: Optional[str] = ""
+    status: str = "pending"  # "pending", "under_review", "content_removed", "counter_notice", "rejected", "resolved"
+    admin_notes: Optional[str] = ""
+    created_at: str = Field(default_factory=now_iso)
     updated_at: str = Field(default_factory=now_iso)
 
 

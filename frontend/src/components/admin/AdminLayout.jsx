@@ -8,7 +8,7 @@ import {
   GraduationCap, Award, FileText, CreditCard, Settings, LogOut,
   MessageSquare, Megaphone, ScrollText, FilePlus, Home, Hotel,
   BookOpen, Shield, EyeOff, ClipboardList, BookMarked, UserCog,
-  Menu, X, Star, Cake, Link2 as LinkIcon, Fingerprint, Lock, CheckSquare, PhoneCall, Radio, Tv, FolderPlus, Sparkles,
+  Menu, X, Star, Cake, Link2 as LinkIcon, Fingerprint, Lock, CheckSquare, PhoneCall, Radio, Tv, FolderPlus, Sparkles, Scale,
   ChevronDown, ChevronRight, PanelLeftClose, PanelLeft, ChevronLeft
 } from "lucide-react";
 import { useAuth } from "../../lib/auth";
@@ -136,6 +136,7 @@ const NAV_CATEGORIES = [
     icon: Settings,
     items: [
       { to: "/admin/site-settings", label: "Site Settings", icon: Settings, permission: "site-settings" },
+      { to: "/admin/legal", label: "Legal & DMCA Policies", icon: Scale, permission: "site-settings" },
       { to: "/admin/tc-records", label: "TC Records", icon: FileText, permission: "tc-records" },
       { to: "/admin/apaar", label: "APAAR ID Manager", icon: Fingerprint, permission: ["apaar", "site-settings"] },
       { to: "/admin/link-shortener", label: "Link Shortener", icon: LinkIcon, permission: ["link-tools", "site-settings"] },

@@ -116,6 +116,7 @@ const AdminGDriveSharing = lazy(() => import("@/pages/admin/special/AdminGDriveS
 const AdminHolidayHomework = lazy(() => import("@/pages/admin/staff/AdminHolidayHomework"));
 const AdminStaffUsers = lazy(() => import("@/pages/admin/staff/AdminStaffUsers"));
 const AdminMapsReview = lazy(() => import("@/pages/admin/special/AdminMapsReview"));
+const AdminLegalPages = lazy(() => import("@/pages/admin/special/AdminLegalPages"));
 const AdminShortener = lazy(() => import("@/pages/admin/AdminShortener"));
 const AdminLinktree = lazy(() => import("@/pages/admin/AdminLinktree"));
 const AdminElections = lazy(() => import("@/pages/admin/AdminElections"));
@@ -231,6 +232,10 @@ function MainApp() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/terms" element={<TermsPrivacy />} />
         <Route path="/privacy" element={<TermsPrivacy />} />
+        <Route path="/dmca" element={<TermsPrivacy />} />
+        <Route path="/copyright-policy" element={<TermsPrivacy />} />
+        <Route path="/copyright" element={<TermsPrivacy />} />
+        <Route path="/legal/dmca" element={<TermsPrivacy />} />
         <Route path="/mac-widget" element={<Suspense fallback={<PublicLoading />}><MacWidgetPage /></Suspense>} />
         <Route path="/khelo-patna" element={<KheloPatna />} />
         <Route path="*" element={<NotFound />} />
@@ -296,6 +301,7 @@ function MainApp() {
         <Route path="audio-broadcast" element={<Suspense fallback={<AdminLoading />}><AdminAudioBroadcast /></Suspense>} />
         <Route path="mac-widget" element={<Suspense fallback={<AdminLoading />}><MacWidgetPage /></Suspense>} />
         <Route path="site-settings" element={<AdminSiteSettings />} />
+        <Route path="legal" element={<Suspense fallback={<AdminLoading />}><AdminLegalPages /></Suspense>} />
         <Route path="integration-keys" element={<AdminIntegrationKeys />} />
         <Route path="khelo-patna-gallery" element={<AdminKheloPatna />} />
         <Route path="investiture-gallery" element={<AdminInvestitureGallery />} />

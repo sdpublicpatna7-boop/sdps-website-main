@@ -138,6 +138,16 @@ const ROUTE_META_MAP = {
     desc: "Privacy policy regarding data collection, student safety, and web security at S.D. Public School Patna.",
     keywords: "sdps privacy policy"
   },
+  "/dmca": {
+    title: "DMCA Notice & Copyright Policy | S.D. Public School, Patna",
+    desc: "Official DMCA compliance statement, designated copyright agent contact, notice and takedown procedure, and online copyright takedown request form.",
+    keywords: "dmca policy, copyright notice sdps, copyright agent patna, sd public school takedown"
+  },
+  "/copyright-policy": {
+    title: "DMCA Notice & Copyright Policy | S.D. Public School, Patna",
+    desc: "Official DMCA compliance statement, designated copyright agent contact, notice and takedown procedure, and online copyright takedown request form.",
+    keywords: "dmca policy, copyright notice sdps, copyright agent patna, sd public school takedown"
+  },
   "/khelo-patna": {
     title: "Khelo Patna Inter-School Sports Fest | S.D. Public School, Patna",
     desc: "Inter-school sports tournament, matches, scores, galleries, and highlights of Khelo Patna organized by SDPS.",
